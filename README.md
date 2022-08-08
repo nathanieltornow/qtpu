@@ -1,2 +1,2 @@
 # qvm
-Virtuali
+Virtual Compilation and Execution of Quantum Circuits
