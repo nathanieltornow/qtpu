@@ -15,9 +15,15 @@ class Fragment(Circuit):
         self._qubit_map = dict(zip(qubit_list, range(len(qubit_list))))
         super().__init__(
             *self._mapped_operations(circuit._operations),
-            num_qubits=circuit.num_clbits,
+            num_qubits=len(qubits),
             num_clbits=circuit.num_clbits,
         )
+
+    def __hash__(self) -> int:
+        return self.id
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Fragment) and self.id == other.id
 
     @property
     def base_circuit(self) -> Circuit:
