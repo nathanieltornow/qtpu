@@ -26,10 +26,83 @@ class Result:
         return self._probs[state]
 
     def __add__(self, other: "Result") -> "Result":
-        return self._apply_op(other, add)
+        if self._num_meas != other._num_meas:
+            raise Exception("The number of measurements must be the same")
+        if len(self._probs) == 0:
+            return Result(other._probs.copy(), self._num_meas)
+        if len(other._probs) == 0:
+            return Result(self._probs.copy(), self._num_meas)
+
+        first = list(self._probs.items())
+        second = list(other._probs.items())
+        res_probs = SortedDict({})
+        i, j = 0, 0
+        while i < len(first) and j < len(second):
+            if first[i][0] < second[j][0]:
+                res_probs[first[i][0]] = first[i][1]
+                i += 1
+            elif first[i][0] > second[j][0]:
+                res_probs[second[j][0]] = second[j][1]
+                j += 1
+            elif first[i][0] == second[j][0]:
+                res_probs[first[i][0]] = first[i][1] + second[j][1]
+                i += 1
+                j += 1
+
+        while i < len(first):
+            res_probs[first[i][0]] = first[i][1]
+            i += 1
+
+        while j < len(second):
+            res_probs[second[j][0]] = second[j][1]
+            j += 1
+        return Result(res_probs, self._num_meas)
 
     def __sub__(self, other: "Result") -> "Result":
-        return self._apply_op(other, sub)
+        if self._num_meas != other._num_meas:
+            raise Exception("The number of measurements must be the same")
+        if len(self._probs) == 0:
+            new_probs = {state: -p for state, p in other._probs.items()}
+            return Result(new_probs, self._num_meas)
+        if len(other._probs) == 0:
+            return Result(self._probs.copy(), self._num_meas)
+
+        first = list(self._probs.items())
+        second = list(other._probs.items())
+        res_probs = SortedDict({})
+        i, j = 0, 0
+        while i < len(first) and j < len(second):
+            if first[i][0] < second[j][0]:
+                res_probs[first[i][0]] = first[i][1]
+                i += 1
+            elif first[i][0] > second[j][0]:
+                res_probs[second[j][0]] = -second[j][1]
+                j += 1
+            elif first[i][0] == second[j][0]:
+                res_probs[first[i][0]] = first[i][1] - second[j][1]
+                i += 1
+                j += 1
+
+        while i < len(first):
+            res_probs[first[i][0]] = first[i][1]
+            i += 1
+
+        while j < len(second):
+            res_probs[second[j][0]] = -second[j][1]
+            j += 1
+        return Result(res_probs, self._num_meas)
+
+    def __mul__(self, other: float) -> "Result":
+        result = SortedDict({})
+        for state, prob in self._probs.items():
+            result[state] = prob * other
+        return Result(result, self._num_meas)
+
+    def counts(self, total_counts: int = 20000) -> Dict[str, int]:
+        counts = {}
+        for state, prob in self._probs.items():
+            counts[bin(state)[2:].zfill(self._num_meas)] = int(prob * total_counts)
+        return counts
 
     @staticmethod
     def from_counts(counts: Dict[str, int]) -> "Result":
@@ -54,13 +127,22 @@ class Result:
                 probs2[state & strip] = prob
             else:
                 probs1[state & strip] = prob
-        return Result(probs1, self._num_meas), Result(probs2, self._num_meas)
+        return Result(probs1, self._num_meas - 1), Result(probs2, self._num_meas - 1)
+
+    def merge(self, other: "Result") -> "Result":
+        num_meas = max(self._num_meas, other._num_meas)
+        res = SortedDict({})
+        for state1, prob1 in self._probs.items():
+            for state2, prob2 in other._probs.items():
+                res[state1 | state2] = prob1 * prob2
+        return Result(res, num_meas)
 
     def _apply_op(
         self, other: "Result", op: Callable[[float, float], float]
     ) -> "Result":
         if self._num_meas != other._num_meas:
             raise Exception("The number of measurements must be the same")
+
         first = list(self._probs.items())
         second = list(other._probs.items())
         res_probs = SortedDict({})

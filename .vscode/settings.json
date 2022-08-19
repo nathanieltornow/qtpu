@@ -1,5 +1,4 @@
 {
-    "nixEnvSelector.nixFile": "${workspaceRoot}/shell.nix",
     "python.formatting.provider": "black",
     "python.linting.mypyEnabled": true,
     "python.linting.enabled": true
