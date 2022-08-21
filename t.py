@@ -7,54 +7,83 @@ from qiskit import (
 )
 from qiskit.circuit.quantumcircuit import Qubit, Instruction, CircuitInstruction
 from qiskit.circuit.library.standard_gates import CZGate
+from qvm import util
 
-from qvm.circuit import VirtualCircuit, FragmentedVirtualCircuit
+from qvm.circuit import VirtualCircuit, FragmentedVirtualCircuit, fragment, virtual_circuit
 from qvm.circuit.virtual_gate.virtual_cz import VirtualCZ
-from qvm.execution.execute import execute_virtual_circuit
-from qvm.bench import fidelity
+from qvm.bench.fidelity import fidelity
 from qiskit.providers.aer import AerSimulator
-
+from qvm.execution.executor import VirtualCircuitExecutor
+from qvm.execution.frag_executor import FragmentedCircuitExecutor
 
 circuit = QuantumCircuit(3, 3)
 circuit.h(0)
 circuit.h(1)
 circuit.cx(0, 1)
 circuit.cx(1, 2)
+circuit.h(2)
 circuit.measure(0, 0)
 circuit.measure(1, 1)
+circuit.measure(2, 2)
+
+print(util.circuit_on_qubits(circuit, set(circuit.qubits[:2])))
+
+vcircuit = VirtualCircuit(circuit.copy())
+vcircuit.virtualize_connection(0, 1)
+# vcircuit.virtualize_connection(1, 2)
+
+print(vcircuit.circuit())
+
+fragmented_circuit = FragmentedVirtualCircuit(vcircuit.circuit().copy())
+fragmented_circuit.create_fragments()
+
+print(len(fragmented_circuit.fragments()))
+for frag in fragmented_circuit.fragments():
+
+    print(frag.circuit())
 
 
-# circuit.measure_all()
-print(AerSimulator().run(circuit, shots=20000).result().get_counts())
+# executor = VirtualCircuitExecutor(fragmented_circuit)
 
-cp_circ = circuit.copy()
-print(circuit)
+# counts = executor.execute(AerSimulator()).counts()
 
+frag_exec = FragmentedCircuitExecutor(fragmented_circuit)
 
-frag_circ = FragmentedVirtualCircuit.from_circuit(circuit)
-frag_circ.virtualize_connection(frag_circ.qubits[0], frag_circ.qubits[1])
-frag_circ.virtualize_connection(frag_circ.qubits[1], frag_circ.qubits[2])
+counts2 = frag_exec.execute(AerSimulator()).counts()
 
-print("--------------------------------------------")
+print(fidelity(circuit, counts2))
 
-frag_circ.create_fragments()
-for frag in frag_circ.fragments:
-    print(frag.base_circuit)
+# # circuit.measure_all()
+# print(AerSimulator().run(circuit, shots=20000).result().get_counts())
 
-# vcirc.append(VirtualCZ(CZGate()), [vcirc.qubits[0], vcirc.qubits[1]])
-
-print("--------------------------------------------")
-
-# frag_circ.cx(2, 1)
+# cp_circ = circuit.copy()
+# print(circuit)
 
 
-frag_circ.create_fragments()
-for frag in frag_circ.fragments:
-    print(frag.base_circuit)
+# frag_circ = FragmentedVirtualCircuit.from_circuit(circuit)
+# frag_circ.virtualize_connection(frag_circ.qubits[0], frag_circ.qubits[1])
+# frag_circ.virtualize_connection(frag_circ.qubits[1], frag_circ.qubits[2])
 
-# vcirc.virtualize_connection(vcirc.qubits[1], vcirc.qubits[2])
-print(frag_circ.graph.edges)
-print(frag_circ.fragment_virtual_gates)
+# print("--------------------------------------------")
+
+# frag_circ.create_fragments()
+# for frag in frag_circ.fragments:
+#     print(frag.base_circuit)
+
+# # vcirc.append(VirtualCZ(CZGate()), [vcirc.qubits[0], vcirc.qubits[1]])
+
+# print("--------------------------------------------")
+
+# # frag_circ.cx(2, 1)
+
+
+# frag_circ.create_fragments()
+# for frag in frag_circ.fragments:
+#     print(frag.base_circuit)
+
+# # vcirc.virtualize_connection(vcirc.qubits[1], vcirc.qubits[2])
+# print(frag_circ.graph.edges)
+# print(frag_circ.fragment_virtual_gates)
 
 
 # result = execute_virtual_circuit(vcirc, backend=AerSimulator())

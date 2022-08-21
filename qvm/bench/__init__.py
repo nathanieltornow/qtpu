@@ -1,1 +1,1 @@
-from fidelity import fidelity
+from .fidelity import fidelity

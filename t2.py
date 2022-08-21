@@ -1,16 +1,22 @@
-from qvm.result import Result
-from sortedcontainers import SortedDict
+from time import sleep
+from qiskit import IBMQ, transpile
+from qiskit.providers.ibmq.managed import IBMQJobManager
+from qiskit.circuit.random import random_circuit
+from qiskit.providers.aer import AerSimulator
 
-# res1 = Result.from_counts({"00": 1, "11": 1})
-# res2 = Result.from_counts({"11": 1, "01": 1})
+# Build a thousand circuits.
+circs = []
+for _ in range(2):
+    circs.append(random_circuit(num_qubits=5, depth=4, measure=True))
 
-# a, b = res1.without_first_bit()
-# print(a.counts(), b.counts())
+backend = AerSimulator()
+# Need to transpile the circuits first.
+circs = transpile(circs, backend=backend)
 
+# Use Job Manager to break the circuits into multiple jobs.
+job_manager = IBMQJobManager()
+job_set_foo = job_manager.run(circs, backend=backend, name="foo")
 
-r1 = Result(SortedDict({0: 0.283203125, 1: 0.244140625}), 2)
-r2 = Result(SortedDict({2: 0.232421875, 3: 0.240234375}), 2)
+print(job_set_foo.status())
 
-r3 = r1 + r2
-
-print(r3._probs)
+sleep(113)

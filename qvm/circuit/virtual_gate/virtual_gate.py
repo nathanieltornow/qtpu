@@ -1,7 +1,11 @@
 from abc import ABC, abstractmethod
 import itertools
 from typing import List, Optional, Type
-from qiskit.circuit.quantumcircuit import QuantumCircuit, Instruction
+from qiskit.circuit.quantumcircuit import (
+    QuantumCircuit,
+    Instruction,
+    CircuitInstruction,
+)
 
 from qvm.result import Result
 
@@ -47,37 +51,35 @@ class VirtualBinaryGate(Instruction, ABC):
         self._definition = qc
 
 
-# class PartialVirtualGate(VirtualGate):
-#     _original_virtual_gate: VirtualGate
-#     _qubit_indices: List[int]
+class PartialVirtualGate(Instruction):
+    _vgate: VirtualBinaryGate
+    _index: int
 
-#     def __init__(self, virtual_gate: VirtualGate, qubit_indices: List[int]):
-#         self._original_virtual_gate = virtual_gate
-#         self._qubit_indices = qubit_indices
-#         super().__init__(
-#             virtual_gate.name,
-#             len(qubit_indices),
-#             virtual_gate.num_clbits,
-#             virtual_gate.params,
-#         )
+    def __init__(self, virtual_gate: VirtualBinaryGate, qubit_index: int) -> None:
+        self._vgate = virtual_gate
+        self._index = qubit_index
+        super().__init__(virtual_gate.name, 1, 1, [])
 
-#     @staticmethod
-#     def _circuit_on_qubit_indices(
-#         circuit: QuantumCircuit, qubit_indices: List[int]
-#     ) -> QuantumCircuit:
-#         new_circuit = QuantumCircuit(circuit.num_qubits, circuit.num_clbits)
-#         [
-#             new_circuit.append(instr)
-#             for instr in circuit.data
-#             if instr.qubits[0] in qubit_indices
-#         ]
-#         return new_circuit
+    @staticmethod
+    def _circuit_on_qubit_index(
+        circuit: QuantumCircuit, qubit_index: int
+    ) -> QuantumCircuit:
+        new_circuit = QuantumCircuit(1, 1)
+        [
+            new_circuit.append(
+                CircuitInstruction(
+                    instr.operation,
+                    [new_circuit.qubits[0]],
+                    [new_circuit.clbits[0] for _ in instr.clbits],
+                )
+            )
+            for instr in circuit.data
+            if circuit.find_bit(instr.qubits[0]).index == qubit_index
+        ]
+        return new_circuit
 
-#     def configure(self) -> List[QuantumCircuit]:
-#         return [
-#             self._circuit_on_qubit_indices(config, self._qubit_indices)
-#             for config in self._original_virtual_gate.configure()
-#         ]
-
-#     def knit(self, results: List[Result]) -> Result:
-#         raise NotImplementedError("cannot knit partial virtual gate")
+    def configure(self) -> List[QuantumCircuit]:
+        return [
+            self._circuit_on_qubit_index(circuit, self._index)
+            for circuit in self._vgate.configure()
+        ]
