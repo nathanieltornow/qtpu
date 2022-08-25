@@ -1,3 +1,4 @@
+from time import time
 from qiskit import (
     QuantumCircuit,
     QuantumRegister,
@@ -7,151 +8,96 @@ from qiskit import (
 )
 from qiskit.circuit.quantumcircuit import Qubit, Instruction, CircuitInstruction
 from qiskit.circuit.library.standard_gates import CZGate
-from qvm import util
 
-from qvm.circuit import VirtualCircuit, FragmentedVirtualCircuit, fragment, virtual_circuit
+from qvm.circuit import VirtualCircuit
 from qvm.circuit.virtual_gate.virtual_cz import VirtualCZ
 from qvm.bench.fidelity import fidelity
 from qiskit.providers.aer import AerSimulator
-from qvm.execution.executor import VirtualCircuitExecutor
-from qvm.execution.frag_executor import FragmentedCircuitExecutor
+from qvm.circuit.virtual_gate.virtual_gate import VirtualBinaryGate
+from qvm.execution.configurations import (
+    VirtualCircuitConfigurator,
+    BinaryFragmentsConfigurator,
+)
+from qvm.execution.exec import execute_fragmented_circuit, execute_virtual_circuit
+from qiskit.circuit.random import random_circuit
 
-circuit = QuantumCircuit(3, 3)
+from qvm.execution.knit import chunk
+
+from cloudpickle import dump, load
+
+# l = [1, 2, 3, 4]
+
+# for c in chunk(l, 2):
+#     print(list(c))
+
+# exit(0)
+# while True:
+# with open("circuit.pickle", "rb") as f:
+circuit = QuantumCircuit(5, 5)
+circuit.compose(random_circuit(5, 3, 1, False), inplace=True)
 circuit.h(0)
 circuit.h(1)
-circuit.cx(0, 1)
-circuit.cx(1, 2)
+# circuit.cx(0, 1)
+circuit.rzz(0.3, 2, 1)
+# circuit.rzz(1.2, 2, 1)
+circuit.x(2)
+circuit.s(1)
+circuit.cz(2, 3)
+# circuit.cz(3, 4)
 circuit.h(2)
-circuit.measure(0, 0)
-circuit.measure(1, 1)
-circuit.measure(2, 2)
+# # circuit.measure_active()
 
-print(util.circuit_on_qubits(circuit, set(circuit.qubits[:2])))
+circuit.compose(random_circuit(5, 2, 1, True), inplace=True)
+circ_cp = circuit.copy()
 
-vcircuit = VirtualCircuit(circuit.copy())
-vcircuit.virtualize_connection(0, 1)
+vc = VirtualCircuit.from_circuit(circuit)
+
+vc.virtualize_connection(circuit.qubits[1], circuit.qubits[2])
+vc.virtualize_connection(circuit.qubits[2], circuit.qubits[3])
+print(vc)
+
+# for conf_id, circ in BinaryFragmentsConfigurator(vc):
+#     print(conf_id)
+#     print(circ[0])
+#     print(circ[1])
+if (
+    sum(1 for instr in vc.data if isinstance(instr.operation, VirtualBinaryGate))
+    > 3
+):
+    print("Too many virtual gates")
+
+begin = time()
+counts = execute_fragmented_circuit([vc])[0].counts(50000)
+print(time() - begin)
+
+# begin = time()
+# counts = execute_virtual_circuit([vc])[0].counts(50000)
+# print(time() - begin)
+
+print(counts)
+fid = fidelity(circ_cp, counts)
+print(fid)
+    # if fid < 0.99:
+    #     break
+
+# with open("circuit.pickle", "wb") as f:
+#     dump(circ_cp, f)
+
+# vcircuit = VirtualCircuit(circuit.copy())
+# vcircuit.virtualize_connection(0, 1)
 # vcircuit.virtualize_connection(1, 2)
 
-print(vcircuit.circuit())
 
-fragmented_circuit = FragmentedVirtualCircuit(vcircuit.circuit().copy())
-fragmented_circuit.create_fragments()
+# frag_tree = FragmentTree(vcircuit.circuit(), set(circuit.qubits))
 
-print(len(fragmented_circuit.fragments()))
-for frag in fragmented_circuit.fragments():
+# frag_tree.create_fragments(set(circuit.qubits[:1]), set(circuit.qubits[1:]))
 
-    print(frag.circuit())
+# frags = frag_tree.fragments()
+# if frags:
+#     frag1, frag2 = frags
 
+#     print(frag2.circuit())
 
-# executor = VirtualCircuitExecutor(fragmented_circuit)
-
-# counts = executor.execute(AerSimulator()).counts()
-
-frag_exec = FragmentedCircuitExecutor(fragmented_circuit)
-
-counts2 = frag_exec.execute(AerSimulator()).counts()
-
-print(fidelity(circuit, counts2))
-
-# # circuit.measure_all()
-# print(AerSimulator().run(circuit, shots=20000).result().get_counts())
-
-# cp_circ = circuit.copy()
-# print(circuit)
-
-
-# frag_circ = FragmentedVirtualCircuit.from_circuit(circuit)
-# frag_circ.virtualize_connection(frag_circ.qubits[0], frag_circ.qubits[1])
-# frag_circ.virtualize_connection(frag_circ.qubits[1], frag_circ.qubits[2])
-
-# print("--------------------------------------------")
-
-# frag_circ.create_fragments()
-# for frag in frag_circ.fragments:
-#     print(frag.base_circuit)
-
-# # vcirc.append(VirtualCZ(CZGate()), [vcirc.qubits[0], vcirc.qubits[1]])
-
-# print("--------------------------------------------")
-
-# # frag_circ.cx(2, 1)
-
-
-# frag_circ.create_fragments()
-# for frag in frag_circ.fragments:
-#     print(frag.base_circuit)
-
-# # vcirc.virtualize_connection(vcirc.qubits[1], vcirc.qubits[2])
-# print(frag_circ.graph.edges)
-# print(frag_circ.fragment_virtual_gates)
-
-
-# result = execute_virtual_circuit(vcirc, backend=AerSimulator())
-
-# print(result.counts())
-# print(fidelity(cp_circ, result.counts()))
-
-# for conf, circ in vcirc.configured_circuits().items():
-#     print(conf)
-#     print(circ.decompose())
-#     print()
-
-# import time
-# from itertools import combinations
-# from qiskit.compiler import assemble
-# from qiskit.test.mock import FakeVigo
-# from qiskit.circuit import Parameter
-# import numpy as np
-
-# theta_range = np.linspace(0, 2 * np.pi, 128)
-# start = time.time()
-# qc = QuantumCircuit(5)
-# theta = Parameter("theta")
-# alpha = Parameter("alpha")
-
-# for k in range(8):
-#     # for i,j in combinations(range(5), 2):
-#     #     qc.cx(i,j)
-#     qc.rz(theta, range(5))
-#     qc.ry(alpha, range(5))
-#     # for i,j in combinations(range(5), 2):
-#     #     qc.cx(i,j)
-
-# print(qc.parameters)
-
-# transpiled_qc = transpile(qc, backend=FakeVigo())
-# print(transpiled_qc)
-# qobj = assemble(
-#     [transpiled_qc.bind_parameters({theta: n, alpha: n}) for n in theta_range],
-#     backend=FakeVigo(),
-# )
-# end = time.time()
-# print("Time compiling over parameterized circuit, then binding: ", end - start)
-
-
-# from qiskit.result.models import ExperimentResult
-# # Build a sub-circuit
-# sub_circ = QuantumCircuit(2, 2,  name='sub_circ')
-# sub_circ.h(0)
-# sub_circ.crz(1, 0,1)
-# sub_circ.barrier()
-# sub_circ.id(1)
-# sub_circ.u(1, 2, -2, 0)
-# print(sub_circ)
-
-
-# # Convert to a gate and stick it into an arbitrary place in the bigger circuit
-# sub_inst = sub_circ.to_instruction(label='sub_inst2')
-# print("hi, \n", type(sub_inst.definition))
-
-# circ = QuantumCircuit(3, 3)
-# circ.h(0)
-# circ.cx(0, 1)
-# circ.cx(1, 2)
-
-# print(circ)
-# circ._data[2] = CircuitInstruction(sub_inst, [circ.qubits[1], circ.qubits[2]], [circ.clbits[0], circ.clbits[1]])
-# # circ.append(sub_inst, [1, 2], [1, 2])
-# print(circ)
-
-# print(sub_inst == Instruction("a", 1,1, []))
+#     for _, circ in frag2.configured_circuits():
+#         print(circ.circuit())
+#         print(circ.circuit().decompose())

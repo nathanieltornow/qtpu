@@ -6,7 +6,7 @@ from qiskit.providers.aer import StatevectorSimulator
 
 def perfect_counts(original_circuit: QuantumCircuit) -> Dict[str, int]:
     return (
-        StatevectorSimulator().run(original_circuit, shots=20000).result().get_counts()
+        StatevectorSimulator().run(original_circuit, shots=500000).result().get_counts()
     )
 
 

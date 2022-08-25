@@ -101,18 +101,23 @@ class Result:
     def counts(self, total_counts: int = 20000) -> Dict[str, int]:
         counts = {}
         for state, prob in self._probs.items():
-            counts[bin(state)[2:].zfill(self._num_meas)] = int(prob * total_counts)
+            counts[bin(state)[2:].zfill(self._num_meas)] = max(
+                int(prob * total_counts), 0
+            )
         return counts
 
     @staticmethod
     def from_counts(counts: Dict[str, int]) -> "Result":
         base = 2
-        some_state = list(counts.keys())[0]
+        some_state = list(counts.keys())[0].replace(" ", "")
         if some_state.startswith("0x"):
             base = 16
         shots = sum(counts.values())
         probs = SortedDict(
-            {int(state, base): count / shots for state, count in counts.items()}
+            {
+                int(state.replace(" ", ""), base): count / shots
+                for state, count in counts.items()
+            }
         )
         num_meas = len(some_state)
         return Result(probs, num_meas)
@@ -136,26 +141,3 @@ class Result:
             for state2, prob2 in other._probs.items():
                 res[state1 | state2] = prob1 * prob2
         return Result(res, num_meas)
-
-    def _apply_op(
-        self, other: "Result", op: Callable[[float, float], float]
-    ) -> "Result":
-        if self._num_meas != other._num_meas:
-            raise Exception("The number of measurements must be the same")
-
-        first = list(self._probs.items())
-        second = list(other._probs.items())
-        res_probs = SortedDict({})
-        i, j = 0, 0
-        while i < len(first) and j < len(second):
-            if first[i][0] < second[j][0]:
-                res_probs[first[i][0]] = first[i][1]
-                i += 1
-            elif first[i][0] > second[j][0]:
-                res_probs[second[j][0]] = second[j][1]
-                j += 1
-            elif first[i][0] == second[j][0]:
-                res_probs[first[i][0]] = op(first[i][1], second[j][1])
-                i += 1
-                j += 1
-        return Result(res_probs, self._num_meas)

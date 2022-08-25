@@ -27,7 +27,7 @@ class VirtualCX(VirtualBinaryGate):
         conf1.h(1)
 
         conf2 = QuantumCircuit(2, 1)
-        conf2.rz(pi / 2, 0)
+        conf2.rz(pi, 0)
         conf2.h(1)
         conf2.measure(1, 0)
         conf2.h(1)
@@ -35,7 +35,7 @@ class VirtualCX(VirtualBinaryGate):
         conf3 = QuantumCircuit(2, 1)
         conf3.measure(0, 0)
         conf3.h(1)
-        conf3.rz(pi / 2, 1)
+        conf3.rz(pi, 1)
         conf3.h(1)
 
         conf4 = QuantumCircuit(2, 1)

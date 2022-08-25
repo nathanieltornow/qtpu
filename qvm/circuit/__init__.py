@@ -1,2 +1,1 @@
-from .virtual_circuit import VirtualCircuitBase, VirtualCircuit
-from .fragment import Fragment, FragmentedVirtualCircuit
+from .virtual_circuit import VirtualCircuitInterface, VirtualCircuit, Fragment

@@ -23,12 +23,12 @@ class VirtualCZ(VirtualBinaryGate):
         conf1.rz(-pi / 2, 1)
 
         conf2 = QuantumCircuit(2, 1)
-        conf2.rz(pi / 2, 0)
+        conf2.rz(pi, 0)
         conf2.measure(1, 0)
 
         conf3 = QuantumCircuit(2, 1)
         conf3.measure(0, 0)
-        conf3.rz(pi / 2, 1)
+        conf3.rz(pi, 1)
 
         conf4 = QuantumCircuit(2, 1)
         conf4.measure(0, 0)

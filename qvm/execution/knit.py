@@ -1,60 +1,30 @@
-from typing import Dict, List, Optional, Tuple
+import itertools
+import multiprocessing
+from multiprocessing.resource_sharer import stop
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
 
-import lithops.multiprocessing as mp
+import lithops
 
 from qvm.circuit.virtual_gate import VirtualBinaryGate
 from qvm.result import Result
 
 
-class KnitTree:
-    virtual_gate: Optional[VirtualBinaryGate]
-    result: Optional[Result]
-    sub_nodes: Optional[List["KnitTree"]]
-
-    pool: Optional[mp.Pool]
-
-    def __init__(
-        self,
-        results: Dict[Tuple[int, ...], Result],
-        virtual_gates: List[VirtualBinaryGate],
-        path: Tuple[int, ...] = (),
-        pool: Optional[mp.Pool] = None,
-    ) -> None:
-        self.pool = pool
-        self.result = results.get(path, None)
-
-        # if child node
-        if len(virtual_gates) == 0:
-            self.sub_nodes = None
-            self.virtual_gate = None
+def chunk(it: Iterable, n: int) -> Iterator[List[Any]]:
+    it = iter(it)
+    while True:
+        ch = list(itertools.islice(it, n))
+        if not ch:
             return
-
-        vgate = virtual_gates.pop(0)
-        self.virtual_gate = vgate
-        self.sub_nodes = [
-            KnitTree(results, virtual_gates.copy(), path + (i,))
-            for i in range(len(vgate.configure()))
-        ]
-
-    def _pool_wrapper(self, sub_node: "KnitTree") -> Result:
-        return sub_node.knit()
-
-    def knit(self) -> Result:
-        if self.result:
-            return self.result
-        if self.sub_nodes and self.virtual_gate:
-            results: List[Result]
-            if self.pool is not None:
-                results = self.pool.map(self._pool_wrapper, self.sub_nodes)
-            else:
-                results = [subnode.knit() for subnode in self.sub_nodes]
-            return self.virtual_gate.knit(results)
-        raise Exception("cannot knit (unexpected)")
+        yield ch
 
 
-def knit(
-    results: Dict[Tuple[int, ...], Result],
-    virtual_gates: List[VirtualBinaryGate],
-    pool: Optional[mp.Pool] = None,
-) -> Result:
-    return KnitTree(results, virtual_gates).knit()
+def knit(results: Iterable[Result], virtual_gates: List[VirtualBinaryGate]) -> Result:
+    fexec = lithops.FunctionExecutor()
+    while len(virtual_gates) > 0:
+        vgate = virtual_gates.pop(-1)
+        chunks = list(chunk(list(results), len(vgate.configure())))
+        if len(chunks) >= 36:
+            results = fexec.map(vgate.knit, chunks).get_result()
+        else:
+            results = [vgate.knit(ch) for ch in chunks]
+    return list(results)[0]

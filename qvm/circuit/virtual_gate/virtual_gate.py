@@ -13,8 +13,9 @@ from qvm.result import Result
 class VirtualBinaryGate(Instruction, ABC):
 
     _ids = itertools.count(0)
+    is_fragmenting: bool
 
-    def __init__(self, original_gate: Instruction):
+    def __init__(self, original_gate: Instruction, is_fragmenting: bool = True):
         self.id = next(self._ids)
         if original_gate.num_qubits != 2 or original_gate.num_clbits > 0:
             raise ValueError("The original gate must be a binary gate.")
@@ -22,7 +23,8 @@ class VirtualBinaryGate(Instruction, ABC):
             raise ValueError(
                 f"Cannot virtualize {type(original_gate)} with virtual gate for {self.original_gate_type()}"
             )
-        super().__init__(original_gate.name, 2, 1, original_gate.params)
+        self.is_fragmenting = is_fragmenting
+        super().__init__(original_gate.name, 2, 0, original_gate.params)
 
     def __eq__(self, other):
         return super().__eq__(other) and self.id == other.id
@@ -49,37 +51,3 @@ class VirtualBinaryGate(Instruction, ABC):
         qc = QuantumCircuit(2)
         qc.append(self.original_gate_type()(*self.params), [0, 1])
         self._definition = qc
-
-
-class PartialVirtualGate(Instruction):
-    _vgate: VirtualBinaryGate
-    _index: int
-
-    def __init__(self, virtual_gate: VirtualBinaryGate, qubit_index: int) -> None:
-        self._vgate = virtual_gate
-        self._index = qubit_index
-        super().__init__(virtual_gate.name, 1, 1, [])
-
-    @staticmethod
-    def _circuit_on_qubit_index(
-        circuit: QuantumCircuit, qubit_index: int
-    ) -> QuantumCircuit:
-        new_circuit = QuantumCircuit(1, 1)
-        [
-            new_circuit.append(
-                CircuitInstruction(
-                    instr.operation,
-                    [new_circuit.qubits[0]],
-                    [new_circuit.clbits[0] for _ in instr.clbits],
-                )
-            )
-            for instr in circuit.data
-            if circuit.find_bit(instr.qubits[0]).index == qubit_index
-        ]
-        return new_circuit
-
-    def configure(self) -> List[QuantumCircuit]:
-        return [
-            self._circuit_on_qubit_index(circuit, self._index)
-            for circuit in self._vgate.configure()
-        ]

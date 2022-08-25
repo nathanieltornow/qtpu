@@ -1,11 +1,18 @@
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Set
+from abc import ABC, abstractclassmethod, abstractmethod
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type, final
 
-from qiskit.circuit import Qubit
+from qiskit import transpile
+from qiskit.circuit.quantumcircuit import QuantumCircuit, Qubit
 from qiskit.providers import Backend
-from qiskit.providers.aer import AerSimulator
 
-from qvm.circuit import VirtualCircuitInterface, VirtualCircuit, Fragment
+from qvm.circuit import (
+    Fragment,
+)
+from qvm.circuit.virtual_circuit import VirtualCircuit, VirtualCircuitInterface
+from qvm.circuit.virtual_gate.virtual_gate import VirtualBinaryGate
+
+DEFAULT_TRANSPILER_FLAGS = {"optimization_level": 3}
+DEFAULT_EXEC_FLAGS = {"shots": 10000}
 
 
 class TranspiledFragment(Fragment):
@@ -18,8 +25,8 @@ class TranspiledFragment(Fragment):
         virtual_circuit: VirtualCircuitInterface,
         qubits: Set[Qubit],
         backend: Backend,
-        transpile_flags: Dict[str, Any],
-        exec_flags: Dict[str, Any],
+        transpile_flags: Dict[str, Any] = DEFAULT_TRANSPILER_FLAGS,
+        exec_flags: Dict[str, Any] = DEFAULT_EXEC_FLAGS,
     ) -> None:
         super().__init__(virtual_circuit, qubits)
         self.backend = backend
@@ -45,8 +52,8 @@ class TranspiledVirtualCircuit(VirtualCircuit):
         self,
         fragment: Fragment,
         backend: Backend,
-        transpile_flags: Dict[str, Any],
-        exec_flags: Dict[str, Any],
+        transpile_flags: Dict[str, Any] = DEFAULT_TRANSPILER_FLAGS,
+        exec_flags: Dict[str, Any] = DEFAULT_EXEC_FLAGS,
     ) -> None:
         if fragment not in self._fragments:
             raise ValueError(f"Fragment {fragment} not in virtual circuit")
@@ -56,22 +63,3 @@ class TranspiledVirtualCircuit(VirtualCircuit):
                 self, fragment.qubits, backend, transpile_flags, exec_flags
             )
         )
-
-
-class QVMTranspiler(ABC):
-    _backends: List[Backend]
-
-    def __init__(self, *available_backends: Backend) -> None:
-        self._backends = list(available_backends)
-        if len(self._backends) == 0:
-            raise ValueError("No available backends given")
-
-    @abstractmethod
-    def run(self, circuit: VirtualCircuit) -> VirtualCircuit:
-        pass
-
-
-class LayoutTranspiler(ABC):
-    @abstractmethod
-    def run(self, virtual_circuit: VirtualCircuitInterface, backend: Backend) -> None:
-        pass
