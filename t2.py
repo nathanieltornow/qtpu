@@ -1,5 +1,6 @@
 from qiskit import QuantumCircuit, IBMQ, transpile
 
+from qiskit.circuit.quantumcircuit import Qubit, Instruction, CircuitInstruction
 
 import lithops
 

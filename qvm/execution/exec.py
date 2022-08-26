@@ -1,6 +1,7 @@
 import imp
+import itertools
 from pyclbr import Function
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from qiskit import transpile, QuantumCircuit
 from qiskit.providers import Backend
@@ -9,11 +10,16 @@ import lithops as lh
 
 
 from qvm.circuit import VirtualCircuitInterface, VirtualCircuit, Fragment
+from qvm.circuit.virtual_gate.virtual_gate import VirtualBinaryGate
 from qvm.execution.knit import knit
 from qvm.execution.merge import merge
 from qvm.result import Result
 from qvm.transpiler.default_flags import DEFAULT_TRANSPILER_FLAGS, DEFAULT_EXEC_FLAGS
-from .configurations import BinaryFragmentsConfigurator, VirtualCircuitConfigurator
+from qvm.transpiler.transpiled_fragment import DeviceInfo, TranspiledVirtualCircuit
+from .configurator import (
+    FragmentConfigurator,
+    VirtualCircuitConfigurator,
+)
 
 
 def execute_virtual_circuit(
@@ -61,69 +67,31 @@ def execute_virtual_circuit(
     return results
 
 
-def execute_fragmented_circuit(
-    virtual_circuits: List[VirtualCircuit],
-    backend: Optional[Backend] = None,
-    transpile_flags: Dict[str, Any] = DEFAULT_TRANSPILER_FLAGS,
-    exec_flags: Dict[str, Any] = DEFAULT_EXEC_FLAGS,
-) -> List[Result]:
-    if backend is None:
-        backend = AerSimulator()
+def execute_fragment(
+    virtual_circuit: VirtualCircuit, fragment: Fragment, device_info: DeviceInfo
+) -> Dict[Tuple[int, ...], Result]:
+    configurator = FragmentConfigurator(virtual_circuit, fragment).configured_circuits()
+    conf_ids, conf_circs = zip(*configurator)
+    results = execute_virtual_circuit(
+        list(conf_circs),
+        device_info.backend,
+        device_info.transpile_flags,
+        device_info.exec_flags,
+    )
+    return dict(zip(conf_ids, results))
 
-    results = []
 
-    fexec = lh.FunctionExecutor()
+def config_ids(virtual_gates: List[VirtualBinaryGate]) -> List[Tuple[int, ...]]:
+    conf_list = [tuple(range(len(vg.configure()))) for vg in virtual_gates]
+    return list(itertools.product(*conf_list))
 
-    for vc in virtual_circuits:
 
-        fragments = vc.fragments
-
-        print("HALLO", len(fragments))
-
-        if len(fragments) == 1:
-            results.append(
-                execute_virtual_circuit([vc], backend, transpile_flags, exec_flags)[0]
-            )
-        elif len(fragments) == 2:
-            frag_configs = BinaryFragmentsConfigurator(vc)
-            frags1, frags2 = zip(*frag_configs.configured_fragments())
-
-            fexec.call_async(
-                execute_virtual_circuit,
-                (list(frags1), backend, transpile_flags, exec_flags),
-            )
-            fexec.call_async(
-                execute_virtual_circuit,
-                (list(frags2), backend, transpile_flags, exec_flags),
-            )
-            res = fexec.get_result()
-
-            merged = merge(res[0], res[1])
-            results.append(knit(merged, frag_configs.virtual_gates()))
-        elif len(fragments) >= 3:
-
-            frag_list = list(fragments)
-            frag1_qubits = set().union(
-                *[frag.qubits for frag in frag_list[: len(frag_list) // 2]]
-            )
-            frag2_qubits = set().union(
-                *[frag.qubits for frag in frag_list[len(frag_list) // 2 :]]
-            )
-            frag_configs = BinaryFragmentsConfigurator(vc, frag1_qubits, frag2_qubits)
-            frags1, frags2 = zip(*frag_configs.configured_fragments())
-
-            fexec.call_async(
-                execute_fragmented_circuit,
-                (list(frags1), backend, transpile_flags, exec_flags),
-            )
-            fexec.call_async(
-                execute_fragmented_circuit,
-                (list(frags2), backend, transpile_flags, exec_flags),
-            )
-            res = fexec.get_result()
-            merged = merge(res[0], res[1])
-            results.append(knit(merged, frag_configs.virtual_gates()))
-        else:
-            raise NotImplementedError("Should not be here")
-
-    return results
+def execute_fragmented_circuit(virtual_circuit: TranspiledVirtualCircuit) -> Result:
+    fragments = virtual_circuit.fragments
+    all_results = []
+    for frag in fragments:
+        all_results.append(
+            execute_fragment(virtual_circuit, frag, virtual_circuit.device_info(frag))
+        )
+    merged = merge(config_ids(virtual_circuit.virtual_gates(True)), all_results)
+    return knit(merged, virtual_circuit.virtual_gates(True))

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from importlib import metadata
 import itertools
-from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple, Type, Union
+from typing import Dict, FrozenSet, Iterator, List, Optional, Sequence, Set, Tuple, Type, Union
 
 import networkx as nx
 from qiskit.circuit.quantumcircuit import (
@@ -40,18 +40,16 @@ class VirtualCircuitInterface(ABC):
 
 class Fragment(VirtualCircuitInterface):
     _vc: VirtualCircuitInterface
-    _qubits: Set[Qubit]
-    _ids = itertools.count(0)
+    _qubits: FrozenSet[Qubit]
 
     def __init__(
         self, virtual_circuit: VirtualCircuitInterface, qubits: Set[Qubit]
     ) -> None:
         self._vc = virtual_circuit
-        self._qubits = qubits
-        self.id = next(self._ids)
+        self._qubits = frozenset(qubits)
 
     def __hash__(self) -> int:
-        return self.id
+        return hash(self._qubits)
 
     def __eq__(self, other):
         return isinstance(other, Fragment) and self._qubits == other._qubits
@@ -61,7 +59,7 @@ class Fragment(VirtualCircuitInterface):
 
     @property
     def qubits(self) -> Set[Qubit]:
-        return self._qubits
+        return set(self._qubits)
 
     def virtualize_connection(
         self,
@@ -95,6 +93,21 @@ class VirtualCircuit(QuantumCircuit, VirtualCircuitInterface):
             Fragment(self, qubits)
             for qubits in nx.connected_components(self.connectivity_graph())
         }
+
+    def virtual_gates(self, between_frags: bool = False) -> List[VirtualBinaryGate]:
+        if between_frags:
+            frags = self.fragments
+            return [
+                instr.operation
+                for instr in self.data
+                if isinstance(instr.operation, VirtualBinaryGate)
+                and not any(set(instr.qubits) <= frag.qubits for frag in frags)
+            ]
+        return [
+            instr.operation
+            for instr in self.data
+            if isinstance(instr.operation, VirtualBinaryGate)
+        ]
 
     def to_circuit(self) -> "QuantumCircuit":
         return self.decompose()
