@@ -1,7 +1,5 @@
 import itertools
-import multiprocessing
-from multiprocessing.resource_sharer import stop
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
+from typing import Any, Iterable, Iterator, List
 
 import lithops
 

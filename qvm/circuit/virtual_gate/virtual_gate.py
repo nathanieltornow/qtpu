@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 import itertools
-from typing import List, Optional, Type
+from typing import List, Type
 from qiskit.circuit.quantumcircuit import (
     QuantumCircuit,
     Instruction,
-    CircuitInstruction,
 )
 
 from qvm.result import Result

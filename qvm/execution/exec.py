@@ -1,20 +1,14 @@
-import imp
 import itertools
-from pyclbr import Function
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from qiskit import transpile, QuantumCircuit
 from qiskit.providers import Backend
-from qiskit.providers.aer import AerSimulator
-import lithops as lh
 
-
-from qvm.circuit import VirtualCircuitInterface, VirtualCircuit, Fragment
+from qvm.circuit import VirtualCircuit, Fragment
 from qvm.circuit.virtual_gate.virtual_gate import VirtualBinaryGate
 from qvm.execution.knit import knit
 from qvm.execution.merge import merge
 from qvm.result import Result
-from qvm.transpiler.default_flags import DEFAULT_TRANSPILER_FLAGS, DEFAULT_EXEC_FLAGS
 from qvm.transpiler.transpiled_circuit import DeviceInfo, TranspiledVirtualCircuit
 from .configurator import (
     FragmentConfigurator,
@@ -24,13 +18,10 @@ from .configurator import (
 
 def execute_virtual_circuits(
     virtual_circuits: List[VirtualCircuit],
-    backend: Optional[Backend] = None,
-    transpile_flags: Dict[str, Any] = DEFAULT_TRANSPILER_FLAGS,
-    exec_flags: Dict[str, Any] = DEFAULT_EXEC_FLAGS,
+    backend: Backend,
+    transpile_flags: Dict[str, Any],
+    exec_flags: Dict[str, Any],
 ) -> List[Result]:
-    if backend is None:
-        backend = AerSimulator()
-
     dimensions: List[int] = []
     all_circuits: List[QuantumCircuit] = []
     all_configurators: List[VirtualCircuitConfigurator] = []

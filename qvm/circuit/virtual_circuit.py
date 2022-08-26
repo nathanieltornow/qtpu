@@ -1,17 +1,12 @@
 from abc import ABC, abstractmethod
-from importlib import metadata
 import itertools
 from typing import (
     Dict,
     FrozenSet,
-    Iterator,
     List,
     Optional,
-    Sequence,
     Set,
-    Tuple,
     Type,
-    Union,
 )
 
 import networkx as nx
@@ -20,13 +15,9 @@ from qiskit.circuit.quantumcircuit import (
     CircuitInstruction,
     Qubit,
     CircuitInstruction,
-    ParameterValueType,
-    Register,
-    Bit,
     QuantumRegister,
 )
 from qiskit.converters import circuit_to_dag
-
 
 from .virtual_gate import VirtualBinaryGate, VirtualCZ, VirtualCX, VirtualRZZ
 

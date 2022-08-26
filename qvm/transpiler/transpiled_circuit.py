@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from qiskit import transpile
 from qiskit.providers import Backend
 from qiskit.providers.aer import AerSimulator
 

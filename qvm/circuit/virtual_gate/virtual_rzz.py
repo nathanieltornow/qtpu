@@ -1,6 +1,5 @@
 from math import pi, sin, cos
 from typing import List, Type
-from unittest import result
 
 from qiskit.circuit.quantumcircuit import QuantumCircuit, Instruction
 from qiskit.circuit.library.standard_gates import RZZGate

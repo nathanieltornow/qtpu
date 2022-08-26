@@ -1,9 +1,6 @@
-from abc import ABC, abstractmethod
 import itertools
 import secrets
-import string
-from typing import Iterator, List, Optional, Set, Tuple
-import uuid
+from typing import Iterator, List, Set, Tuple
 
 from qiskit.circuit import QuantumCircuit, CircuitInstruction, ClassicalRegister, Qubit
 
@@ -68,7 +65,6 @@ class VirtualCircuitConfigurator:
 
 class FragmentConfigurator:
     def __init__(self, vc: VirtualCircuit, fragment: Fragment) -> None:
-        print(vc.fragments, fragment)
         if fragment not in vc.fragments:
             raise ValueError("fragment not in virtual circuit")
         self._vc = vc

@@ -1,6 +1,4 @@
-from typing import Dict, Iterable, List, Optional, Tuple
-
-import lithops
+from typing import Dict, List, Optional, Tuple
 
 from qvm.result import Result
 
