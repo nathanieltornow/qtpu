@@ -15,7 +15,7 @@ from qvm.circuit.virtual_gate.virtual_cz import VirtualCZ
 from qvm.bench.fidelity import fidelity
 from qiskit.providers.aer import AerSimulator
 from qvm.circuit.virtual_gate.virtual_gate import VirtualBinaryGate
-from qvm.execution.exec import execute_fragmented_circuit, execute_virtual_circuit
+from qvm.execution.exec import execute_fragmented_circuit, execute_virtual_circuits
 from qiskit.circuit.random import random_circuit
 
 from qvm.execution.knit import chunk

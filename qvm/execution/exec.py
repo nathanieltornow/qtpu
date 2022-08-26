@@ -22,7 +22,7 @@ from .configurator import (
 )
 
 
-def execute_virtual_circuit(
+def execute_virtual_circuits(
     virtual_circuits: List[VirtualCircuit],
     backend: Optional[Backend] = None,
     transpile_flags: Dict[str, Any] = DEFAULT_TRANSPILER_FLAGS,
@@ -72,7 +72,7 @@ def execute_fragment(
 ) -> Dict[Tuple[int, ...], Result]:
     configurator = FragmentConfigurator(virtual_circuit, fragment).configured_circuits()
     conf_ids, conf_circs = zip(*configurator)
-    results = execute_virtual_circuit(
+    results = execute_virtual_circuits(
         list(conf_circs),
         device_info.backend,
         device_info.transpile_flags,

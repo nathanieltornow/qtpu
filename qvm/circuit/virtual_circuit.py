@@ -1,7 +1,18 @@
 from abc import ABC, abstractmethod
 from importlib import metadata
 import itertools
-from typing import Dict, FrozenSet, Iterator, List, Optional, Sequence, Set, Tuple, Type, Union
+from typing import (
+    Dict,
+    FrozenSet,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+    Union,
+)
 
 import networkx as nx
 from qiskit.circuit.quantumcircuit import (

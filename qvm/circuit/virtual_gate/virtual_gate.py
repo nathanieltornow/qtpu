@@ -24,7 +24,7 @@ class VirtualBinaryGate(Instruction, ABC):
                 f"Cannot virtualize {type(original_gate)} with virtual gate for {self.original_gate_type()}"
             )
         self.is_fragmenting = is_fragmenting
-        super().__init__(original_gate.name, 2, 0, original_gate.params)
+        super().__init__(f"virtual_{original_gate.name}", 2, 0, original_gate.params)
 
     def __eq__(self, other):
         return super().__eq__(other) and self.id == other.id
