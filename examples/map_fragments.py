@@ -1,12 +1,13 @@
 import logging
 from qiskit import QuantumCircuit, transpile
-from qiskit.providers.aer import AerSimulator
+from qiskit.providers.aer import AerSimulator, StatevectorSimulator
 from qiskit.quantum_info import hellinger_fidelity
 
 from qvm import VirtualCircuit, execute
+from qvm.transpiler import TranspiledVirtualCircuit
+from qvm.transpiler.transpiled_circuit import DeviceInfo
 
 logging.basicConfig(level=logging.CRITICAL)
-
 
 # create a simple circuit
 circuit = QuantumCircuit(2, 2)
@@ -26,11 +27,26 @@ virt_circ.virtualize_connection(circuit.qubits[0], circuit.qubits[1])
 # print the virtual circuit
 print(virt_circ)
 # print the fragements of the virtual circuit
-print(virt_circ.fragments)
+print(f"fragments {virt_circ.fragments}")
 
-# execute the virtual circuit
-# specify the backend and how you want the configurations
-# to be transpiled and executed
+# create a transpiled virtual circuit
+t_vcirc = TranspiledVirtualCircuit(virt_circ)
+# map the two fragments to two different backends
+frag_list = list(t_vcirc.fragments)
+
+dev1 = DeviceInfo(
+    backend=AerSimulator(),
+    transpile_flags={"optimization_level": 2},
+    exec_flags={"shots": 10000},
+)
+dev2 = DeviceInfo(
+    backend=AerSimulator(),
+    transpile_flags={"optimization_level": 1},
+    exec_flags={"shots": 8000},
+)
+t_vcirc.transpile_fragment(frag_list[0], dev1)
+t_vcirc.transpile_fragment(frag_list[1], dev2)
+
 counts = execute(virtual_circuit=virt_circ, shots=10000)
 print(f"virtual: {counts}")
 
