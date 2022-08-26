@@ -29,8 +29,6 @@ print(virt_circ)
 print(virt_circ.fragments)
 
 # execute the virtual circuit
-# specify the backend and how you want the configurations
-# to be transpiled and executed
 counts = execute(virtual_circuit=virt_circ, shots=10000)
 print(f"virtual: {counts}")
 
