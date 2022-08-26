@@ -23,7 +23,7 @@ circuit.measure(1, 1)
 # convert the circuit to a virtual circuit
 virt_circ = VirtualCircuit.from_circuit(circuit)
 # virtualize the connection between qubit 0 and qubit 1
-virt_circ.virtualize_connection(circuit.qubits[0], circuit.qubits[1])
+virt_circ.virtualize_connection(circuit.qubits[0], circuit.qubits[1], fragmenting=True)
 # print the virtual circuit
 print(virt_circ)
 # print the fragements of the virtual circuit
