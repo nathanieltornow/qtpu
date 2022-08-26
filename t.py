@@ -22,7 +22,7 @@ from qvm.execution.knit import chunk
 
 from cloudpickle import dump, load
 
-from qvm.transpiler.transpiled_fragment import TranspiledVirtualCircuit
+from qvm.transpiler.transpiled_circuit import TranspiledVirtualCircuit
 
 # l = [1, 2, 3, 4]
 

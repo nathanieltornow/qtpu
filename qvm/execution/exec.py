@@ -15,7 +15,7 @@ from qvm.execution.knit import knit
 from qvm.execution.merge import merge
 from qvm.result import Result
 from qvm.transpiler.default_flags import DEFAULT_TRANSPILER_FLAGS, DEFAULT_EXEC_FLAGS
-from qvm.transpiler.transpiled_fragment import DeviceInfo, TranspiledVirtualCircuit
+from qvm.transpiler.transpiled_circuit import DeviceInfo, TranspiledVirtualCircuit
 from .configurator import (
     FragmentConfigurator,
     VirtualCircuitConfigurator,
