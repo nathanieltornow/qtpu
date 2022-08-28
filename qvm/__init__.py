@@ -1,2 +1,2 @@
-from .qvm import execute
-from .circuit import VirtualCircuit
+# from .qvm import execute
+# from .circuit import VirtualCircuit

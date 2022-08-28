@@ -1,147 +1,117 @@
+from dataclasses import dataclass
 import itertools
 import secrets
-from typing import Iterator, List, Set, Tuple
+from typing import Dict, Iterator, List, Tuple
 
-from qiskit.circuit import QuantumCircuit, CircuitInstruction, ClassicalRegister, Qubit
+from qiskit.circuit import QuantumCircuit, CircuitInstruction, ClassicalRegister
 
-from qvm.circuit.virtual_circuit import Fragment, VirtualBinaryGate
-from qvm.circuit import VirtualCircuit
+from qvm.transpiler.fragmented_circuit import FragmentedCircuit, Fragment
+from qvm.virtual_gate import VirtualBinaryGate, VirtualGateEndpoint
 
 
 def unique_name() -> str:
     alphabet = "abcdefghijklmnopqrstuvwxyz"
-    return "".join(secrets.choice(alphabet) for i in range(10))
+    return "".join(secrets.choice(alphabet) for i in range(4))
 
 
-class VirtualCircuitConfigurator:
-    _vc: VirtualCircuit
+@dataclass
+class VirtualGateInfo:
+    vgate: VirtualBinaryGate
+    # fragment and the operation index in the fragment
+    endpoint0: Tuple[Fragment, int]
+    endpoint1: Tuple[Fragment, int]
 
-    def __init__(self, virtual_circuit: VirtualCircuit):
-        self._vc = virtual_circuit
 
-    def __iter__(self) -> Iterator[QuantumCircuit]:
-        return self._configured_circuits()
-
-    def virtual_gates(self) -> List[VirtualBinaryGate]:
-        return [
-            instr.operation
-            for instr in self._vc.data
-            if isinstance(instr.operation, VirtualBinaryGate)
-        ]
-
-    def _config_ids(self) -> Iterator[Tuple[int, ...]]:
-        conf_list: List[Tuple[int, ...]] = [
-            tuple(range(len(vgate.configure()))) for vgate in self.virtual_gates()
-        ]
-        return iter(itertools.product(*conf_list))
-
-    def _configured_circuits(self) -> Iterator[QuantumCircuit]:
-        for config_id in self._config_ids():
-            yield self._circuit_with_config(config_id)
-
-    def _circuit_with_config(self, conf_id: Tuple[int, ...]) -> QuantumCircuit:
-        if len(conf_id) != len(self.virtual_gates()):
-            raise ValueError("config length does not match virtual gate length")
-        if len(conf_id) == 0:
-            return self._vc.to_circuit()
-
-        conf_circuit = self._vc.copy()
-        conf_reg = ClassicalRegister(size=len(conf_id), name=unique_name())
-        conf_circuit.add_register(conf_reg)
-
-        conf_ctr = 0
-        for i in range(len(conf_circuit)):
-            circ_instr = conf_circuit.data[i]
-            operation = circ_instr.operation
-            if isinstance(operation, VirtualBinaryGate):
-                conf_op = operation.configure()[conf_id[conf_ctr]].to_instruction()
-                new_instr = CircuitInstruction(
-                    conf_op, circ_instr.qubits, [conf_reg[conf_ctr]]
+def compute_virtual_gate_info(
+    frag_circuit: FragmentedCircuit,
+) -> List[VirtualGateInfo]:
+    vgates: List[VirtualGateInfo] = []
+    pending: Dict[
+        VirtualBinaryGate,
+        Tuple[Fragment, int],
+    ] = {}
+    for frag in frag_circuit.fragments:
+        for index, circ_instr in enumerate(frag.data):
+            if isinstance(circ_instr.operation, VirtualBinaryGate):
+                raise ValueError(
+                    "Virtual gates should not be in the circuit, please decompose first"
                 )
-                conf_circuit.data[i] = new_instr
-                conf_ctr += 1
-        return conf_circuit.to_circuit()
+            if isinstance(circ_instr.operation, VirtualGateEndpoint):
+                endpoint = circ_instr.operation
+                if endpoint.gate in pending:
+                    first = (
+                        (frag, index) if endpoint.index == 0 else pending[endpoint.gate]
+                    )
+                    second = (
+                        (frag, index) if endpoint.index == 1 else pending[endpoint.gate]
+                    )
+                    vgates.append(VirtualGateInfo(endpoint.gate, first, second))
+                    del pending[endpoint.gate]
+                else:
+                    pending[endpoint.gate] = (frag, index)
+    if len(pending) > 0:
+        raise ValueError("Some virtual gates are not paired")
+    return vgates
 
 
-class FragmentConfigurator:
-    def __init__(self, vc: VirtualCircuit, fragment: Fragment) -> None:
-        if fragment not in vc.fragments:
-            raise ValueError("fragment not in virtual circuit")
-        self._vc = vc
+class Configurator:
+    _fragment: Fragment
+    _vgates: List[VirtualGateInfo]
+
+    def __init__(self, fragment: Fragment, vgates: List[VirtualGateInfo]):
         self._fragment = fragment
-
-    def virtual_instr(self) -> List[CircuitInstruction]:
-        return [
-            instr
-            for instr in self._vc.data
-            if isinstance(instr.operation, VirtualBinaryGate)
-            and not any(set(instr.qubits) <= frag.qubits for frag in self._vc.fragments)
-        ]
-
-    def virtual_gates(self) -> List[VirtualBinaryGate]:
-        return [instr.operation for instr in self.virtual_instr()]
-
-    def all_config_ids(self) -> Iterator[Tuple[int, ...]]:
-        conf_list = [
-            tuple(range(len(vgate.configure()))) for vgate in self.virtual_gates()
-        ]
-        return iter(itertools.product(*conf_list))
+        self._vgates = vgates
 
     def _config_ids(self) -> Iterator[Tuple[int, ...]]:
-        conf_list: List[Tuple[int, ...]] = []
-        for vgate in self.virtual_instr():
-            if set(vgate.qubits) & self._fragment.qubits:
-                conf_list.append(tuple(range(len(vgate.operation.configure()))))
+        conf_list = []
+        for vg in self._vgates:
+            if self._fragment in {vg.endpoint0[0], vg.endpoint1[0]}:
+                conf_list.append(tuple(range(len(vg.vgate.configure()))))
             else:
                 conf_list.append((-1,))
         return iter(itertools.product(*conf_list))
 
-    @staticmethod
-    def _append_if_in(
-        circuit: QuantumCircuit, circ_instr: CircuitInstruction, qubits: Set[Qubit]
-    ) -> bool:
-        if set(circ_instr.qubits) <= qubits:
-            circuit.append(circ_instr)
-            return True
-        return False
+    def _circuit_with_config(self, config_id: Tuple[int, ...]) -> QuantumCircuit:
+        config_circ = self._fragment.copy()
+        config_register = ClassicalRegister(len(config_id), name=unique_name())
+        config_circ.add_register(config_register)
 
-    def _circ_config(self, config_id: Tuple[int, ...]) -> VirtualCircuit:
-        conf_reg = ClassicalRegister(len(config_id), name=unique_name())
-        conf_circuit = VirtualCircuit(
-            *self._vc.qregs.copy(), *self._vc.cregs.copy(), conf_reg
-        )
+        for i, (vgate_info, conf) in enumerate(zip(self._vgates, config_id)):
+            if conf == -1:
+                continue
+            clbits = (config_register[i],)
+            frag0, index0 = vgate_info.endpoint0
+            frag1, index1 = vgate_info.endpoint1
+            config0, config1 = vgate_info.vgate.partial_config(conf)
 
-        conf_ctr = 0
-        for instr in self._vc.data:
-            if isinstance(instr.operation, VirtualBinaryGate):
-                if not set(instr.qubits) & self._fragment.qubits:
-                    assert config_id[conf_ctr] == -1
-                    conf_ctr += 1
-                    continue
+            if frag0 == self._fragment:
+                config_circ.data[index0] = CircuitInstruction(
+                    config0.to_instruction(), config_circ.data[index0].qubits, clbits
+                )
+            if frag1 == self._fragment:
+                config_circ.data[index1] = CircuitInstruction(
+                    config1.to_instruction(), config_circ.data[index1].qubits, clbits
+                )
+        return config_circ
 
-                elif set(instr.qubits) <= self._fragment.qubits:
-                    continue
+    def configured_circuits(self) -> Iterator[Tuple[Tuple[int, ...], QuantumCircuit]]:
+        for conf_id in self._config_ids():
+            yield conf_id, self._circuit_with_config(conf_id)
 
-                elif set(instr.qubits) & self._fragment.qubits:
-                    conf_op = instr.operation.configure()[
-                        config_id[conf_ctr]
-                    ].to_instruction()
-                    new_instr = CircuitInstruction(
-                        conf_op, instr.qubits, [conf_reg[conf_ctr]]
-                    )
-                    conf_circuit.data.append(new_instr)
-                    conf_ctr += 1
-                    continue
-                else:
-                    raise Exception("unexpected")
 
-            elif set(instr.qubits) <= self._fragment.qubits:
-                conf_circuit.append(instr)
+class VirtualizationInfo:
+    _virtual_gates: List[VirtualBinaryGate]
 
-        return VirtualCircuit.from_circuit(conf_circuit.decompose()).deflated(
-            self._fragment.qubits
-        )
+    def __init__(self, fragmented_circuit: FragmentedCircuit) -> None:
+        self._virtual_gates = [
+            info.vgate for info in compute_virtual_gate_info(fragmented_circuit)
+        ]
 
-    def configured_circuits(self) -> Iterator[Tuple[Tuple[int, ...], VirtualCircuit]]:
-        for config_id in self._config_ids():
-            yield config_id, self._circ_config(config_id)
+    @property
+    def virtual_gates(self) -> List[VirtualBinaryGate]:
+        return self._virtual_gates
+
+    @property
+    def config_ids(self) -> Iterator[Tuple[int, ...]]:
+        conf_list = [tuple(range(len(vg.configure()))) for vg in self.virtual_gates]
+        return iter(itertools.product(*conf_list))

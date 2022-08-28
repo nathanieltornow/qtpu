@@ -3,7 +3,7 @@ from typing import Any, Iterable, Iterator, List
 
 import lithops
 
-from qvm.circuit.virtual_gate import VirtualBinaryGate
+from qvm.virtual_gate import VirtualBinaryGate
 from qvm.result import Result
 
 
