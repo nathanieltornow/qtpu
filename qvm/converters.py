@@ -24,6 +24,10 @@ def circuit_to_connectivity_graph(circuit: QuantumCircuit) -> nx.Graph:
     return graph
 
 
+def decompose_virtual_gates(circuit: QuantumCircuit) -> QuantumCircuit:
+    return circuit.decompose([VirtualBinaryGate])
+
+
 def deflated_circuit(circuit: QuantumCircuit) -> QuantumCircuit:
     dag = circuit_to_dag(circuit)
     qubits = set(qubit for qubit in circuit.qubits if qubit not in dag.idle_wires())

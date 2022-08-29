@@ -14,7 +14,13 @@ STANDARD_VIRTUAL_GATES: Dict[str, Type[VirtualBinaryGate]] = {
 }
 
 
-class VirtualTranspiler(ABC):
+class DecompositionTranspiler(ABC):
+    @abstractmethod
+    def run(self, circuit: QuantumCircuit) -> FragmentedCircuit:
+        pass
+
+
+class LayoutTranspiler(ABC):
     @abstractmethod
     def run(
         self, circuit: QuantumCircuit, backend: Optional[Backend] = None
@@ -22,14 +28,11 @@ class VirtualTranspiler(ABC):
         pass
 
 
-class DistributedTranspiler(ABC):
-    _backends: List[Backend]
-
-    def __init__(self, available_backends: List[Backend]) -> None:
-        self._backends = available_backends
-
+class MappingTranspiler(ABC):
     @abstractmethod
-    def run(self, frag_circ: FragmentedCircuit) -> None:
+    def run(
+        self, frag_circ: FragmentedCircuit, available_backends: List[Backend]
+    ) -> None:
         pass
 
 
@@ -44,5 +47,7 @@ def virtualize_connection(
     for i in range(len(circuit.data)):
         circ_instr = circuit.data[i]
         if set(circ_instr.qubits) == {qubit1, qubit2} and len(circ_instr.clbits) == 0:
-            vgate = virtual_gates[circ_instr.operation.name](circ_instr.operation)
+            vgate = virtual_gates[circ_instr.operation.name](
+                circ_instr.operation.params
+            )
             circuit.data[i] = CircuitInstruction(vgate, circ_instr.qubits, ())

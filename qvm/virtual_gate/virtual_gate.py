@@ -1,39 +1,37 @@
 from abc import ABC, abstractmethod
 from cProfile import label
 import itertools
-from typing import List, Tuple, Type
-from qiskit.circuit.quantumcircuit import (
-    QuantumCircuit,
-    Instruction,
-)
-from qiskit.circuit.library import IGate
+from re import A
+from typing import List, Optional, Tuple, Type
+from qiskit.circuit.quantumcircuit import QuantumCircuit, Instruction, Gate
 
 from qvm.result import Result
 
 
-class VirtualGateEndpoint(Instruction):
+class VirtualGateEndpoint(Gate):
     def __init__(self, gate: Instruction, index: int):
         assert index in [0, 1]
-        super().__init__("vgate_end", 1, 0, gate.params)
+        super().__init__(f"vgate_end", 1, gate.params, label=f"vgate_{index}")
         self.index = index
         self.gate = gate
 
 
-class VirtualBinaryGate(Instruction, ABC):
+class VirtualBinaryGate(Gate, ABC):
 
     _ids = itertools.count(0)
 
-    def __init__(self, original_gate: Instruction):
+    def __init__(self, params: Optional[List] = None):
+        if params is None:
+            params = []
         self.id = next(self._ids)
-        if original_gate.num_qubits != 2 or original_gate.num_clbits > 0:
-            raise ValueError("The original gate must be a binary gate.")
-        if type(original_gate) != self.original_gate_type():
-            raise ValueError(
-                f"Cannot virtualize {type(original_gate)} with virtual gate for {self.original_gate_type()}"
+        if len(params) == 0:
+            super().__init__(
+                f"v_{self.original_gate_type()().name}", 2, params=list(params)
             )
-        super().__init__(
-            f"vgate", 2, 0, original_gate.params, label="virt"
-        )
+        else:
+            super().__init__(
+                f"v_{self.original_gate_type()(*params).name}", 2, params=list(params)
+            )
 
     def __eq__(self, other):
         return super().__eq__(other) and self.id == other.id

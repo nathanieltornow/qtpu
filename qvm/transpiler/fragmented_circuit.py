@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Sequence, Set, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
 from qiskit.circuit.quantumcircuit import (
     QuantumCircuit,
     QuantumRegister,
@@ -31,6 +31,19 @@ class Fragment(QuantumCircuit):
             backend = AerSimulator()
         self.backend = backend
 
+    @staticmethod
+    def from_circuit(circuit: QuantumCircuit) -> "Fragment":
+        frag = Fragment(
+            *circuit.qregs,
+            *circuit.cregs,
+            name=circuit.name,
+            global_phase=circuit.global_phase,
+            metadata=circuit.metadata,
+        )
+        for circ_instr in circuit:
+            frag.append(circ_instr)
+        return frag
+
     def __hash__(self) -> int:
         return hash(self.name)
 
@@ -39,10 +52,9 @@ class Fragment(QuantumCircuit):
 
 
 class FragmentedCircuit:
-    _fragments: Set[Fragment]
+    _fragments: List[Fragment]
 
     def __init__(self, circuit: QuantumCircuit):
-        circuit = circuit.decompose()
         con_graph = circuit_to_connectivity_graph(circuit)
 
         node_sets = list(nx.connected_components(con_graph))
@@ -63,7 +75,7 @@ class FragmentedCircuit:
                 [qubit_map[q][1] for q in circ_instr.qubits],
                 circ_instr.clbits,
             )
-        self._fragments = set(new_frags)
+        self._fragments = new_frags
 
     def __str__(self) -> str:
         frag_l = list(self._fragments)
@@ -73,6 +85,6 @@ class FragmentedCircuit:
         return circstr
 
     @property
-    def fragments(self) -> Set[QuantumCircuit]:
+    def fragments(self) -> List[QuantumCircuit]:
         # shallow copy of fragments since they should not be modified
         return self._fragments
