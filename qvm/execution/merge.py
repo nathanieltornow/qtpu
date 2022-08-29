@@ -61,20 +61,3 @@ def merge(
     for conf_id in config_ids:
         merged_results.append(merge_one(conf_id, results))
     return merged_results
-
-
-def zip_results(
-    config_ids: List[Tuple[int, ...]], results: List[Tuple[Tuple[int, ...], Result]]
-) -> List[Result]:
-    it = iter(results)
-    zipped: List[Result] = []
-    for conf_id in config_ids:
-        while True:
-            n = next(it, None)
-            if n is None:
-                return zipped
-            if _match_config_id(conf_id, n[0]) is not None:
-                zipped.append(next(it)[1])
-            else:
-                break
-    return zipped
