@@ -771,6 +771,18 @@ htmlsoup = ["beautifulsoup4"]
 source = ["Cython (>=0.29.7)"]
 
 [[package]]
+name = "mapomatic"
+version = "0.6.0"
+description = "Mapomatic"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+qiskit-terra = ">=0.19"
+retworkx = ">=0.10.2"
+
+[[package]]
 name = "markupsafe"
 version = "2.1.1"
 description = "Safely add untrusted strings to HTML/XML markup."
@@ -1897,7 +1909,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.0"
-content-hash = "3add998d09d3248b1b5362d501a972789f81b442c89bd8e02cde501e0c7dbaeb"
+content-hash = "68db3b852119e7682921faa84e458119e0ec594b0b848bff23065dde4867092d"
 
 [metadata.files]
 appnope = [
@@ -2076,6 +2088,9 @@ kiwisolver = []
 kubernetes = []
 lithops = []
 lxml = []
+mapomatic = [
+    {file = "mapomatic-0.6.0.tar.gz", hash = "sha256:0440a4284a4124e81b023dd73d767903cd9e0ded5195564d26b73af269a8d430"},
+]
 markupsafe = [
     {file = "MarkupSafe-2.1.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:86b1f75c4e7c2ac2ccdaec2b9022845dbb81880ca318bb7a0a01fbf7813e3812"},
     {file = "MarkupSafe-2.1.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:f121a1420d4e173a5d96e47e9a0c0dcff965afdf1626d28de1460815f7c4ee7a"},

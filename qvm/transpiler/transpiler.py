@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Optional, Tuple, Type
 
 from qiskit.circuit import QuantumCircuit, CircuitInstruction, Qubit
+from qiskit.transpiler.basepasses import BasePass
 from qiskit.providers import Backend
+from qiskit.dagcircuit import DAGCircuit
 
 from qvm.virtual_gate import VirtualBinaryGate, VirtualCZ, VirtualCX, VirtualRZZ
 from .fragmented_circuit import FragmentedCircuit
@@ -14,40 +16,30 @@ STANDARD_VIRTUAL_GATES: Dict[str, Type[VirtualBinaryGate]] = {
 }
 
 
-class DecompositionTranspiler(ABC):
+class VirtualizationPass(BasePass):
     @abstractmethod
-    def run(self, circuit: QuantumCircuit) -> FragmentedCircuit:
+    def run(self, dag: DAGCircuit) -> None:
         pass
 
 
-class LayoutTranspiler(ABC):
+class DistributedPass(ABC):
     @abstractmethod
-    def run(
-        self, circuit: QuantumCircuit, backend: Optional[Backend] = None
-    ) -> QuantumCircuit:
-        pass
-
-
-class MappingTranspiler(ABC):
-    @abstractmethod
-    def run(
-        self, frag_circ: FragmentedCircuit, available_backends: List[Backend]
-    ) -> None:
+    def run(self, frag_circ: FragmentedCircuit) -> None:
         pass
 
 
 def virtualize_connection(
-    circuit: QuantumCircuit,
-    qubit1: Qubit,
-    qubit2: Qubit,
-    virtual_gates: Dict[str, Type[VirtualBinaryGate]] = STANDARD_VIRTUAL_GATES,
-):
-    if not {qubit1, qubit2} <= set(circuit.qubits):
-        raise ValueError(f"qubits {qubit1, qubit2} not in circuit")
-    for i in range(len(circuit.data)):
-        circ_instr = circuit.data[i]
-        if set(circ_instr.qubits) == {qubit1, qubit2} and len(circ_instr.clbits) == 0:
-            vgate = virtual_gates[circ_instr.operation.name](
-                circ_instr.operation.params
+    dag: DAGCircuit,
+    qarg1: Qubit,
+    qarg2: Qubit,
+    vgate_type: Dict[str, Type[VirtualBinaryGate]] = STANDARD_VIRTUAL_GATES,
+) -> None:
+    for op_node in dag.op_nodes:
+        if (
+            len(op_node.qargs) == 2
+            and len(op_node.qargs) == 0
+            and set(op_node.qargs) <= {qarg1, qarg2}
+        ):
+            dag.substitute_node(
+                op_node, vgate_type[op_node.name](op_node.params), inplace=True
             )
-            circuit.data[i] = CircuitInstruction(vgate, circ_instr.qubits, ())

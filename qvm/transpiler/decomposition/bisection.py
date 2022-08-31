@@ -1,17 +1,14 @@
-from typing import Optional
 from networkx.algorithms.community import kernighan_lin_bisection
-from qiskit.circuit import QuantumCircuit
-from qiskit.providers import Backend
+from qiskit.dagcircuit import DAGCircuit
 
-from qvm.transpiler.transpiler import VirtualTranspiler, virtualize_connection
+from qvm.transpiler.transpiler import VirtualizationPass, virtualize_connection
+from qvm.converters import dag_to_connectivity_graph
 
 
-class Bisection(VirtualTranspiler):
-    def run(
-        self, circuit: QuantumCircuit, backend: Optional[Backend] = None
-    ) -> QuantumCircuit:
-        A, B = kernighan_lin_bisection(circuit.graph)
+class Bisection(VirtualizationPass):
+    def run(self, dag: DAGCircuit) -> None:
+        cg = dag_to_connectivity_graph(dag)
+        A, B = kernighan_lin_bisection(cg)
         for nodeA in A:
             for nodeB in B:
-                virtualize_connection(circuit, nodeA, nodeB)
-        return circuit
+                virtualize_connection(dag, nodeA, nodeB)

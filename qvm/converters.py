@@ -1,31 +1,41 @@
 import itertools
-from typing import Dict, List, Set, Tuple
+from typing import Dict
 from qiskit.circuit import QuantumCircuit, QuantumRegister, Qubit
+from qiskit.dagcircuit import DAGCircuit
 from qiskit.converters import circuit_to_dag
 import networkx as nx
 
 from qvm.virtual_gate import VirtualBinaryGate
 
 
-def circuit_to_connectivity_graph(circuit: QuantumCircuit) -> nx.Graph:
+def dag_to_connectivity_graph(dag: DAGCircuit) -> nx.Graph:
     graph = nx.Graph()
     bb = nx.edge_betweenness_centrality(graph, normalized=False)
     nx.set_edge_attributes(graph, bb, "weight")
-    graph.add_nodes_from(circuit.qubits)
-    for instr in circuit.data:
-        if isinstance(instr.operation, VirtualBinaryGate):
+    graph.add_nodes_from(dag.qubits)
+    for node in dag.op_nodes:
+        if isinstance(node.op, VirtualBinaryGate):
             continue
-
-        if len(instr.qubits) >= 2:
-            for qubit1, qubit2 in itertools.combinations(instr.qubits, 2):
-                if not graph.has_edge(qubit1, qubit2):
-                    graph.add_edge(qubit1, qubit2, weight=0)
-                graph[qubit1][qubit2]["weight"] += 1
+        if len(node.qargs) >= 2:
+            for qarg1, qarg2 in itertools.combinations(node.qargs, 2):
+                if not graph.has_edge(qarg1, qarg2):
+                    graph.add_edge(qarg1, qarg2, weight=0)
+                graph[qarg1][qarg2]["weight"] += 1
     return graph
 
 
+def circuit_to_connectivity_graph(circuit: QuantumCircuit) -> nx.Graph:
+    dag = circuit_to_dag(circuit)
+    return dag_to_connectivity_graph(dag)
+
+
 def decompose_virtual_gates(circuit: QuantumCircuit) -> QuantumCircuit:
-    return circuit.decompose([VirtualBinaryGate])
+    circuit = circuit.decompose(
+        [
+            VirtualBinaryGate,
+        ]
+    )
+    return circuit.decompose(["vgate_end"])
 
 
 def deflated_circuit(circuit: QuantumCircuit) -> QuantumCircuit:

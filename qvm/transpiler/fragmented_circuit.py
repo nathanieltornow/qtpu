@@ -52,14 +52,14 @@ class Fragment(QuantumCircuit):
 
 
 class FragmentedCircuit:
-    _fragments: List[Fragment]
+    _fragments: Set[Fragment]
 
     def __init__(self, circuit: QuantumCircuit):
         con_graph = circuit_to_connectivity_graph(circuit)
 
         node_sets = list(nx.connected_components(con_graph))
         new_frags = [
-            Fragment(QuantumRegister(len(nodes)), *circuit.cregs, name=f"frag_{i}")
+            Fragment(QuantumRegister(len(nodes)), *circuit.cregs)
             for i, nodes in enumerate(node_sets)
         ]
         qubit_map: Dict[Qubit, Tuple[Fragment, Qubit]] = {}  # old -> new Qubit
@@ -75,7 +75,7 @@ class FragmentedCircuit:
                 [qubit_map[q][1] for q in circ_instr.qubits],
                 circ_instr.clbits,
             )
-        self._fragments = new_frags
+        self._fragments = set(new_frags)
 
     def __str__(self) -> str:
         frag_l = list(self._fragments)
@@ -85,6 +85,18 @@ class FragmentedCircuit:
         return circstr
 
     @property
-    def fragments(self) -> List[QuantumCircuit]:
+    def fragments(self) -> Set[QuantumCircuit]:
         # shallow copy of fragments since they should not be modified
-        return self._fragments
+        return self._fragments.copy()
+
+    def to_circuit(self) -> QuantumCircuit:
+        pass
+
+    def replace_fragment(self, fragment: Fragment, new_circuit: QuantumCircuit) -> None:
+        if fragment.cregs != new_circuit.cregs:
+            raise ValueError("Cregs must be the same")
+        self._fragments.remove(fragment)
+        self._fragments.add(Fragment.from_circuit(new_circuit))
+
+    def merge_fragments(self, frag1: Fragment, frag2: Fragment) -> None:
+        pass
