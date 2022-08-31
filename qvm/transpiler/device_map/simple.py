@@ -19,4 +19,4 @@ class SimpleDeviceMapping(DistributedPass):
         fragments = frag_circ.fragments
         for frag in fragments:
             t_circ = transpile(frag, self.backend, **self.transpile_flags)
-            frag_circ.replace_fragment(frag, t_circ)
+            frag_circ.replace_fragment(frag, t_circ, self.backend)

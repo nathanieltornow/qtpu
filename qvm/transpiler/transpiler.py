@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Tuple, Type
+from typing import Dict, Type
 
-from qiskit.circuit import QuantumCircuit, CircuitInstruction, Qubit
+from qiskit.circuit import Qubit
 from qiskit.transpiler.basepasses import BasePass
-from qiskit.providers import Backend
 from qiskit.dagcircuit import DAGCircuit
 
 from qvm.virtual_gate import VirtualBinaryGate, VirtualCZ, VirtualCX, VirtualRZZ

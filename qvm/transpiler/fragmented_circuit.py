@@ -16,7 +16,7 @@ from qvm.converters import circuit_to_connectivity_graph
 
 
 class Fragment(QuantumCircuit):
-    backend: Backend
+    backend: Optional[Backend]
 
     def __init__(
         self,
@@ -27,8 +27,6 @@ class Fragment(QuantumCircuit):
         backend: Optional[Backend] = None,
     ):
         super().__init__(*regs, name=name, global_phase=global_phase, metadata=metadata)
-        if backend is None:
-            backend = AerSimulator()
         self.backend = backend
 
     @staticmethod
@@ -92,11 +90,18 @@ class FragmentedCircuit:
     def to_circuit(self) -> QuantumCircuit:
         pass
 
-    def replace_fragment(self, fragment: Fragment, new_circuit: QuantumCircuit) -> None:
+    def replace_fragment(
+        self,
+        fragment: Fragment,
+        new_circuit: QuantumCircuit,
+        backend: Optional[Backend] = None,
+    ) -> None:
         if fragment.cregs != new_circuit.cregs:
             raise ValueError("Cregs must be the same")
         self._fragments.remove(fragment)
-        self._fragments.add(Fragment.from_circuit(new_circuit))
+        new_frag = Fragment.from_circuit(new_circuit)
+        new_frag.backend = backend
+        self._fragments.add(new_frag)
 
     def merge_fragments(self, frag1: Fragment, frag2: Fragment) -> None:
         pass

@@ -1,3 +1,2 @@
-from qvm.transpiler.transpiler import virtualize_connection
 from qvm.transpiler.fragmented_circuit import FragmentedCircuit, Fragment
-from qvm.execution.exec import execute_fragmented_circuit
+from .qvm import transpile, execute
