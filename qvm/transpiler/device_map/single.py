@@ -17,9 +17,8 @@ class SingleDeviceMapping(DistributedPass):
 
     def run(self, frag_circ: FragmentedCircuit) -> None:
         fragments = frag_circ.fragments
-        basis_gates = ["vg"] + ["sx", "cx", "rz", "x"]
         for frag in fragments:
             t_circ = transpile(
-                frag, self.backend, basis_gates=basis_gates, **self.transpile_flags
+                frag, self.backend, **self.transpile_flags
             )
             frag_circ.replace_fragment(frag, t_circ, self.backend)
