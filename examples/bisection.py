@@ -13,7 +13,7 @@ circuit = QuantumCircuit.from_qasm_file("examples/qasm/hamiltonian.qasm")
 cp = circuit.copy()
 print(circuit)
 
-virt_passes: List[VirtualizationPass] = [LadderDecomposition(2)]
+virt_passes: List[VirtualizationPass] = [Bisection()]
 distr_passes: List[DistributedPass] = [SingleDeviceMapping(AerSimulator())]
 
 frag_circ = transpile(circuit, virt_passes=virt_passes, distr_passes=distr_passes)
