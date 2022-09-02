@@ -33,12 +33,12 @@ def virtualize_connection(
     qarg2: Qubit,
     vgate_type: Dict[str, Type[VirtualBinaryGate]] = STANDARD_VIRTUAL_GATES,
 ) -> None:
-    for op_node in dag.op_nodes:
+    for op_node in dag.op_nodes():
         if (
             len(op_node.qargs) == 2
-            and len(op_node.qargs) == 0
+            and len(op_node.cargs) == 0
             and set(op_node.qargs) <= {qarg1, qarg2}
         ):
             dag.substitute_node(
-                op_node, vgate_type[op_node.name](op_node.params), inplace=True
+                op_node, vgate_type[op_node.op.name](op_node.op.params), inplace=True
             )

@@ -5,7 +5,7 @@ from qiskit.circuit.quantumcircuit import QuantumCircuit, Instruction
 from qiskit.circuit.library.standard_gates import CZGate
 
 from qvm.result import Result
-from qvm.circuitvirtual_gate.virtual_gate import VirtualBinaryGate
+from qvm.virtual_gate.virtual_gate import VirtualBinaryGate
 
 
 class VirtualCZ(VirtualBinaryGate):

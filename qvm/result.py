@@ -109,6 +109,7 @@ class Result:
     @staticmethod
     def from_counts(counts: Dict[str, int]) -> "Result":
         base = 2
+        print(counts)
         some_state = list(counts.keys())[0].replace(" ", "")
         if some_state.startswith("0x"):
             base = 16

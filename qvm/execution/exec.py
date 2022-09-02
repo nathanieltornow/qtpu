@@ -26,6 +26,9 @@ def _execute_fragment(
         frag.backend = AerSimulator()
     circ_l = [c.decompose(["conf"]) for c in circs]
     counts = frag.backend.run(circ_l, shots=shots).result().get_counts()
+    if isinstance(counts, dict):
+        assert len(conf_ids) == 1
+        counts = [counts]
     return dict(zip(conf_ids, [Result.from_counts(cnt) for cnt in counts]))
 
 

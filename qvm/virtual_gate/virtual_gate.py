@@ -4,16 +4,28 @@ import itertools
 from re import A
 from typing import List, Optional, Tuple, Type
 from qiskit.circuit.quantumcircuit import QuantumCircuit, Instruction, Gate
+from qiskit.circuit.library import Barrier
 
 from qvm.result import Result
 
 
-class VirtualGateEndpoint(Gate):
-    def __init__(self, gate: Instruction, index: int):
+class VirtualGateEndpoint(Barrier):
+    def __init__(self, gate: Gate, index: int):
         assert index in [0, 1]
-        super().__init__(f"vgate_end", 1, gate.params, label=f"vgate_{index}")
+        super().__init__(1)
         self.index = index
         self.gate = gate
+
+    # def __init__(self, gate: Instruction, index: int):
+    #     assert index in [0, 1]
+    #     super().__init__(f"vg", 1, gate.params, label=f"vgate_{index}")
+    #     self.index = index
+    #     self.gate = gate
+
+    # def _define(self):
+    #     circ = QuantumCircuit(1)
+    #     circ.append(self, (0,), ())
+    #     self._definition = circ
 
 
 class VirtualBinaryGate(Gate, ABC):

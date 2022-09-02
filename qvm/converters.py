@@ -13,7 +13,7 @@ def dag_to_connectivity_graph(dag: DAGCircuit) -> nx.Graph:
     bb = nx.edge_betweenness_centrality(graph, normalized=False)
     nx.set_edge_attributes(graph, bb, "weight")
     graph.add_nodes_from(dag.qubits)
-    for node in dag.op_nodes:
+    for node in dag.op_nodes():
         if isinstance(node.op, VirtualBinaryGate):
             continue
         if len(node.qargs) >= 2:
