@@ -1,10 +1,14 @@
-from typing import Dict, List, Optional
+import itertools
+from typing import Dict, List, Optional, Sequence, Set, Union
 
-from qiskit.circuit import (
+from qiskit.circuit.quantumcircuit import (
     QuantumCircuit,
+    Register,
     QuantumRegister,
     ClassicalRegister,
+    Bit,
     Qubit,
+    ParameterValueType,
 )
 from qiskit.providers import Backend
 import networkx as nx
@@ -30,16 +34,26 @@ class MappedRegister(QuantumRegister):
 
 class VirtualCircuit(QuantumCircuit):
     @staticmethod
-    def from_circuit(circuit: QuantumCircuit) -> "VirtualCircuit":
-        con_graph = circuit_to_connectivity_graph(circuit)
-        node_sets = list(nx.connected_components(con_graph))
+    def from_circuit(
+        circuit: QuantumCircuit, qubit_groups: Optional[List[Set[Qubit]]] = None
+    ) -> "VirtualCircuit":
+        if qubit_groups is not None:
+            # check qubit-groups
+            if set().union(*qubit_groups) != set(circuit.qubits) or bool(
+                set().intersection(*qubit_groups)
+            ):
+                raise ValueError("qubit-groups not valid")
+
+        else:
+            con_graph = circuit_to_connectivity_graph(circuit)
+            qubit_groups = list(nx.connected_components(con_graph))
 
         new_frags = [
             QuantumRegister(len(nodes), name=f"frag_{i}")
-            for i, nodes in enumerate(node_sets)
+            for i, nodes in enumerate(qubit_groups)
         ]
         qubit_map: Dict[Qubit, Qubit] = {}  # old -> new Qubit
-        for nodes, circ in zip(node_sets, new_frags):
+        for nodes, circ in zip(qubit_groups, new_frags):
             node_l = list(nodes)
             for i in range(len(node_l)):
                 qubit_map[node_l[i]] = circ[i]
@@ -59,6 +73,10 @@ class VirtualCircuit(QuantumCircuit):
                 circ_instr.clbits,
             )
         return vc
+
+    @property
+    def fragments(self) -> List[QuantumRegister]:
+        return self.qregs
 
     @property
     def num_fragments(self) -> int:
@@ -94,8 +112,14 @@ class VirtualCircuit(QuantumCircuit):
         self,
         fragment: QuantumRegister,
         backend: Backend,
-        initial_layout: Optional[List[int]],
+        initial_layout: Optional[List[int]] = None,
     ) -> None:
         mapped_register = MappedRegister(fragment, backend, initial_layout)
         reg_index = self.qregs.index(fragment)
         self.qregs[reg_index] = mapped_register
+
+    def fragment_as_circuit(self, fragment: QuantumRegister) -> QuantumCircuit:
+        circ = QuantumCircuit(fragment, *self.cregs)
+        for instr in self.data:
+            if set(instr.qubits) <= set(fragment):
+                circ.append(instr.operation, instr.qubits, instr.clbits)
