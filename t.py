@@ -6,7 +6,7 @@ from qiskit.circuit.quantumcircuit import Qubit, Instruction, CircuitInstruction
 from qiskit.circuit.library.standard_gates import CZGate
 from qvm.execution.exec import execute_fragmented_circuit
 
-from qvm.transpiler.fragmented_circuit import FragmentedCircuit, Fragment
+from qvm.circuit import VirtualCircuit, Fragment
 from qvm.bench.fidelity import fidelity
 from qiskit.providers.aer import AerSimulator
 from qiskit.circuit.random import random_circuit
@@ -52,7 +52,7 @@ circuit.compose(random_circuit(5, 2, 1, True), inplace=True)
 circ_cp = circuit.copy()
 
 
-from qvm.transpiler.transpiler import virtualize_connection
+from qvm.cut.transpiler import virtualize_connection
 
 virtualize_connection(circuit, circuit.qubits[1], circuit.qubits[2])
 virtualize_connection(circuit, circuit.qubits[3], circuit.qubits[4])
@@ -60,7 +60,7 @@ virtualize_connection(circuit, circuit.qubits[3], circuit.qubits[4])
 print(circuit)
 # print(circuit.decompose([VirtualBinaryGate,]))
 # # exit(0)
-frag_circ = FragmentedCircuit(
+frag_circ = VirtualCircuit(
     circuit.decompose(
         [
             VirtualBinaryGate,

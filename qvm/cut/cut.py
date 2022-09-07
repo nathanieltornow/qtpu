@@ -2,11 +2,9 @@ from abc import ABC, abstractmethod
 from typing import Dict, Type
 
 from qiskit.circuit import Qubit
-from qiskit.transpiler.basepasses import BasePass
 from qiskit.dagcircuit import DAGCircuit
 
 from qvm.virtual_gate import VirtualBinaryGate, VirtualCZ, VirtualCX, VirtualRZZ
-from .fragmented_circuit import FragmentedCircuit
 
 STANDARD_VIRTUAL_GATES: Dict[str, Type[VirtualBinaryGate]] = {
     "cz": VirtualCZ,
@@ -15,19 +13,7 @@ STANDARD_VIRTUAL_GATES: Dict[str, Type[VirtualBinaryGate]] = {
 }
 
 
-class VirtualizationPass(BasePass):
-    @abstractmethod
-    def run(self, dag: DAGCircuit) -> None:
-        pass
-
-
-class DistributedPass(ABC):
-    @abstractmethod
-    def run(self, frag_circ: FragmentedCircuit) -> None:
-        pass
-
-
-def virtualize_connection(
+def cut_qubit_connection(
     dag: DAGCircuit,
     qarg1: Qubit,
     qarg2: Qubit,

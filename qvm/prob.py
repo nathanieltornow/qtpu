@@ -2,10 +2,8 @@ from typing import Dict, Tuple, Union
 
 from sortedcontainers import SortedDict
 
-from operator import add, sub
 
-
-class Result:
+class ProbDistribution:
     _probs: SortedDict[int, float]
     _num_meas: int
 
@@ -25,13 +23,13 @@ class Result:
             state = int(state, base)
         return self._probs[state]
 
-    def __add__(self, other: "Result") -> "Result":
+    def __add__(self, other: "ProbDistribution") -> "ProbDistribution":
         if self._num_meas != other._num_meas:
             raise Exception("The number of measurements must be the same")
         if len(self._probs) == 0:
-            return Result(other._probs.copy(), self._num_meas)
+            return ProbDistribution(other._probs.copy(), self._num_meas)
         if len(other._probs) == 0:
-            return Result(self._probs.copy(), self._num_meas)
+            return ProbDistribution(self._probs.copy(), self._num_meas)
 
         first = list(self._probs.items())
         second = list(other._probs.items())
@@ -56,16 +54,16 @@ class Result:
         while j < len(second):
             res_probs[second[j][0]] = second[j][1]
             j += 1
-        return Result(res_probs, self._num_meas)
+        return ProbDistribution(res_probs, self._num_meas)
 
-    def __sub__(self, other: "Result") -> "Result":
+    def __sub__(self, other: "ProbDistribution") -> "ProbDistribution":
         if self._num_meas != other._num_meas:
             raise Exception("The number of measurements must be the same")
         if len(self._probs) == 0:
             new_probs = {state: -p for state, p in other._probs.items()}
-            return Result(new_probs, self._num_meas)
+            return ProbDistribution(new_probs, self._num_meas)
         if len(other._probs) == 0:
-            return Result(self._probs.copy(), self._num_meas)
+            return ProbDistribution(self._probs.copy(), self._num_meas)
 
         first = list(self._probs.items())
         second = list(other._probs.items())
@@ -90,13 +88,13 @@ class Result:
         while j < len(second):
             res_probs[second[j][0]] = -second[j][1]
             j += 1
-        return Result(res_probs, self._num_meas)
+        return ProbDistribution(res_probs, self._num_meas)
 
-    def __mul__(self, other: float) -> "Result":
+    def __mul__(self, other: float) -> "ProbDistribution":
         result = SortedDict({})
         for state, prob in self._probs.items():
             result[state] = prob * other
-        return Result(result, self._num_meas)
+        return ProbDistribution(result, self._num_meas)
 
     def counts(self, total_counts: int = 20000) -> Dict[str, int]:
         counts = {}
@@ -107,9 +105,8 @@ class Result:
         return counts
 
     @staticmethod
-    def from_counts(counts: Dict[str, int]) -> "Result":
+    def from_counts(counts: Dict[str, int]) -> "ProbDistribution":
         base = 2
-        print(counts)
         some_state = list(counts.keys())[0].replace(" ", "")
         if some_state.startswith("0x"):
             base = 16
@@ -121,9 +118,9 @@ class Result:
             }
         )
         num_meas = len(some_state)
-        return Result(probs, num_meas)
+        return ProbDistribution(probs, num_meas)
 
-    def without_first_bit(self) -> Tuple["Result", "Result"]:
+    def without_first_bit(self) -> Tuple["ProbDistribution", "ProbDistribution"]:
         cmp = 1 << (self._num_meas - 1)
         strip = cmp - 1
         probs1 = SortedDict({})
@@ -133,12 +130,14 @@ class Result:
                 probs2[state & strip] = prob
             else:
                 probs1[state & strip] = prob
-        return Result(probs1, self._num_meas - 1), Result(probs2, self._num_meas - 1)
+        return ProbDistribution(probs1, self._num_meas - 1), ProbDistribution(
+            probs2, self._num_meas - 1
+        )
 
-    def merge(self, other: "Result") -> "Result":
+    def merge(self, other: "ProbDistribution") -> "ProbDistribution":
         num_meas = max(self._num_meas, other._num_meas)
         res = SortedDict({})
         for state1, prob1 in self._probs.items():
             for state2, prob2 in other._probs.items():
                 res[state1 | state2] = prob1 * prob2
-        return Result(res, num_meas)
+        return ProbDistribution(res, num_meas)

@@ -4,7 +4,7 @@ from typing import List, Type
 from qiskit.circuit.quantumcircuit import QuantumCircuit, Instruction
 from qiskit.circuit.library.standard_gates import RZZGate
 
-from qvm.result import Result
+from qvm.prob import ProbDistribution
 from qvm.virtual_gate.virtual_gate import VirtualBinaryGate
 
 
@@ -37,7 +37,7 @@ class VirtualRZZ(VirtualBinaryGate):
 
         return [conf0, conf1, conf2, conf3, conf4, conf5]
 
-    def knit(self, results: List[Result]) -> Result:
+    def knit(self, results: List[ProbDistribution]) -> ProbDistribution:
         r0, _ = results[0].without_first_bit()
         r1, _ = results[1].without_first_bit()
         r23 = results[2] + results[3]

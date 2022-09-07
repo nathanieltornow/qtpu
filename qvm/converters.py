@@ -1,6 +1,6 @@
 import itertools
 from typing import Dict
-from qiskit.circuit import QuantumCircuit, QuantumRegister, Qubit
+from qiskit.circuit import QuantumCircuit, QuantumRegister, Qubit, Barrier
 from qiskit.dagcircuit import DAGCircuit
 from qiskit.converters import circuit_to_dag
 import networkx as nx
@@ -14,7 +14,7 @@ def dag_to_connectivity_graph(dag: DAGCircuit) -> nx.Graph:
     nx.set_edge_attributes(graph, bb, "weight")
     graph.add_nodes_from(dag.qubits)
     for node in dag.op_nodes():
-        if isinstance(node.op, VirtualBinaryGate):
+        if isinstance(node.op, VirtualBinaryGate) or isinstance(node.op, Barrier):
             continue
         if len(node.qargs) >= 2:
             for qarg1, qarg2 in itertools.combinations(node.qargs, 2):

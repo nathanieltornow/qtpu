@@ -1,26 +1,28 @@
 from typing import List
 from qiskit import QuantumCircuit
 from qiskit.providers.aer import AerSimulator
+from qiskit.transpiler import PassManager
 
-from qvm import transpile, execute
-from qvm.transpiler import VirtualizationPass, DistributedPass
-from qvm.transpiler.decomposition import Bisection
-from qvm.transpiler.decomposition.ladder import LadderDecomposition
-from qvm.transpiler.device_map import SingleDeviceMapping
-from qvm.bench.fidelity import fidelity
+from qvm.cut import Bisection
+from qvm.circuit import VirtualCircuit
+from qvm.execution.executor import execute
 
 circuit = QuantumCircuit.from_qasm_file("examples/qasm/hamiltonian.qasm")
-cp = circuit.copy()
-print(circuit)
+circuit.barrier(circuit.qregs[0])
+circuit.measure_all()
 
-virt_passes: List[VirtualizationPass] = [Bisection()]
-distr_passes: List[DistributedPass] = [SingleDeviceMapping(AerSimulator())]
+pass_manager = PassManager(Bisection())
+cut_circ = pass_manager.run(circuit)
 
-frag_circ = transpile(circuit, virt_passes=virt_passes, distr_passes=distr_passes)
+print(cut_circ)
 
-for frag in frag_circ.fragments:
-    print(frag)
+vcirc = VirtualCircuit.from_circuit(cut_circ)
+print(vcirc)
 
-counts = execute(frag_circ, shots=8192)
 
-print(fidelity(cp, counts))
+result = execute(vcirc, AerSimulator(), 10000)
+print(result)
+
+from qvm.bench.fidelity import fidelity
+
+print(fidelity(circuit, result))

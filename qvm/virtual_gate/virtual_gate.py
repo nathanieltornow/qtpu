@@ -3,47 +3,22 @@ from cProfile import label
 import itertools
 from re import A
 from typing import List, Optional, Tuple, Type
-from qiskit.circuit.quantumcircuit import QuantumCircuit, Instruction, Gate
-from qiskit.circuit.library import Barrier
+from qiskit.circuit import QuantumCircuit, Instruction, Barrier
 
-from qvm.result import Result
-
-
-class VirtualGateEndpoint(Barrier):
-    def __init__(self, gate: Gate, index: int):
-        assert index in [0, 1]
-        super().__init__(1)
-        self.index = index
-        self.gate = gate
-
-    # def __init__(self, gate: Instruction, index: int):
-    #     assert index in [0, 1]
-    #     super().__init__(f"vg", 1, gate.params, label=f"vgate_{index}")
-    #     self.index = index
-    #     self.gate = gate
-
-    # def _define(self):
-    #     circ = QuantumCircuit(1)
-    #     circ.append(self, (0,), ())
-    #     self._definition = circ
+from qvm.prob import ProbDistribution
 
 
-class VirtualBinaryGate(Gate, ABC):
+class VirtualBinaryGate(Barrier, ABC):
 
     _ids = itertools.count(0)
+    params: List
 
     def __init__(self, params: Optional[List] = None):
         if params is None:
             params = []
         self.id = next(self._ids)
-        if len(params) == 0:
-            super().__init__(
-                f"v_{self.original_gate_type()().name}", 2, params=list(params)
-            )
-        else:
-            super().__init__(
-                f"v_{self.original_gate_type()(*params).name}", 2, params=list(params)
-            )
+        self.params = params
+        super().__init__(2)
 
     def __eq__(self, other):
         return super().__eq__(other) and self.id == other.id
@@ -63,7 +38,7 @@ class VirtualBinaryGate(Gate, ABC):
         pass
 
     @abstractmethod
-    def knit(self, results: List[Result]) -> Result:
+    def knit(self, results: List[ProbDistribution]) -> ProbDistribution:
         pass
 
     def configuration(self, config_id: int) -> QuantumCircuit:
@@ -95,6 +70,5 @@ class VirtualBinaryGate(Gate, ABC):
 
     def _define(self):
         qc = QuantumCircuit(2)
-        qc.append(VirtualGateEndpoint(self, 0), [0], [])
-        qc.append(VirtualGateEndpoint(self, 1), [1], [])
+        qc.append(self.original_gate_type(*self.params), [0, 1], [])
         self._definition = qc

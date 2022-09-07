@@ -1,9 +1,12 @@
-from qvm.virtual_gate import VirtualCX
-from qiskit import QuantumCircuit
+from qiskit.providers.aer import AerSimulator
+from qiskit import QuantumCircuit, transpile
+from qiskit.circuit import Instruction
+from qiskit.circuit.library import HGate
 
-circuit = QuantumCircuit(2, 2)
+from qvm.circuit import VirtualCircuit
+
+
+circuit = QuantumCircuit(3)
 circuit.h(0)
-circuit.append(VirtualCX(), (0, 1), ())
-circuit.measure(0, 0)
-circuit.measure(1, 1)
-print(circuit)
+circuit.measure_all()
+print(VirtualCircuit(circuit))
