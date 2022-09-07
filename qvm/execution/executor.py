@@ -4,7 +4,6 @@ from qiskit.providers import Backend
 import ray
 
 from qvm.circuit import VirtualCircuit
-from qvm.virtual_gate.virtual_gate import VirtualBinaryGate
 from .frag_executor import FragmentExecutor
 from .knit import knit
 

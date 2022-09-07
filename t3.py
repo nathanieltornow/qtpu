@@ -1,5 +1,9 @@
+import ray
 
-from qvm.execution.knit import chunk
+class A:
+    
+    def __init__(self) -> None:
+        self.x = 12
 
-
-print(list(chunk(range(10), 1001)))
+res = ray.get(fut)
+print(b.x)

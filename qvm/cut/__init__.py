@@ -1,1 +1,1 @@
-from .passes import Bisection
+from .passes import Bisection, LadderDecomposition
