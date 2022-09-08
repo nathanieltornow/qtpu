@@ -4,7 +4,7 @@ from qiskit import QuantumCircuit
 from qiskit.providers.aer import AerSimulator
 from qiskit.transpiler import PassManager
 
-from qvm.cut import Bisection, LadderDecomposition
+from qvm.cut import Bisection
 from qvm.circuit import VirtualCircuit
 from qvm.execution.executor import execute
 
@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 
 circuit = QuantumCircuit.from_qasm_file("examples/qasm/hamiltonian.qasm")
 
-pass_manager = PassManager(LadderDecomposition(3))
+pass_manager = PassManager(Bisection())
 cut_circ = pass_manager.run(circuit)
 
 print(cut_circ)
