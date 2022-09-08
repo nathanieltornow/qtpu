@@ -8,7 +8,6 @@ license = "Apache Version 2.0"
 [tool.poetry.dependencies]
 python = "^3.9.0"
 networkx = "^2.8.5"
-lithops = "^2.7.0"
 sortedcontainers = "^2.4.0"
 mapomatic = "^0.6.0"
 qiskit = "^0.37.2"

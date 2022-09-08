@@ -1,3 +1,4 @@
+import logging
 from typing import List
 from qiskit import QuantumCircuit
 from qiskit.providers.aer import AerSimulator
@@ -6,6 +7,8 @@ from qiskit.transpiler import PassManager
 from qvm.cut import Bisection, LadderDecomposition
 from qvm.circuit import VirtualCircuit
 from qvm.execution.executor import execute
+
+logging.basicConfig(level=logging.INFO)
 
 circuit = QuantumCircuit.from_qasm_file("examples/qasm/hamiltonian.qasm")
 
