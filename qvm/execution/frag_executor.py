@@ -5,6 +5,7 @@ import ray
 from qiskit.providers import Backend
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister, Barrier
+from qiskit.utils.run_circuits import run_circuits
 
 from qvm.circuit import VirtualCircuit, MappedRegister
 from qvm.prob import ProbDistribution
@@ -72,18 +73,11 @@ class FragmentExecutor:
         config_ids = self._config_ids()
         circs = [self._circuit_with_config(config_id) for config_id in config_ids]
         t_circs = transpile(circs, self._backend, initial_layout=self._initial_layout)
-        cnts = self._backend.run(t_circs, shots=shots).result().get_counts()
+        cnts = run_circuits(
+            t_circs, self._backend, {}, run_config={"shots": shots}
+        ).get_counts()
         for config_id, cnt in zip(self._config_ids(), cnts):
             self._results[config_id] = ProbDistribution.from_counts(cnt)
-
-    def execute_config(self, config_id: Tuple[int, ...], shots: int = 10000) -> None:
-        frag_config_id = self._frag_config_id(config_id)
-        if frag_config_id in self._results:
-            return
-        circ = self._circuit_with_config(config_id)
-        t_circ = transpile(circ, self._backend, initial_layout=self._initial_layout)
-        cnt = self._backend.run(t_circ, shots=shots).result().get_counts()
-        self._results[frag_config_id] = ProbDistribution.from_counts(cnt)
 
     def _circuit_with_config(self, config_id: Tuple[int, ...]) -> QuantumCircuit:
         conf_circ = QuantumCircuit(self._fragment, *self._vc.cregs)
