@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
-from cProfile import label
 import itertools
-from re import A
 from typing import List, Optional, Tuple, Type
 from qiskit.circuit import QuantumCircuit, Instruction, Barrier
 

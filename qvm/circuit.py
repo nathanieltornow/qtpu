@@ -1,14 +1,10 @@
-import itertools
 from typing import Dict, List, Optional, Sequence, Set, Union
 
 from qiskit.circuit.quantumcircuit import (
     QuantumCircuit,
-    Register,
     QuantumRegister,
     ClassicalRegister,
-    Bit,
     Qubit,
-    ParameterValueType,
 )
 from qiskit.providers import Backend
 import networkx as nx
