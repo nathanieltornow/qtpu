@@ -28,6 +28,7 @@ class Approximation(TransformationPass):
         ] = STANDARD_APPROXIMATIONS,
     ):
         self.approx_gates = approx_gates
+        super().__init__()
 
     def run(self, dag: DAGCircuit) -> DAGCircuit:
         for node in dag.op_nodes():

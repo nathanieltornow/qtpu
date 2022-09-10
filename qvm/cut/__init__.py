@@ -1,1 +1,1 @@
-from .passes import Bisection, LadderDecomposition
+from .passes import Bisection, LadderDecomposition, StaticCut, Approximation
