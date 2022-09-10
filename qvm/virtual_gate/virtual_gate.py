@@ -42,30 +42,6 @@ class VirtualBinaryGate(Barrier, ABC):
     def configuration(self, config_id: int) -> QuantumCircuit:
         return self.configure()[config_id]
 
-    def partial_config(self, config_id: int) -> Tuple[QuantumCircuit, QuantumCircuit]:
-        conf = self.configuration(config_id)
-        qubit0, qubit1 = tuple(conf.qubits)
-        conf0 = QuantumCircuit(1, 1, name="conf")
-        conf1 = QuantumCircuit(1, 1, name="conf")
-        for circ_inst in conf:
-            if circ_inst.qubits == (qubit0,):
-                conf0.append(
-                    circ_inst.operation,
-                    (conf0.qubits[0],),
-                    (circ_inst.clbits[0],) if len(circ_inst.clbits) > 0 else (),
-                )
-            elif circ_inst.qubits == (qubit1,):
-                conf1.append(
-                    circ_inst.operation,
-                    (conf1.qubits[0],),
-                    (circ_inst.clbits[0],) if len(circ_inst.clbits) > 0 else (),
-                )
-        conf0.i(0)
-        conf0.i(0)
-        conf1.i(0)
-        conf1.i(0)
-        return conf0, conf1
-
     def _define(self):
         qc = QuantumCircuit(2)
         qc.append(self.original_gate_type(*self.params), [0, 1], [])
