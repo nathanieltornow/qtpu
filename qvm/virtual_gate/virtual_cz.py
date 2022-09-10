@@ -41,3 +41,8 @@ class VirtualCZ(VirtualBinaryGate):
         r40, r41 = results[4].without_first_bit()
         r50, r51 = results[5].without_first_bit()
         return (r0 + r1 + (r21 - r20) + (r31 - r30) + (r40 - r41) + (r50 - r51)) * 0.5
+
+    def _define(self):
+        circuit = QuantumCircuit(2)
+        circuit.cz(0, 1)
+        self._definition = circuit

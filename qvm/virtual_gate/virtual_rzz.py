@@ -48,3 +48,8 @@ class VirtualRZZ(VirtualBinaryGate):
             + (r1 * sin(theta / 2) ** 2)
             + (r230 - r231 - r450 + r451) * cos(theta / 2) * sin(theta / 2)
         )
+
+    def _define(self):
+        circuit = QuantumCircuit(2)
+        circuit.rzz(self.params[0], 0, 1)
+        self._definition = circuit

@@ -9,14 +9,13 @@ from qvm.prob import ProbDistribution
 class VirtualBinaryGate(Barrier, ABC):
 
     _ids = itertools.count(0)
-    params: List
 
     def __init__(self, params: Optional[List] = None):
+        super().__init__(2)
         if params is None:
             params = []
         self.id = next(self._ids)
-        self.params = params
-        super().__init__(2)
+        self._params = params
 
     def __eq__(self, other):
         return super().__eq__(other) and self.id == other.id
@@ -34,8 +33,3 @@ class VirtualBinaryGate(Barrier, ABC):
 
     def configuration(self, config_id: int) -> QuantumCircuit:
         return self.configure()[config_id]
-
-    def _define(self):
-        qc = QuantumCircuit(2)
-        qc.append(self.original_gate_type(*self.params), [0, 1], [])
-        self._definition = qc
