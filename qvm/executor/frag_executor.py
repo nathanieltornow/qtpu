@@ -7,14 +7,14 @@ from qiskit import transpile
 from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister, Barrier
 from qiskit.utils.run_circuits import run_circuits
 
-from qvm.circuit import VirtualCircuit, MappedRegister
+from qvm.circuit import DistributedCircuit, MappedRegister
 from qvm.prob import ProbDistribution
 from qvm.virtual_gate.virtual_gate import VirtualBinaryGate
 
 
 @ray.remote
 class FragmentExecutor:
-    _vc: VirtualCircuit
+    _vc: DistributedCircuit
     _fragment: QuantumRegister
 
     _backend: Backend
@@ -24,7 +24,7 @@ class FragmentExecutor:
     _not_involved: Set[int]
 
     def __init__(
-        self, vc: VirtualCircuit, fragment: QuantumRegister, default_backend: Backend
+        self, vc: DistributedCircuit, fragment: QuantumRegister, default_backend: Backend
     ) -> None:
         self._vc = vc
         self._fragment = fragment

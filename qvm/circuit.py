@@ -28,11 +28,11 @@ class MappedRegister(QuantumRegister):
         super().__init__(qreg.size, qreg.name, None)
 
 
-class VirtualCircuit(QuantumCircuit):
+class DistributedCircuit(QuantumCircuit):
     @staticmethod
     def from_circuit(
         circuit: QuantumCircuit, qubit_groups: Optional[List[Set[Qubit]]] = None
-    ) -> "VirtualCircuit":
+    ) -> "DistributedCircuit":
         if qubit_groups is not None:
             # check qubit-groups
             if set().union(*qubit_groups) != set(circuit.qubits) or bool(
@@ -54,7 +54,7 @@ class VirtualCircuit(QuantumCircuit):
             for i in range(len(node_l)):
                 qubit_map[node_l[i]] = circ[i]
 
-        vc = VirtualCircuit(
+        vc = DistributedCircuit(
             *new_frags,
             *circuit.cregs,
             name=circuit.name,
@@ -119,3 +119,4 @@ class VirtualCircuit(QuantumCircuit):
         for instr in self.data:
             if set(instr.qubits) <= set(fragment):
                 circ.append(instr.operation, instr.qubits, instr.clbits)
+        return circ

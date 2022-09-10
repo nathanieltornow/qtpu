@@ -5,13 +5,13 @@ from typing import Dict
 from qiskit.providers import Backend
 import ray
 
-from qvm.circuit import VirtualCircuit
+from qvm.circuit import DistributedCircuit
 from .frag_executor import FragmentExecutor
 from .knit import knit
 
 
 def execute(
-    vc: VirtualCircuit, default_backend: Backend, shots: int = 10000
+    vc: DistributedCircuit, default_backend: Backend, shots: int = 10000
 ) -> Dict[str, int]:
     frag_execs = [
         FragmentExecutor.remote(vc, fragment, default_backend)  # type: ignore

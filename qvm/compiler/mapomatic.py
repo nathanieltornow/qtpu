@@ -1,8 +1,8 @@
 
-from qvm.circuit import VirtualCircuit
+from qvm.circuit import DistributedCircuit
 from .compiler import Compiler
 
 class MapomaticCompiler(Compiler):
     
-    def run(self, vc: VirtualCircuit) -> VirtualCircuit:
+    def run(self, vc: DistributedCircuit) -> DistributedCircuit:
         return super().run(vc)

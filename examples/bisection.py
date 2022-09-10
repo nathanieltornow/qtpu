@@ -1,12 +1,11 @@
 import logging
-from typing import List
 from qiskit import QuantumCircuit
 from qiskit.providers.aer import AerSimulator
 from qiskit.transpiler import PassManager
 
 from qvm.cut import Bisection
-from qvm.circuit import VirtualCircuit
-from qvm.execution.executor import execute
+from qvm.circuit import DistributedCircuit
+from qvm.executor.executor import execute
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,7 +16,7 @@ cut_circ = pass_manager.run(circuit)
 
 print(cut_circ)
 
-vcirc = VirtualCircuit.from_circuit(cut_circ)
+vcirc = DistributedCircuit.from_circuit(cut_circ)
 print(vcirc)
 
 
