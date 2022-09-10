@@ -1,5 +1,7 @@
 # QVM - Quantum Virtual Machine
 
+![QVM](./docs/intro.png)
+
 QVM is a framework for virtual optimization and distributed execution of quantum cricuits. It builds on the work of 
 "Constructing a virtual two-qubit gate by sampling single-qubit operations" [[1]](#1) to allow transparent use of
 binary gate virtualization, both in order to mitigate noise and allow executions of large quantum circuits on small quantum devices.
@@ -74,6 +76,7 @@ print(dist_circ)
 result = execute(dist_circ, AerSimulator(), 1000)
 print(result)
 ```
+
 
 ## References
 
