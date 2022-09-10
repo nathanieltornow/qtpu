@@ -8,8 +8,12 @@ from qvm.prob import ProbDistribution
 from qvm.virtual_gate.virtual_gate import VirtualBinaryGate
 
 
-class NoVirtualGate(VirtualBinaryGate):
-    pass
+class NoneVirtualGate(VirtualBinaryGate):
+    def configure(self) -> List[QuantumCircuit]:
+        return [QuantumCircuit(2)]
+
+    def knit(self, results: List[ProbDistribution]) -> ProbDistribution:
+        return results[0].without_first_bit()[0]
 
 
 class ApproxVirtualCZ(VirtualBinaryGate):
