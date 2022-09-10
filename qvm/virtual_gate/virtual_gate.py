@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import itertools
-from typing import List, Optional, Tuple, Type
+from typing import List, Optional, Type
 from qiskit.circuit import QuantumCircuit, Instruction, Barrier
 
 from qvm.prob import ProbDistribution
@@ -23,13 +23,6 @@ class VirtualBinaryGate(Barrier, ABC):
 
     def __hash__(self):
         return self.id
-
-    @abstractmethod
-    def original_gate_type(self) -> Type[Instruction]:
-        """
-        Returns the type of the original gate.
-        """
-        pass
 
     @abstractmethod
     def configure(self) -> List[QuantumCircuit]:

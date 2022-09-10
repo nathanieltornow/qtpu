@@ -2,16 +2,12 @@ from math import pi, sin, cos
 from typing import List, Type
 
 from qiskit.circuit.quantumcircuit import QuantumCircuit, Instruction
-from qiskit.circuit.library.standard_gates import RZZGate
 
 from qvm.prob import ProbDistribution
 from qvm.virtual_gate.virtual_gate import VirtualBinaryGate
 
 
 class VirtualRZZ(VirtualBinaryGate):
-    def original_gate_type(self) -> Type[Instruction]:
-        return RZZGate
-
     def configure(self) -> List[QuantumCircuit]:
         conf0 = QuantumCircuit(2, 1)
 
