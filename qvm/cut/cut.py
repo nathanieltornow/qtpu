@@ -19,6 +19,19 @@ def cut_qubit_connection(
     qarg2: Qubit,
     vgate_type: Dict[str, Type[VirtualBinaryGate]] = STANDARD_VIRTUAL_GATES,
 ) -> None:
+    """
+    Cut the connection between two qubits in a DAGCircuit by replacing binary gates
+    between the two qubits with a corresponding virtual gate.
+
+    Args:
+        dag (DAGCircuit): The DAGCircuit to cut.
+        qarg1 (Qubit): The first qubit.
+        qarg2 (Qubit): The second qubit.
+        vgate_type (Dict[str, Type[VirtualBinaryGate]], optional): Gate-names to the types
+            of virtual gate to use for the type of gates with that name.
+            Defaults to STANDARD_VIRTUAL_GATES.
+    """
+
     for op_node in dag.op_nodes():
         if (
             len(op_node.qargs) == 2

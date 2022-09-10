@@ -45,7 +45,7 @@ class DistributedCircuit(QuantumCircuit):
             qubit_groups = list(nx.connected_components(con_graph))
 
         new_frags = [
-            QuantumRegister(len(nodes), name=f"frag_{i}")
+            QuantumRegister(len(nodes), name=f"frag{i}")
             for i, nodes in enumerate(qubit_groups)
         ]
         qubit_map: Dict[Qubit, Qubit] = {}  # old -> new Qubit
