@@ -1,7 +1,6 @@
 import itertools
 from typing import Dict, Iterator, List, Optional, Set, Tuple
 
-import ray
 from qiskit.providers import Backend
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister, Barrier
@@ -12,7 +11,6 @@ from qvm.prob import ProbDistribution
 from qvm.virtual_gate.virtual_gate import VirtualBinaryGate
 
 
-@ray.remote
 class FragmentExecutor:
     _vc: DistributedCircuit
     _fragment: QuantumRegister
@@ -24,7 +22,10 @@ class FragmentExecutor:
     _not_involved: Set[int]
 
     def __init__(
-        self, vc: DistributedCircuit, fragment: QuantumRegister, default_backend: Backend
+        self,
+        vc: DistributedCircuit,
+        fragment: QuantumRegister,
+        default_backend: Backend,
     ) -> None:
         self._vc = vc
         self._fragment = fragment
@@ -66,10 +67,11 @@ class FragmentExecutor:
     def get_result(self, config_id: Tuple[int, ...]) -> ProbDistribution:
         frag_config_id = self._frag_config_id(config_id)
         if frag_config_id not in self._results:
-            raise ValueError("no", frag_config_id)
+            raise ValueError("no", frag_config_id, config_id)
         return self._results[frag_config_id]
 
     def execute(self, shots: int = 10000) -> None:
+        print(f"executing on {self._backend.name()}")
         config_ids = self._config_ids()
         circs = [self._circuit_with_config(config_id) for config_id in config_ids]
         t_circs = transpile(circs, self._backend, initial_layout=self._initial_layout)

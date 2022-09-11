@@ -1,11 +1,6 @@
 from typing import Dict, List, Optional, Sequence, Set, Union
 
-from qiskit.circuit.quantumcircuit import (
-    QuantumCircuit,
-    QuantumRegister,
-    ClassicalRegister,
-    Qubit,
-)
+from qiskit.circuit import QuantumCircuit, QuantumRegister, Qubit, Barrier
 from qiskit.providers import Backend
 import networkx as nx
 
@@ -16,6 +11,7 @@ from qvm.virtual_gate.virtual_gate import VirtualBinaryGate
 class MappedRegister(QuantumRegister):
     backend: Backend
     initial_layout: Optional[List[int]]
+    qreg: QuantumRegister
 
     def __init__(
         self,
@@ -23,9 +19,9 @@ class MappedRegister(QuantumRegister):
         backend: Backend,
         initial_layout: Optional[List[int]],
     ):
+        super().__init__(bits=list(qreg))
         self.backend = backend
         self.initial_layout = initial_layout
-        super().__init__(qreg.size, qreg.name, None)
 
 
 class DistributedCircuit(QuantumCircuit):
@@ -109,6 +105,10 @@ class DistributedCircuit(QuantumCircuit):
     def fragment_as_circuit(self, fragment: QuantumRegister) -> QuantumCircuit:
         circ = QuantumCircuit(fragment, *self.cregs)
         for instr in self.data:
+            if isinstance(instr.operation, Barrier) and set(instr.qubits) & set(
+                fragment
+            ):
+                circ.barrier(list(set(instr.qubits) & set(fragment)))
             if set(instr.qubits) <= set(fragment):
                 circ.append(instr.operation, instr.qubits, instr.clbits)
         return circ

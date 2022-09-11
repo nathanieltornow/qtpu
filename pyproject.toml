@@ -11,7 +11,6 @@ networkx = "^2.8.5"
 sortedcontainers = "^2.4.0"
 mapomatic = "^0.6.0"
 qiskit = "^0.37.2"
-ray = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.971"
