@@ -1,27 +1,23 @@
-from typing import Dict, List, Optional, Sequence, Set, Union
+from typing import Dict, List, Optional, Set
 
 from qiskit.circuit import QuantumCircuit, QuantumRegister, Qubit, Barrier
-from qiskit.providers import Backend
 import networkx as nx
 
 from qvm.converters import circuit_to_connectivity_graph
+from qvm.device import Device
 from qvm.virtual_gate.virtual_gate import VirtualBinaryGate
 
 
-class MappedRegister(QuantumRegister):
-    backend: Backend
-    initial_layout: Optional[List[int]]
-    qreg: QuantumRegister
+class Fragment(QuantumRegister):
+    device: Optional[Device]
 
-    def __init__(
-        self,
-        qreg: QuantumRegister,
-        backend: Backend,
-        initial_layout: Optional[List[int]],
-    ):
-        super().__init__(bits=list(qreg))
-        self.backend = backend
-        self.initial_layout = initial_layout
+    def __init__(self, size: int, name: str, device: Device = None):
+        super().__init__(size, name, None)
+        self.device = device
+
+    @staticmethod
+    def from_qreg(qreg: QuantumRegister, device: Optional[Device] = None) -> "Fragment":
+        return Fragment(len(list(qreg)), qreg.name, device)
 
 
 class DistributedCircuit(QuantumCircuit):
@@ -41,7 +37,7 @@ class DistributedCircuit(QuantumCircuit):
             qubit_groups = list(nx.connected_components(con_graph))
 
         new_frags = [
-            QuantumRegister(len(nodes), name=f"frag{i}")
+            Fragment(len(nodes), name=f"frag{i}")
             for i, nodes in enumerate(qubit_groups)
         ]
         qubit_map: Dict[Qubit, Qubit] = {}  # old -> new Qubit
@@ -67,12 +63,8 @@ class DistributedCircuit(QuantumCircuit):
         return vc
 
     @property
-    def fragments(self) -> List[QuantumRegister]:
+    def fragments(self) -> List[Fragment]:
         return self.qregs
-
-    @property
-    def num_fragments(self) -> int:
-        return len(self.qregs)
 
     @property
     def virtual_gates(self) -> List[VirtualBinaryGate]:
@@ -92,17 +84,15 @@ class DistributedCircuit(QuantumCircuit):
                 return False
         return True
 
-    def map_fragment(
+    def set_fragment_device(
         self,
-        fragment: QuantumRegister,
-        backend: Backend,
-        initial_layout: Optional[List[int]] = None,
+        fragment: Fragment,
+        device: Device,
     ) -> None:
-        mapped_register = MappedRegister(fragment, backend, initial_layout)
         reg_index = self.qregs.index(fragment)
-        self.qregs[reg_index] = mapped_register
+        self.qregs[reg_index].device = device
 
-    def fragment_as_circuit(self, fragment: QuantumRegister) -> QuantumCircuit:
+    def fragment_as_circuit(self, fragment: Fragment) -> QuantumCircuit:
         circ = QuantumCircuit(fragment, *self.cregs)
         for instr in self.data:
             if isinstance(instr.operation, Barrier) and set(instr.qubits) & set(

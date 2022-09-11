@@ -1,12 +1,10 @@
 import itertools
-from typing import Dict, Iterator, List, Optional, Set, Tuple
+from typing import Dict, Iterator, Set, Tuple
 
-from qiskit.providers import Backend
-from qiskit import transpile
 from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister, Barrier
-from qiskit.utils.run_circuits import run_circuits
 
-from qvm.circuit import DistributedCircuit, MappedRegister
+from qvm.circuit import DistributedCircuit, Fragment
+from qvm.device import Device
 from qvm.prob import ProbDistribution
 from qvm.virtual_gate.virtual_gate import VirtualBinaryGate
 
@@ -15,8 +13,7 @@ class FragmentExecutor:
     _vc: DistributedCircuit
     _fragment: QuantumRegister
 
-    _backend: Backend
-    _initial_layout: Optional[List[int]]
+    _device: Device
 
     _results: Dict[Tuple[int, ...], ProbDistribution]
     _not_involved: Set[int]
@@ -24,11 +21,14 @@ class FragmentExecutor:
     def __init__(
         self,
         vc: DistributedCircuit,
-        fragment: QuantumRegister,
-        default_backend: Backend,
+        fragment: Fragment,
+        default_device: Device,
     ) -> None:
         self._vc = vc
         self._fragment = fragment
+        self._device = default_device
+        if self._fragment.device:
+            self._device = self._fragment.device
         vgates_qubits = [
             set(instr.qubits)
             for instr in vc.data
@@ -37,11 +37,6 @@ class FragmentExecutor:
         self._not_involved = set(
             i for i, qubits in enumerate(vgates_qubits) if not (qubits & set(fragment))
         )
-        self._backend = default_backend
-        self._initial_layout = None
-        if isinstance(fragment, MappedRegister):
-            self._initial_layout = fragment.initial_layout
-            self._backend = fragment.backend
         self._results = {}
 
     def _frag_config_id(self, config_id: Tuple[int, ...]) -> Tuple[int, ...]:
@@ -71,15 +66,11 @@ class FragmentExecutor:
         return self._results[frag_config_id]
 
     def execute(self, shots: int = 10000) -> None:
-        print(f"executing on {self._backend.name()}")
         config_ids = self._config_ids()
         circs = [self._circuit_with_config(config_id) for config_id in config_ids]
-        t_circs = transpile(circs, self._backend, initial_layout=self._initial_layout)
-        cnts = run_circuits(
-            t_circs, self._backend, {}, run_config={"shots": shots}
-        ).get_counts()
-        for config_id, cnt in zip(self._config_ids(), cnts):
-            self._results[config_id] = ProbDistribution.from_counts(cnt)
+        probs = self._device.run(circs, shots)
+        for config_id, prob in zip(self._config_ids(), probs):
+            self._results[config_id] = prob
 
     def _circuit_with_config(self, config_id: Tuple[int, ...]) -> QuantumCircuit:
         conf_circ = QuantumCircuit(self._fragment, *self._vc.cregs)

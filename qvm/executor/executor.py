@@ -5,15 +5,16 @@ from typing import Dict
 from qiskit.providers import Backend
 
 from qvm.circuit import DistributedCircuit
+from qvm.device.device import Device
 from .frag_executor import FragmentExecutor
 from .knit import knit
 
 
 def execute(
-    vc: DistributedCircuit, default_backend: Backend, shots: int = 10000
+    vc: DistributedCircuit, default_device: Device, shots: int = 10000
 ) -> Dict[str, int]:
     frag_execs = [
-        FragmentExecutor(vc, fragment, default_backend) for fragment in vc.fragments
+        FragmentExecutor(vc, fragment, default_device) for fragment in vc.fragments
     ]
     exec_time = time()
     for fexec in frag_execs:

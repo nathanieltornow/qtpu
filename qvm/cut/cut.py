@@ -33,6 +33,8 @@ def cut_qubit_connection(
     """
 
     for op_node in dag.op_nodes():
+        if op_node.name == "barrier":
+            continue
         if (
             len(op_node.qargs) == 2
             and len(op_node.cargs) == 0
