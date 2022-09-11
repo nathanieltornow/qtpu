@@ -96,14 +96,6 @@ class DistributedCircuit(QuantumCircuit):
                 return False
         return True
 
-    def add_config_register(self, size: int) -> ClassicalRegister:
-        num_conf_register = sum(
-            1 for creg in self.cregs if creg.name.startswith("conf")
-        )
-        reg = ClassicalRegister(size, name=f"conf_{num_conf_register}")
-        self.add_register(reg)
-        return reg
-
     def map_fragment(
         self,
         fragment: QuantumRegister,
