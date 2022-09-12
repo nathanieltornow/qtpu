@@ -4,8 +4,8 @@ from qiskit.circuit import Qubit
 from qiskit.dagcircuit import DAGCircuit
 from qiskit.transpiler.basepasses import TransformationPass
 
-from qvm.cut.cut import cut_qubit_connection
-from qvm.converters import dag_to_connectivity_graph
+from vqc.cut.cut import cut_qubit_connection
+from vqc.converters import dag_to_connectivity_graph
 
 
 class QubitGroups(TransformationPass):

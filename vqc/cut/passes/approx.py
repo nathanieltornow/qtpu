@@ -3,7 +3,7 @@ from typing import Dict, Type
 from qiskit.dagcircuit import DAGCircuit
 from qiskit.transpiler.basepasses import TransformationPass
 
-from qvm.virtual_gate import (
+from vqc.virtual_gate import (
     VirtualBinaryGate,
     VirtualCX,
     VirtualCZ,

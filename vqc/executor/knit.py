@@ -1,8 +1,8 @@
 import itertools
 from typing import Iterable, Iterator, List, Tuple
-from qvm.executor.frag_executor import FragmentExecutor
-from qvm.prob import ProbDistribution
-from qvm.virtual_gate.virtual_gate import VirtualBinaryGate
+from vqc.executor.frag_executor import FragmentExecutor
+from vqc.prob import ProbDistribution
+from vqc.virtual_gate.virtual_gate import VirtualBinaryGate
 
 
 def chunk(l: Iterable, n: int) -> Iterator[List]:

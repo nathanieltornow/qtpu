@@ -3,7 +3,7 @@ from typing import List
 
 from qiskit import QuantumCircuit
 
-from qvm.prob import ProbDistribution
+from vqc.prob import ProbDistribution
 
 
 class Device(ABC):

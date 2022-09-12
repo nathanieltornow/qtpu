@@ -2,7 +2,7 @@ from qiskit.circuit import Qubit
 from qiskit.dagcircuit import DAGCircuit
 from qiskit.transpiler.basepasses import TransformationPass
 
-from qvm.cut.cut import cut_qubit_connection
+from vqc.cut.cut import cut_qubit_connection
 
 
 class StaticCut(TransformationPass):

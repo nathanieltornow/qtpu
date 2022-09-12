@@ -3,7 +3,7 @@ import itertools
 from typing import List, Optional, Type
 from qiskit.circuit import QuantumCircuit, Instruction, Barrier
 
-from qvm.prob import ProbDistribution
+from vqc.prob import ProbDistribution
 
 
 class VirtualBinaryGate(Barrier, ABC):

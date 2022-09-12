@@ -4,8 +4,8 @@ from typing import Dict
 
 from qiskit.providers import Backend
 
-from qvm.circuit import DistributedCircuit
-from qvm.device.device import Device
+from vqc.circuit import DistributedCircuit
+from vqc.device.device import Device
 from .frag_executor import FragmentExecutor
 from .knit import knit
 

@@ -5,7 +5,7 @@ from qiskit.dagcircuit import DAGCircuit
 from qiskit.converters import circuit_to_dag
 import networkx as nx
 
-from qvm.virtual_gate import VirtualBinaryGate
+from vqc.virtual_gate import VirtualBinaryGate
 
 
 def dag_to_connectivity_graph(dag: DAGCircuit) -> nx.Graph:

@@ -3,9 +3,9 @@ from typing import Dict, List, Optional, Set
 from qiskit.circuit import QuantumCircuit, QuantumRegister, Qubit, Barrier
 import networkx as nx
 
-from qvm.converters import circuit_to_connectivity_graph
-from qvm.device import Device
-from qvm.virtual_gate.virtual_gate import VirtualBinaryGate
+from vqc.converters import circuit_to_connectivity_graph
+from vqc.device import Device
+from vqc.virtual_gate.virtual_gate import VirtualBinaryGate
 
 
 class Fragment(QuantumRegister):

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "qvm"
+name = "vqc"
 version = "0.0.1"
 description = "Quantum Virtual Machine"
 authors = ["Nathaniel Tornow <nathaniel.tornow@tum.de>"]

@@ -4,8 +4,8 @@ from typing import List, Type
 from qiskit.circuit.quantumcircuit import QuantumCircuit, Instruction
 from qiskit.circuit.library.standard_gates import CZGate, CXGate, RZZGate
 
-from qvm.prob import ProbDistribution
-from qvm.virtual_gate.virtual_gate import VirtualBinaryGate
+from vqc.prob import ProbDistribution
+from vqc.virtual_gate.virtual_gate import VirtualBinaryGate
 
 
 class NoneVirtualGate(VirtualBinaryGate):

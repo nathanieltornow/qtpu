@@ -4,7 +4,7 @@ from typing import Dict, Type
 from qiskit.circuit import Qubit
 from qiskit.dagcircuit import DAGCircuit
 
-from qvm.virtual_gate import VirtualBinaryGate, VirtualCZ, VirtualCX, VirtualRZZ
+from vqc.virtual_gate import VirtualBinaryGate, VirtualCZ, VirtualCX, VirtualRZZ
 
 STANDARD_VIRTUAL_GATES: Dict[str, Type[VirtualBinaryGate]] = {
     "cz": VirtualCZ,
