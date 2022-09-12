@@ -27,4 +27,4 @@ for frag in dist_circ.fragments:
 
 ## [`SimDevice`](../vqc/device/sim.py)
 
-The `vqc.device.SimDevice` is a simple device that uses qiskit's `AerSimulator` to classically simulate the quantum circuits. It is the device every fragment is mapped by default.
+The `vqc.device.SimDevice` is a simple device that uses qiskit's `AerSimulator` to classically simulate the quantum circuits. Fragments map to `SimDevice` by default.
