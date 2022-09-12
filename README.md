@@ -1,4 +1,4 @@
-# QVM - Quantum Virtual Machine
+# VQC - Virtual Quantum Computing
 
 ![QVM](./docs/intro.png)
 
@@ -10,7 +10,7 @@ This project started from a [Bachelor's thesis](https://raw.githubusercontent.co
 
 ## Installation
 ```shell
-pip install qvm # TODO
+pip install vqc
 ```
 
 ## Getting Started
