@@ -17,6 +17,7 @@ black = "^22.8.0"
 jupyter = "^1.0.0"
 matplotlib = "^3.5.3"
 qiskit-aer = "^0.10.4"
+pylatexenc = "^2.10"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
