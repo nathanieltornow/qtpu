@@ -1,8 +1,8 @@
 from qiskit import QuantumCircuit
 from qiskit.providers.aer import AerSimulator
-from qvm.circuit import DistributedCircuit
-from qvm.virtual_gate import VirtualCX
-from qvm.executor import execute
+from vqc.circuit import DistributedCircuit
+from vqc.virtual_gate import VirtualCX
+from vqc.executor import execute
 
 circuit = QuantumCircuit(2)
 circuit.h(0)

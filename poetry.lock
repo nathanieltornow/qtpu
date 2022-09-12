@@ -954,6 +954,22 @@ cffi = {version = "*", markers = "implementation_name == \"pypy\""}
 py = {version = "*", markers = "implementation_name == \"pypy\""}
 
 [[package]]
+name = "qiskit-aer"
+version = "0.10.4"
+description = "Qiskit Aer - High performance simulators for Qiskit"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+numpy = ">=1.16.3"
+qiskit-terra = ">=0.19.1"
+scipy = ">=1.0"
+
+[package.extras]
+dask = ["dask", "distributed"]
+
+[[package]]
 name = "qiskit-terra"
 version = "0.21.2"
 description = "Software for developing quantum computing programs"
@@ -1257,7 +1273,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "efc362c3fefeb5cc97453372161c4b1836de977be75b027ed266e82d9fe0af69"
+content-hash = "bdbfb78701fc5ff34caff475c7393ceb41271cb12879a361f97fca8df70feb8d"
 
 [metadata.files]
 appnope = [
@@ -1798,6 +1814,7 @@ pyzmq = [
     {file = "pyzmq-23.2.1-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:407f909c4e8fde62fbdad9ebd448319792258cc0550c2815567a4d9d8d9e6d18"},
     {file = "pyzmq-23.2.1.tar.gz", hash = "sha256:2b381aa867ece7d0a82f30a0c7f3d4387b7cf2e0697e33efaa5bed6c5784abcd"},
 ]
+qiskit-aer = []
 qiskit-terra = [
     {file = "qiskit-terra-0.21.2.tar.gz", hash = "sha256:355fd3992965afdf2b402b2071b61175ad98498151e0991d229d7afc822a7ec2"},
     {file = "qiskit_terra-0.21.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:f3761cbbcc9c956cbb642ae24e1250a6a7db7c19daa98440ecab12c0403dfac6"},

@@ -5,7 +5,7 @@ from typing import Dict
 from qiskit.providers import Backend
 
 from vqc.circuit import DistributedCircuit
-from vqc.device.device import Device
+from vqc.device import Device
 from .frag_executor import FragmentExecutor
 from .knit import knit
 
