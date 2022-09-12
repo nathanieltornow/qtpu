@@ -14,39 +14,67 @@ pip install qvm # TODO
 ```
 
 ## Quick Start
+### Cutting Circuits
 
-### Virtual Gates
-
-Using `qvm.virtual_gate.VirtualGate` in qiskit circuits.
-QVM supports the three virtual gates `VirtualCX`, `VirtualCZ` and `VirtualRZZ`.
+In this example, we cut a circuit into 2 fragments by specifying
+the qubit-groups of the fragments. 
+The circuit is cut by inserting a virtual gate (graphically
+represented as a barrier).
 
 ```python
 from qiskit import QuantumCircuit
-from qiskit.providers.aer import AerSimulator
+from vqc.cut import cut, QubitGroups
 
-from qvm.circuit import DistributedCircuit
-from qvm.virtual_gate import VirtualCX
-from qvm.executor import execute
-
-circuit = QuantumCircuit(2)
-circuit.h(0)
-# append a virtual gate to the circuit
-# (virtual gates are subclasses of barriers)
-circuit.append(VirtualCX(), [0, 1])
+circuit = QuantumCircuit(4)
+circuit.h([0, 1, 2, 3])
+circuit.cx(0, 1)
+circuit.cx(2, 3)
+circuit.cx(1, 2)
+circuit.cx(0, 1)
+circuit.cx(2, 3)
 circuit.measure_all()
-print(circuit)
 
-# create a distributed circuit of the circuit with
-# virtual gates. The distributed circuit has multiple fragments,
-# each fragment is represented as a quantum register.
-dist_circ = DistributedCircuit.from_circuit(circuit)
-print(dist_circ)
-print(dist_circ.fragments)
+frag1 = {circuit.qubits[0], circuit.qubits[1]}
+frag2 = {circuit.qubits[2], circuit.qubits[3]}
 
-# execute the distributed circuit (both fragments are executed independently)
-counts = execute(dist_circ, default_backend=AerSimulator(), shots=1000)
-print(counts)
+cut_circ = cut(circuit, QubitGroups([frag1, frag2]))
+print(cut_circ)
+"""
+         ┌───┐              ░ ┌─┐         
+frag0_0: ┤ H ├──■───────■───░─┤M├─────────
+         ├───┤┌─┴─┐ ░ ┌─┴─┐ ░ └╥┘┌─┐      
+frag0_1: ┤ H ├┤ X ├─░─┤ X ├─░──╫─┤M├──────
+         ├───┤└───┘ ░ └───┘ ░  ║ └╥┘┌─┐   
+frag1_0: ┤ H ├──■───░───■───░──╫──╫─┤M├───
+         ├───┤┌─┴─┐ ░ ┌─┴─┐ ░  ║  ║ └╥┘┌─┐
+frag1_1: ┤ H ├┤ X ├───┤ X ├─░──╫──╫──╫─┤M├
+         └───┘└───┘   └───┘ ░  ║  ║  ║ └╥┘
+ meas: 4/══════════════════════╩══╩══╩══╩═
+                               0  1  2  3 
+"""
+print(cut_circ.fragments)
+for frag in cut_circ.fragments:
+    print(cut_circ.fragment_as_circuit(frag))
+"""
+[Fragment(2, 'frag0'), Fragment(2, 'frag1')]
+         ┌───┐              ░ ┌─┐   
+frag0_0: ┤ H ├──■───────■───░─┤M├───
+         ├───┤┌─┴─┐ ░ ┌─┴─┐ ░ └╥┘┌─┐
+frag0_1: ┤ H ├┤ X ├─░─┤ X ├─░──╫─┤M├
+         └───┘└───┘ ░ └───┘ ░  ║ └╥┘
+ meas: 4/══════════════════════╩══╩═
+                               0  1 
+         ┌───┐┌───┐   ┌───┐ ░    ┌─┐
+frag1_0: ┤ H ├┤ X ├───┤ X ├─░────┤M├
+         ├───┤└─┬─┘ ░ └─┬─┘ ░ ┌─┐└╥┘
+frag1_1: ┤ H ├──■───░───■───░─┤M├─╫─
+         └───┘      ░       ░ └╥┘ ║ 
+ meas: 4/══════════════════════╩══╩═
+                               2  3 
+"""
 ```
+
+### Executing
 
 ### Cut Transpilers
 
@@ -77,7 +105,7 @@ print(dist_circ)
 
 result = execute(dist_circ, AerSimulator(), 1000)
 print(result)
-```
+``` -->
 
 
 ## References

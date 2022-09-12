@@ -1,8 +1,8 @@
 from typing import Dict, Type
 
 from qiskit.dagcircuit import DAGCircuit
-from qiskit.transpiler.basepasses import TransformationPass
 
+from vqc.cut.cut import CutPass
 from vqc.virtual_gate import (
     VirtualBinaryGate,
     VirtualCX,
@@ -20,7 +20,7 @@ STANDARD_APPROXIMATIONS = {
 }
 
 
-class Approximation(TransformationPass):
+class Approximation(CutPass):
     def __init__(
         self,
         approx_gates: Dict[

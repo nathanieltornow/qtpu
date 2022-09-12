@@ -22,13 +22,12 @@ class FragmentExecutor:
         self,
         vc: DistributedCircuit,
         fragment: Fragment,
-        default_device: Device,
     ) -> None:
         self._vc = vc
         self._fragment = fragment
-        self._device = default_device
-        if self._fragment.device:
-            self._device = self._fragment.device
+        if self._fragment.device is None:
+            raise ValueError("fragment has no device")
+        self._device = self._fragment.device
         vgates_qubits = [
             set(instr.qubits)
             for instr in vc.data

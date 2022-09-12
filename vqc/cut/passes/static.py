@@ -1,11 +1,10 @@
 from qiskit.circuit import Qubit
 from qiskit.dagcircuit import DAGCircuit
-from qiskit.transpiler.basepasses import TransformationPass
 
-from vqc.cut.cut import cut_qubit_connection
+from vqc.cut.cut import cut_qubit_connection, CutPass
 
 
-class StaticCut(TransformationPass):
+class StaticCut(CutPass):
     def __init__(self, qubit1: Qubit, qubit2: Qubit):
         self.qubit1 = qubit1
         self.qubit2 = qubit2

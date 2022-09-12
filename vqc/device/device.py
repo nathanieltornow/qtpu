@@ -10,3 +10,5 @@ class Device(ABC):
     @abstractmethod
     def run(self, circuits: List[QuantumCircuit], shots: int) -> List[ProbDistribution]:
         pass
+
+

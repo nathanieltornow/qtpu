@@ -1,10 +1,9 @@
 from qiskit.dagcircuit import DAGCircuit
-from qiskit.transpiler.basepasses import TransformationPass
 
-from vqc.cut.cut import cut_qubit_connection
+from vqc.cut.cut import cut_qubit_connection, CutPass
 
 
-class LadderDecomposition(TransformationPass):
+class LadderDecomposition(CutPass):
     def __init__(self, num_partitions: int) -> None:
         self.num_partitions = num_partitions
         super().__init__()

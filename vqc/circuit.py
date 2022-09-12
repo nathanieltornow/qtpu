@@ -4,15 +4,17 @@ from qiskit.circuit import QuantumCircuit, QuantumRegister, Qubit, Barrier
 import networkx as nx
 
 from vqc.converters import circuit_to_connectivity_graph
-from vqc.device import Device
+from vqc.device import Device, SimDevice
 from vqc.virtual_gate.virtual_gate import VirtualBinaryGate
 
 
 class Fragment(QuantumRegister):
-    device: Optional[Device]
+    device: Device
 
-    def __init__(self, size: int, name: str, device: Device = None):
+    def __init__(self, size: int, name: str, device: Optional[Device] = None):
         super().__init__(size, name, None)
+        if device is None:
+            device = SimDevice()
         self.device = device
 
     @staticmethod
