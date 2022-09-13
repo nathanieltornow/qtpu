@@ -6,19 +6,21 @@ from qiskit.result.models import ExperimentResult, ExperimentResultData
 from qiskit.providers.aer import AerSimulator
 from qiskit.utils import QuantumInstance
 
+from vqc.cut import CutPass, cut
 from vqc.executor import execute
-from vqc.prob import ProbDistribution
 
 
 class VQCQuantumInstance(QuantumInstance):
     def __init__(
         self,
+        *cut_passes: CutPass,
         shots: int = 10000,
     ) -> None:
         super().__init__(
             AerSimulator(),
             shots,
         )
+        self._cut_passes = list(cut_passes)
         self.shots = shots
 
     @staticmethod
@@ -37,9 +39,6 @@ class VQCQuantumInstance(QuantumInstance):
             )
         return Result("vqc", "0.0.1", 1, 1, True, results=results)
 
-    def transpile(self, circuits, pass_manager=None):
-        return circuits
-
     def execute(
         self,
         circuits: Union[QuantumCircuit, List[QuantumCircuit]],
@@ -50,7 +49,8 @@ class VQCQuantumInstance(QuantumInstance):
 
         counts = []
         for circuit in circuits:
-            cnt = execute(circuit, self.shots)
+            cut_circ = cut(circuit, *self._cut_passes)
+            cnt = execute(cut_circ, self.shots)
             counts.append(cnt)
 
         return self._counts_to_result(counts, self.shots)
