@@ -1,19 +1,32 @@
 import itertools
-from typing import List, Set
+from typing import Dict, List, Set, Type
 from qiskit.circuit import Qubit
 from qiskit.dagcircuit import DAGCircuit
 
-from vqc.cut.cut import cut_qubit_connection, CutPass
+from vqc.cut.cut import CutPass, STANDARD_VIRTUAL_GATES
+from vqc.virtual_gate.virtual_gate import VirtualBinaryGate
 
 
 class QubitGroups(CutPass):
-    def __init__(self, groups: List[Set[Qubit]]):
+    def __init__(
+        self,
+        groups: List[Set[Qubit]],
+        vgates: Dict[str, Type[VirtualBinaryGate]] = STANDARD_VIRTUAL_GATES,
+    ):
         assert len(groups) > 0
         self.groups = groups
-        super().__init__()
+        super().__init__(vgates)
 
     def run(self, dag: DAGCircuit) -> DAGCircuit:
-        for group1, group2 in itertools.combinations(self.groups, 2):
-            for qubit1, qubit2 in itertools.product(group1, group2):
-                cut_qubit_connection(dag, qubit1, qubit2)
+        print(self.groups)
+        for op_node in dag.op_nodes():
+            if (
+                sum(1 for g in self.groups if set(op_node.qargs) & g) > 1
+                and op_node.name != "barrier"
+            ):
+                dag.substitute_node(
+                    op_node,
+                    self.vgates[op_node.op.name](op_node.op.params),
+                    inplace=True,
+                )
         return dag

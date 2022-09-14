@@ -17,7 +17,11 @@ STANDARD_VIRTUAL_GATES: Dict[str, Type[VirtualBinaryGate]] = {
 
 
 class CutPass(TransformationPass):
-    pass
+    def __init__(
+        self, vgates: Dict[str, Type[VirtualBinaryGate]] = STANDARD_VIRTUAL_GATES
+    ):
+        self.vgates = vgates
+        super().__init__()
 
 
 def cut(circuit: QuantumCircuit, *passes: CutPass) -> DistributedCircuit:
