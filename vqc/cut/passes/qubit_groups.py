@@ -4,14 +4,14 @@ from qiskit.circuit import Qubit
 from qiskit.dagcircuit import DAGCircuit
 
 from vqc.cut.cut import CutPass, STANDARD_VIRTUAL_GATES
-from vqc.virtual_gate.virtual_gate import VirtualBinaryGate
+from vqc.virtual_gate.virtual_gate import VirtualGate
 
 
 class QubitGroups(CutPass):
     def __init__(
         self,
         groups: List[Set[Qubit]],
-        vgates: Dict[str, Type[VirtualBinaryGate]] = STANDARD_VIRTUAL_GATES,
+        vgates: Dict[str, Type[VirtualGate]] = STANDARD_VIRTUAL_GATES,
     ):
         assert len(groups) > 0
         self.groups = groups

@@ -3,11 +3,11 @@ from typing import List, Type
 
 from qiskit.circuit.quantumcircuit import QuantumCircuit, Instruction
 
-from vqc.prob import ProbDistribution
-from vqc.virtual_gate.virtual_gate import VirtualBinaryGate
+from vqc.prob_distr import ProbDistr
+from vqc.virtual_gate.virtual_gate import VirtualGate
 
 
-class VirtualRZZ(VirtualBinaryGate):
+class VirtualRZZ(VirtualGate):
     def configure(self) -> List[QuantumCircuit]:
         conf0 = QuantumCircuit(2, 1)
 
@@ -33,7 +33,7 @@ class VirtualRZZ(VirtualBinaryGate):
 
         return [conf0, conf1, conf2, conf3, conf4, conf5]
 
-    def knit(self, results: List[ProbDistribution]) -> ProbDistribution:
+    def knit(self, results: List[ProbDistr]) -> ProbDistr:
         r0, _ = results[0].without_first_bit()
         r1, _ = results[1].without_first_bit()
         r23 = results[2] + results[3]

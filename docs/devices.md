@@ -8,11 +8,11 @@ Every device inherits from `vqc.Device`, and there for has to implement the `run
 
 ```python
 class SomeDevice(Device):
-    def run(circuits: List[QuantumCircuit], shots: int) -> List[ProbDistribution]:
+    def run(circuits: List[QuantumCircuit], shots: int) -> List[ProbDistr]:
         # ...
 ```
 
-The `vqc.prob.ProbDistribution` object is used to model the probability of each measurement state, mapping integers to floats. A `ProbDistribution` can be created from counts using the `from_counts()` method.
+The `vqc.prob.ProbDistr` object is used to model the probability of each measurement state, mapping integers to floats. A `ProbDistr` can be created from counts using the `from_counts()` method.
 
 ## Mapping Fragments to Devices
 

@@ -3,10 +3,10 @@ import itertools
 from typing import List, Optional, Type
 from qiskit.circuit import QuantumCircuit, Instruction, Barrier
 
-from vqc.prob import ProbDistribution
+from vqc.prob_distr import ProbDistr
 
 
-class VirtualBinaryGate(Barrier, ABC):
+class VirtualGate(Barrier, ABC):
 
     _ids = itertools.count(0)
 
@@ -28,7 +28,7 @@ class VirtualBinaryGate(Barrier, ABC):
         pass
 
     @abstractmethod
-    def knit(self, results: List[ProbDistribution]) -> ProbDistribution:
+    def knit(self, results: List[ProbDistr]) -> ProbDistr:
         pass
 
     def configuration(self, config_id: int) -> QuantumCircuit:

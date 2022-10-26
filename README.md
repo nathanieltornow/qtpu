@@ -15,6 +15,28 @@ pip install vqc
 
 ## Getting Started
 
+```python
+import vqc
+from qiskit import QuantumCircuit
+
+circuit = QuantumCircuit(...)
+circuit.h(0)
+# ...
+
+virt_circuit = vqc.cut(circuit, num_fragments=3)
+
+sampled_circs = vqc.sample(virt_circuit)
+# -> list[dict[id, circuit]]
+
+sample_results = custom_execute_sample_circuits()
+# -> Dict[id, Counts]
+
+knitted_result = vqc.knit(sample_results)
+# probdistr
+
+
+```
+
 See [a short tutorial](./quickstart.ipynb).
 
 ## References

@@ -4,7 +4,7 @@ from qiskit.dagcircuit import DAGCircuit
 
 from vqc.cut.cut import CutPass
 from vqc.virtual_gate import (
-    VirtualBinaryGate,
+    VirtualGate,
     VirtualCX,
     VirtualCZ,
     VirtualRZZ,
@@ -24,7 +24,7 @@ class Approximation(CutPass):
     def __init__(
         self,
         approx_gates: Dict[
-            Type[VirtualBinaryGate], Type[VirtualBinaryGate]
+            Type[VirtualGate], Type[VirtualGate]
         ] = STANDARD_APPROXIMATIONS,
     ):
         self.approx_gates = approx_gates

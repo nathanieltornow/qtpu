@@ -4,19 +4,19 @@ from typing import List, Type
 from qiskit.circuit.quantumcircuit import QuantumCircuit, Instruction
 from qiskit.circuit.library.standard_gates import CZGate, CXGate, RZZGate
 
-from vqc.prob import ProbDistribution
-from vqc.virtual_gate.virtual_gate import VirtualBinaryGate
+from vqc.prob_distr import ProbDistr
+from vqc.virtual_gate.virtual_gate import VirtualGate
 
 
-class NoneVirtualGate(VirtualBinaryGate):
+class NoneVirtualGate(VirtualGate):
     def configure(self) -> List[QuantumCircuit]:
         return [QuantumCircuit(2)]
 
-    def knit(self, results: List[ProbDistribution]) -> ProbDistribution:
+    def knit(self, results: List[ProbDistr]) -> ProbDistr:
         return results[0].without_first_bit()[0]
 
 
-class ApproxVirtualCZ(VirtualBinaryGate):
+class ApproxVirtualCZ(VirtualGate):
     def configure(self) -> List[QuantumCircuit]:
         conf0 = QuantumCircuit(2, 1)
         conf0.rz(pi / 2, 0)
@@ -28,7 +28,7 @@ class ApproxVirtualCZ(VirtualBinaryGate):
 
         return [conf0, conf1]
 
-    def knit(self, results: List[ProbDistribution]) -> ProbDistribution:
+    def knit(self, results: List[ProbDistr]) -> ProbDistr:
         r0, _ = results[0].without_first_bit()
         r1, _ = results[1].without_first_bit()
         return (r0 + r1) * 0.5
@@ -39,7 +39,7 @@ class ApproxVirtualCZ(VirtualBinaryGate):
         self._definition = circuit
 
 
-class ApproxVirtualCX(VirtualBinaryGate):
+class ApproxVirtualCX(VirtualGate):
     def configure(self) -> List[QuantumCircuit]:
         conf0 = QuantumCircuit(2, 1)
         conf0.rz(pi / 2, 0)
@@ -55,7 +55,7 @@ class ApproxVirtualCX(VirtualBinaryGate):
 
         return [conf0, conf1]
 
-    def knit(self, results: List[ProbDistribution]) -> ProbDistribution:
+    def knit(self, results: List[ProbDistr]) -> ProbDistr:
         r0, _ = results[0].without_first_bit()
         r1, _ = results[1].without_first_bit()
         return (r0 + r1) * 0.5
@@ -66,7 +66,7 @@ class ApproxVirtualCX(VirtualBinaryGate):
         self._definition = circuit
 
 
-class ApproxVirtualRZZ(VirtualBinaryGate):
+class ApproxVirtualRZZ(VirtualGate):
     def configure(self) -> List[QuantumCircuit]:
         conf0 = QuantumCircuit(2, 1)
 
@@ -76,7 +76,7 @@ class ApproxVirtualRZZ(VirtualBinaryGate):
 
         return [conf0, conf1]
 
-    def knit(self, results: List[ProbDistribution]) -> ProbDistribution:
+    def knit(self, results: List[ProbDistr]) -> ProbDistr:
         r0, _ = results[0].without_first_bit()
         r1, _ = results[1].without_first_bit()
         theta = -self.params[0]

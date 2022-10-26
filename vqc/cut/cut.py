@@ -6,10 +6,10 @@ from qiskit.dagcircuit import DAGCircuit
 from qiskit.transpiler import TransformationPass
 from qiskit.converters import circuit_to_dag, dag_to_circuit
 
-from vqc.virtual_gate import VirtualBinaryGate, VirtualCZ, VirtualCX, VirtualRZZ
-from vqc.circuit import DistributedCircuit
+from vqc.virtual_gate import VirtualGate, VirtualCZ, VirtualCX, VirtualRZZ
+from vqc.circuit import VirtualCircuit
 
-STANDARD_VIRTUAL_GATES: Dict[str, Type[VirtualBinaryGate]] = {
+STANDARD_VIRTUAL_GATES: Dict[str, Type[VirtualGate]] = {
     "cz": VirtualCZ,
     "cx": VirtualCX,
     "rzz": VirtualRZZ,
@@ -18,24 +18,24 @@ STANDARD_VIRTUAL_GATES: Dict[str, Type[VirtualBinaryGate]] = {
 
 class CutPass(TransformationPass):
     def __init__(
-        self, vgates: Dict[str, Type[VirtualBinaryGate]] = STANDARD_VIRTUAL_GATES
+        self, vgates: Dict[str, Type[VirtualGate]] = STANDARD_VIRTUAL_GATES
     ):
         self.vgates = vgates
         super().__init__()
 
 
-def cut(circuit: QuantumCircuit, *passes: CutPass) -> DistributedCircuit:
+def cut(circuit: QuantumCircuit, *passes: CutPass) -> VirtualCircuit:
     dag = circuit_to_dag(circuit)
     for pass_ in passes:
         dag = pass_.run(dag)
-    return DistributedCircuit.from_circuit(dag_to_circuit(dag))
+    return VirtualCircuit.from_circuit(dag_to_circuit(dag))
 
 
 def cut_qubit_connection(
     dag: DAGCircuit,
     qarg1: Qubit,
     qarg2: Qubit,
-    vgate_type: Dict[str, Type[VirtualBinaryGate]] = STANDARD_VIRTUAL_GATES,
+    vgate_type: Dict[str, Type[VirtualGate]] = STANDARD_VIRTUAL_GATES,
 ) -> None:
     """
     Cut the connection between two qubits in a DAGCircuit by replacing binary gates
