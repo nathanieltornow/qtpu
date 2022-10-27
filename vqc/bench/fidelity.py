@@ -1,7 +1,7 @@
 from typing import Dict
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import hellinger_fidelity
-from qiskit.providers.aer import StatevectorSimulator
+from qiskit_aer import StatevectorSimulator
 
 
 def perfect_counts(original_circuit: QuantumCircuit) -> Dict[str, int]:
