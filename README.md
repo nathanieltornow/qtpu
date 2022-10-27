@@ -64,11 +64,27 @@ print(virt_circuit.fragments)
 
 ### Executing the virtualization
 
-The virtualization process (including circuit sampling/configuration and result-knitting) is independent from the actual execution. In the end, up to 6^k circuit-fragments have to be executed for k virtual gates. Each execution is completely independent from the other.
+The virtualization process (including circuit sampling/configuration and result-knitting) is independent from the actual execution. In the end, up to 6^k circuit-fragments have to be executed for k virtual gates. Each execution is completely independent from the other. You can use one of vqc's `Executor`s for the execution of the sampled circuits.
 
 ```python
+# Knitter class is responsible for the virtualization process
+knitter = vqc.Knitter(virt_circuit)
+# get all samples that need to be executed
+samples = knitter.samples()
+print(samples)
+"""
+{'frag0': [<QuantumCircuit>, ...], 'frag1': [<QuantumCircuit>, ...]}
+"""
+from vqc.executor import Simulator
 
-
+# using a AerSimulator for the execution
+results = Simulator().execute(samples)
+# knit the results to a final probability distribution
+prob_distr = knitter.knit(results)
+print(prob_distr)
+"""
+{'1101': 0.502289445, '0001': -0.0017000050000000252, '1100': 0.0010605549999999839, '0000': 0.49695000500000003}
+"""
 ```
 
 ## References

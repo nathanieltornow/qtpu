@@ -13,7 +13,7 @@ class ProbDistr(dict):
         )
 
     def counts(self, shots: int) -> Counts:
-        return {state: int(prob * shots) for state, prob in self.items()}
+        return {state: max(int(prob) * shots, 0) for state, prob in self.items()}
 
     def without_first_bit(self) -> tuple["ProbDistr", "ProbDistr"]:
         zeros, ones = ProbDistr({}), ProbDistr({})
