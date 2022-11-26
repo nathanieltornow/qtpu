@@ -20,7 +20,7 @@ def _sample_ids(vc: VirtualCircuit, fragment: Fragment) -> list[tuple[int, ...]]
         else (-1,)
         for instr in vgate_instrs
     ]
-    return iter(itertools.product(*conf_l))
+    return list(itertools.product(*conf_l))
 
 
 def _add_config_register(circuit: QuantumCircuit, size: int) -> QuantumRegister:
