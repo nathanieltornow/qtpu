@@ -4,7 +4,7 @@ import networkx as nx
 from qiskit.circuit import Barrier, QuantumCircuit, QuantumRegister, Qubit
 
 from vqc.converters import circuit_to_connectivity_graph
-from vqc.virtual_gate.virtual_gate import VirtualGate
+from vqc.types import VirtualGate
 
 
 class Fragment(QuantumRegister):

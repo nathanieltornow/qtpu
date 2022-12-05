@@ -4,7 +4,7 @@ from typing import List
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 
 from vqc.prob_distr import ProbDistr
-from vqc.virtual_gate.virtual_gate import VirtualGate
+from vqc.types import VirtualGate
 
 
 class VirtualCZ(VirtualGate):
@@ -41,6 +41,29 @@ class VirtualCZ(VirtualGate):
         r40, r41 = results[4].without_first_bit()
         r50, r51 = results[5].without_first_bit()
         return (r0 + r1 + (r21 - r20) + (r31 - r30) + (r40 - r41) + (r50 - r51)) * 0.5
+
+    def _define(self):
+        circuit = QuantumCircuit(2)
+        circuit.cz(0, 1)
+        self._definition = circuit
+
+
+class ApproxVirtualCZ(VirtualGate):
+    def configure(self) -> List[QuantumCircuit]:
+        conf0 = QuantumCircuit(2, 1)
+        conf0.rz(pi / 2, 0)
+        conf0.rz(pi / 2, 1)
+
+        conf1 = QuantumCircuit(2, 1)
+        conf1.rz(-pi / 2, 0)
+        conf1.rz(-pi / 2, 1)
+
+        return [conf0, conf1]
+
+    def knit(self, results: List[ProbDistr]) -> ProbDistr:
+        r0, _ = results[0].without_first_bit()
+        r1, _ = results[1].without_first_bit()
+        return (r0 + r1) * 0.5
 
     def _define(self):
         circuit = QuantumCircuit(2)

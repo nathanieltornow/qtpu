@@ -2,14 +2,14 @@ from typing import Dict, Type
 
 from qiskit.dagcircuit import DAGCircuit
 
-from vqc.cut.cut import CutPass
-from vqc.virtual_gate import (
+from vqc.cutting.cut import CutPass
+from vqc.types import VirtualGate
+from vqc.virtual_gates import (
     ApproxVirtualCX,
     ApproxVirtualCZ,
     ApproxVirtualRZZ,
     VirtualCX,
     VirtualCZ,
-    VirtualGate,
     VirtualRZZ,
 )
 

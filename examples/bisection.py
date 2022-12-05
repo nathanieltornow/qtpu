@@ -1,14 +1,15 @@
 from qiskit import QuantumCircuit
 from qiskit_aer import AerSimulator
 
-from vqc import Bisection, Knitter, cut
-from vqc.bench.fidelity import fidelity
+from vqc import Knitter
+from vqc.benchmarking.fidelity import fidelity
+from vqc.cutting import KernighanLinBisection, cut
 
 if __name__ == "__main__":
     circuit = QuantumCircuit.from_qasm_file("examples/qasm/circuit1.qasm")
 
     # Cut the circuit using the Bisection cutter
-    virt_circ = cut(circuit, Bisection())
+    virt_circ = cut(circuit, KernighanLinBisection())
     # print the virtual circuit, virtual gates are Barriers
     print(virt_circ)
 

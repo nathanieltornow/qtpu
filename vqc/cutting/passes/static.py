@@ -1,7 +1,7 @@
 from qiskit.circuit import Qubit
 from qiskit.dagcircuit import DAGCircuit
 
-from vqc.cut.cut import CutPass, cut_qubit_connection
+from vqc.cutting.cut import CutPass, cut_qubit_connection
 
 
 class StaticCut(CutPass):

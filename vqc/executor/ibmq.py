@@ -1,4 +1,5 @@
 import itertools
+from typing import Dict, List
 
 from qiskit.circuit import QuantumCircuit
 from qiskit.compiler import transpile
@@ -6,8 +7,7 @@ from qiskit.providers.ibmq import AccountProvider
 from qiskit.providers.ibmq.managed import IBMQJobManager
 
 from vqc.prob_distr import Counts
-
-from .executor import Executor
+from vqc.types import Executor
 
 
 class IBMQExecutor(Executor):
@@ -19,8 +19,8 @@ class IBMQExecutor(Executor):
         self._optimization_level = optimization_level
 
     def execute(
-        self, sampled_circuits: dict[str, list[QuantumCircuit]]
-    ) -> dict[str, list[Counts]]:
+        self, sampled_circuits: Dict[str, List[QuantumCircuit]]
+    ) -> Dict[str, List[Counts]]:
         # Put all circuits in a single list for a single job
         frag_names, circuits = zip(*sampled_circuits.items())
         circuits_per_frag = [len(circuits) for circuits in circuits]

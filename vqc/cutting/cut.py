@@ -5,8 +5,9 @@ from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit.dagcircuit import DAGCircuit
 from qiskit.transpiler import TransformationPass
 
-from vqc.circuit import VirtualCircuit
-from vqc.virtual_gate import VirtualCX, VirtualCZ, VirtualGate, VirtualRZZ
+from vqc.types import VirtualGate
+from vqc.virtual_circuit import VirtualCircuit
+from vqc.virtual_gates import VirtualCX, VirtualCZ, VirtualRZZ
 
 STANDARD_VIRTUAL_GATES: Dict[str, Type[VirtualGate]] = {
     "cz": VirtualCZ,
