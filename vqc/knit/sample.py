@@ -1,11 +1,9 @@
 import itertools
 
-from qiskit.circuit import QuantumCircuit, ClassicalRegister, QuantumRegister, Barrier
+from qiskit.circuit import Barrier, ClassicalRegister, QuantumCircuit, QuantumRegister
 
-from vqc.circuit import VirtualCircuit, Fragment
-from vqc.prob_distr import ProbDistr
+from vqc.circuit import Fragment, VirtualCircuit
 from vqc.virtual_gate import VirtualGate
-
 
 SampleIdType = tuple[int, ...]
 

@@ -4,9 +4,9 @@ from typing import Iterable, Iterator
 from qiskit.circuit import QuantumCircuit
 
 from vqc.circuit import VirtualCircuit
-from vqc.prob_distr import ProbDistr, Counts
-from vqc.virtual_gate import VirtualGate
 from vqc.knit.sample import SampleIdType, _sample
+from vqc.prob_distr import Counts, ProbDistr
+from vqc.virtual_gate import VirtualGate
 
 
 def chunk(l: Iterable, n: int) -> Iterator[list]:

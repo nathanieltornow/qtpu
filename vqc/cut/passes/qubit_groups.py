@@ -1,9 +1,9 @@
-import itertools
 from typing import Dict, List, Set, Type
+
 from qiskit.circuit import Qubit
 from qiskit.dagcircuit import DAGCircuit
 
-from vqc.cut.cut import CutPass, STANDARD_VIRTUAL_GATES
+from vqc.cut.cut import STANDARD_VIRTUAL_GATES, CutPass
 from vqc.virtual_gate.virtual_gate import VirtualGate
 
 

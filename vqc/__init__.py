@@ -1,12 +1,12 @@
-from .knit import Knitter
 from .circuit import VirtualCircuit
+from .cut import Bisection, cut
+from .knit import Knitter
 from .virtual_gate import (
-    VirtualGate,
-    VirtualCZ,
-    VirtualCX,
-    VirtualRZZ,
     ApproxVirtualCX,
     ApproxVirtualCZ,
     ApproxVirtualRZZ,
+    VirtualCX,
+    VirtualCZ,
+    VirtualGate,
+    VirtualRZZ,
 )
-from .cut import cut, Bisection

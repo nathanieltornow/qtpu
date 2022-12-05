@@ -1,8 +1,7 @@
-from random import sample
 from qiskit import QuantumCircuit
 from qiskit_aer import AerSimulator
 
-from vqc import Knitter, cut, Bisection
+from vqc import Bisection, Knitter, cut
 from vqc.bench.fidelity import fidelity
 
 if __name__ == "__main__":

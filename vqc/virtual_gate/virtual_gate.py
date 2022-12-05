@@ -1,7 +1,8 @@
-from abc import ABC, abstractmethod
 import itertools
-from typing import List, Optional, Type
-from qiskit.circuit import QuantumCircuit, Instruction, Barrier
+from abc import ABC, abstractmethod
+from typing import List, Optional
+
+from qiskit.circuit import Barrier, QuantumCircuit
 
 from vqc.prob_distr import ProbDistr
 

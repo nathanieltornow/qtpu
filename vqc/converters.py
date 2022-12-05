@@ -1,11 +1,9 @@
 import itertools
 
-from qiskit.circuit import QuantumCircuit, Barrier
-from qiskit.dagcircuit import DAGCircuit
-from qiskit.converters import circuit_to_dag
 import networkx as nx
-
-from vqc.virtual_gate import VirtualGate
+from qiskit.circuit import Barrier, QuantumCircuit
+from qiskit.converters import circuit_to_dag
+from qiskit.dagcircuit import DAGCircuit
 
 
 def dag_to_connectivity_graph(dag: DAGCircuit) -> nx.Graph:

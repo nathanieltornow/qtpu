@@ -1,8 +1,10 @@
 from typing import Dict, Type
+
 from qiskit.dagcircuit import DAGCircuit
 
-from vqc.cut.cut import CutPass, STANDARD_VIRTUAL_GATES
+from vqc.cut.cut import STANDARD_VIRTUAL_GATES, CutPass
 from vqc.virtual_gate.virtual_gate import VirtualGate
+
 from .qubit_groups import QubitGroups
 
 

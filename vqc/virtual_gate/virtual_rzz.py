@@ -1,7 +1,7 @@
-from math import pi, sin, cos
-from typing import List, Type
+from math import cos, pi, sin
+from typing import List
 
-from qiskit.circuit.quantumcircuit import QuantumCircuit, Instruction
+from qiskit.circuit.quantumcircuit import QuantumCircuit
 
 from vqc.prob_distr import ProbDistr
 from vqc.virtual_gate.virtual_gate import VirtualGate

@@ -1,8 +1,9 @@
 from networkx.algorithms.community import kernighan_lin_bisection
 from qiskit.dagcircuit import DAGCircuit
 
-from vqc.cut.cut import CutPass
 from vqc.converters import dag_to_connectivity_graph
+from vqc.cut.cut import CutPass
+
 from .qubit_groups import QubitGroups
 
 

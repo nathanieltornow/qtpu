@@ -4,13 +4,13 @@ from qiskit.dagcircuit import DAGCircuit
 
 from vqc.cut.cut import CutPass
 from vqc.virtual_gate import (
-    VirtualGate,
-    VirtualCX,
-    VirtualCZ,
-    VirtualRZZ,
     ApproxVirtualCX,
     ApproxVirtualCZ,
     ApproxVirtualRZZ,
+    VirtualCX,
+    VirtualCZ,
+    VirtualGate,
+    VirtualRZZ,
 )
 
 STANDARD_APPROXIMATIONS = {
