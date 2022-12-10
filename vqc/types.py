@@ -1,9 +1,10 @@
-from abc import ABC, abstractmethod
 import itertools
-from typing import List, Optional, Type
-from qiskit.circuit import QuantumCircuit, Instruction, Barrier
+from abc import ABC, abstractmethod
+from typing import List, Optional
 
-from vqc.prob_distr import ProbDistr
+from qiskit.circuit import Barrier, QuantumCircuit
+
+from vqc.prob_distr import Counts, ProbDistr
 
 
 class VirtualGate(Barrier, ABC):
@@ -33,3 +34,11 @@ class VirtualGate(Barrier, ABC):
 
     def configuration(self, config_id: int) -> QuantumCircuit:
         return self.configure()[config_id]
+
+
+class Executor(ABC):
+    @abstractmethod
+    def execute(
+        self, sampled_circuits: dict[str, list[QuantumCircuit]]
+    ) -> dict[str, list[Counts]]:
+        pass

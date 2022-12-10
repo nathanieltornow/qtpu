@@ -1,16 +1,15 @@
 import itertools
+from typing import Dict, List, Tuple
 
-from qiskit.circuit import QuantumCircuit, ClassicalRegister, QuantumRegister, Barrier
+from qiskit.circuit import Barrier, ClassicalRegister, QuantumCircuit, QuantumRegister
 
-from vqc.circuit import VirtualCircuit, Fragment
-from vqc.prob_distr import ProbDistr
-from vqc.virtual_gate import VirtualGate
+from vqc.types import VirtualGate
+from vqc.virtual_circuit import Fragment, VirtualCircuit
 
-
-SampleIdType = tuple[int, ...]
+SampleIdType = Tuple[int, ...]
 
 
-def _sample_ids(vc: VirtualCircuit, fragment: Fragment) -> list[tuple[int, ...]]:
+def _sample_ids(vc: VirtualCircuit, fragment: Fragment) -> List[Tuple[int, ...]]:
     vgate_instrs = [
         instr for instr in vc.data if isinstance(instr.operation, VirtualGate)
     ]
@@ -41,7 +40,7 @@ def _circuit_on_index(circuit: QuantumCircuit, index: int) -> QuantumCircuit:
 
 
 def _circuit_with_config(
-    vc: VirtualCircuit, fragment: Fragment, config_id: tuple[int, ...]
+    vc: VirtualCircuit, fragment: Fragment, config_id: Tuple[int, ...]
 ) -> QuantumCircuit:
     conf_circ = QuantumCircuit(fragment, *vc.cregs)
     conf_reg = _add_config_register(conf_circ, len(config_id))
@@ -79,7 +78,7 @@ def _circuit_with_config(
     return conf_circ
 
 
-def _sample(vc: VirtualCircuit) -> dict[str, list[tuple[SampleIdType, QuantumCircuit]]]:
+def _sample(vc: VirtualCircuit) -> Dict[str, list[tuple[SampleIdType, QuantumCircuit]]]:
     samples = {}
     for frag in vc.fragments:
         new_samples = [

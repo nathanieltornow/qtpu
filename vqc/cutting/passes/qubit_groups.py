@@ -1,10 +1,10 @@
-import itertools
 from typing import Dict, List, Set, Type
+
 from qiskit.circuit import Qubit
 from qiskit.dagcircuit import DAGCircuit
 
-from vqc.cut.cut import CutPass, STANDARD_VIRTUAL_GATES
-from vqc.virtual_gate.virtual_gate import VirtualGate
+from vqc.cutting.cut import STANDARD_VIRTUAL_GATES, CutPass
+from vqc.types import VirtualGate
 
 
 class QubitGroups(CutPass):
@@ -18,7 +18,6 @@ class QubitGroups(CutPass):
         super().__init__(vgates)
 
     def run(self, dag: DAGCircuit) -> DAGCircuit:
-        print(self.groups)
         for op_node in dag.op_nodes():
             if (
                 sum(1 for g in self.groups if set(op_node.qargs) & g) > 1

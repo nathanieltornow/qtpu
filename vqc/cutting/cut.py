@@ -1,13 +1,13 @@
-from abc import ABC, abstractmethod
 from typing import Dict, Type
 
-from qiskit.circuit import Qubit, QuantumCircuit
+from qiskit.circuit import QuantumCircuit, Qubit
+from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit.dagcircuit import DAGCircuit
 from qiskit.transpiler import TransformationPass
-from qiskit.converters import circuit_to_dag, dag_to_circuit
 
-from vqc.virtual_gate import VirtualGate, VirtualCZ, VirtualCX, VirtualRZZ
-from vqc.circuit import VirtualCircuit
+from vqc.types import VirtualGate
+from vqc.virtual_circuit import VirtualCircuit
+from vqc.virtual_gates import VirtualCX, VirtualCZ, VirtualRZZ
 
 STANDARD_VIRTUAL_GATES: Dict[str, Type[VirtualGate]] = {
     "cz": VirtualCZ,
@@ -17,9 +17,7 @@ STANDARD_VIRTUAL_GATES: Dict[str, Type[VirtualGate]] = {
 
 
 class CutPass(TransformationPass):
-    def __init__(
-        self, vgates: Dict[str, Type[VirtualGate]] = STANDARD_VIRTUAL_GATES
-    ):
+    def __init__(self, vgates: Dict[str, Type[VirtualGate]] = STANDARD_VIRTUAL_GATES):
         self.vgates = vgates
         super().__init__()
 
