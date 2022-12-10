@@ -1,10 +1,30 @@
-from typing import Dict, List, Optional, Set
+import itertools
+from typing import Dict, List, Iterator
 
 import networkx as nx
-from qiskit.circuit import Barrier, QuantumCircuit, QuantumRegister, Qubit
+from qiskit.circuit import QuantumCircuit, QuantumRegister, Qubit, Instruction
 
-from vqc.converters import circuit_to_connectivity_graph
-from vqc.types import VirtualGate
+from vqc.util import circuit_to_connectivity_graph, circuit_on_index
+from vqc.types import VirtualGate, InputType, ConfigIdType
+
+
+class Placeholder(Instruction):
+    def __init__(self, name: str) -> None:
+        super().__init__(name=name, num_qubits=1, num_clbits=1)
+
+
+class AbstractCircuit(QuantumCircuit):
+    def insert_placeholders(self, input: InputType) -> QuantumCircuit:
+        circuit = QuantumCircuit(*self.qregs, *self.cregs, name=self.name)
+        for instr in self.data:
+            op, qubits, clbits = (instr.operation, instr.qubits, instr.clbits)
+            if isinstance(op, Placeholder):
+                if op.name not in input:
+                    raise ValueError(f"Missing input {op.name}")
+                circuit.append(input[op.name].to_instruction(), qubits, clbits)
+            else:
+                circuit.append(op, qubits, clbits)
+        return circuit
 
 
 class Fragment(QuantumRegister):
@@ -14,20 +34,9 @@ class Fragment(QuantumRegister):
 
 
 class VirtualCircuit(QuantumCircuit):
-    @staticmethod
-    def from_circuit(
-        circuit: QuantumCircuit, qubit_groups: Optional[List[Set[Qubit]]] = None
-    ) -> "VirtualCircuit":
-        if qubit_groups is not None:
-            # check qubit-groups
-            if set().union(*qubit_groups) != set(circuit.qubits) or bool(
-                set().intersection(*qubit_groups)
-            ):
-                raise ValueError("qubit-groups not valid")
-
-        else:
-            con_graph = circuit_to_connectivity_graph(circuit)
-            qubit_groups = list(nx.connected_components(con_graph))
+    def __init__(self, circuit: QuantumCircuit):
+        con_graph = circuit_to_connectivity_graph(circuit)
+        qubit_groups = list(nx.connected_components(con_graph))
 
         new_frags = [
             Fragment(len(nodes), name=f"frag{i}")
@@ -67,6 +76,7 @@ class VirtualCircuit(QuantumCircuit):
             if isinstance(instr.operation, VirtualGate)
         ]
 
+    @property
     def is_valid(self) -> bool:
         for circ_instr in self.data:
             if (
@@ -77,13 +87,56 @@ class VirtualCircuit(QuantumCircuit):
                 return False
         return True
 
-    def fragment_as_circuit(self, fragment: Fragment) -> QuantumCircuit:
-        circ = QuantumCircuit(fragment, *self.cregs)
+    def abstract_circuit(self, fragment: Fragment) -> AbstractCircuit:
+        abstr_circ = AbstractCircuit(fragment, *self.cregs, name=self.name)
+        conf_ctr = 0
         for instr in self.data:
-            if isinstance(instr.operation, Barrier) and set(instr.qubits) & set(
-                fragment
-            ):
-                circ.barrier(list(set(instr.qubits) & set(fragment)))
-            if set(instr.qubits) <= set(fragment):
-                circ.append(instr.operation, instr.qubits, instr.clbits)
-        return circ
+            op, qubits, clbits = (instr.operation, instr.qubits, instr.clbits)
+            if isinstance(op, VirtualGate):
+                if qubits[0] in fragment:
+                    abstr_circ.append(
+                        Placeholder(f"config_{conf_ctr}_0"), (qubits[0],), clbits
+                    )
+                if qubits[1] in fragment:
+                    abstr_circ.append(
+                        Placeholder(f"config_{conf_ctr}_1"), (qubits[1],), clbits
+                    )
+                conf_ctr += 1
+            elif set(qubits) <= set(fragment):
+                abstr_circ.append(op, qubits, clbits)
+        return abstr_circ
+
+    def inputs(self, fragment: Fragment) -> Iterator[InputType]:
+        vgate_instrs = [
+            instr for instr in self.data if isinstance(instr.operation, VirtualGate)
+        ]
+        for conf_id in self._config_ids(fragment):
+            input_: InputType = {}
+            for i, conf in enumerate(conf_id):
+                if conf == -1:
+                    continue
+                op, qubits = (
+                    vgate_instrs[i].operation,
+                    vgate_instrs[i].qubits,
+                )
+                if qubits[0] in fragment:
+                    input_[f"config{i}_0"] = circuit_on_index(
+                        op.configurations(conf), 0
+                    )
+                if qubits[1] in fragment:
+                    input_[f"config{i}_1"] = circuit_on_index(
+                        op.configurations(conf), 1
+                    )
+            yield conf_id, input_
+
+    def _config_ids(self, fragment: Fragment) -> Iterator[ConfigIdType]:
+        vgate_instrs = [
+            instr for instr in self.data if isinstance(instr.operation, VirtualGate)
+        ]
+        conf_l = [
+            tuple(range(len(instr.operation.configure())))
+            if set(instr.qubits) & set(fragment)
+            else (-1,)
+            for instr in vgate_instrs
+        ]
+        return iter(itertools.product(*conf_l))

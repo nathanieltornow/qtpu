@@ -1,10 +1,15 @@
 import itertools
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Dict, Tuple
 
 from qiskit.circuit import Barrier, QuantumCircuit
 
 from vqc.prob_distr import Counts, ProbDistr
+
+
+InputType = Dict[str, QuantumCircuit]
+
+ConfigIdType = Tuple[int, ...]
 
 
 class VirtualGate(Barrier, ABC):
