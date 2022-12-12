@@ -1,8 +1,8 @@
 import itertools
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Dict, List, Optional
 
-from qiskit.circuit import Barrier, QuantumCircuit
+from qiskit.circuit import Barrier, Parameter, QuantumCircuit
 
 from vqc.prob_distr import Counts, ProbDistr
 
@@ -39,6 +39,8 @@ class VirtualGate(Barrier, ABC):
 class Executor(ABC):
     @abstractmethod
     def execute(
-        self, sampled_circuits: dict[str, list[QuantumCircuit]]
-    ) -> dict[str, list[Counts]]:
+        self,
+        sampled_circuits: Dict[str, List[QuantumCircuit]],
+        parameter_binding_dict: Dict[Parameter, float] = {},
+    ) -> Dict[str, List[Counts]]:
         pass
