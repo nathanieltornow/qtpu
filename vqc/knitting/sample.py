@@ -1,5 +1,5 @@
-import itertools
-from typing import Dict, List, Tuple
+from itertools import product
+from typing import Dict, Tuple, Iterator
 
 from qiskit.circuit import Barrier, ClassicalRegister, QuantumCircuit, QuantumRegister
 
@@ -9,7 +9,7 @@ from vqc.virtual_circuit import Fragment, VirtualCircuit
 SampleIdType = Tuple[int, ...]
 
 
-def _sample_ids(vc: VirtualCircuit, fragment: Fragment) -> List[Tuple[int, ...]]:
+def _sample_ids(vc: VirtualCircuit, fragment: Fragment) -> Iterator[Tuple[int, ...]]:
     vgate_instrs = [
         instr for instr in vc.data if isinstance(instr.operation, VirtualGate)
     ]
@@ -19,7 +19,7 @@ def _sample_ids(vc: VirtualCircuit, fragment: Fragment) -> List[Tuple[int, ...]]
         else (-1,)
         for instr in vgate_instrs
     ]
-    return iter(itertools.product(*conf_l))
+    return product(*conf_l)
 
 
 def _add_config_register(circuit: QuantumCircuit, size: int) -> QuantumRegister:
