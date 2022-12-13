@@ -7,12 +7,25 @@ from qiskit.transpiler import TransformationPass
 
 from vqc.types import VirtualGate
 from vqc.virtual_circuit import VirtualCircuit
-from vqc.virtual_gates import VirtualCX, VirtualCZ, VirtualRZZ
+from vqc.virtual_gates import (
+    VirtualCX,
+    VirtualCZ,
+    VirtualRZZ,
+    ApproxVirtualCX,
+    ApproxVirtualCZ,
+    ApproxVirtualRZZ,
+)
 
 STANDARD_VIRTUAL_GATES: Dict[str, Type[VirtualGate]] = {
     "cz": VirtualCZ,
     "cx": VirtualCX,
     "rzz": VirtualRZZ,
+}
+
+STANDARD_APPROX_VIRTUAL_GATES: Dict[str, Type[VirtualGate]] = {
+    "cz": ApproxVirtualCZ,
+    "cx": ApproxVirtualCX,
+    "rzz": ApproxVirtualRZZ,
 }
 
 
