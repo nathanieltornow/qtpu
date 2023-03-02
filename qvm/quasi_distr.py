@@ -1,5 +1,11 @@
 class QuasiDistr(dict[str, float]):
     def __init__(self, data: dict[str, float]) -> None:
+        # check if all keys have the same length
+        if len(set(map(len, data.keys()))) > 1:
+            raise ValueError("Keys must have the same length")
+        # check if all keys are binary strings
+        if not all(all(c in "01" for c in key) for key in data.keys()):
+            raise ValueError("Keys must be binary strings")
         super().__init__(data)
 
     @staticmethod
@@ -25,14 +31,6 @@ class QuasiDistr(dict[str, float]):
         return "".join(
             ["1" if s1 == "1" or s2 == "1" else "0" for s1, s2 in zip(state1, state2)]
         )
-
-    def kron(self, other: "QuasiDistr") -> "QuasiDistr":
-        kron_data = {}
-        for key1, value1 in self.items():
-            for key2, value2 in other.items():
-                kron_key = key1 + key2
-                kron_data[kron_key] = value1 * value2
-        return QuasiDistr(kron_data)
 
     def merge(self, other: "QuasiDistr") -> "QuasiDistr":
         merged_data = {}
