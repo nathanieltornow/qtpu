@@ -2,7 +2,6 @@ import abc
 from math import pi, cos, sin
 
 from qiskit.circuit import QuantumCircuit, Barrier, Gate
-from qiskit.circuit.library import SwapGate
 
 from qvm.quasi_distr import QuasiDistr
 
@@ -12,7 +11,7 @@ class WireCut(Barrier):
         super().__init__(num_qubits=1, label="wire_cut")
 
 
-class VirtualQubitChannel(SwapGate):
+class VirtualQubitChannel(Barrier):
     def __init__(self):
         super().__init__(label="v_chan")
 
@@ -23,6 +22,7 @@ class VirtualBinaryGate(Barrier, abc.ABC):
         super().__init__(num_qubits=original_gate.num_qubits, label=original_gate.name)
         for inst in self._instantiations():
             self._check_instantiation(inst)
+        self._name = f"v_{original_gate.name}"
 
     @abc.abstractmethod
     def _instantiations(self) -> list[QuantumCircuit]:
@@ -39,8 +39,8 @@ class VirtualBinaryGate(Barrier, abc.ABC):
         assert len(inst.qubits) == 2
         assert len(inst.clbits) == 1
         for instr in inst.data:
-            assert instr.num_qubits == 1
-            assert instr.num_clbits == 1
+            assert len(instr.qubits) == 1
+            assert len(instr.clbits) <= 1
 
     def _define(self):
         circuit = QuantumCircuit(2)

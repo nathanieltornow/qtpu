@@ -31,13 +31,14 @@ class GateVirtualizer:
         for cinstr in self._circuit.data:
             op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits
             if isinstance(op, VirtualBinaryGate):
-                op = op.instantiate(inst_id[inst_ctr]).to_instruction()
+                op = op.instantiate(inst_id[inst_ctr]).to_instruction(label=f"{op.name}({inst_id[inst_ctr]})")
+                clbits = [conf_reg[inst_ctr]]
                 inst_ctr += 1
             inst_circuit.append(op, qubits, clbits)
         return inst_circuit
 
     def instantiations(self) -> list[QuantumCircuit]:
-        return [self._circuit.instance(inst_id) for inst_id in self._inst_ids()]
+        return [self._circuit_instance(inst_id) for inst_id in self._inst_ids()]
 
     def knit(self, results: list[QuasiDistr]) -> QuasiDistr:
         def _chunk(lst: list, n: int) -> list[list]:

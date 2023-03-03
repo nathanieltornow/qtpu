@@ -9,11 +9,11 @@ class QuasiDistr(dict[str, float]):
         super().__init__(data)
 
     @staticmethod
-    def from_counts(counts: dict[str, int], num_shots: int) -> "QuasiDistr":
-        return QuasiDistr({k: v / num_shots for k, v in counts.items()})
+    def from_counts(counts: dict[str, int], shots: int) -> "QuasiDistr":
+        return QuasiDistr({k: v / shots for k, v in counts.items()})
 
-    def to_counts(self, num_shots: int) -> dict[str, int]:
-        return {k: max(int(v * num_shots), 0) for k, v in self.items()}
+    def to_counts(self, shots: int) -> dict[str, int]:
+        return {k: max(int(v * shots), 0) for k, v in self.items()}
 
     def divide_by_first_bit(self) -> tuple["QuasiDistr", "QuasiDistr"]:
         data1, data2 = {}, {}
