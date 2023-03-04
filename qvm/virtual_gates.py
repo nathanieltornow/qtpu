@@ -13,7 +13,7 @@ class WireCut(Barrier):
 
 class VirtualQubitChannel(Barrier):
     def __init__(self):
-        super().__init__(label="v_chan")
+        super().__init__(num_qubits=2, label="v_chan")
 
 
 class VirtualBinaryGate(Barrier, abc.ABC):
