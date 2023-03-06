@@ -10,7 +10,7 @@ class QuasiDistr(dict[str, float]):
 
     @staticmethod
     def from_counts(counts: dict[str, int], shots: int) -> "QuasiDistr":
-        return QuasiDistr({k: v / shots for k, v in counts.items()})
+        return QuasiDistr({"".join(k.split()): v / shots for k, v in counts.items()})
 
     def to_counts(self, shots: int) -> dict[str, int]:
         return {k: max(int(v * shots), 0) for k, v in self.items()}

@@ -12,12 +12,10 @@ from qiskit.circuit import (
 
 from qvm.virtual_gates import (
     VirtualBinaryGate,
-    VirtualQubitChannel,
     VirtualCX,
     VirtualCY,
     VirtualCZ,
     VirtualRZZ,
-    WireCut,
 )
 
 
@@ -296,54 +294,3 @@ def extract_fragments(circuit: QuantumCircuit) -> dict[str, QuantumCircuit]:
 
 def stitch_fragments(fragments: dict[str, QuantumCircuit]) -> QuantumCircuit:
     pass
-
-
-def wire_cuts_to_vchans(circuit: QuantumCircuit) -> QuantumCircuit:
-    """
-    Transforms a circuit with wire cuts into a fragmented circuit with virtual channels.
-
-    Args:
-        circuit (QuantumCircuit): The circuit with wire cuts and no virtual channels.
-
-    Returns:
-        QuantumCircuit: The circuit with virtual channels and no wire cuts.
-    
-    Raises:
-        ValueError: Thrown if the circuit already contains virtual channels
-            or if a WireCut does not help to decompose the circuit.
-    """
-
-    qubit_map: dict[Qubit, Qubit] = {}
-
-    if any(isinstance(op, VirtualQubitChannel) for op in circuit.data):
-        raise ValueError("Circuit already contains virtual channels.")
-
-    num_wire_cuts = sum(
-        1 for cinstr in circuit.data if isinstance(cinstr.operation, WireCut)
-    )
-
-    vchan_reg = QuantumRegister(num_wire_cuts, name="vchan")
-    vchan_circ = QuantumCircuit(
-        *circuit.qregs,
-        *circuit.cregs,
-        vchan_reg,
-        name=circuit.name,
-        global_phase=circuit.global_phase,
-        metadata=circuit.metadata,
-    )
-    for cinstr in circuit.data:
-        op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits
-        qubits = [qubit_map[q] if q in qubit_map else q for q in qubits]
-        if isinstance(op, WireCut):
-            qubit_map[qubits[0]] = vchan_reg[len(qubit_map)]
-            op = VirtualQubitChannel()
-            qubits = [qubits[0], qubit_map[qubits[0]]]
-        vchan_circ.append(op, qubits, clbits)
-
-    # check if the wire cuts are fully decomposing the circuit
-    con_qubits = connected_qubits(vchan_circ)
-    for qubit1, qubit2 in qubit_map.items():
-        for qubit_set in con_qubits:
-            if {qubit1, qubit2} <= qubit_set:
-                raise ValueError("Wire cut is not fully decomposing circuit.")
-    return vchan_circ

@@ -1,4 +1,5 @@
 import itertools
+from multiprocessing.pool import Pool
 
 from qiskit.circuit import QuantumCircuit, ClassicalRegister
 
@@ -6,7 +7,8 @@ from qvm.virtual_gates import VirtualBinaryGate
 from qvm.quasi_distr import QuasiDistr
 
 
-class GateVirtualizer:
+
+class Virtualizer:
     def __init__(self, circuit: QuantumCircuit) -> None:
         self._circuit = circuit.copy()
 
@@ -35,18 +37,18 @@ class GateVirtualizer:
                 clbits = [conf_reg[inst_ctr]]
                 inst_ctr += 1
             inst_circuit.append(op, qubits, clbits)
-        return inst_circuit
+        return inst_circuit.decompose()
 
     def instantiations(self) -> list[QuantumCircuit]:
         return [self._circuit_instance(inst_id) for inst_id in self._inst_ids()]
 
-    def knit(self, results: list[QuasiDistr]) -> QuasiDistr:
+    def knit(self, results: list[QuasiDistr], pool: Pool) -> QuasiDistr:
         def _chunk(lst: list, n: int) -> list[list]:
             return [lst[i : i + n] for i in range(0, len(lst), n)]
-
+        
         vgates = self._virtual_gates()
         while len(vgates) > 0:
             vg = vgates.pop(-1)
             chunks = _chunk(results, len(vg._instantiations()))
-            results = [vg._knit(chunk) for chunk in chunks]
+            results = pool.map(vg.knit, chunks)
         return results[0]
