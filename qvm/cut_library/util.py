@@ -55,19 +55,6 @@ def circuit_to_qcg(circuit: QuantumCircuit) -> nx.Graph:
                 graph[qubit1][qubit2]["weight"] += 1
     return graph
 
-class UnaryOperationSequence(Instruction):
-    def __init__(self, operations: list[Instruction]):
-        if not all(op.num_qubits == 1 for op in operations):
-            raise ValueError("All operations must be unary.")
-        super().__init__(name="seq", num_qubits=1, num_clbits=0, params=[])
-        self._operations = operations
-
-    def _define(self):
-        circuit = QuantumCircuit(1, name=self.name)
-        for op in self._operations:
-            circuit.append(op, [0], [])
-        self._definition = circuit
-
 
 def connected_qubits(circuit: QuantumCircuit) -> list[set[Qubit]]:
     """Returns the connected qubits of a circuit.
