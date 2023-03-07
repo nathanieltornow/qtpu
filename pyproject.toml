@@ -1,24 +1,33 @@
-[tool.poetry]
-name = "vqc"
+[project]
+name = "Quantum Virtual Machine"
 version = "0.0.1"
-description = "Virtual Quantum Computing"
-authors = ["Nathaniel Tornow <nathaniel.tornow@tum.de>"]
-
-[tool.poetry.dependencies]
-python = "^3.9.0"
-qiskit-terra = "^0.22.0"
-qiskit-aer = "^0.11.0"
-qiskit-ibmq-provider = "^0.19.2"
-networkx = "^2.8.7"
-
-[tool.poetry.dev-dependencies]
-black = "^22.10.0"
-mypy = "^0.982"
-isort = "^5.10.1"
-
-[tool.isort]
-profile = "black"
+description = "Framework for Virtual and Distributed Quantum Computing"
+authors = [
+    {name = "Nathaniel Tornow", email = "nathaniel.tornow@tum.de"},
+]
+dependencies = [
+    "qiskit>=0.41.1",
+    "networkx>=3.0",
+    "ray>=2.3.0",
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+[project.optional-dependencies]
+jupyter = [
+    "jupyter>=1.0.0",
+    "matplotlib>=3.7.0",
+    "pylatexenc>=2.10",
+]
+dev = [
+    "mypy>=1.0.1",
+    "black>=23.1.0",
+    "pytest>=7.2.1",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"
+
+[tool]
+[tool.pdm]

@@ -1,44 +1,44 @@
-from qiskit import QuantumCircuit
+import logging
+
+import numpy as np
+from qiskit.circuit import QuantumCircuit
+from qiskit.circuit.library import EfficientSU2
+from qiskit.quantum_info import hellinger_fidelity
 from qiskit_aer import AerSimulator
 
-from vqc import Knitter
-from vqc.benchmarking.fidelity import fidelity
-from vqc.cutting import KernighanLinBisection, cut
+
+from qvm.cut_library.decomposition import bisect
+from qvm.main import run_on_sim
+
+
+logging.basicConfig(level=logging.INFO)
+
+
+def main():
+    num_qubits = 2
+    circuit = EfficientSU2(
+        num_qubits=num_qubits,
+        reps=2,
+        entanglement="linear",
+        su2_gates=["rx", "ry", "rz"],
+    )
+    circuit.measure_all()
+    circuit = circuit.decompose()
+
+    params = [(np.pi * i) / 16 for i in range(len(circuit.parameters))]
+
+    circuit = circuit.bind_parameters(dict(zip(circuit.parameters, params)))
+    circ_cp = circuit.copy()
+
+    circuit = bisect(circuit)
+    circuit.draw(output="mpl", scale=0.7)
+    print(circuit)
+
+    quasi_distr = run_on_sim(circuit, 10000)
+
+    actual_res = AerSimulator().run(circ_cp, shots=10000).result().get_counts()
+    print(hellinger_fidelity(quasi_distr.to_counts(10000), actual_res))
+
 
 if __name__ == "__main__":
-    circuit = QuantumCircuit.from_qasm_file("examples/qasm/circuit1.qasm")
-
-    # Cut the circuit using the Bisection cutter
-    virt_circ = cut(circuit, KernighanLinBisection())
-    # print the virtual circuit, virtual gates are Barriers
-    print(virt_circ)
-
-    # print both fragments as circuits
-    for fragment in virt_circ.fragments:
-        print(virt_circ.fragment_as_circuit(fragment))
-
-    # define a knitter the virtualization process
-    knitter = Knitter(virt_circ)
-    # get all circuit samples needed for the virtualization
-    # the samples are a dictionary with keys being the fragment ids and values being
-    # the circuits to execute for each fragment
-    samples: dict[str, list[QuantumCircuit]] = knitter.samples()
-
-    # execute the samples and store them accoring to the samples dictionary
-    # with the fragment ids as keys and the list of counts as values
-    results = {}
-    for name, frag_circs in samples.items():
-        results[name] = (
-            AerSimulator()
-            .run([circ.decompose() for circ in frag_circs])
-            .result()
-            .get_counts()
-        )
-
-    # knit the results together to get the final probability distribution
-    prob_distr = knitter.knit(results)
-
-    # store the probability distribution as counts and get the hellinger fidelity
-    counts = prob_distr.counts(10000)
-    fid = fidelity(circuit, counts)
-    print(fid)
+    main()
