@@ -55,41 +55,6 @@ def circuit_to_qcg(circuit: QuantumCircuit) -> nx.Graph:
                 graph[qubit1][qubit2]["weight"] += 1
     return graph
 
-
-def circuit_to_dag(circuit: QuantumCircuit) -> nx.DiGraph:
-    """
-    Converts a circuit into a simple directed acyclic graph (DAG).
-    In this DAG, the nodes are the indices of the operations.
-
-    Args:
-        circuit (QuantumCircuit): The circuit.
-
-    Returns:
-        nx.DiGraph: The DAG.
-    """
-
-    graph = nx.DiGraph()
-    bb = nx.edge_betweenness_centrality(graph, normalized=False)
-    nx.set_edge_attributes(graph, bb, "weight")
-    graph.add_nodes_from(range(len(circuit.data)))
-
-    def _next_operation_on_qubit(from_index: int, qubit: Qubit) -> int:
-        for i, cinstr in enumerate(circuit.data[from_index + 1 :]):
-            if qubit in cinstr.qubits:
-                return i + from_index + 1
-        return -1
-
-    for i, cinstr in enumerate(circuit.data):
-        for qubit in cinstr.qubits:
-            next_op = _next_operation_on_qubit(i, qubit)
-            if next_op != -1:
-                if not graph.has_edge(i, next_op):
-                    graph.add_edge(i, next_op, weight=0)
-                graph[i][next_op]["weight"] += 1
-
-    return graph
-
-
 class UnaryOperationSequence(Instruction):
     def __init__(self, operations: list[Instruction]):
         if not all(op.num_qubits == 1 for op in operations):
@@ -102,56 +67,6 @@ class UnaryOperationSequence(Instruction):
         for op in self._operations:
             circuit.append(op, [0], [])
         self._definition = circuit
-
-
-def compact_unary_gates(circuit: QuantumCircuit) -> QuantumCircuit:
-    """
-    Compacts sequences of unary gates into single gates.
-    This compaction can be reversed by calling `compacted_circuit.decompose()`.
-
-    Args:
-        circuit (QuantumCircuit): The circuit.
-
-    Returns:
-        QuantumCircuit: The compacted circuit.
-    """
-
-    compacted_circuit = QuantumCircuit(
-        *circuit.qregs,
-        *circuit.cregs,
-        name=circuit.name,
-        global_phase=circuit.global_phase,
-        metadata=circuit.metadata,
-    )
-
-    def _next_unary_op(index: int, qubit: Qubit) -> tuple[int, Gate] | None:
-        for i, cinstr in enumerate(circuit.data[index + 1 :]):
-            if qubit in cinstr.qubits and (
-                len(cinstr.qubits) > 1 or len(cinstr.clbits) > 0
-            ):
-                return None
-            if qubit in cinstr.qubits and len(cinstr.qubits) == 1:
-                return i + index + 1, cinstr.operation
-        return None
-
-    inserted: set[int] = set()
-    for i, cinstr in enumerate(circuit.data):
-        if len(cinstr.qubits) == 1 and len(cinstr.clbits) == 0:
-            if i in inserted:
-                continue
-            ops = [cinstr.operation]
-            j = i
-            while (ind_op := _next_unary_op(j, cinstr.qubits[0])) is not None:
-                j, op = ind_op
-                if j not in inserted:
-                    ops.append(op)
-                inserted.add(j)
-
-            compacted_circuit.append(UnaryOperationSequence(ops), cinstr.qubits, [])
-        else:
-            compacted_circuit.append(cinstr.operation, cinstr.qubits, cinstr.clbits)
-
-    return compacted_circuit
 
 
 def connected_qubits(circuit: QuantumCircuit) -> list[set[Qubit]]:
