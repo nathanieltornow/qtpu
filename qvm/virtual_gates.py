@@ -42,6 +42,14 @@ class VirtualBinaryGate(Barrier, abc.ABC):
         self._definition = circuit
 
 
+class VirtualIdentity(VirtualBinaryGate):
+    def _instantiations(self) -> list[QuantumCircuit]:
+        return [QuantumCircuit(2, 1)]
+
+    def knit(self, results: list[QuasiDistr]) -> QuasiDistr:
+        return results[0]
+
+
 class VirtualCZ(VirtualBinaryGate):
     def _instantiations(self) -> list[QuantumCircuit]:
         inst0 = QuantumCircuit(2, 1)

@@ -6,8 +6,6 @@ from qiskit.circuit import (
     QuantumCircuit,
     Barrier,
     QuantumRegister,
-    Gate,
-    Instruction,
 )
 
 from qvm.virtual_gates import (
@@ -69,7 +67,7 @@ def connected_qubits(circuit: QuantumCircuit) -> list[set[Qubit]]:
     return list(nx.connected_components(qcg))
 
 
-def fragment_circuit(circuit: QuantumCircuit, vchan: bool = True) -> QuantumCircuit:
+def fragment_circuit(circuit: QuantumCircuit) -> QuantumCircuit:
     """
     Creates a fragmented curcuit from a given circuit,
     where each fragment is a distinct quantum register.
@@ -112,8 +110,7 @@ def decompose_qubits(
     circuit: QuantumCircuit, con_qubits: list[set[Qubit]]
 ) -> QuantumCircuit:
     """
-    Decomposes a circuit into a fragemted circuit using gate virtualization,
-    where each fragment is a distinct quantum register.
+    Decomposes a circuit using gate virtualization.
     The fragments are defined by the connected qubits, which should still be connected.
 
     Args:
@@ -126,7 +123,7 @@ def decompose_qubits(
         ValueError: Thrown if con_qubits is illegal.
 
     Returns:
-        QuantumCircuit: _description_
+        QuantumCircuit: The decomposed circuit with virtual gates.
     """
     if set(circuit.qubits) != set.union(*con_qubits):
         raise ValueError("con_qubits is not containing all qubits of the circuit.")
@@ -153,46 +150,4 @@ def decompose_qubits(
         if _in_multiple_fragments(set(qubits)) and not isinstance(op, Barrier):
             op = VIRTUAL_GATE_TYPES[op.name](op)
         new_circ.append(op, qubits, clbits)
-    return fragment_circuit(new_circ, False)
-
-
-class FadenBarrier(Barrier):
-    """Barrier that holds two fragments together."""
-
-    def __init__(self, orig_barrier: Barrier, orig_qubits: list[Qubit]):
-        super().__init__(1, label="faden")
-        self._orig_barrier = orig_barrier
-        self._orig_qubits = orig_qubits
-
-
-def extract_fragments(circuit: QuantumCircuit) -> dict[str, QuantumCircuit]:
-    frag_circ = fragment_circuit(circuit)
-    fragments: dict[str, QuantumCircuit] = {
-        qreg.name: QuantumCircuit(qreg, *circuit.cregs) for qreg in frag_circ.qregs
-    }
-
-    def _append_faden_barrier(barrier: Barrier, qubits: list[Qubit]) -> None:
-        for qubit in qubits:
-            for circ in fragments.values():
-                if qubit in circ.qregs[0]:
-                    circ.append(FadenBarrier(barrier, qubits), [qubit], [])
-
-    def _find_fragment(qubits: list[Qubit]) -> QuantumCircuit | None:
-        for circ in fragments.values():
-            if set(qubits) <= set(circ.qregs[0]):
-                return circ
-        return None
-
-    for cinstr in frag_circ.data:
-        frag = _find_fragment(cinstr.qubits)
-        if isinstance(cinstr.operation, Barrier) and frag is None:
-            _append_faden_barrier(cinstr.operation, cinstr.qubits)
-        elif frag is not None:
-            frag.append(cinstr.operation, cinstr.qubits, cinstr.clbits)
-        else:
-            raise ValueError("Could not find fragment for qubits.")
-    return fragments
-
-
-def stitch_fragments(fragments: dict[str, QuantumCircuit]) -> QuantumCircuit:
-    pass
+    return fragment_circuit(new_circ)
