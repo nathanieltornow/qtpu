@@ -14,6 +14,7 @@ from qvm.virtual_gates import (
     VirtualCY,
     VirtualCZ,
     VirtualRZZ,
+    VirtualIdentity,
 )
 
 
@@ -151,3 +152,18 @@ def decompose_qubits(
             op = VIRTUAL_GATE_TYPES[op.name](op)
         new_circ.append(op, qubits, clbits)
     return fragment_circuit(new_circ)
+
+
+def remove_virtual_gates(circuit: QuantumCircuit) -> QuantumCircuit:
+    removed_circuit = QuantumCircuit(
+        *circuit.qregs,
+        *circuit.cregs,
+        name=circuit.name,
+        global_phase=circuit.global_phase,
+        metadata=circuit.metadata,
+    )
+    for cinstr in circuit.data:
+        if isinstance(cinstr.operation, VirtualBinaryGate):
+            cinstr.operation = VirtualIdentity(cinstr.operation.original_gate)
+        removed_circuit.append(cinstr.operation, cinstr.qubits, cinstr.clbits)
+    return removed_circuit

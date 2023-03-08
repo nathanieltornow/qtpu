@@ -15,6 +15,10 @@ class VirtualBinaryGate(Barrier, abc.ABC):
         self._name = f"v_{original_gate.name}"
 
     @property
+    def original_gate(self) -> Gate:
+        return self._original_gate
+
+    @property
     def num_instantiations(self) -> int:
         return len(self._instantiations())
 
@@ -24,6 +28,10 @@ class VirtualBinaryGate(Barrier, abc.ABC):
 
     @abc.abstractmethod
     def knit(self, results: list[QuasiDistr]) -> QuasiDistr:
+        pass
+
+    @abc.abstractmethod
+    def knit_one_state(self, results: list[QuasiDistr], state: str) -> float:
         pass
 
     def instantiate(self, inst_id: int) -> QuantumCircuit:
@@ -47,7 +55,7 @@ class VirtualIdentity(VirtualBinaryGate):
         return [QuantumCircuit(2, 1)]
 
     def knit(self, results: list[QuasiDistr]) -> QuasiDistr:
-        return results[0]
+        return QuasiDistr({state[1:]: prob for state, prob in results[0].items()})
 
 
 class VirtualCZ(VirtualBinaryGate):
@@ -84,6 +92,17 @@ class VirtualCZ(VirtualBinaryGate):
         r40, r41 = results[4].divide_by_first_bit()
         r50, r51 = results[5].divide_by_first_bit()
         return (r0 + r1 + (r21 - r20) + (r31 - r30) + (r40 - r41) + (r50 - r51)) * 0.5
+
+    def knit_one_state(self, results: list[QuasiDistr], state: str) -> float:
+        r0 = results[0].get("0" + state[1:], 0)
+        r1 = results[1].get("1" + state[1:], 0)
+        r20, r21 = results[2].get("0" + state[1:], 0), results[2].get(
+            "1" + state[1:], 0)
+        r30, r31 = results[3].get("0" + state[1:], 0), results[3].get("1" + state[1:], 0)
+        r40, r41 = results[4].get("0" + state[1:], 0), results[4].get("1" + state[1:], 0)
+        r50, r51 = results[5].get("0" + state[1:], 0), results[5].get("1" + state[1:], 0)
+        return (r0 + r1 + (r21 - r20) + (r31 - r30) + (r40 - r41) + (r50 - r51)) * 0.5
+        
 
 
 class VirtualCX(VirtualCZ):
@@ -153,3 +172,6 @@ class VirtualRZZ(VirtualBinaryGate):
             + (r1 * sin(theta / 2) ** 2)
             + (r230 - r231 - r450 + r451) * cos(theta / 2) * sin(theta / 2)
         )
+
+    def knit_one_state(self, results: list[QuasiDistr], state: str) -> float:   
+        raise NotImplementedError("knit_one_state is not implemented yet for VirtualRZZ")

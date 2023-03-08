@@ -39,5 +39,4 @@ def bisect_recursive(circuit: QuantumCircuit, num_fragments: int) -> QuantumCirc
         largest_fragment = max(fragment_qubits, key=lambda f: len(f))
         fragment_qubits.remove(largest_fragment)
         fragment_qubits += list(kernighan_lin_bisection(qcg.subgraph(largest_fragment)))
-    print([len(fragment) for fragment in fragment_qubits])
     return decompose_qubits(circuit, fragment_qubits)
