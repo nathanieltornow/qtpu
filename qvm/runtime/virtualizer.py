@@ -88,7 +88,7 @@ class Virtualizer:
         conf_reg = ClassicalRegister(len(inst_label), "conf")
         inst_ctr = 0
         inst_circuit = QuantumCircuit(
-            *self._circuit.qregs, *(self._circuit.cregs + [conf_reg])
+            fragment, *(self._circuit.cregs + [conf_reg])
         )
         for cinstr in self._circuit.data:
             op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits

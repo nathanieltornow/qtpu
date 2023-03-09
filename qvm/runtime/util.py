@@ -34,7 +34,7 @@ def sample_on_ibmq_backend(
     instances = virtualizer.instantiations()
     qregs, circ_lists = zip(*instances.items())
     print(
-        f"Running {sum(len(circs) for circs in circ_lists)} circuits with maximum circuit size of {max(len(qreg) for qreg in qregs)}"
+        f"Running {sum(len(circs) for circs in circ_lists)} circuits with maximum circuit size of {max(len(qreg) for qreg in qregs)} qubits"
     )
     with ThreadPoolExecutor(len(qregs)) as circ_exec:
         now = time.perf_counter()

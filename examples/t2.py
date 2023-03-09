@@ -33,14 +33,14 @@ def get_circuit(num_qubits: int) -> QuantumCircuit:
 
 def main():
 
-    circuit = get_circuit(30)    
+    circuit = get_circuit(10)    
 
     backend = provider.get_backend("ibmq_qasm_simulator")
     
     vcircuit = bisect(circuit)
     
-    quasi_distr = sample_on_ibmq_backend(vcircuit, backend, shots=10000)
-    counts = quasi_distr.to_counts(10000)
+    quasi_distr = sample_on_ibmq_backend(vcircuit, backend, shots=100000)
+    counts = quasi_distr.to_counts(100000)
 
     print(fidelity(circuit, counts))
 
