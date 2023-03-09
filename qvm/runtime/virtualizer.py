@@ -112,11 +112,14 @@ class Virtualizer:
                 inst_circuit.append(op, qubits, clbits)
         return inst_circuit.decompose()
 
-    def instantiations(self, fragment: QuantumRegister) -> list[QuantumCircuit]:
-        return [
-            self._fragment_instance(fragment, inst_label)
-            for inst_label in self._frag_inst_labels(fragment)
-        ]
+    def instantiations(self) -> dict[QuantumRegister, list[QuantumCircuit]]:
+        return {
+            fragment: [
+                self._fragment_instance(fragment, inst_label)
+                for inst_label in self._frag_inst_labels(fragment)
+            ]
+            for fragment in self._circuit.qregs
+        }
 
     def put_results(self, fragment: QuantumRegister, results: list[QuasiDistr]) -> None:
         self._results[fragment] = {}
@@ -178,9 +181,7 @@ class Virtualizer:
                 "Not all fragments have been evaluated. "
                 "Please evaluate all fragments first."
             )
-
         results = self._merge(pool)
-
         vgates, _ = zip(*self._virtual_gates())
         vgates = list(vgates)
         while len(vgates) > 0:

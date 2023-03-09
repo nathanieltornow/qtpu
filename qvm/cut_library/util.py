@@ -167,3 +167,36 @@ def remove_virtual_gates(circuit: QuantumCircuit) -> QuantumCircuit:
             cinstr.operation = VirtualIdentity(cinstr.operation.original_gate)
         removed_circuit.append(cinstr.operation, cinstr.qubits, cinstr.clbits)
     return removed_circuit
+
+
+def cut_qubit_connections(
+    circuit: QuantumCircuit, qubit_cons: set[tuple[Qubit, Qubit]]
+) -> QuantumCircuit:
+    """
+    Cuts the connections between the given qubit pairs.
+    The connections are cut by inserting Virtual gates.
+
+    Args:
+        circuit (QuantumCircuit): The circuit.
+        qubit_cons (set[tuple[Qubit, Qubit]]): The qubit connections to cut.
+
+    Returns:
+        QuantumCircuit: The circuit with cut connections.
+    """
+    new_circ = QuantumCircuit(
+        *circuit.qregs,
+        *circuit.cregs,
+        name=circuit.name,
+        global_phase=circuit.global_phase,
+        metadata=circuit.metadata,
+    )
+    for cinstr in circuit.data:
+        op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits
+        if len(qubits) == 2 and (
+            (qubits[0], qubits[1]) in qubit_cons or (qubits[1], qubits[0]) in qubit_cons
+        ):
+            op = VIRTUAL_GATE_TYPES[op.name](op)
+        elif len(qubits) >= 3 and not isinstance(op, Barrier):
+            raise ValueError("Gates with more than 2 qubits are not supported.")
+        new_circ.append(op, qubits, clbits)
+    return new_circ

@@ -10,16 +10,15 @@ from qiskit.providers.ibmq import IBMQ
 
 
 from qvm.cut_library.decomposition import bisect
-from qvm.runtime.runtime import QVMRuntime
+from qvm.runtime.util import sample_on_ibmq_backend
 from qvm.runtime.qpus.ibmq import IBMQSimulator
+from qvm.bench import fidelity
 
-
-logging.basicConfig(level=logging.INFO)
 
 provider = None
 
-def main():
-    num_qubits = 6
+
+def get_circuit(num_qubits: int) -> QuantumCircuit:
     circuit = EfficientSU2(
         num_qubits=num_qubits,
         reps=2,
@@ -28,18 +27,22 @@ def main():
     )
     circuit.measure_all()
     circuit = circuit.decompose()
-
     params = [(np.pi * i) / 16 for i in range(len(circuit.parameters))]
-
     circuit = circuit.bind_parameters(dict(zip(circuit.parameters, params)))
-    circ_cp = circuit.copy()
+    return circuit
+
+def main():
+
+    circuit = get_circuit(30)    
+
+    backend = provider.get_backend("ibmq_qasm_simulator")
     
-    runtime = QVMRuntime({IBMQSimulator(provider)})
+    vcircuit = bisect(circuit)
+    
+    quasi_distr = sample_on_ibmq_backend(vcircuit, backend, shots=10000)
+    counts = quasi_distr.to_counts(10000)
 
-    quasi_distr = runtime.sample(circuit)
-
-    actual_res = AerSimulator().run(circ_cp, shots=10000).result().get_counts()
-    print(hellinger_fidelity(quasi_distr.to_counts(10000), actual_res))
+    print(fidelity(circuit, counts))
 
 
 if __name__ == "__main__":

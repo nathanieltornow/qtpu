@@ -8,17 +8,17 @@ binary gate virtualization, both in order to mitigate noise and allow executions
 
 This project started from a [Bachelor's thesis](https://raw.githubusercontent.com/TUM-DSE/research-work-archive/main/archive/2022/summer/docs/bsc_tornow_dqs_a_framework_for_efficient_distributed_simulation_of_large_quantum_circuits.pdf) at TU Munich.
 
-## Installation
+<!-- ## Installation
 ```shell
 pip install vqc
-```
+``` -->
 
 ## Getting Started
 
 ### Cutting a `QuantumCircuit` into a `VirtualCircuit` through gate virtualization 
 
 ```python
-import vqc
+
 from qiskit import QuantumCircuit
 
 # create your quantum circuit with Qiskit

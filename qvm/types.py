@@ -33,21 +33,11 @@ class QPU(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def expected_noise(self) -> float | None:
+    def expected_noise(self, circuit: QuantumCircuit) -> float | None:
         ...
 
+    def __hash__(self) -> int:
+        return hash(self.name())
 
-# qpu_name -> metadata
-RuntimeMetaData = dict[str, SampleMetaData]
-
-
-class ResourceManager(abc.ABC):
-    @abc.abstractmethod
-    def sample(
-        self, circuits: list[QuantumCircuit], metadata: RuntimeMetaData
-    ) -> list[QuasiDistr]:
-        ...
-
-    @abc.abstractmethod
-    def qpus(self) -> list[QPU]:
-        ...
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, QPU) and self.name() == other.name()
