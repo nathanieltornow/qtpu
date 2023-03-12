@@ -1,4 +1,5 @@
 import itertools
+from typing import Optional
 
 import networkx as nx
 from qiskit.circuit import Barrier, QuantumCircuit, QuantumRegister, Qubit
@@ -158,7 +159,9 @@ def remove_virtual_gates(circuit: QuantumCircuit) -> QuantumCircuit:
 
 
 def cut_qubit_connections(
-    circuit: QuantumCircuit, qubit_cons: set[tuple[Qubit, Qubit]]
+    circuit: QuantumCircuit,
+    qubit_cons: set[tuple[Qubit, Qubit]],
+    max_cuts: Optional[int] = None,
 ) -> QuantumCircuit:
     """
     Cuts the connections between the given qubit pairs.
@@ -171,6 +174,14 @@ def cut_qubit_connections(
     Returns:
         QuantumCircuit: The circuit with cut connections.
     """
+    if not all(
+        isinstance(q0, Qubit) and isinstance(q1, Qubit) for q0, q1 in qubit_cons
+    ):
+        raise ValueError(
+            "qubit_cons is not in the correct format. "
+            "A set of tuples of qiskit `Qubit`s is expected."
+        )
+
     new_circ = QuantumCircuit(
         *circuit.qregs,
         *circuit.cregs,
@@ -178,13 +189,25 @@ def cut_qubit_connections(
         global_phase=circuit.global_phase,
         metadata=circuit.metadata,
     )
+    # If max_cuts None, replace with a generous credit
+    virt_credit = max_cuts if max_cuts is not None else len(circuit.data)
     for cinstr in circuit.data:
         op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits
-        if len(qubits) == 2 and (
-            (qubits[0], qubits[1]) in qubit_cons or (qubits[1], qubits[0]) in qubit_cons
+
+        if len(qubits) >= 3 and not isinstance(op, Barrier):
+            raise ValueError("Gates with more than 2 qubits are not supported.")
+
+        if (
+            virt_credit > 0
+            and len(qubits) == 2
+            and (
+                (qubits[0], qubits[1]) in qubit_cons
+                or (qubits[1], qubits[0]) in qubit_cons
+            )
         ):
             op = VIRTUAL_GATE_TYPES[op.name](op)
-        elif len(qubits) >= 3 and not isinstance(op, Barrier):
-            raise ValueError("Gates with more than 2 qubits are not supported.")
+            virt_credit -= 1
+
         new_circ.append(op, qubits, clbits)
+
     return new_circ
