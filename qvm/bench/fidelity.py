@@ -1,7 +1,7 @@
 from qiskit import QuantumCircuit
+from qiskit.providers.ibmq import AccountProvider
 from qiskit.quantum_info import hellinger_fidelity
 from qiskit_aer import StatevectorSimulator
-from qiskit.providers.ibmq import AccountProvider
 
 
 def perfect_counts(

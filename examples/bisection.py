@@ -3,20 +3,18 @@ import logging
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import EfficientSU2
+from qiskit.providers.ibmq import IBMQ
 from qiskit.quantum_info import hellinger_fidelity
 from qiskit_aer import AerSimulator
 
-from qiskit.providers.ibmq import IBMQ
-
-
 from qvm.cut_library.decomposition import bisect
-from qvm.runtime.runtime import QVMRuntime
 from qvm.runtime.qpus.ibmq import IBMQSimulator
-
+from qvm.runtime.runtime import QVMRuntime
 
 logging.basicConfig(level=logging.INFO)
 
 provider = None
+
 
 def main():
     num_qubits = 6
@@ -33,7 +31,7 @@ def main():
 
     circuit = circuit.bind_parameters(dict(zip(circuit.parameters, params)))
     circ_cp = circuit.copy()
-    
+
     runtime = QVMRuntime({IBMQSimulator(provider)})
 
     quasi_distr = runtime.sample(circuit)

@@ -37,16 +37,13 @@ class IBMQSimulator(IBMQQPU):
         self, circuits: list[QuantumCircuit], metadata: SampleMetaData
     ) -> list[QuasiDistr]:
         manager = IBMQJobManager()
-        results = (
-            manager.run(
-                circuits,
-                backend=self._backend,
-                shots=metadata.shots,
-                noise_model=self._noise_model,
-                coupling_map=self._coupling_map,
-            )
-            .results()
-        )
+        results = manager.run(
+            circuits,
+            backend=self._backend,
+            shots=metadata.shots,
+            noise_model=self._noise_model,
+            coupling_map=self._coupling_map,
+        ).results()
         counts = [results.get_counts(i) for i in range(len(circuits))]
         return [
             QuasiDistr.from_counts(counts=count, shots=metadata.shots)

@@ -1,16 +1,16 @@
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
-from ray.util.multiprocessing import Pool
-from concurrent.futures import ThreadPoolExecutor
 from qiskit.circuit import QuantumCircuit, QuantumRegister
+from ray.util.multiprocessing import Pool
 
-from qvm.cut_library.util import fragment_circuit
 from qvm.cut_library.decomposition import bisect
-from qvm.types import QPU, SampleMetaData
+from qvm.cut_library.util import fragment_circuit
 from qvm.quasi_distr import QuasiDistr
 from qvm.runtime.virtualizer import Virtualizer
+from qvm.types import QPU, SampleMetaData
 
 
 @dataclass
