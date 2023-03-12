@@ -3,17 +3,14 @@ import logging
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import EfficientSU2
+from qiskit.providers.ibmq import IBMQ
 from qiskit.quantum_info import hellinger_fidelity
 from qiskit_aer import AerSimulator
 
-from qiskit.providers.ibmq import IBMQ
-
-
-from qvm.cut_library.decomposition import bisect
-from qvm.runtime.util import sample_on_ibmq_backend
-from qvm.runtime.qpus.ibmq import IBMQSimulator
 from qvm.bench import fidelity
-
+from qvm.cut_library.decomposition import bisect
+from qvm.runtime.qpus.ibmq import IBMQSimulator
+from qvm.runtime.util import sample_on_ibmq_backend
 
 provider = None
 
@@ -31,14 +28,14 @@ def get_circuit(num_qubits: int) -> QuantumCircuit:
     circuit = circuit.bind_parameters(dict(zip(circuit.parameters, params)))
     return circuit
 
-def main():
 
-    circuit = get_circuit(10)    
+def main():
+    circuit = get_circuit(10)
 
     backend = provider.get_backend("ibmq_qasm_simulator")
-    
+
     vcircuit = bisect(circuit)
-    
+
     quasi_distr = sample_on_ibmq_backend(vcircuit, backend, shots=100000)
     counts = quasi_distr.to_counts(100000)
 
