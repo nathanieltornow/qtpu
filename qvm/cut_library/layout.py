@@ -3,6 +3,7 @@ from typing import Optional
 
 from qiskit.circuit import QuantumCircuit, Qubit
 from qiskit.converters import circuit_to_dag, dag_to_circuit
+from qiskit.compiler import transpile
 from qiskit.transpiler import CouplingMap
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.layout import Layout
@@ -102,16 +103,13 @@ def fit_to_coupling_basic_virtualization(
         available_credit = min(virt_credit, -pair_data.gate_count)
         circuit = cut_qubit_connections(
             circuit=circuit,
-            qubit_cons={(*pair_idx,)},
+            qubit_cons={(*pair_idx,)}, # type: ignore
             max_cuts=available_credit,
         )
         virt_credit -= available_credit
 
     # SWAP Insertion Step
-    virt_circuit_dag = circuit_to_dag(circuit)
-    swapped_virt_circuit_dag = BasicSwap(coupling_map).run(virt_circuit_dag)
-
-    return dag_to_circuit(swapped_virt_circuit_dag)
+    return transpile(circuit, coupling_map=coupling_map, optimization_level=3)
 
 
 def fit_to_coupling_map(
