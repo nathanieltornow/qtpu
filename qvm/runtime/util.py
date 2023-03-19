@@ -1,11 +1,11 @@
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from ray.util.multiprocessing import Pool
 from qiskit.circuit import QuantumCircuit
+from qiskit.compiler import transpile
 from qiskit.providers.ibmq import IBMQBackend
 from qiskit.providers.ibmq.managed import IBMQJobManager
-from qiskit.compiler import transpile
+from ray.util.multiprocessing import Pool
 
 from qvm.cut_library.util import fragment_circuit
 from qvm.quasi_distr import QuasiDistr

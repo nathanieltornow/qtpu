@@ -1,10 +1,11 @@
 import itertools
 from multiprocessing.pool import Pool
 
-from qiskit.circuit import (ClassicalRegister, QuantumCircuit, QuantumRegister,
-                            Qubit)
+from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister
 
+from qvm.cut_library.util import fragment_circuit
 from qvm.quasi_distr import QuasiDistr
+from qvm.stack._types import PlaceholderGate, QernelArgument
 from qvm.virtual_gates import VirtualBinaryGate
 
 
@@ -13,23 +14,54 @@ class Virtualizer:
         self,
         circuit: QuantumCircuit,
     ) -> None:
-        self._circuit = circuit.copy()
+        self._circuit = fragment_circuit(circuit)
         self._results: dict[QuantumRegister, dict[tuple[int, ...], QuasiDistr]] = {}
-
-    def _virtual_gates(self) -> list[tuple[VirtualBinaryGate, list[Qubit]]]:
-        """
-        Returns a list of virtual gates and the qubits they act on
-        in the circuit.
-
-        Returns:
-            list[tuple[VirtualBinaryGate, set[Qubit]]]: The list
-                of virtual gates and the qubits they act on.
-        """
-        return [
-            (instr.operation, list(instr.qubits))
+        self._virtual_gates = []
+        num_vgates = sum(
+            1
             for instr in self._circuit.data
             if isinstance(instr.operation, VirtualBinaryGate)
-        ]
+        )
+
+        conf_reg: ClassicalRegister = ClassicalRegister(num_vgates, "c_dec")
+
+        vgate_index = 0
+        self._qernel = QuantumCircuit(
+            *self._circuit.qregs, *self._circuit.cregs, conf_reg
+        )
+        for cinstr in self._circuit.data:
+            op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits
+            if isinstance(op, VirtualBinaryGate):
+                self._virtual_gates.append((op, list(qubits)))
+                for i in range(2):
+                    self._qernel.append(
+                        PlaceholderGate(
+                            f"dec_{vgate_index}_{i}", clbit=conf_reg[vgate_index]
+                        ),
+                        [qubits[i]],
+                        [],
+                    )
+                vgate_index += 1
+            else:
+                self._qernel.append(op, qubits, clbits)
+
+        sub_qernels: dict[QuantumRegister, QuantumCircuit] = {
+            qreg: QuantumCircuit(qreg, *self._qernel.cregs)
+            for qreg in self._circuit.qregs
+        }
+        for cinstr in self._qernel.data:
+            op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits
+            appended = False
+            for qreg in self._qernel.qregs:
+                if set(qubits) <= set(qreg):
+                    sub_qernels[qreg].append(op, qubits, clbits)
+                    appended = True
+                    break
+            assert appended or op.name == "barrier"
+        self._sub_qernels = sub_qernels
+
+    def sub_qernels(self) -> dict[QuantumRegister, QuantumCircuit]:
+        return self._sub_qernels.copy()
 
     def _global_inst_labels(self) -> list[tuple[int, ...]]:
         """
@@ -38,7 +70,7 @@ class Virtualizer:
         Returns:
             list[tuple[int, ...]]: The list of instantiation labels.
         """
-        inst_l = [range(len(vg._instantiations())) for vg, _ in self._virtual_gates()]
+        inst_l = [range(len(vg._instantiations())) for vg, _ in self._virtual_gates]
         return list(itertools.product(*inst_l))
 
     def _frag_inst_labels(self, fragment: QuantumRegister) -> list[tuple[int, ...]]:
@@ -56,7 +88,7 @@ class Virtualizer:
             tuple(range(len(vg._instantiations())))
             if set(qubits) & set(fragment)
             else (-1,)
-            for vg, qubits in self._virtual_gates()
+            for vg, qubits in self._virtual_gates
         ]
         return list(itertools.product(*inst_l))
 
@@ -74,53 +106,27 @@ class Virtualizer:
 
     def _fragment_instance(
         self, fragment: QuantumRegister, inst_label: tuple[int, ...]
-    ) -> QuantumCircuit:
-        """
-        Returns the circuit with the virtual gates instantiated with the given
-        instantiation label.
+    ) -> QernelArgument:
+        assert len(inst_label) == len(self._virtual_gates)
 
-        Args:
-            inst_label (tuple[int, ...]): The instantiation label.
+        q_arg = QernelArgument()
+        for vgate_index, inst_id in enumerate(inst_label):
+            if inst_id == -1:
+                continue
+            vgate, qubits = self._virtual_gates[vgate_index]
+            assert set(qubits) & set(fragment)
+            vgate_instance = vgate.instantiate(inst_label[vgate_index])
+            for i, qubit in enumerate(qubits):
+                if qubit in fragment:
+                    inst = self._circuit_on_index(vgate_instance, i)
+                    q_arg.insertions[f"dec_{vgate_index}_{i}"] = inst
+        return q_arg
 
-        Returns:
-            QuantumCircuit: The circuit with the virtual gates instantiated.
-        """
-        assert len(inst_label) == len(self._virtual_gates())
-        conf_reg = ClassicalRegister(len(inst_label), "conf")
-        inst_ctr = 0
-        inst_circuit = QuantumCircuit(
-            fragment, *(self._circuit.cregs + [conf_reg])
-        )
-        for cinstr in self._circuit.data:
-            op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits
-            if isinstance(op, VirtualBinaryGate) and set(qubits) & set(fragment):
-                # Virtual gates that act on the fragment are instantiated.
-                assert inst_label[inst_ctr] != -1
-                vgate_instance = op.instantiate(inst_label[inst_ctr])
-                for i, qubit in enumerate(qubits):
-                    if qubit in fragment:
-                        inst = self._circuit_on_index(vgate_instance, i).to_instruction(
-                            label=f"{op.name}({inst_label[inst_ctr]})"
-                        )
-                        inst_circuit.append(inst, [qubit], [conf_reg[inst_ctr]])
-                inst_ctr += 1
-            elif isinstance(op, VirtualBinaryGate):
-                # Virtual gates that do not act on the fragment are ignored.
-                assert inst_label[inst_ctr] == -1
-                inst_ctr += 1
-            elif set(qubits) <= set(fragment):
-                # Non-virtual gates that are fully in the fragment are copied.
-                inst_circuit.append(op, qubits, clbits)
-        return inst_circuit.decompose()
-
-    def instantiations(self) -> dict[QuantumRegister, list[QuantumCircuit]]:
-        return {
-            fragment: [
-                self._fragment_instance(fragment, inst_label)
-                for inst_label in self._frag_inst_labels(fragment)
-            ]
-            for fragment in self._circuit.qregs
-        }
+    def instantiations(self, fragment: QuantumRegister) -> list[QernelArgument]:
+        return [
+            self._fragment_instance(fragment, inst_label)
+            for inst_label in self._frag_inst_labels(fragment)
+        ]
 
     def put_results(self, fragment: QuantumRegister, results: list[QuasiDistr]) -> None:
         self._results[fragment] = {}
@@ -141,7 +147,7 @@ class Virtualizer:
             tuple[int, ...]: The instantiation label for the fragment.
         """
         frag_inst_label = []
-        for i, (_, qubits) in enumerate(self._virtual_gates()):
+        for i, (_, qubits) in enumerate(self._virtual_gates):
             if set(qubits) & set(fragment):
                 frag_inst_label.append(global_inst_label[i])
             else:
@@ -183,7 +189,7 @@ class Virtualizer:
                 "Please evaluate all fragments first."
             )
         results = self._merge(pool)
-        vgates, _ = zip(*self._virtual_gates())
+        vgates, _ = zip(*self._virtual_gates)
         vgates = list(vgates)
         while len(vgates) > 0:
             vg = vgates.pop(-1)
@@ -192,4 +198,5 @@ class Virtualizer:
                 results = list(map(vg.knit, chunks))
             else:
                 results = pool.map(vg.knit, chunks)
+        print(results[0])
         return results[0]

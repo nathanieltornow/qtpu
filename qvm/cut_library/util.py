@@ -1,22 +1,10 @@
 import itertools
 
 import networkx as nx
-from qiskit.circuit import (
-    Qubit,
-    QuantumCircuit,
-    Barrier,
-    QuantumRegister,
-)
+from qiskit.circuit import Barrier, QuantumCircuit, QuantumRegister, Qubit
 
-from qvm.virtual_gates import (
-    VirtualBinaryGate,
-    VirtualCX,
-    VirtualCY,
-    VirtualCZ,
-    VirtualRZZ,
-    VirtualIdentity,
-)
-
+from qvm.virtual_gates import (VirtualBinaryGate, VirtualCX, VirtualCY,
+                               VirtualCZ, VirtualIdentity, VirtualRZZ)
 
 VIRTUAL_GATE_TYPES: dict[str, type[VirtualBinaryGate]] = {
     "cx": VirtualCX,
