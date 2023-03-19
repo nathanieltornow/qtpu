@@ -1,7 +1,7 @@
 from qiskit import QuantumCircuit
 from qiskit.providers.ibmq import AccountProvider
 from qiskit.quantum_info import hellinger_fidelity
-from qiskit_aer import AerSimulator
+from qiskit_aer import StatevectorSimulator
 
 
 def perfect_counts(
@@ -16,7 +16,7 @@ def perfect_counts(
         )
     else:
         cnt = (
-            AerSimulator()
+            StatevectorSimulator()
             .run(original_circuit, shots=shots)
             .result()
             .get_counts()

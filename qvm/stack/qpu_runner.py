@@ -56,7 +56,6 @@ class QPURunner(QVMLayer):
     def get_results(self, job_id: str) -> list[QuasiDistr]:
         if job_id not in self._jobs:
             raise ValueError(f"No job with id {job_id}")
-        print(job_id)
         job = self._jobs[job_id]
         counts = job.result().get_counts()
         counts = [counts] if isinstance(counts, dict) else counts

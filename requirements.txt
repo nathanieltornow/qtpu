@@ -1,0 +1,4 @@
+qiskit>=0.41.1
+networkx>=3.0
+ray>=2.3.0
+qiskit-ibmq-provider>=0.20.1

@@ -32,7 +32,7 @@ def get_circuit(num_qubits: int) -> QuantumCircuit:
 
 
 def main():
-    circuit = get_circuit(8)
+    circuit = get_circuit(4)
     # circuit = QuantumCircuit(2)
     # circuit.h(0)
     # circuit.h(1)
@@ -41,7 +41,7 @@ def main():
     # circuit.measure_all()
     provider = IBMQ.load_account()
     backend = provider.get_backend("simulator_statevector")
-    qpu_runner = QPURunner({"sim": StatevectorSimulator()})
+    qpu_runner = QPURunner({"sim": backend})
     decomposer = Decomposer(qpu_runner)
     
     job_id = decomposer.run(circuit, [], metadata=QVMJobMetadata(qpu_name="sim", shots=10000))
