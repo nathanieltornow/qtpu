@@ -71,6 +71,4 @@ def test_quasidistr_counts():
         {"00": 2, "01": 2, "10": 2, "11": 4}, shots=10
     )
     assert quasi_from_counts == QuasiDistr({"00": 0.2, "01": 0.2, "10": 0.2, "11": 0.4})
-    assert {"00": 2, "01": 2, "10": 2, "11": 4} == quasi_from_counts.to_counts(
-        shots=10
-    )
+    assert {"00": 2, "01": 2, "10": 2, "11": 4} == quasi_from_counts.to_counts(shots=10)

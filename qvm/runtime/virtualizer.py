@@ -1,10 +1,11 @@
 import itertools
 from multiprocessing.pool import Pool
 
-from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister, Qubit
+from qiskit.circuit import (ClassicalRegister, QuantumCircuit, QuantumRegister,
+                            Qubit)
 
-from qvm.virtual_gates import VirtualBinaryGate
 from qvm.quasi_distr import QuasiDistr
+from qvm.virtual_gates import VirtualBinaryGate
 
 
 class Virtualizer:
@@ -87,9 +88,7 @@ class Virtualizer:
         assert len(inst_label) == len(self._virtual_gates())
         conf_reg = ClassicalRegister(len(inst_label), "conf")
         inst_ctr = 0
-        inst_circuit = QuantumCircuit(
-            fragment, *(self._circuit.cregs + [conf_reg])
-        )
+        inst_circuit = QuantumCircuit(fragment, *(self._circuit.cregs + [conf_reg]))
         for cinstr in self._circuit.data:
             op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits
             if isinstance(op, VirtualBinaryGate) and set(qubits) & set(fragment):

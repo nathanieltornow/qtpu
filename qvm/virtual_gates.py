@@ -1,7 +1,7 @@
 import abc
-from math import pi, cos, sin
+from math import cos, pi, sin
 
-from qiskit.circuit import QuantumCircuit, Barrier, Gate
+from qiskit.circuit import Barrier, Gate, QuantumCircuit
 
 from qvm.quasi_distr import QuasiDistr
 
@@ -13,6 +13,7 @@ class VirtualBinaryGate(Barrier, abc.ABC):
         for inst in self._instantiations():
             self._check_instantiation(inst)
         self._name = f"v_{original_gate.name}"
+        self._params = original_gate.params
 
     @property
     def original_gate(self) -> Gate:
@@ -97,12 +98,18 @@ class VirtualCZ(VirtualBinaryGate):
         r0 = results[0].get("0" + state[1:], 0)
         r1 = results[1].get("1" + state[1:], 0)
         r20, r21 = results[2].get("0" + state[1:], 0), results[2].get(
-            "1" + state[1:], 0)
-        r30, r31 = results[3].get("0" + state[1:], 0), results[3].get("1" + state[1:], 0)
-        r40, r41 = results[4].get("0" + state[1:], 0), results[4].get("1" + state[1:], 0)
-        r50, r51 = results[5].get("0" + state[1:], 0), results[5].get("1" + state[1:], 0)
+            "1" + state[1:], 0
+        )
+        r30, r31 = results[3].get("0" + state[1:], 0), results[3].get(
+            "1" + state[1:], 0
+        )
+        r40, r41 = results[4].get("0" + state[1:], 0), results[4].get(
+            "1" + state[1:], 0
+        )
+        r50, r51 = results[5].get("0" + state[1:], 0), results[5].get(
+            "1" + state[1:], 0
+        )
         return (r0 + r1 + (r21 - r20) + (r31 - r30) + (r40 - r41) + (r50 - r51)) * 0.5
-        
 
 
 class VirtualCX(VirtualCZ):
@@ -131,7 +138,13 @@ class VirtualCY(VirtualCX):
         return cy_insts
 
 
+RZZ_ACCURACY = 0.05
+
+
 class VirtualRZZ(VirtualBinaryGate):
+    def __init__(self, original_gate: Gate):
+        super().__init__(original_gate)
+
     def _instantiations(self) -> list[QuantumCircuit]:
         inst0 = QuantumCircuit(2, 1)
 
@@ -166,12 +179,14 @@ class VirtualRZZ(VirtualBinaryGate):
         r230, r231 = r23.divide_by_first_bit()
         r450, r451 = r45.divide_by_first_bit()
 
-        theta = -self.params[0]
+        m_theta = -self._params[0]
         return (
-            (r0 * cos(theta / 2) ** 2)
-            + (r1 * sin(theta / 2) ** 2)
-            + (r230 - r231 - r450 + r451) * cos(theta / 2) * sin(theta / 2)
+            (r0 * cos(m_theta / 2) ** 2)
+            + (r1 * sin(m_theta / 2) ** 2)
+            + (r230 - r231 - r450 + r451) * cos(m_theta / 2) * sin(m_theta / 2)
         )
 
-    def knit_one_state(self, results: list[QuasiDistr], state: str) -> float:   
-        raise NotImplementedError("knit_one_state is not implemented yet for VirtualRZZ")
+    def knit_one_state(self, results: list[QuasiDistr], state: str) -> float:
+        raise NotImplementedError(
+            "knit_one_state is not implemented yet for VirtualRZZ"
+        )

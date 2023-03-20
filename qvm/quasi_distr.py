@@ -9,7 +9,9 @@ class QuasiDistr(dict[str, float]):
         super().__init__(data)
 
     @staticmethod
-    def from_counts(counts: dict[str, int], shots: int) -> "QuasiDistr":
+    def from_counts(counts: dict[str, int], shots: int | None = None) -> "QuasiDistr":
+        if shots is None:
+            shots = sum(counts.values())
         return QuasiDistr({"".join(k.split()): v / shots for k, v in counts.items()})
 
     def to_counts(self, shots: int) -> dict[str, int]:

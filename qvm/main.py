@@ -2,13 +2,17 @@ import logging
 import time
 from multiprocessing import cpu_count
 from multiprocessing.pool import Pool
-# from ray.util.multiprocessing import Pool
 
 from qiskit.circuit import QuantumCircuit
 from qiskit_aer import AerSimulator
 
 from qvm.quasi_distr import QuasiDistr
+
 from .runtime.virtualizer import Virtualizer
+
+# from ray.util.multiprocessing import Pool
+
+
 
 
 def _run_circuits(circuits: list[QuantumCircuit], shots: int) -> list[QuasiDistr]:
