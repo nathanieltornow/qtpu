@@ -40,3 +40,25 @@ def bisect_recursive(circuit: QuantumCircuit, num_fragments: int) -> QuantumCirc
         fragment_qubits.remove(largest_fragment)
         fragment_qubits += list(kernighan_lin_bisection(qcg.subgraph(largest_fragment)))
     return decompose_qubits(circuit, fragment_qubits)
+
+
+def decompose(circuit: QuantumCircuit, max_fragment_size: int) -> QuantumCircuit:
+    """
+    Decomposes a circuit into fragments of a given maximum size using recursive bisection.
+
+    Args:
+        circuit (QuantumCircuit): The circuit to decompose.
+        max_fragment_size (int): The maximum size that each fragment can have.
+
+    Returns:
+        QuantumCircuit: The decomposed circuit.
+    """
+    qcg = circuit_to_qcg(circuit)
+    fragment_qubits = [set(circuit.qubits)]
+    while any(len(f) > max_fragment_size for f in fragment_qubits):
+        for fragment in fragment_qubits:
+            if len(fragment) > max_fragment_size:
+                fragment_qubits.remove(fragment)
+                fragment_qubits += list(kernighan_lin_bisection(qcg.subgraph(fragment)))
+                break
+    return decompose_qubits(circuit, fragment_qubits)
