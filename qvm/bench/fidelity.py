@@ -1,6 +1,7 @@
 from qiskit import QuantumCircuit
 from qiskit.providers.ibmq import AccountProvider
 from qiskit.quantum_info import hellinger_fidelity
+from qiskit.compiler import transpile
 from qiskit_aer import StatevectorSimulator
 
 
@@ -8,12 +9,16 @@ def perfect_counts(
     original_circuit: QuantumCircuit, shots: int, provider: AccountProvider | None = None
 ) -> dict[str, int]:
     if provider is not None:
+        print("starting job")
+        backend = provider.get_backend("simulator_statevector")
+        circ = transpile(original_circuit, backend=backend, optimization_level=0)
         cnt = (
-            provider.get_backend("simulator_mps")
-            .run(original_circuit, shots=shots)
+            backend
+            .run(circ, shots=shots)
             .result()
             .get_counts()
         )
+        print("finished job")
     else:
         cnt = (
             StatevectorSimulator()

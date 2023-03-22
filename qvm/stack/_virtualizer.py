@@ -198,5 +198,4 @@ class Virtualizer:
                 results = list(map(vg.knit, chunks))
             else:
                 results = pool.map(vg.knit, chunks)
-        print(results[0])
         return results[0]

@@ -2,7 +2,7 @@ import abc
 from dataclasses import dataclass
 
 from qiskit.circuit import Barrier, Clbit, Parameter, QuantumCircuit
-from qiskit.providers import BackendV1
+from qiskit.transpiler import CouplingMap
 
 from qvm.quasi_distr import QuasiDistr
 
@@ -65,9 +65,52 @@ class QVMJobMetadata:
     vgates_to_spend: int = 0
 
 
+class QPU(abc.ABC):
+    @abc.abstractmethod
+    def run(
+        self,
+        qernel: QuantumCircuit,
+        args: list[QernelArgument],
+        metadata: QVMJobMetadata,
+    ) -> str:
+        """Runs a qernel with the given arguments.
+
+        Args:
+            qernel (QuantumCircuit): The qernel to run.
+            args (list[QernelArgument]): The arguments to run the qernel with.
+            metadata (QVMJobMetadata): The metadata for the job.
+
+        Returns:
+            str: The job id.
+        """
+        ...
+
+    @abc.abstractmethod
+    def get_results(self, job_id: str) -> list[QuasiDistr]:
+        """Returns the results of a job.
+
+        Args:
+            job_id (str): The job id.
+
+        Returns:
+            list[QuasiDistr]: The quasi-distribution results.
+        """
+        ...
+
+    @abc.abstractmethod
+    def coupling_map(self) -> CouplingMap:
+        """Returns the coupling map of the QPU."""
+        ...
+
+    @abc.abstractmethod
+    def num_qubits(self) -> int:
+        """Returns the number of qubits of the QPU."""
+        ...
+
+
 class QVMLayer(abc.ABC):
     @abc.abstractmethod
-    def qpus(self) -> dict[str, BackendV1]:
+    def qpus(self) -> dict[str, QPU]:
         """Returns the QPUs the layer is aware of.
 
         Returns:
