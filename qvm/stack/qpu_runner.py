@@ -6,7 +6,8 @@ from qiskit.providers import Job
 
 from qvm.quasi_distr import QuasiDistr
 
-from ._types import QernelArgument, QVMJobMetadata, QVMLayer, insert_placeholders, QPU
+from ._types import (QPU, QernelArgument, QVMJobMetadata, QVMLayer,
+                     insert_placeholders)
 
 
 class QPURunner(QVMLayer):
@@ -25,16 +26,14 @@ class QPURunner(QVMLayer):
         args: list[QernelArgument],
         metadata: QVMJobMetadata,
     ) -> str:
-        if len(args) == 0:
-            raise ValueError("No arguments specified")
-        if not metadata.qpu_name:
-            raise ValueError("No QPU specified")
-        if metadata.qpu_name not in self._qpus:
-            raise ValueError(f"No QPU with name {metadata.qpu_name}")
+        if metadata.qpu_name is None:
+            qpu_name, qpu = next(iter(self._qpus.items()))
+        else:
+            qpu = self._qpus[metadata.qpu_name]
 
-        qpu_job_id = self._qpus[metadata.qpu_name].run(qernel, args, metadata)
+        qpu_job_id = qpu.run(qernel, args, metadata)
         job_id = str(uuid4())
-        self._jobs[job_id] = (metadata.qpu_name, qpu_job_id)
+        self._jobs[job_id] = (qpu_name, qpu_job_id)
         return job_id
 
     def get_results(self, job_id: str) -> list[QuasiDistr]:

@@ -1,11 +1,12 @@
 from qiskit.circuit import QuantumCircuit
 from qiskit.providers import Job
+from qiskit.providers.fake_provider import FakeBackend, FakeBackendV2
 from qiskit.providers.ibmq import AccountProvider
 from qiskit.providers.ibmq.managed import IBMQJobManager
-from qiskit.providers.fake_provider import FakeBackend, FakeBackendV2
 from qiskit_aer.noise import NoiseModel
 
 from qvm.quasi_distr import QuasiDistr
+
 
 def run_fake_backend_on_ibmq(
     circuits: list[QuantumCircuit],

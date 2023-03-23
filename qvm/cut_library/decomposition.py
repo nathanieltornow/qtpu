@@ -53,6 +53,8 @@ def decompose(circuit: QuantumCircuit, max_fragment_size: int) -> QuantumCircuit
     Returns:
         QuantumCircuit: The decomposed circuit.
     """
+    if max_fragment_size >= len(circuit.qubits):
+        return circuit
     qcg = circuit_to_qcg(circuit)
     fragment_qubits = [set(circuit.qubits)]
     while any(len(f) > max_fragment_size for f in fragment_qubits):

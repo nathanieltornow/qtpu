@@ -2,13 +2,14 @@ import itertools
 from uuid import uuid4
 
 from qiskit.circuit import QuantumCircuit
+from qiskit.compiler import transpile
 from qiskit.providers.ibmq import AccountProvider
 from qiskit.providers.ibmq.managed import IBMQJobManager
 from qiskit.transpiler import CouplingMap
-from qiskit.compiler import transpile
 
-from qvm.stack._types import QPU, insert_placeholders, QernelArgument, QVMJobMetadata
 from qvm.quasi_distr import QuasiDistr
+from qvm.stack._types import (QPU, QernelArgument, QVMJobMetadata,
+                              insert_placeholders)
 
 
 class IBMQQPU(QPU):
