@@ -6,23 +6,18 @@ from qiskit_aer import StatevectorSimulator
 
 
 def perfect_counts(
-    original_circuit: QuantumCircuit, shots: int, provider: AccountProvider | None = None
+    original_circuit: QuantumCircuit, provider: AccountProvider | None = None
 ) -> dict[str, int]:
     if provider is not None:
         print("starting job")
         backend = provider.get_backend("simulator_statevector")
         circ = transpile(original_circuit, backend=backend, optimization_level=0)
-        cnt = (
-            backend
-            .run(circ, shots=shots)
-            .result()
-            .get_counts()
-        )
+        cnt = backend.run(circ, shots=100000).result().get_counts()
         print("finished job")
     else:
         cnt = (
             StatevectorSimulator()
-            .run(original_circuit, shots=shots)
+            .run(original_circuit, shots=100000)
             .result()
             .get_counts()
         )
@@ -34,4 +29,4 @@ def fidelity(
     noisy_counts: dict[str, int],
     provider: AccountProvider | None = None,
 ) -> float:
-    return hellinger_fidelity(perfect_counts(orginal_circuit, sum(noisy_counts.values()), provider), noisy_counts)
+    return hellinger_fidelity(perfect_counts(orginal_circuit, provider), noisy_counts)

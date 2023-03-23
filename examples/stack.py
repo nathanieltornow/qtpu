@@ -40,14 +40,18 @@ def main():
     provider = IBMQ.load_account()
     qpu = IBMQSimulator(provider)
     
-
     qpu_runner = QPURunner({"sim": qpu})
     decomposer = Decomposer(qpu_runner, 2)
 
     job_id = decomposer.run(
         circuit, [], metadata=QVMJobMetadata(qpu_name="sim", shots=10000)
     )
-    quasi_distr = decomposer.get_results(job_id)[0]
+    
+    from  multiprocessing.pool import Pool
+    
+    with Pool() as pool:
+        quasi_distr = decomposer.get_results(job_id, pool)[0]
+
 
     print(decomposer._stats)
     counts = quasi_distr.to_counts(10000)
