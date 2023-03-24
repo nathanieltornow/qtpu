@@ -1,11 +1,11 @@
 class QuasiDistr(dict[str, float]):
     def __init__(self, data: dict[str, float]) -> None:
         # check if all keys have the same length
-        if len(set(map(len, data.keys()))) > 1:
-            raise ValueError("Keys must have the same length")
-        # check if all keys are binary strings
-        if not all(all(c in "01" for c in key) for key in data.keys()):
-            raise ValueError("Keys must be binary strings")
+        # if len(set(map(len, data.keys()))) > 1:
+        #     raise ValueError("Keys must have the same length")
+        # # check if all keys are binary strings
+        # if not all(all(c in "01" for c in key) for key in data.keys()):
+        #     raise ValueError("Keys must be binary strings")
         super().__init__(data)
 
     @staticmethod

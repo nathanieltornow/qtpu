@@ -6,28 +6,28 @@ from time import perf_counter
 
 from fidelity import calc_fidelity
 from qiskit.circuit import QuantumCircuit
-from qiskit.providers.ibmq import IBMQ
+from qiskit.providers.ibmq import AccountProvider
 
 from qvm.stack._types import QVMJobMetadata, QVMLayer
 
-BENCHNAME = sys.argv[1]
 
-now_str = datetime.now().strftime("%m-%d-%H-%M-%S")
-dirname = os.path.dirname(__file__)
-
-RESULT_FILE = os.path.join(dirname, "results", f"{BENCHNAME}_{now_str}.csv")
-
-provider = IBMQ.load_account()
-
-field_names = ["num_qubits", "exec_time", "fidelity"]
-
-
-with open(RESULT_FILE, "w") as csv_file:
-    csv.DictWriter(csv_file, fieldnames=field_names).writeheader()
-
-
-def run_on_QVM_layer(qvm_layer: QVMLayer, qasms: list[str]) -> None:
+def benchmark_QVM_layer(
+    qvm_layer: QVMLayer, qasms: list[str], provider: AccountProvider
+) -> None:
     """Benchmark a QVM layer."""
+
+    BENCHNAME = sys.argv[1]
+
+    now_str = datetime.now().strftime("%m-%d-%H-%M-%S")
+    dirname = os.path.dirname(__file__)
+
+    RESULT_FILE = os.path.join("bench_results", f"{BENCHNAME}_{now_str}.csv")
+
+    field_names = ["num_qubits", "exec_time", "fidelity"]
+
+    os.makedirs(os.path.dirname(RESULT_FILE), exist_ok=True)
+    with open(RESULT_FILE, "w") as csv_file:
+        csv.DictWriter(csv_file, fieldnames=field_names).writeheader()
 
     for qasm in qasms:
         qasm_file = os.path.join(dirname, qasm)
@@ -36,6 +36,7 @@ def run_on_QVM_layer(qvm_layer: QVMLayer, qasms: list[str]) -> None:
 
         start = perf_counter()
         job_id = qvm_layer.run(circuit, [], metadata=QVMJobMetadata())
+
         res = qvm_layer.get_results(job_id)[0]
         end = perf_counter()
 

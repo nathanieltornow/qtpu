@@ -84,11 +84,14 @@ class Decomposer(QVMLayer, abc.ABC):
         self._stats[job_id] = job_stat
         return job_id
 
-    def get_results(self, job_id: str, pool: Pool | None = None) -> list[QuasiDistr]:
+    def get_results(self, job_id: str) -> list[QuasiDistr]:
         if job_id not in self._sub_jobs:
             raise ValueError("Job not found")
         job_stats = self._stats[job_id]
         sub_jobs = self._sub_jobs[job_id]
+        if len(sub_jobs) == 1:
+            return self._sub_layer.get_results(list(sub_jobs.values())[0])
+        
         virtualizer = self._virtualizers[job_id]
         for qreg, sub_job_id in sub_jobs.items():
             sub_results = self._sub_layer.get_results(sub_job_id)
@@ -97,7 +100,7 @@ class Decomposer(QVMLayer, abc.ABC):
 
         print("Knitting results")
         now = perf_counter()
-        res = [virtualizer.knit(pool)]
+        res = [virtualizer.knit()]
         job_stats.knit_time = perf_counter() - now
         print(f"Knitted results in {job_stats.knit_time} seconds")
         return res

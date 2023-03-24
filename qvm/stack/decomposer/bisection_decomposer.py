@@ -7,7 +7,7 @@ from ._decomposer import Decomposer
 
 
 class BisectionDecomposer(Decomposer):
-    def __init__(self, sub_layer: QVMLayer, num_fragments: int) -> None:
+    def __init__(self, sub_layer: QVMLayer, num_fragments: int = 2) -> None:
         super().__init__(sub_layer)
         self._num_frags = num_fragments
 

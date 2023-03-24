@@ -179,7 +179,7 @@ class Virtualizer:
             merged_res = merged_res.merge(self._results[frag][frag_label])
         return merged_res
 
-    def knit(self, pool: Pool | None = None) -> QuasiDistr:
+    def knit(self) -> QuasiDistr:
         def _chunk(lst: list, n: int) -> list[list]:
             return [lst[i : i + n] for i in range(0, len(lst), n)]
 
@@ -188,14 +188,12 @@ class Virtualizer:
                 "Not all fragments have been evaluated. "
                 "Please evaluate all fragments first."
             )
-        results = self._merge(pool)
-        vgates, _ = zip(*self._virtual_gates)
-        vgates = list(vgates)
-        while len(vgates) > 0:
-            vg = vgates.pop(-1)
-            chunks = _chunk(results, len(vg._instantiations()))
-            if pool is None:
-                results = list(map(vg.knit, chunks))
-            else:
+        with Pool() as pool:
+            results = self._merge(pool)
+            vgates, _ = zip(*self._virtual_gates)
+            vgates = list(vgates)
+            while len(vgates) > 0:
+                vg = vgates.pop(-1)
+                chunks = _chunk(results, len(vg._instantiations()))
                 results = pool.map(vg.knit, chunks)
         return results[0]
