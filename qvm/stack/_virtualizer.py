@@ -190,10 +190,12 @@ class Virtualizer:
             )
         with Pool() as pool:
             results = self._merge(pool)
+            print("Merged results")
             vgates, _ = zip(*self._virtual_gates)
             vgates = list(vgates)
             while len(vgates) > 0:
                 vg = vgates.pop(-1)
                 chunks = _chunk(results, len(vg._instantiations()))
                 results = pool.map(vg.knit, chunks)
+                print("Knitted vgate")
         return results[0]

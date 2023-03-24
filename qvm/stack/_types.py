@@ -59,7 +59,7 @@ def insert_placeholders(
 
 @dataclass
 class QVMJobMetadata:
-    shots: int = 10000
+    shots: int = 20000
     qpu_name: str | None = None
     initial_layout: list[int] | None = None
     vgates_to_spend: int = 0

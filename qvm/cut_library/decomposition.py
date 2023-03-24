@@ -1,7 +1,7 @@
 from networkx.algorithms.community import kernighan_lin_bisection
 from qiskit.circuit import QuantumCircuit, Qubit
 
-from qvm.cut_library.util import circuit_to_qcg, decompose_qubits
+from qvm.cut_library.util import circuit_to_qcg, decompose_qubits, cut_qubit_connections
 
 
 def bisect(circuit: QuantumCircuit) -> QuantumCircuit:
@@ -64,3 +64,12 @@ def decompose(circuit: QuantumCircuit, max_fragment_size: int) -> QuantumCircuit
                 fragment_qubits += list(kernighan_lin_bisection(qcg.subgraph(fragment)))
                 break
     return decompose_qubits(circuit, fragment_qubits)
+
+
+def decompose_ladder(circuit: QuantumCircuit, frag_size: int) -> QuantumCircuit:
+    qubit_pairs: set[tuple[Qubit, Qubit]] = set()
+    i = frag_size - 1
+    while i < circuit.num_qubits - 1:
+        qubit_pairs.add((circuit.qubits[i], circuit.qubits[i + 1]))
+        i += frag_size
+    return cut_qubit_connections(circuit, qubit_pairs)

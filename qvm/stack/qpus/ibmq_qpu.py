@@ -8,7 +8,13 @@ from qiskit.providers.ibmq.managed import IBMQJobManager, ManagedJobSet
 from qiskit.transpiler import CouplingMap
 
 from qvm.quasi_distr import QuasiDistr
-from qvm.stack._types import QPU, QernelArgument, QVMJobMetadata, insert_placeholders, PlaceholderGate
+from qvm.stack._types import (
+    QPU,
+    QernelArgument,
+    QVMJobMetadata,
+    insert_placeholders,
+    PlaceholderGate,
+)
 
 
 class IBMQQPU(QPU):
@@ -29,15 +35,25 @@ class IBMQQPU(QPU):
         args: list[QernelArgument],
         metadata: QVMJobMetadata,
     ) -> str:
-        qernel = transpile(qernel, backend=self._backend, optimization_level=3)
+        qernel = transpile(
+            qernel,
+            backend=self._backend,
+            initial_layout=metadata.initial_layout,
+            optimization_level=3,
+        )
         if len(args) == 0:
             circs = [qernel]
         else:
             circs = [insert_placeholders(qernel, arg) for arg in args]
-        circs = transpile(circs, backend=self._backend, optimization_level=0)
-        if sum(1 for instr in qernel.data if isinstance(instr.operation, PlaceholderGate)) == 0:
-            assert False
+        circs = transpile(
+            circs,
+            backend=self._backend,
+            initial_layout=metadata.initial_layout,
+            optimization_level=0,
+        )
         job_id = str(uuid4())
+        if len(circs) == 1:
+            circs = circs[0]
         job_manager = IBMQJobManager()
         job_set = job_manager.run(circs, backend=self._backend, shots=metadata.shots)
         self._jobsets[job_id] = (job_set, len(circs))
@@ -47,6 +63,7 @@ class IBMQQPU(QPU):
         if job_id not in self._jobsets:
             raise ValueError(f"No job with id {job_id}")
         job_set_results = self._jobsets[job_id][0].results()
+
         counts = [
             job_set_results.get_counts(i) for i in range(self._jobsets[job_id][1])
         ]

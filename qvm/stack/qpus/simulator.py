@@ -11,18 +11,18 @@ from qvm.quasi_distr import QuasiDistr
 from qvm.stack._types import QPU, QernelArgument, insert_placeholders, QVMJobMetadata
 
 
-class IBMQFakeQPU(QPU):
-    def __init__(self, provider: AccountProvider, backend_name: str) -> None:
+class SimulatorQPU(QPU):
+    def __init__(self, num_qubits: int = 10) -> None:
         super().__init__()
-        self._backend = provider.get_backend(backend_name)
-        self._simulator = AerSimulator.from_backend(self._backend)
+        self._simulator = AerSimulator()
         self._jobsets: dict[str, AerJob] = {}
+        self._num_qubits = num_qubits
 
     def num_qubits(self) -> int:
-        return self._backend.configuration().n_qubits
+        return self._num_qubits
 
     def coupling_map(self) -> CouplingMap:
-        return self._backend.configuration().coupling_map
+        return CouplingMap.from_full(self._num_qubits)
 
     def run(
         self,
@@ -30,20 +30,13 @@ class IBMQFakeQPU(QPU):
         args: list[QernelArgument],
         metadata: QVMJobMetadata,
     ) -> str:
-        qernel = transpile(
-            qernel,
-            backend=self._backend,
-            initial_layout=metadata.initial_layout,
-            optimization_level=3,
-        )
         if len(args) == 0:
             circs = [qernel]
         else:
             circs = [insert_placeholders(qernel, arg) for arg in args]
         circs = transpile(
             circs,
-            backend=self._backend,
-            initial_layout=metadata.initial_layout,
+            backend=self._simulator,
             optimization_level=0,
         )
 

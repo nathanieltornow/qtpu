@@ -38,8 +38,8 @@ class QuasiDistr(dict[str, float]):
         merged_data = {}
         for key1, value1 in self.items():
             for key2, value2 in other.items():
-                merged_key = self._merged_state(key1, key2)
                 new_value = value1 * value2
+                merged_key = self._merged_state(key1, key2)
                 merged_data[merged_key] = new_value
         return QuasiDistr(merged_data)
 
