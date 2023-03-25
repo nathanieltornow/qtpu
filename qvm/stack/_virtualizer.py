@@ -14,7 +14,7 @@ class Virtualizer:
         self,
         circuit: QuantumCircuit,
     ) -> None:
-        self._circuit = fragment_circuit(circuit)
+        self._circuit = circuit
         self._results: dict[QuantumRegister, dict[tuple[int, ...], QuasiDistr]] = {}
         self._virtual_gates = []
         num_vgates = sum(
@@ -23,8 +23,12 @@ class Virtualizer:
             if isinstance(instr.operation, VirtualBinaryGate)
         )
 
+        if num_vgates == 0:
+            self._qernel = self._circuit.copy()
+            self._sub_qernels = {qreg: self._qernel for qreg in self._qernel.qregs}
+            return
+        
         conf_reg: ClassicalRegister = ClassicalRegister(num_vgates, "c_dec")
-
         vgate_index = 0
         self._qernel = QuantumCircuit(
             *self._circuit.qregs, *self._circuit.cregs, conf_reg

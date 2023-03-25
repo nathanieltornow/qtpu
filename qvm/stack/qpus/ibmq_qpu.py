@@ -52,8 +52,6 @@ class IBMQQPU(QPU):
             optimization_level=0,
         )
         job_id = str(uuid4())
-        if len(circs) == 1:
-            circs = circs[0]
         job_manager = IBMQJobManager()
         job_set = job_manager.run(circs, backend=self._backend, shots=metadata.shots)
         self._jobsets[job_id] = (job_set, len(circs))

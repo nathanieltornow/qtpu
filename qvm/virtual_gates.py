@@ -138,7 +138,7 @@ class VirtualCY(VirtualCX):
         return cy_insts
 
 
-RZZ_ACCURACY = 0.05
+RZZ_ACCURACY = 0.001
 
 
 class VirtualRZZ(VirtualBinaryGate):
@@ -151,6 +151,13 @@ class VirtualRZZ(VirtualBinaryGate):
         inst1 = QuantumCircuit(2, 1)
         inst1.z(0)
         inst1.z(1)
+
+        m_theta = -self._params[0]
+        if cos(m_theta / 2) < RZZ_ACCURACY:
+            return [inst1]
+
+        if sin(m_theta / 2) < RZZ_ACCURACY:
+            return [inst0]
 
         inst2 = QuantumCircuit(2, 1)
         inst2.rz(-pi / 2, 0)
@@ -171,15 +178,25 @@ class VirtualRZZ(VirtualBinaryGate):
         return [inst0, inst1, inst2, inst3, inst4, inst5]
 
     def knit(self, results: list[QuasiDistr]) -> QuasiDistr:
+        m_theta = -self._params[0]
+
+        if cos(m_theta / 2) < RZZ_ACCURACY:
+            r, _ = results[0].divide_by_first_bit()
+            return r * sin(m_theta / 2) ** 2
+
+        if sin(m_theta / 2) < RZZ_ACCURACY:
+            r, _ = results[0].divide_by_first_bit()
+            return r * cos(m_theta / 2) ** 2
+
         r0, _ = results[0].divide_by_first_bit()
         r1, _ = results[1].divide_by_first_bit()
+
         r23 = results[2] + results[3]
         r45 = results[4] + results[5]
 
         r230, r231 = r23.divide_by_first_bit()
         r450, r451 = r45.divide_by_first_bit()
 
-        m_theta = -self._params[0]
         return (
             (r0 * cos(m_theta / 2) ** 2)
             + (r1 * sin(m_theta / 2) ** 2)
@@ -194,8 +211,8 @@ class VirtualRZZ(VirtualBinaryGate):
 
 class VirtualCPhase(VirtualRZZ):
     def __init__(self, original_gate: Gate):
+        original_gate._params[0] = -original_gate._params[0] / 2
         super().__init__(original_gate)
-        self._params[0] = -self._params[0] / 2
 
     def _instantiations(self) -> list[QuantumCircuit]:
         lam = self._params[0]
