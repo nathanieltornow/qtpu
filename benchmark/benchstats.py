@@ -1,17 +1,30 @@
 import csv
+import numpy as np
 
 
-def bench_results_from_csv(csv_path: str) -> list[dict[str, float]]:
-    """
-    Parses the benchmark results from a csv file.
-    """
+def results_from_csv(csv_path: str) -> list[dict[str, float]]:
     with open(csv_path, "r") as csv_file:
         reader = csv.DictReader(csv_file)
         return [dict(row) for row in reader]  # type: ignore
 
-import os
 
-# current filepath
-dirname = os.path.dirname(__file__)
+def get_results(
+    results: list[dict[str, float]], bench_key: str
+) -> dict[int, list[float]]:
+    results_dict: dict[int, list[float]] = {}
+    for result in results:
+        num_qubits = int(result["num_qubits"])
+        if num_qubits not in results_dict:
+            results_dict[num_qubits] = []
+        results_dict[num_qubits].append(float(result[bench_key]))
+    return results_dict
 
-print(bench_results_from_csv("bench_results/ham_sim_03-23-17-43-45.csv"))
+
+def get_mean(results: dict[int, list[float]]) -> dict[int, float]:
+    return {
+        num_qubits: float(np.mean(values)) for num_qubits, values in results.items()
+    }
+
+
+def get_std(results: dict[int, list[float]]) -> dict[int, float]:
+    return {num_qubits: float(np.std(values)) for num_qubits, values in results.items()}

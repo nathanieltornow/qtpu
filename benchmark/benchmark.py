@@ -1,7 +1,6 @@
 import csv
 import os
 import sys
-from datetime import datetime
 from time import perf_counter
 
 from fidelity import calc_fidelity
@@ -18,19 +17,16 @@ def benchmark_QVM_layer(
 
     BENCHNAME = sys.argv[1]
 
-    now_str = datetime.now().strftime("%m-%d-%H-%M-%S")
-    dirname = os.path.dirname(__file__)
-
-    RESULT_FILE = os.path.join("bench_results", f"{BENCHNAME}_{now_str}.csv")
+    RESULT_FILE_PATH = os.path.join(os.getcwd(), f"{BENCHNAME}.csv")
 
     field_names = ["num_qubits", "exec_time", "fidelity"]
-
-    os.makedirs(os.path.dirname(RESULT_FILE), exist_ok=True)
-    with open(RESULT_FILE, "w") as csv_file:
-        csv.DictWriter(csv_file, fieldnames=field_names).writeheader()
+    if not os.path.exists(RESULT_FILE_PATH):
+        os.makedirs(os.path.dirname(RESULT_FILE_PATH), exist_ok=True)
+        with open(RESULT_FILE_PATH, "w") as csv_file:
+            csv.DictWriter(csv_file, fieldnames=field_names).writeheader()
 
     for qasm in qasms:
-        qasm_file = os.path.join(dirname, qasm)
+        qasm_file = os.path.join(os.path.dirname(__file__), qasm)
 
         circuit = QuantumCircuit.from_qasm_file(qasm_file)
 
@@ -46,7 +42,7 @@ def benchmark_QVM_layer(
             counts = res.to_counts(100000)
             fid = calc_fidelity(circuit, counts, provider)
 
-        with open(RESULT_FILE, "a") as csv_file:
+        with open(RESULT_FILE_PATH, "a") as csv_file:
             csv.DictWriter(csv_file, fieldnames=field_names).writerow(
                 {
                     field_names[0]: circuit.num_qubits,

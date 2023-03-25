@@ -190,3 +190,22 @@ class VirtualRZZ(VirtualBinaryGate):
         raise NotImplementedError(
             "knit_one_state is not implemented yet for VirtualRZZ"
         )
+
+
+class VirtualCPhase(VirtualRZZ):
+    def __init__(self, original_gate: Gate):
+        super().__init__(original_gate)
+        self._params[0] = -self._params[0] / 2
+
+    def _instantiations(self) -> list[QuantumCircuit]:
+        lam = self._params[0]
+        c1 = QuantumCircuit(2, 1)
+        c1.rz(lam / 2, 0)
+        c2 = QuantumCircuit(2, 1)
+        c2.rz(lam / 2, 1)
+
+        cphase_insts = []
+        for inst in super()._instantiations():
+            new_inst = c1.compose(inst, inplace=False)
+            cphase_insts.append(new_inst.compose(c2, inplace=False))
+        return cphase_insts
