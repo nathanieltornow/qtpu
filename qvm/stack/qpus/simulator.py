@@ -5,6 +5,7 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.compiler import transpile
 from qiskit.providers.ibmq import AccountProvider
 from qiskit.transpiler import CouplingMap
+from qiskit.providers.fake_provider import FakeBackendV2
 from qiskit_aer import AerJob, AerSimulator
 
 from qvm.quasi_distr import QuasiDistr
@@ -12,11 +13,11 @@ from qvm.stack._types import QPU, QernelArgument, insert_placeholders, QVMJobMet
 
 
 class SimulatorQPU(QPU):
-    def __init__(self, num_qubits: int = 10) -> None:
+    def __init__(self, fake_backend: FakeBackendV2 | None = None) -> None:
         super().__init__()
-        self._simulator = AerSimulator()
+        self._backend = fake_backend or AerSimulator()
         self._jobsets: dict[str, AerJob] = {}
-        self._num_qubits = num_qubits
+        self._num_qubits = fake_backend.num_qubits if fake_backend else 15
 
     def num_qubits(self) -> int:
         return self._num_qubits
@@ -36,12 +37,12 @@ class SimulatorQPU(QPU):
             circs = [insert_placeholders(qernel, arg) for arg in args]
         circs = transpile(
             circs,
-            backend=self._simulator,
+            backend=self._backend,
             optimization_level=0,
         )
 
         job_id = str(uuid4())
-        job = self._simulator.run(circs, shots=metadata.shots)
+        job = self._backend.run(circs, shots=metadata.shots)
         self._jobsets[job_id] = job
         return job_id
 
