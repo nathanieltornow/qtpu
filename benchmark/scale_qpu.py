@@ -13,7 +13,7 @@ def scale_qpu_stack(provider: AccountProvider):
     qpu = IBMQQPU(provider, "ibmq_qasm_simulator")
     # qpu = IBMQFakeQPU(provider, "ibm_oslo")
     qpu_runner = QPURunner(qpus={"sim": qpu})
-    stack = LadderDecomposer(qpu_runner, 4)
+    stack = BisectionDecomposer(qpu_runner, 2)
     return stack
 
 
@@ -26,8 +26,9 @@ def main():
         # "hamiltonian/1_layer/12.qasm",
         # "hamiltonian/1_layer/14.qasm",
         # "hamiltonian/1_layer/16.qasm",
-        "hamiltonian/1_layer/18.qasm",
+        # "hamiltonian/1_layer/18.qasm",
         "hamiltonian/1_layer/20.qasm",
+        # "qft/4.qasm",
     ] * 4
     benchmark_circuits = sorted(benchmark_circuits)
     provider = IBMQ.load_account()

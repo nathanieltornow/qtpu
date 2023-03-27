@@ -6,8 +6,7 @@ class QuasiDistr(dict[str, float]):
         # # check if all keys are binary strings
         # if not all(all(c in "01" for c in key) for key in data.keys()):
         #     raise ValueError("Keys must be binary strings")
-        super().__init__({key: value for key, value in data.items() if abs(value) > 1e-5})
-
+        super().__init__({key: value for key, value in data.items() if abs(value) > 0})
     @staticmethod
     def from_counts(counts: dict[str, int], shots: int | None = None) -> "QuasiDistr":
         if shots is None:

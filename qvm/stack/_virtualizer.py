@@ -14,7 +14,7 @@ class Virtualizer:
         self,
         circuit: QuantumCircuit,
     ) -> None:
-        self._circuit = circuit
+        self._circuit = fragment_circuit(circuit)
         self._results: dict[QuantumRegister, dict[tuple[int, ...], QuasiDistr]] = {}
         self._virtual_gates = []
         num_vgates = sum(
