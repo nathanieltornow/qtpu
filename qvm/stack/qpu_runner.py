@@ -1,3 +1,4 @@
+import random
 from uuid import uuid4
 
 from qiskit.circuit import QuantumCircuit
@@ -6,8 +7,7 @@ from qiskit.providers import Job
 
 from qvm.quasi_distr import QuasiDistr
 
-from ._types import (QPU, QernelArgument, QVMJobMetadata, QVMLayer,
-                     insert_placeholders)
+from ._types import QPU, QernelArgument, QVMJobMetadata, QVMLayer, insert_placeholders
 
 
 class QPURunner(QVMLayer):
@@ -27,7 +27,7 @@ class QPURunner(QVMLayer):
         metadata: QVMJobMetadata,
     ) -> str:
         if metadata.qpu_name is None:
-            qpu_name, qpu = next(iter(self._qpus.items()))
+            qpu_name, qpu = random.choice(list(self._qpus.items()))
         else:
             qpu = self._qpus[metadata.qpu_name]
 
