@@ -18,10 +18,8 @@ class QernelArgument:
     def __init__(
         self,
         insertions: dict[str, QuantumCircuit] | None = None,
-        params: dict[Parameter, float] | None = None,
     ) -> None:
         self.insertions = insertions or {}
-        self.params = params or {}
         if not all(
             circuit.num_qubits == 1 and circuit.num_clbits <= 1
             for circuit in self.insertions.values()
@@ -33,7 +31,7 @@ def insert_placeholders(
     qernel: QuantumCircuit,
     input_: QernelArgument,
 ) -> QuantumCircuit:
-    param_circuit = qernel.bind_parameters(input_.params)
+    param_circuit = qernel.copy()
     new_circuit = QuantumCircuit(
         *param_circuit.qregs,
         *param_circuit.cregs,

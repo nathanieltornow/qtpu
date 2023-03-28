@@ -15,7 +15,7 @@ from qvm.stack._types import QVMJobMetadata, QVMLayer
 
 FAKE_BACKEND = FakeMumbaiV2()
 
-BENCHNAME = "scale_mumbai_ghz"
+BENCHNAME = "results/vqe_mumbai"
 
 
 def benchmark_QVM_layer(qasms: list[str], provider: AccountProvider) -> None:
@@ -29,7 +29,7 @@ def benchmark_QVM_layer(qasms: list[str], provider: AccountProvider) -> None:
         with open(RESULT_FILE_PATH, "w") as csv_file:
             csv.DictWriter(csv_file, fieldnames=field_names).writeheader()
 
-    backend = provider.get_backend("ibmq_qasm_simulator")
+    backend = provider.get_backend("simulator_statevector")
 
     for qasm in qasms:
         qasm_file = os.path.join(os.path.dirname(__file__), qasm)
@@ -53,7 +53,7 @@ def benchmark_QVM_layer(qasms: list[str], provider: AccountProvider) -> None:
 
 
 def main():
-    qasms = [f"ghz/{i}.qasm" for i in [4, 6, 10, 14, 18, 22, 26]] * 4
+    qasms = [f"vqe/{i}.qasm" for i in [4, 6, 8, 10, 14]] * 4
     provider = IBMQ.load_account()
     benchmark_QVM_layer(qasms, provider)
 
