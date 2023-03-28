@@ -4,8 +4,9 @@ from uuid import uuid4
 from qiskit.circuit import QuantumCircuit
 from qiskit.compiler import transpile
 from qiskit.providers.ibmq import AccountProvider
+from qiskit.providers.ibmq.managed import IBMQJobManager, ManagedJob
 from qiskit.transpiler import CouplingMap
-from qiskit_aer import AerJob, AerSimulator
+from qiskit_aer.noise import NoiseModel
 
 from qvm.quasi_distr import QuasiDistr
 from qvm.stack._types import QPU, QernelArgument, insert_placeholders, QVMJobMetadata
@@ -15,8 +16,9 @@ class IBMQFakeQPU(QPU):
     def __init__(self, provider: AccountProvider, backend_name: str) -> None:
         super().__init__()
         self._backend = provider.get_backend(backend_name)
-        self._simulator = AerSimulator.from_backend(self._backend)
-        self._jobsets: dict[str, AerJob] = {}
+        self._simulator = provider.get_backend("ibmq_qasm_simulator")
+        self._noise_model = NoiseModel.from_backend(self._backend)
+        self._jobsets: dict[str, tuple[ManagedJob, int]] = {}
 
     def num_qubits(self) -> int:
         return self._backend.configuration().n_qubits
@@ -48,14 +50,15 @@ class IBMQFakeQPU(QPU):
         )
 
         job_id = str(uuid4())
-        job = self._simulator.run(circs, shots=metadata.shots)
-        self._jobsets[job_id] = job
+        manager = IBMQJobManager()
+        job = manager.run(circs, backend=self._simulator, shots=metadata.shots, noise_model=self._noise_model)
+        self._jobsets[job_id] = (job, len(circs))
         return job_id
 
     def get_results(self, job_id: str) -> list[QuasiDistr]:
         if job_id not in self._jobsets:
             raise ValueError(f"No job with id {job_id}")
-        job = self._jobsets[job_id]
-        counts = job.result().get_counts()
-        counts = [counts] if isinstance(counts, dict) else counts
+        job, num_circuits = self._jobsets[job_id]
+        results = job.results()
+        counts = [results.get_counts(i) for i in range(num_circuits)]
         return [QuasiDistr.from_counts(count) for count in counts]
