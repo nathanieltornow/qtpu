@@ -80,13 +80,13 @@ class Decomposer(QVMLayer, abc.ABC):
 
         job_id = str(uuid4())
         self._virtualizers = {job_id: virtualizer}
-        self._sub_jobs = {job_id: sub_jobs}
+        self._sub_jobs[job_id] = sub_jobs
         self._stats[job_id] = job_stat
         return job_id
 
     def get_results(self, job_id: str) -> list[QuasiDistr]:
         if job_id not in self._sub_jobs:
-            raise ValueError("Job not found")
+            raise ValueError(f"Job {job_id} not found")
         job_stats = self._stats[job_id]
         sub_jobs = self._sub_jobs[job_id]
         if len(sub_jobs) == 1:

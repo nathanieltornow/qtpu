@@ -11,8 +11,8 @@ from qvm.stack.qpus.ibmq_fake import IBMQFakeQPU
 
 
 def scale_qpu_stack(provider: AccountProvider):
-    qpu = IBMQQPU(provider, "ibmq_qasm_simulator")
-    # qpu = IBMQFakeQPU(provider, "ibm_oslo")
+    # qpu = IBMQQPU(provider, "ibmq_qasm_simulator")
+    qpu = IBMQFakeQPU(provider, "ibm_oslo")
     # qpu = SimulatorQPU(FakeOslo())
     qpu_runner = QPURunner(qpus={"sim": qpu})
     stack = LadderDecomposer(qpu_runner, 4)
@@ -21,7 +21,7 @@ def scale_qpu_stack(provider: AccountProvider):
 
 def main():
     benchmark_circuits = [
-        f"vqe/{i}.qasm" for i in [12]
+        f"hamiltonian/2_{i}.qasm" for i in [4, 6, 8, 10, 12, 14, 16, 18, 20]
     ] * 4
     provider = IBMQ.load_account()
     stack = scale_qpu_stack(provider)
