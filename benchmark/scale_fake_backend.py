@@ -38,7 +38,7 @@ def benchmark_QVM_layer(qasms: list[str], provider: AccountProvider) -> None:
         t_circuit = transpile(circuit, backend=FAKE_BACKEND, optimization_level=3)
 
         results = backend.run(
-            t_circuit, shots=100000, noise_model=NoiseModel.from_backend(FAKE_BACKEND)
+            t_circuit, shots=30000, noise_model=NoiseModel.from_backend(FAKE_BACKEND)
         ).result()
 
         fid = calc_fidelity(circuit, results.get_counts(), provider)
@@ -53,7 +53,7 @@ def benchmark_QVM_layer(qasms: list[str], provider: AccountProvider) -> None:
 
 
 def main():
-    qasms = [f"vqe/{i}.qasm" for i in [4, 6, 8, 10, 14]] * 4
+    qasms = [f"vqe/{i}.qasm" for i in [4, 6, 8, 10, 12, 14, 16, 18, 20]] * 4
     provider = IBMQ.load_account()
     benchmark_QVM_layer(qasms, provider)
 

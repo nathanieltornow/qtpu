@@ -12,12 +12,13 @@ mkShell {
     git
     gcc
     zlib
-    ];
+    pdm
+  ];
   
   shellHook = ''
     export PATH=${pythonEnv}/bin:$PATH
     export PYTHONPATH=${gcc}/lib:${zlib}/lib:$PYTHONPATH
-    export PYTHONPATH=.:$PYTHONPATH
+    export PYTHONPATH=$PYTHONPATH:$(pwd)
     export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
   ''; 
 }

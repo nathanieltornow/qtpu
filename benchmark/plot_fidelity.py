@@ -13,8 +13,9 @@ def plot_fidelities(ax, csv_files: list[tuple[str, str]], caption: str, lim_star
 
     experiments = list(files[0] for files in csv_files)
 
-    all_qubits = [all_fidelities[exp].keys() for exp in experiments]
-    nums_qubits = sorted(set(itertools.chain(*all_qubits)))
+    # all_qubits = [all_fidelities[exp].keys() for exp in experiments]
+    # nums_qubits = sorted(set(itertools.chain(*all_qubits)))
+    nums_qubits = [4, 6, 8, 10, 12, 14, 16, 18, 20]
 
     means_per_experiment = {}
     std_per_experiment = {}
@@ -46,7 +47,7 @@ def plot_fidelities(ax, csv_files: list[tuple[str, str]], caption: str, lim_star
         # ax.bar_label(rects, padding=3)
         multiplier += 1
 
-    ax.set_ylabel("Hellinger Fidelity")
+    # ax.set_ylabel("Hellinger Fidelity")
 
     ax.set_xticks(x + width, nums_qubits)
     ax.set_xlabel(caption)
@@ -56,28 +57,40 @@ def plot_fidelities(ax, csv_files: list[tuple[str, str]], caption: str, lim_star
     # ax.legend(loc="upper right", ncol=1)
     # plt.savefig(file_name, dpi=300)
 
-
-fig, (ax1, ax2) = plt.subplots(2)
+fig, (ax1, ax2, ax3) = plt.subplots(3)
 
 plot_fidelities(
     ax1,
     [
-        ("QVM with 7-qubit QPU (IMB Oslo)", "results/ham_ibm_oslo.csv"),
-        ("27-qubit QPU (IMB Mumbai)", "results/ham_mumbai.csv"),
+        ("QVM with 7-qubit QPU (IMB Oslo)", "results/ghz_ibm_oslo.csv"),
+        ("27-qubit QPU (IMB Mumbai)", "results/ghz_mumbai.csv"),
     ],
     "(a) Hamiltonian Simulation",
-    0.9,
+    0.25,
 )
 plot_fidelities(
     ax2,
     [
-        ("QVM with 7-qubit QPU (IMB Oslo)", "results/ghz_ibm_oslo.csv"),
-        ("27-qubit QPU (IMB Mumbai)", "results/ghz_mumbai.csv"),
+        ("QVM with 7-qubit QPU (IMB Oslo)", "results/ham_ibm_oslo.csv"),
+        ("27-qubit QPU (IMB Mumbai)", "results/ham_mumbai.csv"),
     ],
     "(b) GHZ",
-    0.0,
+    0.25,
+)
+plot_fidelities(
+    ax3,
+    [
+        ("QVM with 7-qubit QPU (IMB Oslo)", "results/vqe_ibm_oslo.csv"),
+        ("27-qubit QPU (IMB Mumbai)", "results/vqe_mumbai.csv"),
+    ],
+    "(b) GHZ",
+    0.25,
 )
 handles, labels = ax1.get_legend_handles_labels()
 fig.legend(handles, labels, loc="upper center")
 plt.xlabel("Number of qubits")
+
+ax2.set_ylabel("Hellinger Fidelity")
+
+# plt.tight_layout()
 plt.savefig("scale_qpu.png", dpi=300)
