@@ -11,13 +11,15 @@ from qvm.stack._types import QVMJobMetadata, QVMLayer
 
 
 def benchmark_QVM_layer(
-    qvm_layer: QVMLayer, qasms: list[str], provider: AccountProvider, fidelity: bool = True
+    qvm_layer: QVMLayer,
+    circuits: list[QuantumCircuit],
+    provider: AccountProvider,
+    filepath: str,
+    fidelity: bool = True,
 ) -> None:
     """Benchmark a QVM layer."""
 
-    BENCHNAME = sys.argv[1]
-
-    RESULT_FILE_PATH = os.path.join(os.getcwd(), f"{BENCHNAME}")
+    RESULT_FILE_PATH = os.path.join(os.getcwd(), filepath)
 
     field_names = ["num_qubits", "exec_time", "fidelity"]
     if not os.path.exists(RESULT_FILE_PATH):
@@ -25,19 +27,13 @@ def benchmark_QVM_layer(
         with open(RESULT_FILE_PATH, "w") as csv_file:
             csv.DictWriter(csv_file, fieldnames=field_names).writeheader()
 
-    for qasm in qasms:
-        qasm_file = os.path.join(os.path.dirname(__file__), qasm)
-
-        circuit = QuantumCircuit.from_qasm_file(qasm_file)
-
+    for circuit in circuits:
         start = perf_counter()
         job_id = qvm_layer.run(circuit, [], metadata=QVMJobMetadata())
 
         res = qvm_layer.get_results(job_id)[0]
         end = perf_counter()
-
         fid = -1.0
-
         if fidelity:
             counts = res.to_counts(100000)
             fid = calc_fidelity(circuit, counts, provider)
