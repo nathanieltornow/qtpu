@@ -45,7 +45,7 @@ def qaoa(graph: nx.Graph) -> QuantumCircuit:
     for i in range(0, nqubits):
         circuit.h(i)
     for u, v in list(graph.edges()):
-        circuit.rzz(2 * gamma, u, v)
+        circuit.rzz(np.pi / 2, u, v)
     for i in range(0, nqubits):
         circuit.rx(2 * beta, i)
 
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     import os
     import networkx as nx
     
-    os.makedirs(f"qasm/twolocal", exist_ok=True)
-    for i in range(20, 101, 10):
-        with open(f"qasm/twolocal/2_{i}.qasm", "w") as f:
-            f.write(twolocal(i, 2).decompose().qasm())
+    os.makedirs(f"qasm/qaoa", exist_ok=True)
+    for i in range(1, 7):
+        with open(f"qasm/twolocal/k{i}.qasm", "w") as f:
+            f.write(qaoa(nx.complete_graph(i)).decompose().qasm())

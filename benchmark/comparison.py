@@ -109,7 +109,7 @@ def run_qaoa_comparison(
 
 if __name__ == "__main__":
     IBMQ.load_account()
-    provider = IBMQ.get_provider(hub='ibm-q-unibw', group='unibwm-projekte', project='errormitigation')
+    provider = IBMQ.get_provider(hub='ibm-q-research-2', group='tu-munich-1', project='main')
     
     backend = provider.get_backend("ibm_oslo")
     # run_ghz_comparison(backend, provider)
@@ -118,4 +118,4 @@ if __name__ == "__main__":
 
     # run_qaoa_comparison(backend, provider, "l")
     # run_qaoa_comparison(backend, provider, "k")
-    run_qaoa_comparison(backend, provider, "b")
+    run_qaoa_comparison(backend, provider, "k")
