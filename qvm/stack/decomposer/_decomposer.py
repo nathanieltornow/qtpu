@@ -46,11 +46,6 @@ class Decomposer(QVMLayer, abc.ABC):
     ) -> str:
         assert len(args) == 0
 
-        qernel = transpile(
-            qernel,
-            optimization_level=3,
-        ).decompose()
-
         print("Decomposing qernel")
 
         job_stat = Stat()
@@ -66,6 +61,8 @@ class Decomposer(QVMLayer, abc.ABC):
 
         print(f"Decomposed qernel into {job_stat.num_vgates} virtual gates")
         print(f"Decomposed qernel in {job_stat.cut_time} seconds")
+
+        print(qernel)
 
         job_stat.exec_start = time()
         virtualizer = Virtualizer(qernel)
@@ -91,7 +88,7 @@ class Decomposer(QVMLayer, abc.ABC):
         sub_jobs = self._sub_jobs[job_id]
         if len(sub_jobs) == 1:
             return self._sub_layer.get_results(list(sub_jobs.values())[0])
-        
+
         virtualizer = self._virtualizers[job_id]
         for qreg, sub_job_id in sub_jobs.items():
             sub_results = self._sub_layer.get_results(sub_job_id)

@@ -29,7 +29,7 @@ def benchmark_QVM_layer(qasms: list[str], provider: AccountProvider) -> None:
         with open(RESULT_FILE_PATH, "w") as csv_file:
             csv.DictWriter(csv_file, fieldnames=field_names).writeheader()
 
-    backend = provider.get_backend("simulator_statevector")
+    backend = provider.get_backend("ibmq_qasm_simulator")
 
     for qasm in qasms:
         qasm_file = os.path.join(os.path.dirname(__file__), qasm)

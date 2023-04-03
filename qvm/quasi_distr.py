@@ -1,4 +1,4 @@
-ACCURACY = 1e-5
+ACCURACY = 1e-6
 
 
 class QuasiDistr(dict[str, float]):

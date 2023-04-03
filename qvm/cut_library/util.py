@@ -212,6 +212,7 @@ def cut_qubit_connections(
                 (qubits[0], qubits[1]) in qubit_cons
                 or (qubits[1], qubits[0]) in qubit_cons
             )
+            and not isinstance(op, Barrier)
         ):
             op = VIRTUAL_GATE_TYPES[op.name](op)
             virt_credit -= 1

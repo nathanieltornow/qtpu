@@ -13,6 +13,7 @@ mkShell {
     gcc
     zlib
     pdm
+    texlive.combined.scheme-full
   ];
   
   shellHook = ''

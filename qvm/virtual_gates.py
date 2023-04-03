@@ -10,10 +10,10 @@ class VirtualBinaryGate(Barrier, abc.ABC):
     def __init__(self, original_gate: Gate):
         self._original_gate = original_gate
         super().__init__(num_qubits=original_gate.num_qubits, label=original_gate.name)
-        for inst in self._instantiations():
-            self._check_instantiation(inst)
         self._name = f"v_{original_gate.name}"
         self._params = original_gate.params
+        for inst in self._instantiations():
+            self._check_instantiation(inst)
 
     @property
     def original_gate(self) -> Gate:
@@ -138,7 +138,7 @@ class VirtualCY(VirtualCX):
         return cy_insts
 
 
-RZZ_ACCURACY = 0.001
+RZZ_ACCURACY = 0.00001
 
 
 class VirtualRZZ(VirtualBinaryGate):
@@ -153,10 +153,10 @@ class VirtualRZZ(VirtualBinaryGate):
         inst1.z(1)
 
         m_theta = -self._params[0]
-        if cos(m_theta / 2) < RZZ_ACCURACY:
+        if abs(cos(m_theta / 2)) < RZZ_ACCURACY:
             return [inst1]
 
-        if sin(m_theta / 2) < RZZ_ACCURACY:
+        if abs(sin(m_theta / 2)) < RZZ_ACCURACY:
             return [inst0]
 
         inst2 = QuantumCircuit(2, 1)
@@ -180,11 +180,11 @@ class VirtualRZZ(VirtualBinaryGate):
     def knit(self, results: list[QuasiDistr]) -> QuasiDistr:
         m_theta = -self._params[0]
 
-        if cos(m_theta / 2) < RZZ_ACCURACY:
+        if abs(cos(m_theta / 2)) < RZZ_ACCURACY:
             r, _ = results[0].divide_by_first_bit()
             return r * sin(m_theta / 2) ** 2
 
-        if sin(m_theta / 2) < RZZ_ACCURACY:
+        if abs(sin(m_theta / 2)) < RZZ_ACCURACY:
             r, _ = results[0].divide_by_first_bit()
             return r * cos(m_theta / 2) ** 2
 

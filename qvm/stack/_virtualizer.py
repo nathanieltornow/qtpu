@@ -194,6 +194,8 @@ class Virtualizer:
             )
         with Pool() as pool:
             results = self._merge(pool)
+            if len(self._virtual_gates) == 0:
+                return results[0]
             print("Merged results")
             vgates, _ = zip(*self._virtual_gates)
             vgates = list(vgates)
