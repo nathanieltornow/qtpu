@@ -210,7 +210,7 @@ if __name__ == "__main__":
     import os
     import networkx as nx
     
-    os.makedirs(f"qasm/dj", exist_ok=True)
-    for i in range(1, 7):
-        with open(f"qasm/dj/{i}.qasm", "w") as f:
-            f.write(dj(i).decompose().qasm())
+    os.makedirs(f"qasm/twolocal", exist_ok=True)
+    for i in range(20, 101, 10):
+        with open(f"qasm/twolocal/2_{i}.qasm", "w") as f:
+            f.write(twolocal(i, 2).decompose().qasm())
