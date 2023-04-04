@@ -8,7 +8,7 @@ from qiskit_aer import StatevectorSimulator
 def perfect_counts(
     original_circuit: QuantumCircuit, provider: AccountProvider
 ) -> dict[str, int]:
-    backend = provider.get_backend("simulator_statevector")
+    backend = StatevectorSimulator()
     circ = transpile(original_circuit, backend=backend, optimization_level=0)
     cnt = backend.run(circ, shots=20000).result().get_counts()
     return {k.replace(" ", ""): v for k, v in cnt.items()}

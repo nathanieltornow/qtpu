@@ -105,7 +105,7 @@ def fragment_circuit(circuit: QuantumCircuit) -> QuantumCircuit:
 
 
 def decompose_qubits(
-    circuit: QuantumCircuit, con_qubits: list[set[Qubit]]
+    circuit: QuantumCircuit, con_qubits: list[set[Qubit]], max_cuts: int = 4
 ) -> QuantumCircuit:
     """
     Decomposes a circuit using gate virtualization.
@@ -143,10 +143,12 @@ def decompose_qubits(
         global_phase=circuit.global_phase,
         metadata=circuit.metadata,
     )
+    vgate_credit = max_cuts
     for cinstr in circuit.data:
         op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits
-        if _in_multiple_fragments(set(qubits)) and not isinstance(op, Barrier):
+        if _in_multiple_fragments(set(qubits)) and not isinstance(op, Barrier) and vgate_credit > 0:
             op = VIRTUAL_GATE_TYPES[op.name](op)
+            vgate_credit -= 1
         new_circ.append(op, qubits, clbits)
     return fragment_circuit(new_circ)
 
@@ -201,10 +203,8 @@ def cut_qubit_connections(
     virt_credit = max_cuts if max_cuts is not None else len(circuit.data)
     for cinstr in circuit.data:
         op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits
-
         if len(qubits) >= 3 and not isinstance(op, Barrier):
             raise ValueError("Gates with more than 2 qubits are not supported.")
-
         if (
             virt_credit > 0
             and len(qubits) == 2

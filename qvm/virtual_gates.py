@@ -211,8 +211,8 @@ class VirtualRZZ(VirtualBinaryGate):
 
 class VirtualCPhase(VirtualRZZ):
     def __init__(self, original_gate: Gate):
-        original_gate._params[0] = -original_gate._params[0] / 2
         super().__init__(original_gate)
+        self._params[0] = -self._params[0] / 2
 
     def _instantiations(self) -> list[QuantumCircuit]:
         lam = self._params[0]

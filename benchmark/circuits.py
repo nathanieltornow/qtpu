@@ -19,7 +19,7 @@ def twolocal(num_qubits: int, reps: int) -> QuantumCircuit:
     circuit = TwoLocal(
         num_qubits=num_qubits,
         rotation_blocks=["ry", "rz", "rx"],
-        entanglement="linear",
+        entanglement="circular",
         entanglement_blocks="rzz",
         reps=reps,
     )
@@ -40,7 +40,6 @@ def qaoa(graph: nx.Graph) -> QuantumCircuit:
     nqubits = len(graph.nodes())
     circuit = QuantumCircuit(nqubits)
     beta = np.random.uniform(0, np.pi)
-    gamma = np.random.uniform(0, np.pi)
 
     for i in range(0, nqubits):
         circuit.h(i)
@@ -191,26 +190,20 @@ def dj_algorithm(oracle: QuantumCircuit, n: int) -> QuantumCircuit:
 
 
 def dj(n: int, balanced: bool = True) -> QuantumCircuit:
-    """Returns a quantum circuit implementing the Deutsch-Josza algorithm.
-    Keyword arguments:
-    num_qubits -- number of qubits of the returned quantum circuit
-    balanced -- True for a balanced and False for a constant oracle
-    """
-
     oracle_mode = "balanced" if balanced else "constant"
     n = n - 1  # because of ancilla qubit
     oracle_gate = dj_oracle(oracle_mode, n)
     qc = dj_algorithm(oracle_gate, n)
     qc.name = "dj"
 
-    return qc
+    return qc.decompose()
 
 
 if __name__ == "__main__":
     import os
     import networkx as nx
-    
+
     os.makedirs(f"qasm/qaoa", exist_ok=True)
     for i in range(1, 7):
-        with open(f"qasm/twolocal/k{i}.qasm", "w") as f:
-            f.write(qaoa(nx.complete_graph(i)).decompose().qasm())
+        with open(f"qasm/qaoa/k{i}.qasm", "w") as f:
+            f.write(qaoa(nx.complete_graph(i)).qasm())

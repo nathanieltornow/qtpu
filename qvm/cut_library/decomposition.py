@@ -4,7 +4,7 @@ from qiskit.circuit import QuantumCircuit, Qubit
 from qvm.cut_library.util import circuit_to_qcg, decompose_qubits, cut_qubit_connections
 
 
-def bisect(circuit: QuantumCircuit) -> QuantumCircuit:
+def bisect(circuit: QuantumCircuit, max_cuts: int = 4) -> QuantumCircuit:
     """
     Decomposes a circuit into two fragments through gate virtualization
     using the Kernighan-Lin Bisection of the qubit connectivity graph.
@@ -17,7 +17,7 @@ def bisect(circuit: QuantumCircuit) -> QuantumCircuit:
     """
     qcg = circuit_to_qcg(circuit)
     A, B = kernighan_lin_bisection(qcg)
-    return decompose_qubits(circuit, [A, B])
+    return decompose_qubits(circuit, [A, B], max_cuts=max_cuts)
 
 
 def bisect_recursive(circuit: QuantumCircuit, num_fragments: int) -> QuantumCircuit:

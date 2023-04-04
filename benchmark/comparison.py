@@ -5,6 +5,7 @@ from qiskit.compiler import transpile
 from qiskit.providers.ibmq import IBMQ, AccountProvider, IBMQBackend
 from qiskit.providers.fake_provider import FakeGuadalupeV2, FakeBackendV2
 
+from circuits 
 from fidelity import calc_fidelity
 from util import append_to_csv_file
 
@@ -109,7 +110,7 @@ def run_qaoa_comparison(
 
 if __name__ == "__main__":
     IBMQ.load_account()
-    provider = IBMQ.get_provider(hub='ibm-q-research-2', group='tu-munich-1', project='main')
+    provider = IBMQ.get_provider(hub='ibm-q-research', group='bundeswehr-uni-1', project='main')
     
     backend = provider.get_backend("ibm_oslo")
     # run_ghz_comparison(backend, provider)
