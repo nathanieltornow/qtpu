@@ -1,7 +1,6 @@
 import itertools
 from multiprocessing.pool import Pool
 
-import mapomatic as mm
 from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister, Qubit
 from qiskit.providers.fake_provider import FakeBackendV2
 from qiskit.compiler import transpile
@@ -19,18 +18,18 @@ from qvm.cut_library.util import (
 def _circuit_instance(
     circuit: QuantumCircuit, inst_label: tuple[int, ...]
 ) -> QuantumCircuit:
-    conf_reg = ClassicalRegister(len(inst_label), "conf")
+    conf_reg = ClassicalRegister(len(inst_label), "zconf")
     inst_ctr = 0
-    inst_circuit = QuantumCircuit(*circuit.qregs, *(circuit.cregs + [conf_reg]))
+    inst_circuit = QuantumCircuit(*circuit.qregs, *(circuit.cregs + [conf_reg]), name=circuit.name, global_phase=circuit.global_phase, metadata=circuit.metadata)
     for cinstr in circuit.data:
         op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits
         if isinstance(op, VirtualBinaryGate):
             assert inst_label[inst_ctr] != -1
-            vgate_instance = op.instantiate(inst_label[inst_ctr])
-            inst_circuit = inst_circuit.compose(vgate_instance, qubits)
+            vgate_instance = op.instantiate(inst_label[inst_ctr]).to_instruction()
+            op = vgate_instance
+            clbits = [conf_reg[inst_ctr]]
             inst_ctr += 1
-        else:
-            inst_circuit.append(op, qubits, clbits)
+        inst_circuit.append(op, qubits, clbits)
     return inst_circuit.decompose()
 
 
@@ -54,7 +53,7 @@ def _chunk(lst: list, n: int) -> list[list]:
 def _knit_vgate(
     results: list[QuasiDistr], vgate: VirtualBinaryGate, pool: Pool | None = None
 ) -> list[QuasiDistr]:
-    n = len(vgate.num_instantiations)
+    n = vgate.num_instantiations
     chunks = _chunk(results, n)
     if pool is None:
         return list(map(vgate.knit, chunks))
@@ -69,10 +68,7 @@ def knit(
         instr.operation
         for instr in circuit.data
         if isinstance(instr.operation, VirtualBinaryGate)
-    ]
-    if len(vgates) == 0:
-        return results[0]
-
+    ]    
     while len(vgates) > 0:
         vgate = vgates.pop(-1)
         results = _knit_vgate(results, vgate, pool)
@@ -145,21 +141,21 @@ def virt_furthest_qubits(
     )
 
 
-def run(
-    circuit: QuantumCircuit, backend: FakeBackendV2, shots: int, max_vgates: int = 4
-) -> QuasiDistr:
-    trans_qc = transpile(circuit, backend, optimization_level=3)
-    small_qc = mm.deflate_circuit(trans_qc)
-    init_layout, _, _ = mm.best_overall_layout(small_qc, [backend])
+# def run(
+#     circuit: QuantumCircuit, backend: FakeBackendV2, shots: int, max_vgates: int = 4
+# ) -> QuasiDistr:
+#     trans_qc = transpile(circuit, backend, optimization_level=3)
+#     small_qc = mm.deflate_circuit(trans_qc)
+#     init_layout, _, _ = mm.best_overall_layout(small_qc, [backend])
 
-    vcirc = route_circuit_trivial(
-        small_qc, init_layout, backend.coupling_map, max_vgates
-    )
+#     vcirc = route_circuit_trivial(
+#         small_qc, init_layout, backend.coupling_map, max_vgates
+#     )
 
-    instances = instantiate(vcirc)
-    counts = backend.run(instances, shots=shots).result().get_counts()
-    counts = [counts] if isinstance(counts, dict) else counts
-    distrs = [QuasiDistr.from_counts(c, shots) for c in counts]
-    with Pool() as pool:
-        res = knit(vcirc, distrs, pool)
-    return res
+#     instances = instantiate(vcirc)
+#     counts = backend.run(instances, shots=shots).result().get_counts()
+#     counts = [counts] if isinstance(counts, dict) else counts
+#     distrs = [QuasiDistr.from_counts(c, shots) for c in counts]
+#     with Pool() as pool:
+#         res = knit(vcirc, distrs, pool)
+#     return res

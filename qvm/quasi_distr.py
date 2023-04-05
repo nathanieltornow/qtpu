@@ -1,4 +1,4 @@
-ACCURACY = 1e-6
+ACCURACY = 1e-30
 
 
 class QuasiDistr(dict[str, float]):
@@ -20,7 +20,7 @@ class QuasiDistr(dict[str, float]):
         return QuasiDistr({"".join(k.split()): v / shots for k, v in counts.items()})
 
     def to_counts(self, shots: int) -> dict[str, int]:
-        return {k: max(int(v * shots), 0) for k, v in self.items()}
+        return {k: abs(int(v * shots)) for k, v in self.items()}
 
     def divide_by_first_bit(self) -> tuple["QuasiDistr", "QuasiDistr"]:
         data1, data2 = {}, {}
