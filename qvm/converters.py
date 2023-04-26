@@ -148,6 +148,4 @@ def insert_placeholders(
     return new_circuit
 
 
-def qcg_to_asp(graph: nx.Graph) -> str:
-    asp = ""
-    return asp
+

@@ -1,5 +1,6 @@
 import itertools
 
+import networkx as nx
 from networkx.algorithms.community import kernighan_lin_bisection
 from qiskit.circuit import Barrier, QuantumCircuit, Qubit
 
@@ -76,10 +77,65 @@ def bisect(circuit: QuantumCircuit, num_fragments: int = 2) -> QuantumCircuit:
     return decompose_qubits(circuit, fragment_qubits)
 
 
+def _qcg_to_asp(graph: nx.Graph) -> str:
+    asp = ""
+    for node, data in graph.nodes(data=True):
+        if "weight" not in data:
+            asp += f"vertex({node}, 1).\n"
+        else:
+            asp += f'vertex({node}, {data["weight"]}).\n'
+    for u, v, data in graph.edges(data=True):
+        if "weight" not in data:
+            asp += f"edge({u}, {v}, 1).\n"
+        else:
+            asp += f'edge({u}, {v}, {data["weight"]}).\n'
+    return asp
+
+
 def cut_gates_optimal(
     circuit: QuantumCircuit,
     num_fragments: int = 2,
-    max_cuts: int | None = None,
+    max_cuts: int = 4,
     max_fragment_size: int | None = None,
 ) -> QuantumCircuit:
-    pass
+    from clingo.control import Control
+    import importlib.resources
+
+    asp = _qcg_to_asp(circuit_to_qcg(circuit, use_qubit_idx=True))
+
+    with importlib.resources.path("qvm", "asp") as path:
+        asp_file = path / "graph_partition.lp"
+        asp += asp_file.read_text()
+
+    asp += f"#const num_partitions = {str(num_fragments)}.\n"
+
+    if max_fragment_size is None:
+        max_fragment_size = len(circuit.qubits) // num_fragments + 1
+
+    asp += f":- num_vertices(_, V), V > {max_fragment_size}.\n"
+
+    asp += f":- num_cuts(C), C > {max_cuts}.\n"
+
+    control = Control()
+    control.configuration.solve.models = 0  # type: ignore
+    control.add("base", [], asp)
+    control.ground([("base", [])])
+    solve_result = control.solve(yield_=True)  # type: ignore
+    opt_model = None
+    for model in solve_result:  # type: ignore
+        opt_model = model
+
+    if opt_model is None:
+        raise ValueError("No solution found.")
+
+    qubits_sets: list[set[Qubit]] = [set() for _ in range(num_fragments)]
+    for symbol in opt_model.symbols(shown=True):
+        if symbol != "partition" and len(symbol.arguments) != 2:
+            continue
+        qubit_idx, partition = (
+            symbol.arguments[0].number,
+            symbol.arguments[1].number,
+        )
+        qubits_sets[partition].add(circuit.qubits[qubit_idx])
+
+    return decompose_qubits(circuit, qubits_sets)
