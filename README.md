@@ -13,57 +13,7 @@ pip install vqc
 
 ## Getting Started
 
-### Circuit Cutting
-
-```python
-from qiskit import QuantumCircuit
-import qvm
-
-# create your quantum circuit with Qiskit
-circuit = QuantumCircuit(4)
-circuit.h(0)
-circuit.cx([0, 2, 1, 0, 2], [1, 3, 2, 1, 3])
-circuit.measure_all()
-print(circuit)
-"""
-        ┌───┐                ░ ┌─┐         
-   q_0: ┤ H ├──■─────────■───░─┤M├─────────
-        └───┘┌─┴─┐     ┌─┴─┐ ░ └╥┘┌─┐      
-   q_1: ─────┤ X ├──■──┤ X ├─░──╫─┤M├──────
-             └───┘┌─┴─┐└───┘ ░  ║ └╥┘┌─┐   
-   q_2: ──■───────┤ X ├──■───░──╫──╫─┤M├───
-        ┌─┴─┐     └───┘┌─┴─┐ ░  ║  ║ └╥┘┌─┐
-   q_3: ┤ X ├──────────┤ X ├─░──╫──╫──╫─┤M├
-        └───┘          └───┘ ░  ║  ║  ║ └╥┘
-meas: 4/════════════════════════╩══╩══╩══╩═
-                                0  1  2  3 
-"""
-# create a circuit with virtual gates and multiple fragments
-# (virtual gates are denoted as a Barrier and fragments are 
-# modeled as a subclass of QuantumRegisters)
-circuit = qvm.cut(circuit, technique="gate_bisection", num_fragments=2)
-print(circuit)
-"""
-         ┌───┐               ░ ┌─┐         
-frag0_0: ┤ H ├──■────────■───░─┤M├─────────
-         └───┘┌─┴─┐ cx ┌─┴─┐ ░ └╥┘┌─┐      
-frag0_1: ─────┤ X ├─░──┤ X ├─░──╫─┤M├──────
-              └───┘ ░  └───┘ ░  ║ └╥┘┌─┐   
-frag1_0: ──■────────░────■───░──╫──╫─┤M├───
-         ┌─┴─┐      ░  ┌─┴─┐ ░  ║  ║ └╥┘┌─┐
-frag1_1: ┤ X ├─────────┤ X ├─░──╫──╫──╫─┤M├
-         └───┘         └───┘ ░  ║  ║  ║ └╥┘
- meas: 4/═══════════════════════╩══╩══╩══╩═
-                                0  1  2  3 
-"""
-```
-
-### Executing the virtualization
-
-```python
-
-
-```
+See the example in [./examples/bisection.py](./examples/bisection.py)
 
 ## References
 

@@ -10,19 +10,18 @@ from qiskit.quantum_info import hellinger_fidelity
 import qvm
 
 
-
 if __name__ == "__main__":
-    
     logger = logging.getLogger("qvm")
     logger.setLevel(logging.INFO)
     fh = logging.StreamHandler()
-    fh_formatter = logging.Formatter('%(asctime)s %(levelname)s %(lineno)d:%(filename)s(%(process)d) - %(message)s')
+    fh_formatter = logging.Formatter(
+        "%(asctime)s %(levelname)s %(lineno)d:%(filename)s(%(process)d) - %(message)s"
+    )
     fh.setFormatter(fh_formatter)
     logger.addHandler(fh)
     logger.info("Logging level set to INFO.")
 
-    
-    SHOTS = 1000
+    SHOTS = 10000
     # create your quantum circuit with Qiskit
     circuit = TwoLocal(7, ["h", "rz"], "rzz", entanglement="linear", reps=3)
     circuit.measure_all()

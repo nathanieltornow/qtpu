@@ -40,21 +40,6 @@ def test_quasidistr_mul():
     )
 
 
-# def test_quasidistr_kron():
-#     assert quasidistr1.kron(quasidistr2) == QuasiDistr(
-#         {
-#             "0000": 0.1,
-#             "0001": 0.1,
-#             "0010": 0.2,
-#             "0011": 0.1,
-#             "0100": 0.1,
-#             "0101": 0.1,
-#             "0110": 0.2,
-#             "0111": 0.1,
-#         }
-#     )
-
-
 def test_quasidistr_divide_by_first_bit():
     assert quasidistr1.divide_by_first_bit() == (
         QuasiDistr({"0": 0.5, "1": 0.5}),
