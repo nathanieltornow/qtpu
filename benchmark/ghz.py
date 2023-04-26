@@ -4,12 +4,10 @@ from time import perf_counter
 from qiskit.circuit import QuantumCircuit
 from qiskit.providers.ibmq import IBMQ, AccountProvider
 from qiskit.quantum_info import hellinger_fidelity
-
-from qvm.stack._types import QVMJobMetadata
-
 from stacks import scale_fidelity_stack, scale_time_stack
 from util import append_to_csv_file
 
+from qvm.stack._types import QVMJobMetadata
 
 SHOTS = 20000
 

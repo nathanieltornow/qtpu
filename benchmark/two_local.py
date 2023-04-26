@@ -2,6 +2,7 @@ import sys
 from time import perf_counter
 
 import numpy as np
+from fidelity import calc_fidelity
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import TwoLocal
 from qiskit.compiler import transpile
@@ -9,13 +10,10 @@ from qiskit.providers.fake_provider import FakeMontrealV2
 from qiskit.providers.ibmq import IBMQ, AccountProvider
 from qiskit.quantum_info import hellinger_fidelity
 from qiskit_aer.noise import NoiseModel
-
-from qvm.stack._types import QVMJobMetadata
-
 from stacks import scale_fidelity_stack, scale_time_stack
 from util import append_to_csv_file
-from fidelity import calc_fidelity
 
+from qvm.stack._types import QVMJobMetadata
 
 SHOTS = 20000
 

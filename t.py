@@ -1,47 +1,54 @@
-# from qiskit.circuit.library import EfficientSU2
-# from qiskit.circuit import QuantumCircuit
-# from qiskit.compiler import transpile
-# from qiskit.transpiler import CouplingMap
+import logging
+
+from multiprocessing.pool import Pool
+
+import numpy as np
+from qiskit.circuit.library import TwoLocal
+from qiskit_aer import AerSimulator
+from qiskit.quantum_info import hellinger_fidelity
+
+import qvm
 
 
-# from qvm.cut_library.util import cut_qubit_connections
-# from qvm.virt_router import instantiate
 
+if __name__ == "__main__":
+    
+    logger = logging.getLogger("qvm")
+    logger.setLevel(logging.INFO)
+    fh = logging.StreamHandler()
+    fh_formatter = logging.Formatter('%(asctime)s %(levelname)s %(lineno)d:%(filename)s(%(process)d) - %(message)s')
+    fh.setFormatter(fh_formatter)
+    logger.addHandler(fh)
+    logger.info("Logging level set to INFO.")
 
-# cm = CouplingMap([[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]])
+    
+    SHOTS = 1000
+    # create your quantum circuit with Qiskit
+    circuit = TwoLocal(7, ["h", "rz"], "rzz", entanglement="linear", reps=3)
+    circuit.measure_all()
+    circuit = circuit.decompose()
+    params = [(np.random.uniform(0.0, np.pi)) for _ in range(len(circuit.parameters))]
+    circuit = circuit.bind_parameters(params)
 
-# circuit = QuantumCircuit(2)
-# circuit.cx(1, 0)
-# c = transpile(circuit, optimization_level=3, coupling_map=cm, initial_layout=[0, 1])
-# print(c)
+    # create a circuit with virtual gates
+    # (virtual gates are denoted as a Barrier)
+    virt_circuit = qvm.cut(circuit, technique="gate_bisection", num_fragments=2)
 
-from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
-from qiskit.providers.fake_provider import FakeLagosV2
+    # get a virtualizer
+    virt = qvm.TwoFragmentGateVirtualizer(virt_circuit)
+    frag_circs = virt.fragments()
 
-backend = FakeLagosV2()
-pass_manager = generate_preset_pass_manager(2, backend)
-print(pass_manager.passes())
+    simulator = AerSimulator()
+    results = {}
+    for fragment, args in virt.instantiate().items():
+        circuits = [qvm.insert_placeholders(frag_circs[fragment], arg) for arg in args]
+        counts = simulator.run(circuits, shots=SHOTS).result().get_counts()
+        counts = [counts] if isinstance(counts, dict) else counts
+        results[fragment] = [qvm.QuasiDistr.from_counts(count) for count in counts]
 
-# circ = QuantumCircuit(2)
-# circ.cx(0, 1)
-# circ.cx(1, 0)
-# # circ = circ.decompose()
-# circ = cut_qubit_connections(circ, {(circ.qubits[0], circ.qubits[1])})
+    with Pool() as pool:
+        res_distr = virt.knit(results, pool=pool)
 
-
-# from qiskit.converters import circuit_to_dag
-# print(circ)
-
-# dags = []
-# for circ in instantiate(circ):
-#     c = transpile(circ, basis_gates=["rz", "h"], optimization_level=3)
-#     print(c)
-#     dag = circuit_to_dag(c)
-#     if dag not in dags:
-#         dags.append(dag)
-        
-# print(len(dags))
-
-
-# circ = transpile(circ, basis_gates=["ecr", "rz", "sx"])
-# print(circ)
+    res_counts = res_distr.to_counts(SHOTS)
+    perf_res_counts = AerSimulator().run(circuit, shots=SHOTS).result().get_counts()
+    print(f"hellinger fidelity: {hellinger_fidelity(res_counts, perf_res_counts)}")

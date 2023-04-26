@@ -1,17 +1,13 @@
-from benchmark import benchmark_QVM_layer
-
 from qiskit import QuantumCircuit
 from qiskit.providers.fake_provider import FakeOslo
 from qiskit.providers.ibmq import IBMQ, AccountProvider
 
-from qvm.stack.decomposer import (
-    BisectionDecomposer,
-    QPUAwareDecomposer,
-    LadderDecomposer,
-)
+from benchmark import benchmark_QVM_layer
+from qvm.sampler import QVMSampler
+from qvm.stack.decomposer import (BisectionDecomposer, LadderDecomposer,
+                                  QPUAwareDecomposer)
 from qvm.stack.qpu_runner import QPURunner
 from qvm.stack.qpus.simulator import SimulatorQPU
-from qvm.sampler import QVMSampler
 
 
 def scale_qpu_stack():

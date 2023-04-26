@@ -1,18 +1,16 @@
 import itertools
 from multiprocessing.pool import Pool
 
-from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister, Qubit
-from qiskit.providers.fake_provider import FakeBackendV2
+from qiskit.circuit import (ClassicalRegister, QuantumCircuit, QuantumRegister,
+                            Qubit)
 from qiskit.compiler import transpile
+from qiskit.providers.fake_provider import FakeBackendV2
 from qiskit.transpiler import CouplingMap
 
+from qvm.cut_library.util import (VIRTUAL_GATE_TYPES, circuit_to_qcg,
+                                  cut_qubit_connections)
 from qvm.quasi_distr import QuasiDistr
 from qvm.virtual_gates import VirtualBinaryGate
-from qvm.cut_library.util import (
-    VIRTUAL_GATE_TYPES,
-    cut_qubit_connections,
-    circuit_to_qcg,
-)
 
 
 def _circuit_instance(

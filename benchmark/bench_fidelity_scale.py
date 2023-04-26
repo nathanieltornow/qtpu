@@ -1,20 +1,20 @@
+from circuits import ghz, qaoa, twolocal
+from fidelity import calc_fidelity
+from graphs import barbell
 from qiskit.circuit import QuantumCircuit
 from qiskit.compiler import transpile
-from qiskit.providers.ibmq import AccountProvider, IBMQ
-from qiskit.providers.fake_provider import FakeOslo, FakeMontrealV2, FakeSherbrooke
+from qiskit.providers.fake_provider import (FakeMontrealV2, FakeOslo,
+                                            FakeSherbrooke)
+from qiskit.providers.ibmq import IBMQ, AccountProvider
 from qiskit_aer.noise import NoiseModel
-
-from qvm.stack.qpu_runner import QPURunner
-from qvm.stack.qpus.simulator import SimulatorQPU
-from qvm.stack.qpus.ibmq_qpu import IBMQQPU
-from qvm.stack.qpus.ibmq_fake import IBMQFakeQPU
-from qvm.stack.decomposer import LadderDecomposer, QPUAwareDecomposer
-from qvm.stack._types import QVMJobMetadata, QVMLayer
-
-from fidelity import calc_fidelity
 from util import append_to_csv_file
-from circuits import ghz, twolocal, qaoa
-from graphs import barbell
+
+from qvm.stack._types import QVMJobMetadata, QVMLayer
+from qvm.stack.decomposer import LadderDecomposer, QPUAwareDecomposer
+from qvm.stack.qpu_runner import QPURunner
+from qvm.stack.qpus.ibmq_fake import IBMQFakeQPU
+from qvm.stack.qpus.ibmq_qpu import IBMQQPU
+from qvm.stack.qpus.simulator import SimulatorQPU
 
 SHOTS = 20000
 

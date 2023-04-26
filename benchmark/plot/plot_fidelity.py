@@ -1,8 +1,10 @@
 import itertools
+
+# change the font size
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-
-from benchstats import results_from_csv, get_results
+from benchstats import get_results, results_from_csv
 
 # from matplotlib import rc
 # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
@@ -10,8 +12,6 @@ from benchstats import results_from_csv, get_results
 # #rc('font',**{'family':'serif','serif':['Palatino']})
 # rc('text', usetex=True)\
 
-# change the font size
-import matplotlib
 
 matplotlib.rcParams.update({"font.size": 9})
 

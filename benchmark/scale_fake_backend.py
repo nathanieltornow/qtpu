@@ -5,13 +5,12 @@ from time import perf_counter
 
 from fidelity import calc_fidelity
 from qiskit.circuit import QuantumCircuit
-from qiskit.providers.ibmq import AccountProvider, IBMQ
-from qiskit.providers.fake_provider import FakeMumbaiV2
-from qiskit_aer.noise import NoiseModel
 from qiskit.compiler import transpile
+from qiskit.providers.fake_provider import FakeMumbaiV2
+from qiskit.providers.ibmq import IBMQ, AccountProvider
+from qiskit_aer.noise import NoiseModel
 
 from qvm.stack._types import QVMJobMetadata, QVMLayer
-
 
 FAKE_BACKEND = FakeMumbaiV2()
 

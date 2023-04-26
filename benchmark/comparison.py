@@ -2,8 +2,8 @@ import os
 
 from qiskit.circuit import QuantumCircuit
 from qiskit.compiler import transpile
+from qiskit.providers.fake_provider import FakeBackendV2, FakeGuadalupeV2
 from qiskit.providers.ibmq import IBMQ, AccountProvider, IBMQBackend
-from qiskit.providers.fake_provider import FakeGuadalupeV2, FakeBackendV2
 
 from circuits 
 from fidelity import calc_fidelity

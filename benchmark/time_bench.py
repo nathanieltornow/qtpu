@@ -1,7 +1,7 @@
 from qiskit.circuit import QuantumCircuit
-from qvm.stack.decomposer._decomposer import Decomposer
-
 from qiskit_aer import AerSimulator
+
+from qvm.stack.decomposer._decomposer import Decomposer
 
 
 def run_benchmarks(

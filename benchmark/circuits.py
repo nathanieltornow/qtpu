@@ -1,9 +1,7 @@
-import numpy as np
 import networkx as nx
-
-from qiskit.circuit import QuantumCircuit, CircuitInstruction
-from qiskit.circuit.library import TwoLocal, QFT
-from qiskit.circuit.library import standard_gates
+import numpy as np
+from qiskit.circuit import CircuitInstruction, QuantumCircuit
+from qiskit.circuit.library import QFT, TwoLocal, standard_gates
 
 
 def ghz(num_qubits: int):
@@ -201,6 +199,7 @@ def dj(n: int, balanced: bool = True) -> QuantumCircuit:
 
 if __name__ == "__main__":
     import os
+
     import networkx as nx
 
     os.makedirs(f"qasm/qaoa", exist_ok=True)

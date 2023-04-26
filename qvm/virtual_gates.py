@@ -6,6 +6,16 @@ from qiskit.circuit import Barrier, Gate, QuantumCircuit
 from qvm.quasi_distr import QuasiDistr
 
 
+class WireCut(Barrier):
+    def __init__(self):
+        super().__init__(num_qubits=1, label="wc")
+
+
+class VirtualSWAP(Barrier):
+    def __init__(self):
+        super().__init__(num_qubits=2, label="vswap")
+
+
 class VirtualBinaryGate(Barrier, abc.ABC):
     def __init__(self, original_gate: Gate):
         self._original_gate = original_gate
@@ -226,3 +236,12 @@ class VirtualCPhase(VirtualRZZ):
             new_inst = c1.compose(inst, inplace=False)
             cphase_insts.append(new_inst.compose(c2, inplace=False))
         return cphase_insts
+
+
+VIRTUAL_GATE_TYPES: dict[str, type[VirtualBinaryGate]] = {
+    "cx": VirtualCX,
+    "cy": VirtualCY,
+    "cz": VirtualCZ,
+    "rzz": VirtualRZZ,
+    "cp": VirtualCPhase,
+}

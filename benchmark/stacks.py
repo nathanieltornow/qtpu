@@ -1,15 +1,12 @@
 from qiskit.providers.fake_provider import FakeMontrealV2, FakeOslo
 from qiskit.providers.ibmq import IBMQ, AccountProvider
 
-from qvm.stack.decomposer import (
-    BisectionDecomposer,
-    QPUAwareDecomposer,
-    LadderDecomposer,
-)
+from qvm.stack.decomposer import (BisectionDecomposer, LadderDecomposer,
+                                  QPUAwareDecomposer)
 from qvm.stack.qpu_runner import QPURunner
-from qvm.stack.qpus.simulator import SimulatorQPU
-from qvm.stack.qpus.ibmq_qpu import IBMQQPU
 from qvm.stack.qpus.ibmq_fake import IBMQFakeQPU
+from qvm.stack.qpus.ibmq_qpu import IBMQQPU
+from qvm.stack.qpus.simulator import SimulatorQPU
 
 
 def scale_fidelity_stack(provider: AccountProvider, num_qubits: int):

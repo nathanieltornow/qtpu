@@ -1,13 +1,15 @@
+from circuits import dj, ghz, qaoa, qft, random_circuit, twolocal
 from qiskit.circuit import QuantumCircuit
-from qiskit.transpiler import CouplingMap, Layout
 from qiskit.compiler import transpile
 from qiskit.providers import BackendV1
-from qiskit.providers.fake_provider import FakeOslo, FakeGuadalupe, FakeMontrealV2
+from qiskit.providers.fake_provider import (FakeGuadalupe, FakeMontrealV2,
+                                            FakeOslo)
+from qiskit.transpiler import CouplingMap, Layout
 
-from qvm.virt_router import route_circuit_trivial, virt_furthest_qubits, instantiate
 from qvm.cut_library.decomposition import bisect
+from benchmark.virt_router import (instantiate, route_circuit_trivial,
+                             virt_furthest_qubits)
 
-from circuits import qaoa, ghz, qft, twolocal, dj, random_circuit
 
 def num_swaps(circuit: QuantumCircuit) -> int:
     return sum([1 for instr in circuit.data if instr.operation.name == "swap"])
