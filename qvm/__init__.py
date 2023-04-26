@@ -5,4 +5,4 @@ from .virtualizer import (
     TwoFragmentGateVirtualizer,
 )
 from .quasi_distr import QuasiDistr
-from .converters import insert_placeholders
+from .util import insert_placeholders

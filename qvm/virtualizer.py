@@ -6,7 +6,7 @@ from multiprocessing.pool import Pool
 
 from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister
 
-from qvm.converters import fragment_circuit
+from qvm.util import fragment_circuit
 from qvm.quasi_distr import QuasiDistr
 from qvm.types import Argument, Fragment, PlaceholderGate
 from qvm.virtual_gates import VirtualBinaryGate

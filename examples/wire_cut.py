@@ -29,8 +29,8 @@ if __name__ == "__main__":
 
     # create a circuit with virtual gates
     # (virtual gates are denoted as a Barrier)
-    virt_circuit = qvm.cut(circuit, technique="wire_optimal", num_fragments=2)
-
+    virt_circuit = qvm.cut(circuit, technique="optimal", num_fragments=2, max_gate_cuts=0, max_fragment_size=5)
+    print(virt_circuit)
     exit()
 
     # get a virtualizer
