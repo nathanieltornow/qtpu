@@ -4,6 +4,7 @@ import networkx as nx
 from qiskit.circuit import Barrier, QuantumCircuit, QuantumRegister, Qubit
 
 from qvm.types import Argument, PlaceholderGate
+from qvm.virtual_gates import VIRTUAL_GATE_TYPES
 
 
 def circuit_to_qcg(circuit: QuantumCircuit, use_qubit_idx: bool = False) -> nx.Graph:
@@ -54,10 +55,8 @@ def fold_circuit(
     current_1q_circ = QuantumCircuit(*circuit.qregs, *circuit.cregs, name="1q")
 
     for instr in circuit:
-        op, qubits, clbits = instr.operation, instr.qubits, instr.num_clbits
-        if len(qubits) >= 3:
-            raise ValueError("")
-        elif len(qubits) == 1:
+        op, qubits, clbits = instr.operation, instr.qubits, instr.clbits
+        if len(qubits) == 1 or isinstance(op, Barrier):
             current_1q_circ.append(op, qubits, clbits)
         elif len(qubits) == 2:
             _1q_circs.append(current_1q_circ)
@@ -148,4 +147,48 @@ def insert_placeholders(
     return new_circuit
 
 
+def decompose_qubits(
+    circuit: QuantumCircuit, con_qubits: list[set[Qubit]]
+) -> QuantumCircuit:
+    """
+    Decomposes a circuit using gate virtualization.
+    The fragments are defined by the connected qubits, which should still be connected.
 
+    Args:
+        circuit (QuantumCircuit): The original circuit.
+        con_qubits (list[set[Qubit]]): The connected qubits.
+            Each set of qubits is a fragment.
+            The qubit set need to be disjoint and contain all qubits of the circuit.
+
+    Raises:
+        ValueError: Thrown if con_qubits is illegal.
+
+    Returns:
+        QuantumCircuit: The decomposed circuit with virtual gates.
+    """
+    if set(circuit.qubits) != set.union(*con_qubits):
+        raise ValueError("con_qubits is not containing all qubits of the circuit.")
+    if len(list(itertools.chain(*con_qubits))) != len(circuit.qubits):
+        raise ValueError("con_qubits is not disjoint.")
+
+    def _in_multiple_fragments(qubits: set[Qubit]) -> bool:
+        for qubit_set in con_qubits:
+            if qubit_set & qubits and not qubits <= qubit_set:
+                return True
+            if qubits <= qubit_set:
+                return False
+        return False
+
+    new_circ = QuantumCircuit(
+        *circuit.qregs,
+        *circuit.cregs,
+        name=circuit.name,
+        global_phase=circuit.global_phase,
+        metadata=circuit.metadata,
+    )
+    for cinstr in circuit.data:
+        op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits
+        if _in_multiple_fragments(set(qubits)) and not isinstance(op, Barrier):
+            op = VIRTUAL_GATE_TYPES[op.name](op)
+        new_circ.append(op, qubits, clbits)
+    return fragment_circuit(new_circ)

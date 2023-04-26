@@ -8,6 +8,10 @@ from qiskit_aer import AerSimulator
 from qiskit.quantum_info import hellinger_fidelity
 
 import qvm
+from _example_circuit import example_circuit
+
+
+SHOTS = 10000
 
 
 if __name__ == "__main__":
@@ -21,17 +25,13 @@ if __name__ == "__main__":
     logger.addHandler(fh)
     logger.info("Logging level set to INFO.")
 
-    SHOTS = 10000
-    # create your quantum circuit with Qiskit
-    circuit = TwoLocal(7, ["h", "rz"], "rzz", entanglement="linear", reps=3)
-    circuit.measure_all()
-    circuit = circuit.decompose()
-    params = [(np.random.uniform(0.0, np.pi)) for _ in range(len(circuit.parameters))]
-    circuit = circuit.bind_parameters(params)
+    circuit = example_circuit()
 
     # create a circuit with virtual gates
     # (virtual gates are denoted as a Barrier)
-    virt_circuit = qvm.cut(circuit, technique="gate_bisection", num_fragments=2)
+    virt_circuit = qvm.cut(circuit, technique="wire_optimal", num_fragments=2)
+
+    exit()
 
     # get a virtualizer
     virt = qvm.TwoFragmentGateVirtualizer(virt_circuit)
