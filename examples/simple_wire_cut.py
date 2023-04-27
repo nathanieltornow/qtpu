@@ -1,8 +1,15 @@
 import logging
+from multiprocessing.pool import Pool
 
+import numpy as np
 from _example_circuit import example_circuit
+from qiskit.circuit.library import TwoLocal
+from qiskit.quantum_info import hellinger_fidelity
+from qiskit_aer import AerSimulator
 
 import qvm
+
+SHOTS = 10000
 
 
 if __name__ == "__main__":
@@ -14,15 +21,12 @@ if __name__ == "__main__":
     )
     fh.setFormatter(fh_formatter)
     logger.addHandler(fh)
+    logger.info("Logging level set to INFO.")
 
     circuit = example_circuit()
 
     virt_circuit = qvm.cut(
-        circuit,
-        technique="optimal",
-        num_fragments=2,
-        max_wire_cuts=2,
-        max_gate_cuts=2,
-        max_fragment_size=5,
+        circuit, technique="wire_optimal", num_fragments=2, max_cuts=1
     )
+
     print(virt_circuit)

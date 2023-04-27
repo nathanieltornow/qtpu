@@ -1,6 +1,5 @@
 import logging
 
-
 import numpy as np
 from qiskit.circuit.library import TwoLocal
 

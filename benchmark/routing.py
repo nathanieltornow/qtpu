@@ -6,9 +6,9 @@ from qiskit.providers.fake_provider import (FakeGuadalupe, FakeMontrealV2,
                                             FakeOslo)
 from qiskit.transpiler import CouplingMap, Layout
 
-from qvm.cut_library.decomposition import bisect
 from benchmark.virt_router import (instantiate, route_circuit_trivial,
-                             virt_furthest_qubits)
+                                   virt_furthest_qubits)
+from qvm.cut_library.decomposition import bisect
 
 
 def num_swaps(circuit: QuantumCircuit) -> int:

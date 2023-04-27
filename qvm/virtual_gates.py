@@ -10,10 +10,18 @@ class WireCut(Barrier):
     def __init__(self):
         super().__init__(num_qubits=1, label="wc")
 
+    def _define(self):
+        self._definition = QuantumCircuit(1)
+
 
 class VirtualSWAP(Barrier):
     def __init__(self):
         super().__init__(num_qubits=2, label="vswap")
+
+    def _define(self):
+        circ = QuantumCircuit(2)
+        circ.swap(0, 1)
+        self._definition = circ
 
 
 class VirtualBinaryGate(Barrier, abc.ABC):

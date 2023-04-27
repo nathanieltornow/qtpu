@@ -33,8 +33,9 @@ def cut_gates_optimal(
     max_cuts: int = 4,
     max_fragment_size: int | None = None,
 ) -> QuantumCircuit:
-    from clingo.control import Control
     import importlib.resources
+
+    from clingo.control import Control
 
     asp = _qcg_to_asp(circuit_to_qcg(circuit, use_qubit_idx=True))
 

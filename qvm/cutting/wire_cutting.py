@@ -1,4 +1,4 @@
-from qiskit.circuit import QuantumCircuit, Qubit, QuantumRegister
+from qiskit.circuit import QuantumCircuit, QuantumRegister, Qubit
 
 from .optimal import cut_optimal
 

@@ -1,12 +1,11 @@
 import logging
-
 from time import perf_counter
 
 from qiskit.circuit import QuantumCircuit
 
 from qvm.cutting.gate_cutting import bisect, cut_gates_optimal
-from qvm.cutting.wire_cutting import cut_wires_optimal
 from qvm.cutting.optimal import cut_optimal
+from qvm.cutting.wire_cutting import cut_wires_optimal
 
 logger = logging.getLogger("qvm")
 

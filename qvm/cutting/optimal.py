@@ -1,7 +1,7 @@
-from qiskit.circuit import QuantumCircuit, Qubit, QuantumRegister
+from qiskit.circuit import QuantumCircuit, QuantumRegister, Qubit
 
-from qvm.util import fold_circuit, unfold_circuit, fragment_circuit
-from qvm.virtual_gates import WireCut, VirtualSWAP, VIRTUAL_GATE_TYPES
+from qvm.util import fold_circuit, unfold_circuit, wirecuts_to_vswaps
+from qvm.virtual_gates import VIRTUAL_GATE_TYPES, VirtualSWAP, WireCut
 
 
 def cut_optimal(
@@ -11,8 +11,9 @@ def cut_optimal(
     max_gate_cuts: int = 2,
     max_fragment_size: int | None = None,
 ) -> QuantumCircuit:
-    from clingo.control import Control
     import importlib.resources
+
+    from clingo.control import Control
 
     two_qubit_circ, one_qubit_circs = fold_circuit(circuit)
 
@@ -71,39 +72,7 @@ def cut_optimal(
                     wc_circ, qubit, front=True
                 )
     cut_circuit = unfold_circuit(cut_circuit, one_qubit_circs)
-    cut_circuit = _wirecuts_to_vswaps(cut_circuit)
-    return fragment_circuit(cut_circuit)
-
-
-def _wirecuts_to_vswaps(circuit: QuantumCircuit) -> QuantumCircuit:
-    if sum(1 for instr in circuit if isinstance(instr, VirtualSWAP)) > 0:
-        raise ValueError("Circuit already contains virtual SWAP gates.")
-    num_wire_cuts = sum(1 for instr in circuit if isinstance(instr.operation, WireCut))
-    if num_wire_cuts == 0:
-        return circuit.copy()
-
-    wire_cut_register = QuantumRegister(num_wire_cuts, "wire_cut")
-
-    new_circuit = QuantumCircuit(
-        *circuit.qregs,
-        wire_cut_register,
-        *circuit.cregs,
-        name=circuit.name,
-        global_phase=circuit.global_phase,
-        metadata=circuit.metadata,
-    )
-    qubit_map: dict[Qubit, Qubit] = {}
-    cut_ctr = 0
-    for instr in circuit:
-        op, qubits, clbits = instr.operation, instr.qubits, instr.clbits
-        qubits = [qubit_map.get(qubit, qubit) for qubit in qubits]
-        if isinstance(op, WireCut):
-            qubit_map[qubits[0]] = wire_cut_register[cut_ctr]
-            op = VirtualSWAP()
-            qubits = [qubits[0], wire_cut_register[cut_ctr]]
-            cut_ctr += 1
-        new_circuit.append(op, qubits, clbits)
-    return new_circuit
+    return wirecuts_to_vswaps(cut_circuit)
 
 
 def _next_index_on_qubit(
