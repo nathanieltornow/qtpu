@@ -3,14 +3,14 @@ import logging
 import numpy as np
 from qiskit.circuit.library import TwoLocal
 
-NUM_QUBITS = 8
-NUM_REPS = 2
+NUM_QUBITS = 4
+NUM_REPS = 1
 
 
 def example_circuit():
     # create your quantum circuit with Qiskit
     circuit = TwoLocal(
-        NUM_QUBITS, ["h", "rz"], "rzz", entanglement="linear", reps=NUM_REPS
+        NUM_QUBITS, ["h", "rz"], "cx", entanglement="linear", reps=NUM_REPS
     )
     circuit.measure_all()
     circuit = circuit.decompose()

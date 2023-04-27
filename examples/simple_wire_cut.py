@@ -30,3 +30,30 @@ if __name__ == "__main__":
     )
 
     print(virt_circuit)
+
+        # get a virtualizer
+    virt = qvm.SingleWireVirtualizer(virt_circuit)
+    frag_circs = virt.fragments()
+    print(frag_circs)
+    # for frag, circ in frag_circs.items():
+    #     # print(frag)
+    #     print(circ)
+
+    simulator = AerSimulator()
+    results = {}
+    for fragment, args in virt.instantiate().items():
+        circuits = [qvm.insert_placeholders(frag_circs[fragment], arg) for arg in args]
+        for circ in circuits:
+            print(circ)
+        counts = simulator.run(circuits, shots=SHOTS).result().get_counts()
+        counts = [counts] if isinstance(counts, dict) else counts
+        results[fragment] = [qvm.QuasiDistr.from_counts(count) for count in counts]
+
+    with Pool() as pool:
+        res_distr = virt.knit(results, pool=pool)
+
+    res_counts = res_distr.to_counts(SHOTS)
+    print(res_counts)
+    perf_res_counts = AerSimulator().run(circuit, shots=SHOTS).result().get_counts()
+    print(perf_res_counts)
+    print(f"hellinger fidelity: {hellinger_fidelity(res_counts, perf_res_counts)}")
