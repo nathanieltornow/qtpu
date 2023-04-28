@@ -1,15 +1,13 @@
 import logging
 from multiprocessing.pool import Pool
 
-import numpy as np
 from _example_circuit import example_circuit
-from qiskit.circuit.library import TwoLocal
 from qiskit.quantum_info import hellinger_fidelity
 from qiskit_aer import AerSimulator
 
 import qvm
 
-SHOTS = 10000
+SHOTS = 100000
 
 
 if __name__ == "__main__":
@@ -31,13 +29,9 @@ if __name__ == "__main__":
 
     print(virt_circuit)
 
-        # get a virtualizer
     virt = qvm.SingleWireVirtualizer(virt_circuit)
     frag_circs = virt.fragments()
     print(frag_circs)
-    # for frag, circ in frag_circs.items():
-    #     # print(frag)
-    #     print(circ)
 
     simulator = AerSimulator()
     results = {}

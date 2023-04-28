@@ -69,7 +69,7 @@ class TwoFragmentGateVirtualizer(GateVirtualizer):
 
     @staticmethod
     def _merge_two_distrs(distrs: tuple[QuasiDistr, QuasiDistr]) -> QuasiDistr:
-        return distrs[0].merge(distrs[1])
+        return distrs[0] * distrs[1]
 
     @staticmethod
     def _binary_merge(

@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from qiskit.circuit.library import TwoLocal
 
-NUM_QUBITS = 4
+NUM_QUBITS = 8
 NUM_REPS = 1
 
 

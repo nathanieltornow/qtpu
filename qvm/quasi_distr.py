@@ -1,3 +1,5 @@
+from typing import Union
+
 ACCURACY = 1e-6
 
 
@@ -58,8 +60,12 @@ class QuasiDistr(dict[str, float]):
         subbed_data.update(only_others)
         return QuasiDistr(subbed_data)
 
-    def __mul__(self, other: float) -> "QuasiDistr":
-        return QuasiDistr({key: self[key] * other for key in self.keys()})
+    def __mul__(self, other: Union[int, float, "QuasiDistr"]) -> "QuasiDistr":
+        if isinstance(other, QuasiDistr):
+            return self.merge(other)
+        elif isinstance(other, float) or isinstance(other, int):
+            return QuasiDistr({key: self[key] * other for key in self.keys()})
+        raise TypeError(f"Cannot multiply QuasiDistr by {type(other)}")
 
-    def __rmul__(self, other: float) -> "QuasiDistr":
+    def __rmul__(self, other: Union[int, float, "QuasiDistr"]) -> "QuasiDistr":
         return self * other

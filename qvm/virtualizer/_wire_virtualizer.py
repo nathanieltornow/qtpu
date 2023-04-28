@@ -61,11 +61,11 @@ class SingleWireVirtualizer(Virtualizer):
         p0, _ = resultsr[0].divide_by_first_bit()
         p1, _ = resultsr[1].divide_by_first_bit()
         pp, _ = resultsr[2].divide_by_first_bit()
-        pp = 2*pp - p0 - p1
+        pp = 2 * pp - p0 - p1
         pi, _ = resultsr[3].divide_by_first_bit()
-        pi = 2*pi - p0 - p1
+        pi = 2 * pi - p0 - p1
 
-        return 0.5 * (pZ0.merge(p0) + pZ1.merge(p1) + pX.merge(pp) + pY.merge(pi))
+        return 0.5 * (pZ0 * p0 + pZ1 * p1 + pX * pp + pY * pi)
 
 
 def _x_circuit() -> QuantumCircuit:
