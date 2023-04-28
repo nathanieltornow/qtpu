@@ -1085,6 +1085,11 @@ requires_python = ">=3.7"
 summary = "A modern CSS selector implementation for Beautiful Soup."
 
 [[package]]
+name = "sqlitedict"
+version = "2.1.0"
+summary = "Persistent dict in Python, backed up by sqlite3 and pickle, multithread-safe."
+
+[[package]]
 name = "stack-data"
 version = "0.6.2"
 summary = "Extract data from python stack frames and tracebacks for informative displays"
@@ -1221,7 +1226,7 @@ summary = "Jupyter interactive widgets for Jupyter Notebook"
 
 [metadata]
 lock_version = "4.0"
-content_hash = "sha256:f67343e382b3258c0f24a1a03d9ae0f27aaa4e08011bdbe927b9c8e64a830c6f"
+content_hash = "sha256:5042a02903e3ba478088f71ba92c4f973353d699547470265b273eb0680ed3e6"
 
 [metadata.files]
 "aiosignal 1.3.1" = [
@@ -2840,6 +2845,9 @@ content_hash = "sha256:f67343e382b3258c0f24a1a03d9ae0f27aaa4e08011bdbe927b9c8e64
 "soupsieve 2.4" = [
     {url = "https://files.pythonhosted.org/packages/1b/cb/34933ebdd6bf6a77daaa0bd04318d61591452eb90ecca4def947e3cb2165/soupsieve-2.4.tar.gz", hash = "sha256:e28dba9ca6c7c00173e34e4ba57448f0688bb681b7c5e8bf4971daafc093d69a"},
     {url = "https://files.pythonhosted.org/packages/d2/70/2c92d7bc961ba43b7b21032b7622144de5f97dec14b62226533f6940798e/soupsieve-2.4-py3-none-any.whl", hash = "sha256:49e5368c2cda80ee7e84da9dbe3e110b70a4575f196efb74e51b94549d921955"},
+]
+"sqlitedict 2.1.0" = [
+    {url = "https://files.pythonhosted.org/packages/12/9a/7620d1e9dcb02839ed6d4b14064e609cdd7a8ae1e47289aa0456796dd9ca/sqlitedict-2.1.0.tar.gz", hash = "sha256:03d9cfb96d602996f1d4c2db2856f1224b96a9c431bdd16e78032a72940f9e8c"},
 ]
 "stack-data 0.6.2" = [
     {url = "https://files.pythonhosted.org/packages/6a/81/aa96c25c27f78cdc444fec27d80f4c05194c591465e491a1358d8a035bc1/stack_data-0.6.2-py3-none-any.whl", hash = "sha256:cbb2a53eb64e5785878201a97ed7c7b94883f48b87bfb0bbe8b623c74679e4a8"},
