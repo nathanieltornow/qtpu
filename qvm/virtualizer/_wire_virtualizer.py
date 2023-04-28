@@ -51,8 +51,8 @@ class SingleWireVirtualizer(Virtualizer):
         resultsr = results[self._rreg]
 
         pZ0, pZ1 = resultsO[0].divide_by_first_bit()
-        pZ0 = pZ0 * 2
-        pZ1 = pZ1 * 2
+        pZ0 *= 2
+        pZ1 *= 2
         pX0, pX1 = resultsO[1].divide_by_first_bit()
         pX = pX0 - pX1
         pY0, pY1 = resultsO[2].divide_by_first_bit()

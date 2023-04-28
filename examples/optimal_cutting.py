@@ -1,5 +1,8 @@
 import logging
 
+
+from qvm.util import fragment_circuit
+
 from _example_circuit import example_circuit
 
 import qvm
@@ -23,6 +26,6 @@ if __name__ == "__main__":
         num_fragments=2,
         max_wire_cuts=2,
         max_gate_cuts=2,
-        max_fragment_size=5,
+        max_fragment_size=4,
     )
-    print(virt_circuit)
+    print(fragment_circuit(virt_circuit))
