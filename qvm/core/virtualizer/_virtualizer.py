@@ -3,9 +3,9 @@ from multiprocessing.pool import Pool
 
 from qiskit.circuit import QuantumCircuit
 
-from qvm.quasi_distr import QuasiDistr
-from qvm.types import Argument, Fragment
-from qvm.util import fragment_circuit
+from qvm.core.quasi_distr import QuasiDistr
+from qvm.core.types import Argument, Fragment
+from qvm.core.util import fragment_circuit
 
 
 class Virtualizer(abc.ABC):
@@ -35,7 +35,6 @@ class Virtualizer(abc.ABC):
     @abc.abstractmethod
     def knit(self, results: dict[Fragment, list[QuasiDistr]], pool: Pool) -> QuasiDistr:
         ...
-
 
 
 # class Virtualizer:

@@ -3,8 +3,8 @@ import itertools
 import networkx as nx
 from qiskit.circuit import Barrier, QuantumCircuit, QuantumRegister, Qubit
 
-from qvm.types import Argument, PlaceholderGate
-from qvm.virtual_gates import VIRTUAL_GATE_TYPES, VirtualSWAP, WireCut
+from qvm.core.types import Argument, PlaceholderGate
+from qvm.core.virtual_gates import VIRTUAL_GATE_TYPES, VirtualSWAP, WireCut
 
 
 def circuit_to_qcg(circuit: QuantumCircuit, use_qubit_idx: bool = False) -> nx.Graph:

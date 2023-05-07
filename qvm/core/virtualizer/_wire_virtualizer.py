@@ -2,10 +2,10 @@ from multiprocessing.pool import Pool
 
 from qiskit.circuit import QuantumCircuit, ClassicalRegister
 
-from qvm.types import Fragment, Argument, PlaceholderGate
-from qvm.quasi_distr import QuasiDistr
-from qvm.virtual_gates import VirtualSWAP
-from qvm.util import fragment_circuit
+from qvm.core.types import Fragment, Argument, PlaceholderGate
+from qvm.core.quasi_distr import QuasiDistr
+from qvm.core.virtual_gates import VirtualSWAP
+from qvm.core.util import fragment_circuit
 
 from ._virtualizer import Virtualizer
 

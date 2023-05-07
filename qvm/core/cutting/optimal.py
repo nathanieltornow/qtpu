@@ -1,7 +1,7 @@
 from qiskit.circuit import QuantumCircuit, QuantumRegister, Qubit
 
-from qvm.util import fold_circuit, unfold_circuit, wirecuts_to_vswaps
-from qvm.virtual_gates import VIRTUAL_GATE_TYPES, VirtualSWAP, WireCut
+from qvm.core.util import fold_circuit, unfold_circuit, wirecuts_to_vswaps
+from qvm.core.virtual_gates import VIRTUAL_GATE_TYPES, VirtualSWAP, WireCut
 
 
 def cut_optimal(
@@ -19,7 +19,7 @@ def cut_optimal(
 
     asp = _circuit_to_asp(two_qubit_circ)
 
-    with importlib.resources.path("qvm", "asp") as path:
+    with importlib.resources.path("qvm.core", "asp") as path:
         asp_file = path / "dag_partition.lp"
         asp += asp_file.read_text()
 
@@ -73,7 +73,6 @@ def cut_optimal(
                 )
 
     cut_circuit = unfold_circuit(cut_circuit, one_qubit_circs)
-    print(cut_circuit)
     return wirecuts_to_vswaps(cut_circuit)
 
 

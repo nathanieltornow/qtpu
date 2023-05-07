@@ -2,7 +2,7 @@ import networkx as nx
 from networkx.algorithms.community import kernighan_lin_bisection
 from qiskit.circuit import QuantumCircuit, Qubit
 
-from qvm.util import circuit_to_qcg, decompose_qubits
+from qvm.core.util import circuit_to_qcg, decompose_qubits
 
 
 def bisect(circuit: QuantumCircuit, num_fragments: int = 2) -> QuantumCircuit:
@@ -39,7 +39,7 @@ def cut_gates_optimal(
 
     asp = _qcg_to_asp(circuit_to_qcg(circuit, use_qubit_idx=True))
 
-    with importlib.resources.path("qvm", "asp") as path:
+    with importlib.resources.path("qvm.core", "asp") as path:
         asp_file = path / "graph_partition.lp"
         asp += asp_file.read_text()
 

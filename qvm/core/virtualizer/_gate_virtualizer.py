@@ -5,10 +5,10 @@ from time import perf_counter
 
 from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister
 
-from qvm.quasi_distr import QuasiDistr
-from qvm.types import Argument, Fragment, PlaceholderGate
-from qvm.util import fragment_circuit
-from qvm.virtual_gates import VirtualBinaryGate
+from qvm.core.quasi_distr import QuasiDistr
+from qvm.core.types import Argument, Fragment, PlaceholderGate
+from qvm.core.util import fragment_circuit
+from qvm.core.virtual_gates import VirtualBinaryGate
 
 from ._virtualizer import Virtualizer
 
