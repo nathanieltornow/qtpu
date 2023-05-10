@@ -2,10 +2,16 @@ import networkx as nx
 from networkx.algorithms.community import kernighan_lin_bisection
 from qiskit.circuit import QuantumCircuit, Qubit
 
+from qvm.core.virtual_gates import VirtualBinaryGate
 from qvm.core.util import circuit_to_qcg, decompose_qubits
 
 
-def bisect(circuit: QuantumCircuit, num_fragments: int = 2) -> QuantumCircuit:
+def bisect(
+    circuit: QuantumCircuit,
+    num_fragments: int,
+    max_fragment_size: int,
+    max_gate_cuts: int,
+) -> QuantumCircuit:
     """
     Decomposes a circuit into a given number of fragments by recursively bisecting the circuit.
     On each step, the largest fragment is bisected.
@@ -24,13 +30,27 @@ def bisect(circuit: QuantumCircuit, num_fragments: int = 2) -> QuantumCircuit:
         largest_fragment = max(fragment_qubits, key=lambda f: len(f))
         fragment_qubits.remove(largest_fragment)
         fragment_qubits += list(kernighan_lin_bisection(qcg.subgraph(largest_fragment)))
-    return decompose_qubits(circuit, fragment_qubits)
+    res_circuit = decompose_qubits(circuit, fragment_qubits)
+    if (
+        sum(
+            1 for instr in res_circuit if isinstance(instr.operation, VirtualBinaryGate)
+        )
+        > max_gate_cuts
+    ):
+        raise ValueError(
+            "Couldn't cut the circuit with the given constraints (number of gate cuts)."
+        )
+    if any(qreg.size > max_fragment_size for qreg in res_circuit.qregs):
+        raise ValueError(
+            "Couldn't cut the circuit with the given constraints (fragment size)."
+        )
+    return res_circuit
 
 
 def cut_gates_optimal(
     circuit: QuantumCircuit,
     num_fragments: int = 2,
-    max_cuts: int = 4,
+    max_wire_cuts: int = 4,
     max_fragment_size: int | None = None,
 ) -> QuantumCircuit:
     import importlib.resources
@@ -50,7 +70,7 @@ def cut_gates_optimal(
 
     asp += f":- num_vertices(_, V), V > {max_fragment_size}.\n"
 
-    asp += f":- num_cuts(C), C > {max_cuts}.\n"
+    asp += f":- num_cuts(C), C > {max_wire_cuts}.\n"
 
     control = Control()
     control.configuration.solve.models = 0  # type: ignore

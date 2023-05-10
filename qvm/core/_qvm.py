@@ -1,17 +1,22 @@
 import logging
-from time import perf_counter
 
 from qiskit.circuit import QuantumCircuit
 
 from qvm.core.cutting.gate_cutting import bisect, cut_gates_optimal
 from qvm.core.cutting.optimal import cut_optimal
 from qvm.core.cutting.wire_cutting import cut_wires_optimal
-from qvm.core.types import Fragment, Argument
 
 logger = logging.getLogger("qvm")
 
 
-def cut(circuit: QuantumCircuit, technique: str, **kwargs) -> QuantumCircuit:
+def cut(
+    circuit: QuantumCircuit,
+    technique: str,
+    num_fragments: int = 2,
+    max_gate_cuts: int = 2,
+    max_wire_cuts: int = 2,
+    max_fragment_size: int | None = None,
+) -> QuantumCircuit:
     """
     Cuts a circuit into fragments by inserting virtual operations
     according to the given technique.
@@ -23,49 +28,49 @@ def cut(circuit: QuantumCircuit, technique: str, **kwargs) -> QuantumCircuit:
     Returns:
         QuantumCircuit: The cut circuit.
     """
-    logger.info(f"Cutting circuit with technique {technique}.")
-    now = perf_counter()
-    if technique == "gate_bisection":
-        bisection_kwargs = {}
-        if "num_fragments" in kwargs:
-            bisection_kwargs["num_fragments"] = kwargs["num_fragments"]
+    logger.debug(f"Cutting circuit with technique {technique}.")
+    if max_fragment_size is None:
+        max_fragment_size = circuit.num_qubits // num_fragments + 1
+    if max_fragment_size <= 1:
+        raise ValueError("max_fragment_size must be greater than 1.")
 
-        cut_circ = bisect(circuit, **bisection_kwargs)
+    logger.debug(f"max_fragment_size: {max_fragment_size}")
+
+    if technique == "gate_bisection":
+        cut_circ = bisect(
+            circuit,
+            num_fragments=num_fragments,
+            max_fragment_size=max_fragment_size,
+            max_gate_cuts=max_gate_cuts,
+        )
 
     elif technique == "gate_optimal":
-        opt_gate_kwargs = {}
-        if "num_fragments" in kwargs:
-            opt_gate_kwargs["num_fragments"] = kwargs["num_fragments"]
-        if "max_cuts" in kwargs:
-            opt_gate_kwargs["max_cuts"] = kwargs["max_cuts"]
-        if "max_fragment_size" in kwargs:
-            opt_gate_kwargs["max_fragment_size"] = kwargs["max_fragment_size"]
-        cut_circ = cut_gates_optimal(circuit, **opt_gate_kwargs)
+        cut_circ = cut_gates_optimal(
+            circuit,
+            num_fragments=num_fragments,
+            max_wire_cuts=max_wire_cuts,
+            max_fragment_size=max_fragment_size,
+        )
 
     elif technique == "wire_optimal":
-        opt_wire_kwargs = {}
-        if "num_fragments" in kwargs:
-            opt_wire_kwargs["num_fragments"] = kwargs["num_fragments"]
-        if "max_cuts" in kwargs:
-            opt_wire_kwargs["max_cuts"] = kwargs["max_cuts"]
-        if "max_fragment_size" in kwargs:
-            opt_wire_kwargs["max_fragment_size"] = kwargs["max_fragment_size"]
-        cut_circ = cut_wires_optimal(circuit, **opt_wire_kwargs)
+        cut_circ = cut_wires_optimal(
+            circuit,
+            num_fragments=num_fragments,
+            max_wire_cuts=max_gate_cuts,
+            max_fragment_size=max_fragment_size,
+        )
 
     elif technique == "optimal":
-        opt_kwargs = {}
-        if "num_fragments" in kwargs:
-            opt_kwargs["num_fragments"] = kwargs["num_fragments"]
-        if "max_wire_cuts" in kwargs:
-            opt_kwargs["max_wire_cuts"] = kwargs["max_wire_cuts"]
-        if "max_gate_cuts" in kwargs:
-            opt_kwargs["max_gate_cuts"] = kwargs["max_gate_cuts"]
-        if "max_fragment_size" in kwargs:
-            opt_kwargs["max_fragment_size"] = kwargs["max_fragment_size"]
-        cut_circ = cut_optimal(circuit, **opt_kwargs)
+        cut_circ = cut_optimal(
+            circuit,
+            num_fragments=num_fragments,
+            max_wire_cuts=max_wire_cuts,
+            max_gate_cuts=max_gate_cuts,
+            max_fragment_size=max_fragment_size,
+        )
 
     else:
         raise ValueError(f"Unknown cutting technique: {technique}")
 
-    logger.info(f"Cutting circuit took {perf_counter() - now} seconds.")
     return cut_circ
+

@@ -4,7 +4,7 @@ import numpy as np
 from qiskit.circuit.library import TwoLocal
 
 NUM_QUBITS = 6
-NUM_REPS = 2
+NUM_REPS = 3
 
 
 def example_circuit():

@@ -72,6 +72,8 @@ def cut_optimal(
                     wc_circ, qubit, front=True
                 )
 
+    # return unfold_circuit(cut_circuit, one_qubit_circs)
+
     cut_circuit = unfold_circuit(cut_circuit, one_qubit_circs)
     return wirecuts_to_vswaps(cut_circuit)
 

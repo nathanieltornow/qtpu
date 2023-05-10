@@ -191,7 +191,7 @@ def decompose_qubits(
         if _in_multiple_fragments(set(qubits)) and not isinstance(op, Barrier):
             op = VIRTUAL_GATE_TYPES[op.name](op)
         new_circ.append(op, qubits, clbits)
-    return new_circ
+    return fragment_circuit(new_circ)
 
 
 def wirecuts_to_vswaps(circuit: QuantumCircuit) -> QuantumCircuit:
@@ -212,10 +212,16 @@ def wirecuts_to_vswaps(circuit: QuantumCircuit) -> QuantumCircuit:
         metadata=circuit.metadata,
     )
     qubit_map: dict[Qubit, Qubit] = {}
+
+    def _find_qubit(qubit: Qubit) -> Qubit:
+        while qubit in qubit_map:
+            qubit = qubit_map[qubit]
+        return qubit
+
     cut_ctr = 0
     for instr in circuit:
         op, qubits, clbits = instr.operation, instr.qubits, instr.clbits
-        qubits = [qubit_map.get(qubit, qubit) for qubit in qubits]
+        qubits = [_find_qubit(qubit) for qubit in qubits]
         if isinstance(op, WireCut):
             qubit_map[qubits[0]] = wire_cut_register[cut_ctr]
             op = VirtualSWAP()
@@ -223,3 +229,9 @@ def wirecuts_to_vswaps(circuit: QuantumCircuit) -> QuantumCircuit:
             cut_ctr += 1
         new_circuit.append(op, qubits, clbits)
     return new_circuit
+
+
+def virtualize_between_qubits(
+    circuit: QuantumCircuit, qubit1: Qubit, qubit: Qubit
+) -> QuantumCircuit:
+    pass
