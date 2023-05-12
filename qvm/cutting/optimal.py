@@ -19,7 +19,7 @@ def cut_optimal(
 
     asp = _circuit_to_asp(two_qubit_circ)
 
-    with importlib.resources.path("qvm.core", "asp") as path:
+    with importlib.resources.path("qvm", "asp") as path:
         asp_file = path / "dag_partition.lp"
         asp += asp_file.read_text()
 
@@ -71,9 +71,6 @@ def cut_optimal(
                 one_qubit_circs[next_op_idx] = one_qubit_circs[next_op_idx].compose(
                     wc_circ, qubit, front=True
                 )
-
-    # return unfold_circuit(cut_circuit, one_qubit_circs)
-
     cut_circuit = unfold_circuit(cut_circuit, one_qubit_circs)
     return wirecuts_to_vswaps(cut_circuit)
 

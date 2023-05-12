@@ -59,7 +59,7 @@ def cut_gates_optimal(
 
     asp = _qcg_to_asp(circuit_to_qcg(circuit, use_qubit_idx=True))
 
-    with importlib.resources.path("qvm.core", "asp") as path:
+    with importlib.resources.path("qvm", "asp") as path:
         asp_file = path / "graph_partition.lp"
         asp += asp_file.read_text()
 

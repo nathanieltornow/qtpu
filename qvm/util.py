@@ -234,20 +234,6 @@ def wirecuts_to_vswaps(circuit: QuantumCircuit) -> QuantumCircuit:
 def virtualize_between_qubits(
     circuit: QuantumCircuit, qubit1: Qubit, qubit2: Qubit, max_virtual_gates: int = 4
 ) -> tuple[QuantumCircuit, int]:
-    """_summary_
-
-    Args:
-        circuit (QuantumCircuit): _description_
-        qubit1 (Qubit): _description_
-        qubit2 (Qubit): _description_
-        max_virtual_gates (int, optional): _description_. Defaults to 4.
-
-    Raises:
-        ValueError: If the number of virtual gates that need to be inserted exceeds the maximum.
-
-    Returns:
-        tuple[QuantumCircuit, int]: _description_
-    """
     new_circuit = QuantumCircuit(
         *circuit.qregs,
         *circuit.cregs,
