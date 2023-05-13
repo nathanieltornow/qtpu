@@ -1,3 +1,4 @@
+from multiprocessing import Pool
 from time import perf_counter
 
 from qiskit.circuit import QuantumCircuit
@@ -9,6 +10,7 @@ import qvm
 from qvm.virtual_gates import VirtualBinaryGate
 
 from csv_util import append_to_csv_file
+from fidelity import calcultate_fidelity
 
 
 def bench_virtual_routing(
@@ -35,6 +37,7 @@ def bench_virtual_routing(
         "overhead",
         "cut_time",
         "knit_time",
+        "run_time",
     ]
 
     for circuit in circuits:
@@ -42,16 +45,57 @@ def bench_virtual_routing(
             raise ValueError("Circuit has more qubits than backend.")
 
         coupling_map = backend.coupling_map
-        t_cricuit = transpile(
+        t_circuit = transpile(
             circuit, backend=backend, optimization_level=optimization_level
         )
-        init_layout = initial_layout_from_transpiled_circuit(circuit, t_cricuit)
+        init_layout = initial_layout_from_transpiled_circuit(circuit, t_circuit)
 
         now = perf_counter()
-        virt_circ = qvm.vroute(
-            circuit, vroute_technique
+        v_circuit = qvm.vroute(
+            circuit=circuit,
+            technique=vroute_technique,
+            coupling_map=coupling_map,
+            initial_layout=init_layout,
+            max_gate_cuts=max_overhead // 6,
         )
-        pass
+        cut_time = perf_counter() - now
+        virtualizer = qvm.OneFragmentGateVirtualizer(v_circuit)
+        frag, circuit = list(virtualizer.fragments().items())[0]
+        args = virtualizer.instantiate()[frag]
+        circuits_to_run = [qvm.insert_placeholders(circuit, arg) for arg in args]
+        now = perf_counter()
+        counts = backend.run(circuits_to_run, shots=num_shots).result().get_counts()
+        assert isinstance(counts, list)
+        distrs = [
+            qvm.QuasiDistr.from_counts(count, shots=num_shots) for count in counts
+        ]
+        run_time = perf_counter() - now
+
+        with Pool() as pool:
+            now = perf_counter()
+            res_distr = virtualizer.knit({frag: distrs}, pool=pool)
+            knit_time = perf_counter() - now
+
+        base_counts = backend.run(t_circuit, shots=num_shots).result().get_counts()
+        base_distr = qvm.QuasiDistr.from_counts(base_counts, shots=num_shots)
+
+        fid = calcultate_fidelity(circuit, res_distr)
+        base_fid = calcultate_fidelity(circuit, base_distr)
+
+        append_to_csv_file(
+            csv_name,
+            {
+                fields[0]: circuit.num_qubits,
+                fields[1]: base_fid,
+                fields[2]: fid,
+                fields[3]: num_cnots(t_circuit),
+                fields[4]: num_cnots(v_circuit),
+                fields[5]: overhead(v_circuit),
+                fields[6]: cut_time,
+                fields[7]: knit_time,
+                fields[8]: run_time,
+            },
+        )
 
 
 def num_cnots(circuit: QuantumCircuit) -> int:
@@ -76,3 +120,12 @@ def initial_layout_from_transpiled_circuit(
         if q in qubit_to_index:
             init_layout[qubit_to_index[q]] = p
     return init_layout
+
+
+if __name__ == "__main__":
+    from circuits.vqe import vqe
+    from qiskit.providers.fake_provider import FakeOslo
+
+    circuits = [vqe(4, 1), vqe(5, 1)]
+    backend = FakeOslo()
+    bench_virtual_routing("vqe", circuits, backend)

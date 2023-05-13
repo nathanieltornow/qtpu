@@ -27,4 +27,4 @@ def vqe(num_qubits: int, reps: int = 1) -> QuantumCircuit:
     qc.measure_all()
     qc.name = "vqe"
 
-    return qc
+    return qc.decompose().decompose()
