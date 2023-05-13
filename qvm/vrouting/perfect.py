@@ -1,4 +1,4 @@
-from qiskit.circuit import QuantumCircuit
+from qiskit.circuit import QuantumCircuit, Barrier
 from qiskit.transpiler import CouplingMap
 
 from qvm.virtual_gates import VIRTUAL_GATE_TYPES
@@ -28,7 +28,7 @@ def vroute_perfect(
     }
     for instr in circuit:
         op, qubits, clbits = instr.operation, instr.qubits, instr.clbits
-        if len(qubits) > 2:
+        if len(qubits) > 2 and not isinstance(op, Barrier):
             raise NotImplementedError(
                 "Virtualization of multi-qubit gates is not supported."
             )
