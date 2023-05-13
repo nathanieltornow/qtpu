@@ -9,7 +9,7 @@ from qvm.cutting.gate_cutting import bisect, cut_gates_optimal
 from qvm.cutting.optimal import cut_optimal
 from qvm.cutting.wire_cutting import cut_wires_optimal
 
-from qvm.vroute import vroute_perfect
+from qvm.vrouting import vroute_perfect
 
 logger = logging.getLogger("qvm")
 
