@@ -10,4 +10,5 @@ class PlaceholderGate(Barrier):
 
 Argument = dict[str, QuantumCircuit]
 
+
 Fragment = QuantumRegister
