@@ -19,7 +19,7 @@ def ae(num_qubits: int) -> QuantumCircuit:
     qc.name = "ae"
     qc.measure_all()
 
-    return qc
+    return qc.decompose().decompose()
 
 
 class BernoulliQ(QuantumCircuit):  # type: ignore[misc]

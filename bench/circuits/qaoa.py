@@ -26,4 +26,4 @@ def qaoa(num_qubits: int, reps: int = 1) -> QuantumCircuit:
 
     qc.name = "qaoa"
 
-    return qc
+    return qc.decompose().decompose()

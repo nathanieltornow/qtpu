@@ -60,9 +60,10 @@ def bench_virtual_routing(
         )
         cut_time = perf_counter() - now
         virtualizer = qvm.OneFragmentGateVirtualizer(v_circuit)
-        frag, circuit = list(virtualizer.fragments().items())[0]
+        frag, frag_circuit = list(virtualizer.fragments().items())[0]
+        print(frag_circuit)
         args = virtualizer.instantiate()[frag]
-        circuits_to_run = [qvm.insert_placeholders(circuit, arg) for arg in args]
+        circuits_to_run = [qvm.insert_placeholders(frag_circuit, arg) for arg in args]
         now = perf_counter()
         counts = backend.run(circuits_to_run, shots=num_shots).result().get_counts()
         assert isinstance(counts, list)
@@ -75,6 +76,7 @@ def bench_virtual_routing(
             now = perf_counter()
             res_distr = virtualizer.knit({frag: distrs}, pool=pool)
             knit_time = perf_counter() - now
+            
 
         base_counts = backend.run(t_circuit, shots=num_shots).result().get_counts()
         base_distr = qvm.QuasiDistr.from_counts(base_counts, shots=num_shots)
@@ -123,9 +125,9 @@ def initial_layout_from_transpiled_circuit(
 
 
 if __name__ == "__main__":
-    from circuits.vqe import vqe
+    from circuits.ae import ae
     from qiskit.providers.fake_provider import FakeOslo
 
-    circuits = [vqe(4, 1), vqe(5, 1)]
+    circuits = [ae(3)]
     backend = FakeOslo()
-    bench_virtual_routing("vqe", circuits, backend)
+    bench_virtual_routing("vqe", circuits, backend, max_overhead=300)
