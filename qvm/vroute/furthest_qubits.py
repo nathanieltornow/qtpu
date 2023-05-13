@@ -1,7 +1,7 @@
 from qiskit.circuit import QuantumCircuit, Qubit
 from qiskit.transpiler import CouplingMap
 
-from qvm.core.util import circuit_to_qcg
+from qvm.util import circuit_to_qcg
 
 
 def vroute_furthest_qubits(

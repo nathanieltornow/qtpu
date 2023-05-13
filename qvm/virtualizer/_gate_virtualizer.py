@@ -48,8 +48,6 @@ class GateVirtualizer(Virtualizer):
 class OneFragmentGateVirtualizer(GateVirtualizer):
     def __init__(self, circuit: QuantumCircuit) -> None:
         super().__init__(circuit)
-        if len(self._circuit.qregs) != 1:
-            raise ValueError("Circuit must have exactly one fragment.")
 
     def instantiate(self) -> dict[Fragment, list[Argument]]:
         arguments = _generate_all_arguments(self._vgates)

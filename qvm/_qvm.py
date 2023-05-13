@@ -1,10 +1,15 @@
 import logging
 
 from qiskit.circuit import QuantumCircuit
+from qiskit.transpiler import CouplingMap
+
+from qvm.virtual_gates import VirtualBinaryGate
 
 from qvm.cutting.gate_cutting import bisect, cut_gates_optimal
 from qvm.cutting.optimal import cut_optimal
 from qvm.cutting.wire_cutting import cut_wires_optimal
+
+from qvm.vroute import vroute_perfect
 
 logger = logging.getLogger("qvm")
 
@@ -74,3 +79,29 @@ def cut(
 
     return cut_circ
 
+
+def vroute(
+    circuit: QuantumCircuit,
+    technique: str,
+    coupling_map: CouplingMap,
+    initial_layout: list[int],
+    max_gate_cuts: int = 4,
+):
+    logger.debug(f"vrouting circuit with technique {technique}.")
+
+    if technique == "perfect":
+        circuit = vroute_perfect(circuit, coupling_map, initial_layout)
+
+    elif technique == "furthest_qubits":
+        raise NotImplementedError
+
+    else:
+        raise ValueError(f"Unknown vroute technique: {technique}")
+
+    if (
+        sum(1 for instr in circuit if isinstance(instr.operation, VirtualBinaryGate))
+        > max_gate_cuts
+    ):
+        raise ValueError(f"Number of swaps exceeds max_gate_cuts ({max_gate_cuts}).")
+
+    return circuit

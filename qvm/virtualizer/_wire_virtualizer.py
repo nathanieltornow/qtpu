@@ -12,25 +12,23 @@ from ._virtualizer import Virtualizer
 
 class SingleWireVirtualizer(Virtualizer):
     """
-    A virtualizer which can virtualize a wire in a circuit that
+    A virtualizer which can virtualize one wire in a circuit that
     has only one single wire cut.
     """
 
     def __init__(self, circuit: QuantumCircuit) -> None:
         circuit = fragment_circuit(circuit)
         super().__init__(circuit)
-        self._circuit = fragment_circuit(circuit)
-        self._circuit = _insert_placeholders_for_vswaps(self._circuit)
         vswap_instrs = [
             instr for instr in circuit if isinstance(instr.operation, VirtualSWAP)
         ]
+        self._circuit = fragment_circuit(circuit)
+        self._circuit = _insert_placeholders_for_vswaps(self._circuit)
         if len(self._circuit.qregs) != 2 or len(vswap_instrs) != 1:
             raise ValueError("Circuit must have exactly one wire cut.")
-
         Oqubit, rqubit = vswap_instrs[0].qubits[0], vswap_instrs[0].qubits[1]
         self._Oreg = self._circuit.find_bit(Oqubit).registers[0][0]
         self._rreg = self._circuit.find_bit(rqubit).registers[0][0]
-        print(self._Oreg, self._rreg)
 
     def instantiate(self) -> dict[Fragment, list[Argument]]:
         O_args = [
