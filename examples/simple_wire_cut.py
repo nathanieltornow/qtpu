@@ -24,7 +24,7 @@ if __name__ == "__main__":
     circuit = example_circuit()
 
     virt_circuit = qvm.cut(
-        circuit, technique="wire_optimal", num_fragments=2, max_cuts=1
+        circuit, technique="wire_optimal", num_fragments=2, max_wire_cuts=1
     )
 
     print(virt_circuit)
