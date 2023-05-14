@@ -3,7 +3,7 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import TwoLocal, EfficientSU2
 
 
-def su2(
+def two_local(
     num_qubits: int, reps: int = 1, entanglement: str = "circular"
 ) -> QuantumCircuit:
     """Returns a quantum circuit implementing EfficientSU2 ansatz with random parameter
@@ -26,4 +26,4 @@ def su2(
     qc.measure_all()
     qc.name = "twolacalrandom"
 
-    return qc
+    return qc.decompose()

@@ -30,6 +30,9 @@ dev = [
     "pytest>=7.2.1",
     "isort>=5.12.0",
 ]
+bench = [
+    "pandas>=2.0.1",
+]
 
 [build-system]
 requires = ["pdm-pep517>=1.0.0"]
