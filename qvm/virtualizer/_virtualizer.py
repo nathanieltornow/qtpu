@@ -37,6 +37,21 @@ class Virtualizer(abc.ABC):
         ...
 
 
+class GlobalVirtualizer(abc.ABC):
+    """A virtualizer that only returns the full arguments for the entire circuit."""
+
+    def __init__(self, circuit: QuantumCircuit) -> None:
+        self._circuit = fragment_circuit(circuit)
+
+    @abc.abstractmethod
+    def instantiate(self) -> list[Argument]:
+        ...
+
+    @abc.abstractmethod
+    def knit(self, results: list[QuasiDistr], pool: Pool) -> QuasiDistr:
+        ...
+
+
 # class Virtualizer:
 #     def __init__(
 #         self,

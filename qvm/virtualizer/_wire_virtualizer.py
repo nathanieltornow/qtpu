@@ -7,7 +7,7 @@ from qvm.quasi_distr import QuasiDistr
 from qvm.virtual_gates import VirtualSWAP
 from qvm.util import fragment_circuit
 
-from ._virtualizer import Virtualizer
+from ._virtualizer import Virtualizer, GlobalVirtualizer
 
 
 class SingleWireVirtualizer(Virtualizer):

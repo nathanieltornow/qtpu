@@ -3,7 +3,7 @@ import itertools
 import networkx as nx
 from qiskit.circuit import Barrier, QuantumCircuit, QuantumRegister, Qubit
 
-from qvm.types import Argument, PlaceholderGate
+from qvm.types import Argument, PlaceholderGate, Fragment
 from qvm.virtual_gates import VIRTUAL_GATE_TYPES, VirtualSWAP, WireCut
 
 
@@ -253,3 +253,28 @@ def virtualize_between_qubits(
                 )
         new_circuit.append(op, qubits, clbits)
     return new_circuit, num_virtual_gates
+
+
+def extract_fragments(circuit: QuantumCircuit) -> dict[Fragment, QuantumCircuit]:
+    """Extracts the fragments from a fragmented-circuit. Expects, that placeholders
+    have already been inserted, such that there is no connection between the fragments.
+
+    Args:
+        circuit (QuantumCircuit): The fragmented circuit.
+
+    Returns:
+        QuantumCircuit: The fragments.
+    """
+    frag_to_circuit: dict[Fragment, QuantumCircuit] = {
+        frag: QuantumCircuit(frag, *circuit.cregs) for frag in circuit.qregs
+    }
+    for cinstr in circuit.data:
+        op, qubits, clbits = cinstr.operation, cinstr.qubits, cinstr.clbits
+        appended = False
+        for frag in circuit.qregs:
+            if set(qubits) <= set(frag):
+                frag_to_circuit[frag].append(op, qubits, clbits)
+                appended = True
+                break
+        assert appended or op.name == "barrier"
+    return frag_to_circuit
