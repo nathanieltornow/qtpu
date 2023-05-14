@@ -9,7 +9,6 @@ def plot_cut_comparison(ax, csv_name: str, labels: list[str], caption: str):
     df = pd.read_csv(csv_name)
     group_df = df.groupby(["num_qubits"]).agg([np.mean, np.std]).reset_index()
     group_df = group_df.sort_values(by=["num_qubits"])
-    print(group_df["gate_cut_time"]["mean"])
     x = np.arange(len(group_df))  # the label locations
     width = 1 / (len(group_df) + 1)  # the width of the bars
     if len(labels) == 2:
@@ -58,9 +57,11 @@ fig = plt.figure(constrained_layout=True)
 gs = fig.add_gridspec(1, 1)
 ax = fig.add_subplot(gs[0, 0])
 
+import sys
+
 plot_cut_comparison(
     ax,
-    "bench_cut_vqe_5.csv",
+    sys.argv[1],
     [
         # "wire_cut_time",
         # "gate_cut_time",

@@ -90,11 +90,11 @@ if __name__ == "__main__":
     from circuits.two_local import two_local
 
     bench_cut(
-        "vqe",
+        "qaoa2",
         [
-            two_local(6, 3, "linear"),
-            two_local(8, 3, "linear"),
-            two_local(10, 3, "linear"),
+            qaoa(6, 2),
+            qaoa(8, 2),
+            qaoa(10, 2),
             # two_local(12, 3, "linear"),
             # two_local(14, 3, "linear"),
             # two_local(16, 3, "linear"),
