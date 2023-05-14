@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
+COLORS = ['#E59866', '#B5838D', '#6D9197', '#B5BFA1', '#D6B4E0', '#E9A3C9', '#C5CBE3', '#A5D2BA', '#F7CAC9', '#9CAFB7']
+
 def plot_cut_comparison(ax, csv_name: str, labels: list[str], caption: str):
     df = pd.read_csv(csv_name)
     group_df = df.groupby(["num_qubits"]).agg([np.mean, np.std]).reset_index()
@@ -17,12 +19,13 @@ def plot_cut_comparison(ax, csv_name: str, labels: list[str], caption: str):
     else:
         raise ValueError("Invalid number of labels.")
 
-    for label in labels:
+    for i, label in enumerate(labels):
         offset = width * multiplier
         ax.bar(
             x + offset,
             group_df[label]["mean"],
             yerr=group_df[label]["std"],
+            color=COLORS[i],
             width=width,
             label=label,
             ecolor="black",
