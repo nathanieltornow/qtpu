@@ -16,7 +16,7 @@ def two_local(
     np.random.seed(10)
     qc = TwoLocal(
         num_qubits,
-        rotation_blocks=["ry", "rz"],
+        rotation_blocks=["rx", "ry", "rz"],
         entanglement_blocks="rzz",
         entanglement=entanglement,
         reps=reps,

@@ -9,7 +9,7 @@ from qiskit_optimization import QuadraticProgram
 from .utils import get_examplary_max_cut_qp
 
 
-def qaoa(num_qubits: int, reps: int = 1) -> QuantumCircuit:
+def qaoa(num_qubits: int, reps: int = 1, degree: int = 3) -> QuantumCircuit:
     """Returns a quantum circuit implementing the Quantum Approximation Optimization Algorithm for a specific max-cut
      example.
 
@@ -17,7 +17,7 @@ def qaoa(num_qubits: int, reps: int = 1) -> QuantumCircuit:
     num_qubits -- number of qubits of the returned quantum circuit
     """
 
-    qp = get_examplary_max_cut_qp(num_qubits)
+    qp = get_examplary_max_cut_qp(num_qubits, degree=degree)
     assert isinstance(qp, QuadraticProgram)
 
     qaoa = QAOA(sampler=Sampler(), reps=reps, optimizer=SLSQP(maxiter=25))
