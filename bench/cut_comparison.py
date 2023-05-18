@@ -88,13 +88,13 @@ if __name__ == "__main__":
     from circuits.qaoa import qaoa
     from circuits.vqe import vqe
     from circuits.two_local import two_local
+    from circuits.qft import qft
 
     bench_cut(
-        "qaoa2",
+        "qft",
         [
-            qaoa(6, 2),
-            qaoa(8, 2),
-            qaoa(10, 2),
+            qft(6, 0),
+            qft(8, 0),
             # two_local(12, 3, "linear"),
             # two_local(14, 3, "linear"),
             # two_local(16, 3, "linear"),

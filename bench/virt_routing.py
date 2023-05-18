@@ -8,9 +8,10 @@ from qiskit.compiler import transpile
 
 import qvm
 from qvm.virtual_gates import VirtualBinaryGate
+from qvm.util import virtualize_between_qubits
 
 from csv_util import append_to_csv_file
-from fidelity import calcultate_fidelity
+from fidelity import calculate_total_variation_distance, calcultate_fidelity
 
 
 def bench_virtual_routing(
@@ -44,44 +45,49 @@ def bench_virtual_routing(
         if circuit.num_qubits > backend.num_qubits:
             raise ValueError("Circuit has more qubits than backend.")
 
-        coupling_map = backend.coupling_map
-        t_circuit = transpile(
-            circuit, backend=backend, optimization_level=optimization_level
-        )
-        init_layout = initial_layout_from_transpiled_circuit(circuit, t_circuit)
+        # coupling_map = backend.coupling_map
+        # t_circuit = transpile(
+        #     circuit, backend=backend, optimization_level=optimization_level
+        # )
+        # init_layout = initial_layout_from_transpiled_circuit(circuit, t_circuit)
 
         now = perf_counter()
-        v_circuit = qvm.vroute(
-            circuit=circuit,
-            technique=vroute_technique,
-            coupling_map=coupling_map,
-            initial_layout=init_layout,
-            max_gate_cuts=max_overhead // 6,
-        )
+        v_circuit, _ = virtualize_between_qubits(circuit, qubit1=circuit.qubits[0], qubit2=circuit.qubits[-1])
+        # v_circuit = qvm.vroute(
+        #     circuit=circuit,
+        #     technique=vroute_technique,
+        #     coupling_map=coupling_map,
+        #     initial_layout=init_layout,
+        #     max_gate_cuts=max_overhead // 6,
+        # )
         cut_time = perf_counter() - now
         virtualizer = qvm.OneFragmentGateVirtualizer(v_circuit)
         frag, frag_circuit = list(virtualizer.fragments().items())[0]
-        print(frag_circuit)
         args = virtualizer.instantiate()[frag]
+        frag_circuit = transpile(frag_circuit, backend=backend, optimization_level=optimization_level)
+
         circuits_to_run = [qvm.insert_placeholders(frag_circuit, arg) for arg in args]
         now = perf_counter()
+        print("running...")
         counts = backend.run(circuits_to_run, shots=num_shots).result().get_counts()
         assert isinstance(counts, list)
         distrs = [
             qvm.QuasiDistr.from_counts(count, shots=num_shots) for count in counts
         ]
         run_time = perf_counter() - now
-
+        print("knitting...")
         with Pool() as pool:
             now = perf_counter()
             res_distr = virtualizer.knit({frag: distrs}, pool=pool)
             knit_time = perf_counter() - now
             
-
+        t_circuit = transpile(circuit, backend=backend, optimization_level=optimization_level)
         base_counts = backend.run(t_circuit, shots=num_shots).result().get_counts()
         base_distr = qvm.QuasiDistr.from_counts(base_counts, shots=num_shots)
 
-        fid = calcultate_fidelity(circuit, res_distr)
+        from qvm.quasi_distr import QuasiDistr
+
+        fid = calcultate_fidelity(circuit, QuasiDistr.from_counts(res_distr.to_counts(num_shots)))
         base_fid = calcultate_fidelity(circuit, base_distr)
 
         append_to_csv_file(
@@ -91,7 +97,7 @@ def bench_virtual_routing(
                 fields[1]: base_fid,
                 fields[2]: fid,
                 fields[3]: num_cnots(t_circuit),
-                fields[4]: num_cnots(v_circuit),
+                fields[4]: num_cnots(frag_circuit),
                 fields[5]: overhead(v_circuit),
                 fields[6]: cut_time,
                 fields[7]: knit_time,
@@ -126,8 +132,13 @@ def initial_layout_from_transpiled_circuit(
 
 if __name__ == "__main__":
     from circuits.ae import ae
-    from qiskit.providers.fake_provider import FakeOslo
+    from circuits.qaoa import qaoa
+    from circuits.vqe import vqe
+    from circuits.two_local import two_local
+    from qiskit.providers.fake_provider import FakeOslo, FakeMontrealV2
+    from qiskit_aer import AerSimulator
+    from adaptive_noisemodel import get_noisemodel
 
-    circuits = [ae(3)]
-    backend = FakeOslo()
-    bench_virtual_routing("vqe", circuits, backend, max_overhead=300)
+    circuits = [two_local(8, 1), two_local(12, 1), two_local(16, 1)]
+    backend = FakeMontrealV2()
+    bench_virtual_routing("2local", circuits, backend, max_overhead=300)
