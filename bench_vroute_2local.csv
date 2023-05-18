@@ -1,2 +1,0 @@
-num_qubits,base_fidelity,vroute_fidelity,base_num_cx,vroute_num_cx,overhead,cut_time,knit_time,run_time
-8,0.987445697250526,0.9887079382655782,28,14,6,0.003322081989608705,1.895474090008065,56.936489158993936

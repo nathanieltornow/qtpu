@@ -4,8 +4,7 @@ from qiskit.circuit import QuantumCircuit
 
 import qvm
 from qvm.virtual_gates import VirtualBinaryGate, VirtualSWAP
-
-from csv_util import append_to_csv_file
+from bench._util import append_to_csv_file
 
 
 def bench_cut(
@@ -86,9 +85,9 @@ def find_cut(
 
 if __name__ == "__main__":
     from circuits.qaoa import qaoa
-    from circuits.vqe import vqe
-    from circuits.two_local import two_local
     from circuits.qft import qft
+    from circuits.two_local import two_local
+    from circuits.vqe import vqe
 
     bench_cut(
         "qft",
