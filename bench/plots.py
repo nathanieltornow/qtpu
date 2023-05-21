@@ -45,7 +45,7 @@ def plot_relative_fidelity(
 
     ax.legend(title="n_qubits")
     plt.ylabel("Relative Fidelity")
-    plt.savefig(output_path)
+    plt.savefig(output_path, dpi=300)
 
 
 def plot_cx_overhead(
@@ -76,9 +76,9 @@ def plot_cx_overhead(
     ax.axhline(y=1.0, color="darkred", linestyle="-")
 
     ax.legend(title="n_qubits")
-    plt.ylabel("CNOT Overhead")
+    plt.ylabel("Relative CX Reduction")
     plt.ylim(0.9)
-    plt.savefig(output_path)
+    plt.savefig(output_path, dpi=300)
 
 
 def main():
