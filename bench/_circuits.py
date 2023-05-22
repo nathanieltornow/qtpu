@@ -38,7 +38,7 @@ def vqe(num_qubits: int, reps: int = 1) -> QuantumCircuit:
     qp = get_examplary_max_cut_qp(num_qubits)
     assert isinstance(qp, QuadraticProgram)
 
-    ansatz = RealAmplitudes(num_qubits, reps=reps)
+    ansatz = RealAmplitudes(num_qubits, reps=reps, entanglement="circular")
     vqe = VQE(ansatz=ansatz, optimizer=SLSQP(maxiter=25), estimator=Estimator())
     vqe_result = vqe.compute_minimum_eigenvalue(qp.to_ising()[0])
     qc = vqe.ansatz.bind_parameters(vqe_result.optimal_point)
