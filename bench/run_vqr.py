@@ -13,11 +13,12 @@ from qvm.util import virtualize_between_qubits
 
 from _backends import get_backend
 from _circuits import get_circuits
-from bench._util import (
+from _util import (
     append_to_csv_file,
     calculate_total_variation_distance,
     num_cnots,
     overhead,
+    load_config,
 )
 
 
@@ -120,11 +121,4 @@ def run_vqr_benchmark(config: dict):
 
 
 if __name__ == "__main__":
-    config_path = ""
-    if len(sys.argv) == 1:
-        config_path = "vqr_config.json"
-    else:
-        config_path = sys.argv[1]
-    with open(config_path) as f:
-        config = json.load(f)
-    run_vqr_benchmark(config)
+    run_vqr_benchmark(load_config())

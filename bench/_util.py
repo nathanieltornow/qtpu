@@ -1,3 +1,5 @@
+import json
+import sys
 import os
 import csv
 
@@ -5,9 +7,10 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.quantum_info import hellinger_fidelity
 from qiskit_aer import AerSimulator
 
+import qvm
 from qvm.quasi_distr import QuasiDistr
 from qvm.util import circuit_to_qcg
-from qvm.virtual_gates import VirtualBinaryGate
+from qvm.virtual_gates import VirtualBinaryGate, VirtualSWAP
 
 
 def average_degree(cricuit: QuantumCircuit) -> float:
@@ -23,7 +26,10 @@ def overhead(circuit: QuantumCircuit) -> int:
     num_vgates = sum(
         1 for instr in circuit if isinstance(instr.operation, VirtualBinaryGate)
     )
-    return pow(6, num_vgates)
+    num_wire_cuts = sum(
+        1 for instr in circuit if isinstance(instr.operation, VirtualSWAP)
+    )
+    return 4**num_vgates * 6**num_wire_cuts
 
 
 def initial_layout_from_transpiled_circuit(
@@ -75,3 +81,35 @@ def append_to_csv_file(filepath: str, data: dict[str, int | float]) -> None:
 
     with open(filepath, "a") as csv_file:
         csv.DictWriter(csv_file, fieldnames=data.keys()).writerow(data)
+
+
+def find_cut(
+    circuit: QuantumCircuit, num_wire_cuts: int, num_gate_cuts: int, qpu_size: int
+) -> QuantumCircuit:
+    start = circuit.num_qubits // qpu_size + 1
+    for frags in range(start, start+1):
+        try:
+            circuit = qvm.cut(
+                circuit=circuit,
+                technique="optimal",
+                max_wire_cuts=num_wire_cuts,
+                max_gate_cuts=num_gate_cuts,
+                num_fragments=frags,
+                max_fragment_size=qpu_size,
+            )
+            print(f"Found cut with {frags} fragments.")
+            return qvm.fragment_circuit(circuit)
+        except ValueError:
+            continue
+    raise ValueError("No cut found.")
+
+
+def load_config() -> dict:
+    config_path = ""
+    if len(sys.argv) == 1:
+        config_path = "bench_config.json"
+    else:
+        config_path = sys.argv[1]
+    with open(config_path) as f:
+        config = json.load(f)
+    return config

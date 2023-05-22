@@ -2,11 +2,6 @@
     "experiments": [
         {
             "name": "2local",
-            "param": 3,
-            "technique": "break_circle"
-        },
-        {
-            "name": "2local",
             "param": 1,
             "technique": "break_circle"
         },
@@ -14,15 +9,19 @@
             "name": "2local",
             "param": 2,
             "technique": "break_circle"
+        },
+        {
+            "name": "2local",
+            "param": 3,
+            "technique": "break_circle"
         }
     ],
     "backend": "kolkata",
     "nums_qubits": [
-        4,
-        6,
-        8,
-        10,
-        12,
-        14
-    ]
+
+        25,
+        35,
+        45
+    ],
+    "qpu_size": 10
 }
