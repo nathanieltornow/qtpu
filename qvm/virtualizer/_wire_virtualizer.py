@@ -93,8 +93,8 @@ def _plus_circuit() -> QuantumCircuit:
 
 def _i_circuit() -> QuantumCircuit:
     circ = QuantumCircuit(1)
-    circ.s(0)
     circ.h(0)
+    circ.s(0)
     return circ
 
 
