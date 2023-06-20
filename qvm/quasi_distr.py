@@ -18,6 +18,27 @@ class QuasiDistr(dict[str, float]):
     def to_counts(self, shots: int) -> dict[str, int]:
         return {k: abs(int(v * shots)) for k, v in self.items()}
 
+    @staticmethod
+    def from_sampler_distr(distr: dict[int, float], num_bits: int) -> "QuasiDistr":
+        return QuasiDistr({bin(k)[2:].zfill(num_bits): v for k, v in distr.items()})
+
+    def nearest_prob_distr(self) -> dict[str, float]:
+        sorted_probs = dict(sorted(self.items(), key=lambda item: item[1]))
+        num_elems = len(sorted_probs)
+        new_probs = {}
+        beta = 0.0
+        diff = 0.0
+        for key, val in sorted_probs.items():
+            temp = val + beta / num_elems
+            if temp < 0:
+                beta += val
+                num_elems -= 1
+                diff += val * val
+            else:
+                diff += (beta / num_elems) * (beta / num_elems)
+                new_probs[key] = sorted_probs[key] + beta / num_elems
+        return QuasiDistr(new_probs)
+
     def divide_by_first_bit(self) -> tuple["QuasiDistr", "QuasiDistr"]:
         data1, data2 = {}, {}
         for key, value in self.items():
