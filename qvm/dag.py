@@ -5,6 +5,7 @@ import networkx as nx
 from qiskit.circuit import (
     QuantumCircuit,
     QuantumRegister,
+    ClassicalRegister,
     CircuitInstruction,
     Instruction,
     Qubit,
@@ -42,6 +43,16 @@ class DAG(nx.DiGraph):
     @property
     def depth(self) -> int:
         return nx.dag_longest_path_length(self)
+
+    def add_qreg(self, qreg: QuantumRegister) -> None:
+        if qreg in self._qregs:
+            raise ValueError(f"Quantum register {qreg} already exists")
+        self._qregs.append(qreg)
+
+    def add_creg(self, creg: ClassicalRegister) -> None:
+        if creg in self._cregs:
+            raise ValueError(f"Classical register {creg} already exists")
+        self._cregs.append(creg)
 
     def to_circuit(self) -> QuantumCircuit:
         order = list(nx.topological_sort(self))

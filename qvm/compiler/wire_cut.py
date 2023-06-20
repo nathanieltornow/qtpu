@@ -1,4 +1,5 @@
-from qiskit.circuit import CircuitInstruction
+import networkx as nx
+from qiskit.circuit import CircuitInstruction, Qubit, QuantumRegister
 
 from qvm.dag import DAG
 from qvm.virtual_gates import WireCut
@@ -6,7 +7,7 @@ from qvm.virtual_gates import WireCut
 from ._asp import dag_to_asp, get_optimal_symbols
 
 
-def cut_wires(dag: DAG, size_to_reach: int) -> dict[int, int]:
+def cut_wires(dag: DAG, size_to_reach: int) -> None:
     min_num_fragments = len(dag.qubits) // size_to_reach
     partitions: dict[int, int] | None = None
     while partitions is None:
@@ -27,7 +28,29 @@ def cut_wires(dag: DAG, size_to_reach: int) -> dict[int, int]:
                 dag.add_edge(u, w)
                 dag.add_edge(w, v)
 
-    return partitions
+
+def wire_cuts_to_vswaps(dag: DAG) -> None:
+    raise NotImplementedError()
+    qubit_map: dict[Qubit, Qubit] = {}
+
+    def _find_in_map(qubit: Qubit) -> Qubit:
+        while qubit in qubit_map:
+            qubit = qubit_map[qubit]
+        return qubit
+
+    num_wire_cuts = sum(
+        1
+        for node in dag.nodes
+        if isinstance(dag.get_node_instr(node).operation, WireCut)
+    )
+
+    for node in nx.topological_sort(dag):
+        instr = dag.get_node_instr(node)
+        op, qubits = instr.operation, instr.qubits
+        qubits = [_find_in_map(qubit) for qubit in qubits]
+        if isinstance(op, WireCut):
+            pass
+        instr.qubits = qubits
 
 
 def _find_optimal_partitons(
