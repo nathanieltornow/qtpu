@@ -6,11 +6,12 @@ from qiskit.circuit import (
     QuantumCircuit,
     QuantumRegister,
     CircuitInstruction,
+    Instruction,
     Qubit,
 )
 
 
-class DAG(nx.MultiDiGraph):
+class DAG(nx.DiGraph):
     def __init__(self, circuit: QuantumCircuit):
         def _next_op_on_qubit(qubit: int, from_idx: int) -> int:
             for i, instr in enumerate(circuit[from_idx + 1 :]):
@@ -51,12 +52,35 @@ class DAG(nx.MultiDiGraph):
         return circuit
 
     def add_instr_node(self, instr: CircuitInstruction) -> int:
-        new_id = self.number_of_nodes()
+        new_id = max(self.nodes) + 1 if len(self.nodes) > 0 else 0
         self.add_node(new_id, instr=instr)
         return new_id
 
     def get_node_instr(self, node: int) -> CircuitInstruction:
         return self.nodes[node]["instr"]
+
+    def qubits_of_edge(self, u: int, v: int) -> set[Qubit]:
+        qubits1 = self.get_node_instr(u).qubits
+        qubits2 = self.get_node_instr(v).qubits
+        return set(qubits1) & set(qubits2)
+
+    def remove_nodes_of_type(self, instr_type: type[Instruction]) -> None:
+        nodes_to_remove = []
+        for node in self.nodes:
+            if isinstance(self.get_node_instr(node).operation, instr_type):
+                predecessors = list(self.predecessors(node))
+                successors = list(self.successors(node))
+
+                for pred, succ in itertools.product(predecessors, successors):
+                    pred_qubits = set(self.get_node_instr(pred).qubits)
+                    succ_qubits = set(self.get_node_instr(succ).qubits)
+                    if pred_qubits & succ_qubits:
+                        self.add_edge(pred, succ)
+
+                nodes_to_remove.append(node)
+
+        for node in nodes_to_remove:
+            self.remove_node(node)
 
     def compact(self) -> None:
         # find the qubits not used

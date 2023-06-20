@@ -7,11 +7,11 @@ from qiskit.circuit import Qubit, CircuitInstruction, Reset
 from qvm.dag import DAG
 
 
-def apply_maximal_qubit_reuse(dag: DAG, size_to_reach: int):
-    while len(dag.qubits) > size_to_reach:
+def apply_maximal_qubit_reuse(dag: DAG) -> None:
+    while True:
         qubit_pair = next(find_valid_reuse_pairs(dag), None)
         if qubit_pair is None:
-            raise Exception(f"Could not reach size {size_to_reach}")
+            break
         reuse(dag, *qubit_pair)
         dag.compact()
 

@@ -1,5 +1,7 @@
-from qiskit.circuit import QuantumCircuit, Qubit
+import networkx as nx
 
+from clingo.solving import Symbol
+from clingo.control import Control
 
 from qvm.dag import DAG
 
@@ -21,3 +23,31 @@ def dag_to_asp(dag: DAG) -> str:
             for qubit in same_qubits:
                 asp += f"wire({dag.qubits.index(qubit)}, {node}, {next_node}).\n"
     return asp
+
+
+def qcg_to_asp(qcg: nx.Graph) -> str:
+    asp = ""
+    for node, data in qcg.nodes(data=True):
+        asp += f"qubit({node}).\n"
+    for u, v, data in qcg.edges(data=True):
+        if "weight" not in data:
+            asp += f"qubit_conn({u}, {v}, 1).\n"
+        else:
+            asp += f'qubit_conn({u}, {v}, {data["weight"]}).\n'
+    return asp
+
+
+def get_optimal_symbols(asp: str) -> list[Symbol]:
+    control = Control()
+    control.configuration.solve.models = 0  # type: ignore
+    control.add("base", [], asp)
+    control.ground([("base", [])])
+    solve_result = control.solve(yield_=True)  # type: ignore
+    opt_model = None
+    for model in solve_result:  # type: ignore
+        opt_model = model
+
+    if opt_model is None:
+        raise ValueError("No solution found.")
+
+    return list(opt_model.symbols(shown=True))  # type: ignore
