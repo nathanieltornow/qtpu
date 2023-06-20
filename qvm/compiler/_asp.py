@@ -8,9 +8,11 @@ def dag_to_asp(dag: DAG) -> str:
     qubits = dag.qubits
     asp = ""
     for node in dag.nodes:
+        asp += f"gate({node}).\n"
         qubits = dag.get_node_instr(node).qubits
-        qubits_str = ", ".join([f"{dag.qubits.index(qubit)}" for qubit in qubits])
-        asp += f"gate({node}, {qubits_str}).\n"
+        for qubit in dag.get_node_instr(node).qubits:
+            asp += f"gate_on_qubit({node}, {dag.qubits.index(qubit)}).\n"
+
         for next_node in dag.successors(node):
             next_qubits = dag.get_node_instr(next_node).qubits
             same_qubits = set(qubits) & set(next_qubits)

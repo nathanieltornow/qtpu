@@ -7,3 +7,9 @@ def apply_virtual_qubit_routing(
     dag: DAG, coupling_map: CouplingMap, initial_layout: list[int]
 ) -> None:
     pass
+
+
+def perfect_virtual_qubit_routing(
+    dag: DAG, coupling_map: CouplingMap, initial_layout: list[int]
+) -> None:
+    pass

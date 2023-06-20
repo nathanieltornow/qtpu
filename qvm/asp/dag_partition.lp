@@ -33,13 +33,7 @@ gate_on_qubit(OpID, Qubit) :- gate(OpID, _, Qubit).
 
 qubit_in_fragment(Frag, Qubit) :- fragment(Frag), gate_on_qubit(G, Qubit), gate_in_frag(G, Frag), Frag != 0.
 
-% :-  gate_in_frag(OpID1, 0),
-%     wire(OpID1, OpID2, Qubit1),
-%     wire(OpID1, OpID3, Qubit2),
-%     Qubit1 != Qubit2,
-%     gate_in_frag(OpID2, Frag1),
-%     gate_in_frag(OpID3, Frag2),
-%     Frag1 != Frag2.
+
 
 
 
