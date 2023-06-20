@@ -1,7 +1,35 @@
+from networkx.algorithms.community import kernighan_lin_bisection
+from qiskit.circuit import Qubit
+
 from qvm.virtual_gates import VIRTUAL_GATE_TYPES
 from qvm.dag import DAG
 
+from .util import dag_to_qcg
 from ._asp import dag_to_asp
+
+
+def bisect(dag: DAG, size_to_reach: int) -> None:
+    qcg = dag_to_qcg(dag)
+    fragment_qubits: list[set[Qubit]]
+    fragment_qubits = list(kernighan_lin_bisection(qcg))
+
+    while any(len(f) > size_to_reach for f in fragment_qubits):
+        largest_fragment = max(fragment_qubits, key=lambda f: len(f))
+        fragment_qubits.remove(largest_fragment)
+        fragment_qubits += list(kernighan_lin_bisection(qcg.subgraph(largest_fragment)))
+
+
+def decompose_qubit_sets(dag: DAG, qubit_sets: list[set[Qubit]]) -> None:
+    for node in dag.nodes:
+        instr = dag.get_node_instr(node)
+        qubits = instr.qubits
+
+        nums_of_frags = sum(1 for qubit in qubits if qubit in qubit_sets)
+        if nums_of_frags == 0:
+            raise ValueError("No fragment found for qubit.")
+        elif nums_of_frags > 1:
+            # insert a virtual gate
+            instr.operation = VIRTUAL_GATE_TYPES[instr.operation.name](instr.operation)
 
 
 def minimize_qubit_dependencies(dag: DAG, max_virt: int) -> None:
@@ -40,10 +68,6 @@ def _min_dep_asp(max_virt: int) -> str:
     
     :- N = #count{{Gate : vgate(Gate)}}, N > {max_virt}.
     
-    gate_on_qubit(Gate, Qubit) :- gate(Gate, Qubit).
-    gate_on_qubit(Gate, Qubit) :- gate(Gate, Qubit, _).
-    gate_on_qubit(Gate, Qubit) :- gate(Gate, _, Qubit).
-    
     path(Gate1, Gate2) :- wire(_, Gate1, Gate2), not vgate(Gate1).
     path(Gate1, Gate3) :- path(Gate1, Gate2), path(Gate2, Gate3).
     
@@ -58,7 +82,7 @@ def _min_dep_asp(max_virt: int) -> str:
     num_vgates(N) :- N = #count{{Gate : vgate(Gate)}}.
     
     #minimize{{N : num_deps(N)}}.
-    % # minimize{{N : num_vgates(N)}}.
+    #minimize{{N : num_vgates(N)}}.
     #show vgate/1.
     """
     return asp

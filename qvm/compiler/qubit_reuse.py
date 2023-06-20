@@ -19,7 +19,7 @@ def apply_maximal_qubit_reuse(dag: DAG, size_to_reach: int):
 def reuse(dag: DAG, qubit: Qubit, reused_qubit: Qubit) -> None:
     """
     Reuse a qubit by resetting it and reusing it.
-    IMPORTANT: Only works if qubit is not dependent on reused_qubit.
+    NOTE: Only works if qubit is not dependent on reused_qubit.
         This must be checked by the caller.
 
     Args:
