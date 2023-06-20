@@ -2,7 +2,12 @@ from typing import Iterator
 import itertools
 
 import networkx as nx
-from qiskit.circuit import QuantumCircuit, QuantumRegister, CircuitInstruction, Qubit
+from qiskit.circuit import (
+    QuantumCircuit,
+    QuantumRegister,
+    CircuitInstruction,
+    Qubit,
+)
 
 
 class DAG(nx.MultiDiGraph):
@@ -80,29 +85,8 @@ class DAG(nx.MultiDiGraph):
             if qubit in instr.qubits:
                 yield instr
 
-
-def dag_to_qubit_dependency_graph(dag: DAG) -> nx.DiGraph:
-    dep_graph = nx.DiGraph()
-    dep_graph.add_nodes_from(dag.qubits)
-
-    def _add_dep(u: Qubit, v: Qubit) -> None:
-        if u == v:
-            return
-        if not dep_graph.has_edge(u, v):
-            dep_graph.add_edge(u, v, weight=0)
-        dep_graph[u][v]["weight"] += 1
-
-    for node in nx.topological_sort(dag):
-        qubits = dag.get_node_instr(node).qubits
-        if len(qubits) <= 1:
-            continue
-
-        for u, v in itertools.combinations(qubits, 2):
-            _add_dep(u, v)
-            _add_dep(v, u)
-            for x in dep_graph.successors(u):
-                _add_dep(v, x)
-            for x in dep_graph.successors(v):
-                _add_dep(u, x)
-
-    return dep_graph
+    def nodes_on_qubit(self, qubit: Qubit) -> Iterator[int]:
+        for node in nx.topological_sort(self):
+            instr = self.get_node_instr(node)
+            if qubit in instr.qubits:
+                yield node

@@ -1,10 +1,19 @@
 from typing import Iterator
-from itertools import combinations
+from itertools import permutations
 
 import networkx as nx
 from qiskit.circuit import Qubit, CircuitInstruction, Reset
 
 from qvm.dag import DAG
+
+
+def apply_maximal_qubit_reuse(dag: DAG, size_to_reach: int):
+    while len(dag.qubits) > size_to_reach:
+        qubit_pair = next(find_valid_reuse_pairs(dag), None)
+        if qubit_pair is None:
+            raise Exception(f"Could not reach size {size_to_reach}")
+        reuse(dag, *qubit_pair)
+        dag.compact()
 
 
 def reuse(dag: DAG, qubit: Qubit, reused_qubit: Qubit) -> None:
@@ -20,11 +29,11 @@ def reuse(dag: DAG, qubit: Qubit, reused_qubit: Qubit) -> None:
     """
 
     # first op of u_qubit
-    first_node = next(dag.instructions_on_qubit(reused_qubit))
+    first_node = next(dag.nodes_on_qubit(reused_qubit))
     # last op of v_qubit
-    last_node = list(dag.instructions_on_qubit(qubit))[-1]
+    last_node = list(dag.nodes_on_qubit(qubit))[-1]
 
-    reset_instr = CircuitInstruction(operation=Reset(), qubits=(first_node,))
+    reset_instr = CircuitInstruction(operation=Reset(), qubits=(reused_qubit,))
     reset_node = dag.add_instr_node(reset_instr)
     dag.add_edge(last_node, reset_node)
     dag.add_edge(reset_node, first_node)
@@ -32,7 +41,8 @@ def reuse(dag: DAG, qubit: Qubit, reused_qubit: Qubit) -> None:
     for node in dag.nodes:
         instr = dag.get_node_instr(node)
         instr.qubits = [
-            reused_qubit if qubit == qubit else qubit for qubit in instr.qubits
+            reused_qubit if instr_qubit == qubit else instr_qubit
+            for instr_qubit in instr.qubits
         ]
 
 
@@ -48,9 +58,9 @@ def is_dependent_qubit(dag: DAG, u_qubit: Qubit, v_qubit: Qubit) -> bool:
         bool: Whether any operation on u_qubit depends on any operation on v_qubit.
     """
     # first op of u_qubit
-    u_node = next(dag.instructions_on_qubit(u_qubit))
+    u_node = next(dag.nodes_on_qubit(u_qubit))
     # last op of v_qubit
-    v_node = list(dag.instructions_on_qubit(v_qubit))[-1]
+    v_node = list(dag.nodes_on_qubit(v_qubit))[-1]
     return nx.has_path(dag, u_node, v_node)
 
 
@@ -63,6 +73,6 @@ def find_valid_reuse_pairs(dag: DAG) -> Iterator[tuple[Qubit, Qubit]]:
     Yields:
         Iterator[tuple[Qubit, Qubit]]: All valid reuse pairs.
     """
-    for from_qubit, to_qubit in combinations(dag.qubits, 2):
-        if not is_dependent_qubit(dag, from_qubit, to_qubit):
-            yield from_qubit, to_qubit
+    for qubit, reused_qubit in permutations(dag.qubits, 2):
+        if not is_dependent_qubit(dag, reused_qubit, qubit):
+            yield qubit, reused_qubit
