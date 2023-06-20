@@ -83,13 +83,10 @@ class DAG(nx.DiGraph):
             self.remove_node(node)
 
     def compact(self) -> None:
-        # find the qubits not used
+        # get the used qubits
         used_qubits: set[Qubit] = set()
         for node in self.nodes:
             used_qubits.update(self.get_node_instr(node).qubits)
-        unused_qubits = set(itertools.chain(*self._qregs)) - used_qubits
-        if len(unused_qubits) == 0:
-            return
 
         new_qreg = QuantumRegister(len(used_qubits), "q")
         qubit_mapping: dict[Qubit, Qubit] = {

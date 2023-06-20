@@ -20,7 +20,7 @@ def decompose_qubit_sets(dag: DAG, qubit_sets: list[set[Qubit]]) -> None:
             instr.operation = VIRTUAL_GATE_TYPES[instr.operation.name](instr.operation)
 
 
-def bisect_recursive(dag: DAG, size_to_reach: int) -> None:
+def cut_gates_bisection(dag: DAG, size_to_reach: int) -> None:
     qcg = dag_to_qcg(dag)
     fragment_qubits: list[set[Qubit]]
     fragment_qubits = list(kernighan_lin_bisection(qcg))
@@ -33,10 +33,12 @@ def bisect_recursive(dag: DAG, size_to_reach: int) -> None:
     decompose_qubit_sets(dag, fragment_qubits)
 
 
-def optimal_gate_cut(dag: DAG, size_to_reach: int) -> None:
+def cut_gates_optimal(dag: DAG, size_to_reach: int) -> None:
     qcg = dag_to_qcg(dag, use_qubit_idx=True)
     asp = qcg_to_asp(qcg)
-    num_partitions = len(dag.qubits) // size_to_reach + (len(dag.qubits) % size_to_reach != 0)
+    num_partitions = len(dag.qubits) // size_to_reach + (
+        len(dag.qubits) % size_to_reach != 0
+    )
     asp += _gate_cut_asp(num_partitions=num_partitions)
 
     symbols = get_optimal_symbols(asp)
