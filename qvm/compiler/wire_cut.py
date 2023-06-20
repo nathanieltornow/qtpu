@@ -7,8 +7,6 @@ from ._asp import dag_to_asp, get_optimal_symbols
 
 
 def cut_wires(dag: DAG, size_to_reach: int) -> dict[int, int]:
-    from clingo.control import Control
-
     min_num_fragments = len(dag.qubits) // size_to_reach
     partitions: dict[int, int] | None = None
     while partitions is None:
@@ -35,8 +33,6 @@ def cut_wires(dag: DAG, size_to_reach: int) -> dict[int, int]:
 def _find_optimal_partitons(
     dag: DAG, num_fragments: int, size_to_reach: int
 ) -> dict[int, int] | None:
-    from clingo.control import Control
-
     asp = dag_to_asp(dag)
     asp += _wire_cut_asp(num_fragments=num_fragments, size_to_reach=size_to_reach)
 
