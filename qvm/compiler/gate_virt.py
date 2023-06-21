@@ -74,9 +74,14 @@ def minimize_qubit_dependencies(dag: DAG, max_virt: int) -> None:
 
 def _min_dep_asp(max_virt: int) -> str:
     asp = f"""
-    {{ vgate(Gate) : gate(Gate) }}.
     
-    :- N = #count{{Gate : vgate(Gate)}}, N > {max_virt}.
+    num_qubits_of_gate(Gate, N) :- 
+        gate(Gate), 
+        N = #count{{ Qubit : gate_on_qubit(Gate, Qubit) }}.
+    
+    {{ vgate(Gate) : gate(Gate), num_qubits_of_gate(Gate, 2) }}.
+    
+    :- N = #count{{Gate : vgate(Gate)}}, N != {max_virt}.
     
     path(Gate1, Gate2) :- wire(_, Gate1, Gate2), not vgate(Gate1).
     path(Gate1, Gate3) :- path(Gate1, Gate2), path(Gate2, Gate3).

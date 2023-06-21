@@ -24,9 +24,6 @@ def cut(
     elif technique == "gate_bisection":
         pass
 
-    elif technique == "qubit_reuse":
-        pass
-
     elif technique == "wire_optimal":
         pass
 

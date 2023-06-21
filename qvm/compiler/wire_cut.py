@@ -14,11 +14,12 @@ def cut_wires(dag: DAG, size_to_reach: int) -> None:
         partitions = _find_optimal_partitons(dag, min_num_fragments, size_to_reach)
         min_num_fragments += 1
 
-    edges = list(dag.edges)
+    edges = list(dag.edges())
+    i = 0
     for u, v in edges:
         if partitions[u] != partitions[v]:
+            i += 1
             dag.remove_edge(u, v)
-
             qubits = set(dag.get_node_instr(u).qubits) & set(
                 dag.get_node_instr(v).qubits
             )
@@ -96,5 +97,6 @@ def _wire_cut_asp(num_fragments: int, size_to_reach: int) -> str:
     #minimize{{ N : num_cutted_wires(N) }}.
     
     #show gate_in_partition/2.
+    #show num_cutted_wires/1.
     """
     return asp

@@ -10,7 +10,7 @@ from qvm.util import fragment_circuit
 
 class Virtualizer(abc.ABC):
     def __init__(self, circuit: QuantumCircuit) -> None:
-        self._circuit = fragment_circuit(circuit)
+        self._circuit = circuit
 
     def fragments(self) -> dict[Fragment, QuantumCircuit]:
         sub_circs: dict[Fragment, QuantumCircuit] = {

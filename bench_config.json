@@ -1,27 +1,34 @@
 {
     "experiments": [
         {
-            "name": "2local",
-            "param": 1,
-            "technique": "break_circle"
+            "name": "hamsim",
+            "param": 1
+        },
+        {
+            "name": "hamsim",
+            "param": 2
+        },
+        {
+            "name": "hamsim",
+            "param": 3
         },
         {
             "name": "2local",
-            "param": 2,
-            "technique": "break_circle"
+            "param": 1
         },
         {
             "name": "2local",
-            "param": 3,
-            "technique": "break_circle"
+            "param": 2
+        },
+        {
+            "name": "2local",
+            "param": 3
         }
     ],
     "backend": "kolkata",
     "nums_qubits": [
-
-        25,
-        35,
-        45
+        15,
+        20
     ],
     "qpu_size": 10
 }

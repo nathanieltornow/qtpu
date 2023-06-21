@@ -933,7 +933,7 @@ summary = "Python for Window Extensions"
 name = "pywinpty"
 version = "2.0.10"
 requires_python = ">=3.7"
-summary = ""
+summary = "Pseudo terminal support for Windows from Python."
 
 [[package]]
 name = "pyyaml"
@@ -1317,7 +1317,7 @@ summary = "Jupyter interactive widgets for Jupyter Notebook"
 
 [metadata]
 lock_version = "4.0"
-content_hash = "sha256:f4265357dd4d0c7470395f2421da36f155e91dcd7bd6e6dab0774b4a9d55960b"
+content_hash = "sha256:4ec36a90e0dd21db6579d91595cffac78728bdd0d9cf37d3a6dc2369be25d4cf"
 
 [metadata.files]
 "aiosignal 1.3.1" = [

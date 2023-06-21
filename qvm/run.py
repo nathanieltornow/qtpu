@@ -31,6 +31,7 @@ def _run_virtualizer(
     run_args: dict[str, Any],
 ) -> tuple[dict[str, float], RunTimer]:
     frag_circs = virtualizer.fragments()
+    print(len(frag_circs))
     start = perf_counter()
     jobs = {}
     for fragment, args in virtualizer.instantiate().items():

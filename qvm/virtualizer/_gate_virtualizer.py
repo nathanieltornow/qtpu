@@ -18,7 +18,6 @@ logger = logging.getLogger("qvm")
 
 class GateVirtualizer(Virtualizer):
     def __init__(self, circuit: QuantumCircuit) -> None:
-        circuit = fragment_circuit(circuit)
         super().__init__(circuit)
         self._vgates = [
             instr.operation

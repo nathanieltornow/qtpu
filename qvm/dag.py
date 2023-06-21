@@ -14,6 +14,7 @@ from qiskit.circuit import (
 
 class DAG(nx.DiGraph):
     def __init__(self, circuit: QuantumCircuit):
+        circuit = circuit.copy()
         def _next_op_on_qubit(qubit: int, from_idx: int) -> int:
             for i, instr in enumerate(circuit[from_idx + 1 :]):
                 if qubit in instr.qubits:
@@ -76,6 +77,7 @@ class DAG(nx.DiGraph):
         return set(qubits1) & set(qubits2)
 
     def remove_nodes_of_type(self, instr_type: type[Instruction]) -> None:
+        # TODO Might not be correct actually
         nodes_to_remove = []
         for node in self.nodes:
             if isinstance(self.get_node_instr(node).operation, instr_type):
