@@ -2,9 +2,8 @@ from networkx.algorithms.community import kernighan_lin_bisection
 from qiskit.circuit import Qubit
 
 from qvm.virtual_gates import VIRTUAL_GATE_TYPES
-from qvm.dag import DAG
+from qvm.dag import DAG, dag_to_qcg
 
-from .util import dag_to_qcg
 from ._asp import dag_to_asp, qcg_to_asp, get_optimal_symbols
 
 
@@ -39,9 +38,12 @@ def cut_gates_optimal(dag: DAG, size_to_reach: int) -> None:
     num_partitions = len(dag.qubits) // size_to_reach + (
         len(dag.qubits) % size_to_reach != 0
     )
+    print(f"Trying {num_partitions} partitions")
     asp += _gate_cut_asp(num_partitions=num_partitions)
 
     symbols = get_optimal_symbols(asp)
+
+    print(dag.to_circuit())
 
     qubit_sets: list[set[Qubit]] = [set() for _ in range(num_partitions)]
     for symbol in symbols:
@@ -110,7 +112,7 @@ def _gate_cut_asp(num_partitions: int) -> str:
     {{ qubit_in_partition(Qubit, P) : partition(P) }} == 1 :- qubit(Qubit).
     :- partition(P), not qubit_in_partition(_, P).
     
-    partition_pair(P1, P2) :- partition(P1), partition(P2), P1 < P2.
+    partition_pair(P1, P2) :- partition(P1), partition(P2), P1 != P2.
 
     qubit_conn_between_partitions(Qubit1, Qubit2, W) :- 
         qubit(Qubit1),
@@ -120,7 +122,7 @@ def _gate_cut_asp(num_partitions: int) -> str:
         partition_pair(P1, P2),
         qubit_conn(Qubit1, Qubit2, W).
 
-    num_vgates(N) :- N = #sum{{ W, Qubit1, Qubit2 : qubit_conn_between_partitions(Qubit1, Qubit2, W) }}.
+    num_vgates(N) :- N = #sum{{ W : qubit_conn_between_partitions(_, _, W) }}.
     
     #minimize{{ N : num_vgates(N) }}.
     #show qubit_in_partition/2.

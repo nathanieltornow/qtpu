@@ -11,6 +11,9 @@ def cut_wires(dag: DAG, size_to_reach: int) -> None:
     min_num_fragments = len(dag.qubits) // size_to_reach
     partitions: dict[int, int] | None = None
     while partitions is None:
+        if min_num_fragments > len(dag.qubits):
+            raise ValueError("Could not find a solution (internal error)")
+        print(f"Trying {min_num_fragments} fragments")
         partitions = _find_optimal_partitons(dag, min_num_fragments, size_to_reach)
         min_num_fragments += 1
 

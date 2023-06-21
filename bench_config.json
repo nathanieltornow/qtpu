@@ -1,34 +1,13 @@
 {
     "experiments": [
         {
-            "name": "hamsim",
-            "param": 1
-        },
-        {
-            "name": "hamsim",
+            "name": "qaoa",
             "param": 2
-        },
-        {
-            "name": "hamsim",
-            "param": 3
-        },
-        {
-            "name": "2local",
-            "param": 1
-        },
-        {
-            "name": "2local",
-            "param": 2
-        },
-        {
-            "name": "2local",
-            "param": 3
         }
     ],
     "backend": "kolkata",
     "nums_qubits": [
-        15,
-        20
+        12
     ],
     "qpu_size": 10
 }

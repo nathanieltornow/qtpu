@@ -9,12 +9,14 @@ from qiskit.circuit import (
     CircuitInstruction,
     Instruction,
     Qubit,
+    Barrier,
 )
 
 
 class DAG(nx.DiGraph):
     def __init__(self, circuit: QuantumCircuit):
         circuit = circuit.copy()
+
         def _next_op_on_qubit(qubit: int, from_idx: int) -> int:
             for i, instr in enumerate(circuit[from_idx + 1 :]):
                 if qubit in instr.qubits:
@@ -124,3 +126,45 @@ class DAG(nx.DiGraph):
             instr = self.get_node_instr(node)
             if qubit in instr.qubits:
                 yield node
+
+    def fragment(self) -> None:
+        con_qubits = list(nx.connected_components(dag_to_qcg(self)))
+        new_frags = [
+            QuantumRegister(len(qubits), name=f"frag{i}")
+            for i, qubits in enumerate(con_qubits)
+        ]
+        qubit_map: dict[Qubit, Qubit] = {}  # old -> new Qubit
+        for nodes, circ in zip(con_qubits, new_frags):
+            node_l = list(nodes)
+            for i in range(len(node_l)):
+                qubit_map[node_l[i]] = circ[i]
+
+        for node in self.nodes:
+            instr = self.get_node_instr(node)
+            instr.qubits = [qubit_map[qubit] for qubit in instr.qubits]
+        self._qregs = new_frags
+
+
+def dag_to_qcg(dag: DAG, use_qubit_idx: bool = False) -> nx.Graph:
+    graph = nx.Graph()
+    bb = nx.edge_betweenness_centrality(graph, normalized=False)
+    nx.set_edge_attributes(graph, bb, "weight")
+    if use_qubit_idx:
+        graph.add_nodes_from(range(len(dag.qubits)))
+    else:
+        graph.add_nodes_from(dag.qubits)
+
+    for node in dag.nodes:
+        cinstr = dag.get_node_instr(node)
+        op, qubits = cinstr.operation, cinstr.qubits
+        if isinstance(op, Barrier):
+            continue
+        if len(qubits) >= 2:
+            for qubit1, qubit2 in itertools.combinations(qubits, 2):
+                if use_qubit_idx:
+                    qubit1, qubit2 = dag.qubits.index(qubit1), dag.qubits.index(qubit2)
+
+                if not graph.has_edge(qubit1, qubit2):
+                    graph.add_edge(qubit1, qubit2, weight=0)
+                graph[qubit1][qubit2]["weight"] += 1
+    return graph

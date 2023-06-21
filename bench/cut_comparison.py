@@ -1,6 +1,6 @@
 from qiskit.circuit import QuantumCircuit, Barrier
 
-from qvm.compiler.gate_virt import cut_gates_optimal, minimize_qubit_dependencies
+from qvm.compiler.gate_virt import cut_gates_bisection, cut_gates_optimal, minimize_qubit_dependencies
 from qvm.compiler.wire_cut import cut_wires
 from qvm.compiler.qubit_reuse import apply_maximal_qubit_reuse
 from qvm.virtual_gates import VirtualBinaryGate, WireCut
@@ -42,7 +42,7 @@ def _gate_qr_overhead(circuit: QuantumCircuit, qpu_size: int) -> int:
             for node in dag.nodes
             if isinstance(dag.get_node_instr(node).operation, VirtualBinaryGate)
         )
-        n = dag.number_of_nodes()
+        print(dag.to_circuit())
         dag.remove_nodes_of_type(VirtualBinaryGate)
         apply_maximal_qubit_reuse(dag)
         if len(dag.qubits) <= qpu_size:
