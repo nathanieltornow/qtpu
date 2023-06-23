@@ -4,16 +4,18 @@ from itertools import permutations
 import networkx as nx
 from qiskit.circuit import Qubit, CircuitInstruction, Reset
 
-from qvm.dag import DAG
+from .dag import DAG
 
 
-def apply_maximal_qubit_reuse(dag: DAG) -> None:
-    while True:
+def qubit_reuse(dag: DAG, size_to_reach: int = 1) -> None:
+    num_qubits = len(dag.qubits)
+    while num_qubits > size_to_reach:
         qubit_pair = next(find_valid_reuse_pairs(dag), None)
         if qubit_pair is None:
             break
         reuse(dag, *qubit_pair)
         dag.compact()
+        num_qubits -= 1
 
 
 def reuse(dag: DAG, qubit: Qubit, reused_qubit: Qubit) -> None:

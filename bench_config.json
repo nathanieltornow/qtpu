@@ -1,7 +1,7 @@
 {
     "experiments": [
         {
-            "name": "qaoa",
+            "name": "hamsim",
             "param": 2
         }
     ],
@@ -9,5 +9,5 @@
     "nums_qubits": [
         12
     ],
-    "qpu_size": 10
+    "qpu_size": 3
 }

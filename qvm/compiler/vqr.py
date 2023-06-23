@@ -1,7 +1,7 @@
 from qiskit.transpiler import CouplingMap
 
 from qvm.virtual_gates import VIRTUAL_GATE_TYPES
-from qvm.dag import DAG
+from .dag import DAG
 
 
 def perfect_virtual_qubit_routing(

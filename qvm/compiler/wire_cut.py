@@ -1,9 +1,9 @@
 import networkx as nx
 from qiskit.circuit import CircuitInstruction, Qubit, QuantumRegister
 
-from qvm.dag import DAG
 from qvm.virtual_gates import WireCut
 
+from .dag import DAG
 from ._asp import dag_to_asp, get_optimal_symbols
 
 
@@ -13,7 +13,6 @@ def cut_wires(dag: DAG, size_to_reach: int) -> None:
     while partitions is None:
         if min_num_fragments > len(dag.qubits):
             raise ValueError("Could not find a solution (internal error)")
-        print(f"Trying {min_num_fragments} fragments")
         partitions = _find_optimal_partitons(dag, min_num_fragments, size_to_reach)
         min_num_fragments += 1
 

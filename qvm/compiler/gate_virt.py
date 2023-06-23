@@ -2,8 +2,8 @@ from networkx.algorithms.community import kernighan_lin_bisection
 from qiskit.circuit import Qubit
 
 from qvm.virtual_gates import VIRTUAL_GATE_TYPES
-from qvm.dag import DAG, dag_to_qcg
 
+from .dag import DAG, dag_to_qcg
 from ._asp import dag_to_asp, qcg_to_asp, get_optimal_symbols
 
 
@@ -38,12 +38,9 @@ def cut_gates_optimal(dag: DAG, size_to_reach: int) -> None:
     num_partitions = len(dag.qubits) // size_to_reach + (
         len(dag.qubits) % size_to_reach != 0
     )
-    print(f"Trying {num_partitions} partitions")
-    asp += _gate_cut_asp(num_partitions=num_partitions)
+    asp += _gate_cut_asp(num_partitions=num_partitions, size_to_reach=size_to_reach)
 
     symbols = get_optimal_symbols(asp)
-
-    print(dag.to_circuit())
 
     qubit_sets: list[set[Qubit]] = [set() for _ in range(num_partitions)]
     for symbol in symbols:
@@ -99,30 +96,30 @@ def _min_dep_asp(max_virt: int) -> str:
     num_vgates(N) :- N = #count{{Gate : vgate(Gate)}}.
     
     #minimize{{N : num_deps(N)}}.
-    #minimize{{N : num_vgates(N)}}.
+    % #minimize{{N : num_vgates(N)}}.
     #show vgate/1.
     """
     return asp
 
 
-def _gate_cut_asp(num_partitions: int) -> str:
+def _gate_cut_asp(num_partitions: int, size_to_reach: int) -> str:
     asp = f"""
     partition(P) :- P = 0..{num_partitions - 1}.
     
     {{ qubit_in_partition(Qubit, P) : partition(P) }} == 1 :- qubit(Qubit).
     :- partition(P), not qubit_in_partition(_, P).
-    
-    partition_pair(P1, P2) :- partition(P1), partition(P2), P1 != P2.
 
-    qubit_conn_between_partitions(Qubit1, Qubit2, W) :- 
-        qubit(Qubit1),
-        qubit(Qubit2),
+    virtual_connection(Qubit1, Qubit2, W) :- 
         qubit_in_partition(Qubit1, P1),
         qubit_in_partition(Qubit2, P2),
-        partition_pair(P1, P2),
+        Qubit1 != Qubit2,
+        P1 != P2,
         qubit_conn(Qubit1, Qubit2, W).
 
-    num_vgates(N) :- N = #sum{{ W : qubit_conn_between_partitions(_, _, W) }}.
+    num_vgates(N) :- N = #sum{{ W, Qubit1, Qubit2 : virtual_connection(Qubit1, Qubit2, W) }}.
+    
+    num_qubits_in_partition(P, N) :- partition(P), N = #count{{Qubit : qubit_in_partition(Qubit, P)}}.
+    :- num_qubits_in_partition(P, N), N > {size_to_reach}.
     
     #minimize{{ N : num_vgates(N) }}.
     #show qubit_in_partition/2.

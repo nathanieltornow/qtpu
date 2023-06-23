@@ -2,9 +2,9 @@ from qiskit.circuit import QuantumCircuit, Barrier
 
 from qvm.compiler.gate_virt import cut_gates_bisection, cut_gates_optimal, minimize_qubit_dependencies
 from qvm.compiler.wire_cut import cut_wires
-from qvm.compiler.qubit_reuse import apply_maximal_qubit_reuse
+from qvm.compiler.qubit_reuse import qubit_reuse
 from qvm.virtual_gates import VirtualBinaryGate, WireCut
-from qvm.dag import DAG
+from qvm.compiler.dag import DAG
 
 from _util import append_to_csv_file, load_config
 from _circuits import get_circuits
@@ -13,11 +13,15 @@ from _circuits import get_circuits
 def _gates_overhead(circuit: QuantumCircuit, qpu_size: int) -> int:
     dag = DAG(circuit)
     cut_gates_optimal(dag, qpu_size)
+    dag.fragment()
+    print(dag.to_circuit())
+    
     num_vgates = sum(
         1
         for node in dag.nodes
         if isinstance(dag.get_node_instr(node).operation, VirtualBinaryGate)
     )
+    print(num_vgates)
     return 6**num_vgates
 
 
@@ -42,9 +46,10 @@ def _gate_qr_overhead(circuit: QuantumCircuit, qpu_size: int) -> int:
             for node in dag.nodes
             if isinstance(dag.get_node_instr(node).operation, VirtualBinaryGate)
         )
-        print(dag.to_circuit())
         dag.remove_nodes_of_type(VirtualBinaryGate)
-        apply_maximal_qubit_reuse(dag)
+        qubit_reuse(dag)
+        print(dag.to_circuit())
+        print(len(dag.qubits))
         if len(dag.qubits) <= qpu_size:
             break
         num_vgates += 1
@@ -63,16 +68,17 @@ def _cut_circuit_bench(
     csv_name: str, circuit: QuantumCircuit, qpu_size: int = 10
 ) -> None:
     print("cutting wires")
-    wire_overhead = _wire_overhead(circuit, qpu_size)
+    # wire_overhead = _wire_overhead(circuit, qpu_size)
     print("cutting gates")
     gate_overhead = _gates_overhead(circuit, qpu_size)
+    exit()
     print("cutting gates+qr")
     gate_qr_overhead = _gate_qr_overhead(circuit, qpu_size)
     append_to_csv_file(
         csv_name,
         {
             "num_qubits": circuit.num_qubits,
-            "wire_overhead": wire_overhead,
+            # "wire_overhead": wire_overhead,
             "gate_overhead": gate_overhead,
             "gate_qr_overhead": gate_qr_overhead,
         },

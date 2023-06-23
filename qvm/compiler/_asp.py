@@ -3,7 +3,7 @@ import networkx as nx
 from clingo.solving import Symbol
 from clingo.control import Control
 
-from qvm.dag import DAG
+from .dag import DAG
 
 
 def dag_to_asp(dag: DAG) -> str:
