@@ -1,28 +1,23 @@
+from qiskit.circuit import Qubit
 from qiskit.transpiler import CouplingMap
 
 from qvm.virtual_gates import VIRTUAL_GATE_TYPES
-from .dag import DAG
+from .util import virtualize_between_qubit_pairs
+from .dag import DAG, dag_to_qcg
 
 
-def perfect_virtual_qubit_routing(
-    dag: DAG, coupling_map: CouplingMap, initial_layout: list[int]
+def delay_swapping(
+    dag: DAG,
+    coupling_map: CouplingMap,
+    initial_layout: list[int],
+    vgate_limit: int = -1,
 ) -> None:
     qubit_map = {dag.qubits[i]: p for i, p in enumerate(initial_layout)}
+    qcg = dag_to_qcg(dag)
+    qubit_pairs: set[tuple[Qubit, Qubit]] = set()
 
-    for node in dag.nodes:
-        instr = dag.get_node_instr(node)
-        qubits = instr.qubits
-        if len(qubits) > 2:
-            raise ValueError("Only 1- and 2-qubit gates are supported.")
-        elif len(qubits) == 2:
-            dist = coupling_map.distance(qubit_map[qubits[0]], qubit_map[qubits[1]])
-            if dist > 1:
-                instr.operation = VIRTUAL_GATE_TYPES[instr.operation.name](
-                    instr.operation
-                )
+    for qubit1, qubit2 in qcg.edges:
+        if coupling_map.distance(qubit_map[qubit1], qubit_map[qubit2]) > 1:
+            qubit_pairs.add((qubit1, qubit2))
 
-
-def apply_virtual_qubit_routing(
-    dag: DAG, coupling_map: CouplingMap, initial_layout: list[int]
-) -> None:
-    raise NotImplementedError
+    virtualize_between_qubit_pairs(dag, qubit_pairs, vgate_limit)
