@@ -1,14 +1,22 @@
-import itertools
+from qiskit.circuit import Qubit
 
-import networkx as nx
-from qiskit.circuit import QuantumCircuit, Barrier, QuantumRegister, Qubit
+from qvm.virtual_gates import VIRTUAL_GATE_TYPES
 
-from qvm.compiler.dag import DAG
+from .dag import DAG
 
 
-def initial_layout_from_transpiled_circuit(circuit: QuantumCircuit) -> list[int]:
-    layout = circuit._layout
-    if layout is None:
-        raise ValueError("Circuit has no layout")
-    return layout.get_virtual_bits()
+def decompose_qubit_sets(
+    dag: DAG, qubit_sets: list[set[Qubit]], vgate_limit: int = -1
+) -> None:
+    if vgate_limit == -1:
+        vgate_limit = dag.number_of_nodes()
+    for node in dag.nodes:
+        instr = dag.get_node_instr(node)
+        qubits = instr.qubits
 
+        nums_of_frags = sum(1 for qubit_set in qubit_sets if set(qubits) & qubit_set)
+        if nums_of_frags == 0:
+            raise ValueError(f"No fragment found for qubit {qubits}.")
+        elif nums_of_frags > 1 and vgate_limit > 0:
+            instr.operation = VIRTUAL_GATE_TYPES[instr.operation.name](instr.operation)
+            vgate_limit -= 1

@@ -1,17 +1,15 @@
 from qiskit.circuit import QuantumCircuit, Barrier
 from qiskit.transpiler import CouplingMap
 
-
 from qvm.virtual_gates import VirtualBinaryGate, VirtualSWAP
 from .gate_virt import (
-    cut_gates_bisection,
-    cut_gates_optimal,
     minimize_qubit_dependencies,
 )
+from .gate_decomposition import decompose_optimal, decompose_qubit_bisection
 from .dag import DAG
 from .qubit_reuse import qubit_reuse
 from .wire_cut import cut_wires
-from .vqr import apply_virtual_qubit_routing, perfect_virtual_qubit_routing
+from .vqr import perfect_virtual_qubit_routing
 
 
 def cut(
@@ -21,13 +19,13 @@ def cut(
     technique: str = "gate_optimal",
 ) -> QuantumCircuit:
     dag = DAG(circuit)
-    dag.compact()
+    # dag.compact()
 
     if technique == "gate_optimal":
-        cut_gates_optimal(dag, size_to_reach)
+        decompose_optimal(dag, size_to_reach)
 
     elif technique == "gate_bisection":
-        cut_gates_bisection(dag, size_to_reach)
+        decompose_qubit_bisection(dag, size_to_reach)
 
     elif technique == "wire_optimal":
         cut_wires(dag, size_to_reach)
@@ -57,7 +55,7 @@ def virtualize_optimal_gates(
     minimize_qubit_dependencies(dag, max_vgates)
     dag.remove_nodes_of_type(VirtualBinaryGate)
     # qubit_reuse(dag)
-    # dag.fragment()
+    dag.fragment()
     return dag.to_circuit()
 
 

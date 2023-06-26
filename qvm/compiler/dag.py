@@ -168,3 +168,6 @@ def dag_to_qcg(dag: DAG, use_qubit_idx: bool = False) -> nx.Graph:
                     graph.add_edge(qubit1, qubit2, weight=0)
                 graph[qubit1][qubit2]["weight"] += 1
     return graph
+
+
+

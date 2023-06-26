@@ -1,7 +1,7 @@
 import abc
 from math import cos, pi, sin
 
-from qiskit.circuit import Barrier, Gate, QuantumCircuit
+from qiskit.circuit import Barrier, Gate, QuantumCircuit, Instruction, QuantumRegister
 
 from qvm.quasi_distr import QuasiDistr
 
@@ -46,11 +46,7 @@ class VirtualBinaryGate(Barrier, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def knit(self, results: list[QuasiDistr]) -> QuasiDistr:
-        pass
-
-    @abc.abstractmethod
-    def knit_one_state(self, results: list[QuasiDistr], state: str) -> float:
+    def knit(self, results: list[QuasiDistr], clbit_idx: int) -> QuasiDistr:
         pass
 
     def instantiate(self, inst_id: int) -> QuantumCircuit:
@@ -69,12 +65,30 @@ class VirtualBinaryGate(Barrier, abc.ABC):
         self._definition = circuit
 
 
-class VirtualIdentity(VirtualBinaryGate):
-    def _instantiations(self) -> list[QuantumCircuit]:
-        return [QuantumCircuit(2, 1)]
+class VirtualGateEndpoint(Barrier):
+    def __init__(self, virtual_gate: VirtualBinaryGate, vgate_idx: int, qubit_idx: int):
+        self._virtual_gate = virtual_gate
+        self.vgate_idx = vgate_idx
+        self.qubit_idx = qubit_idx
+        super().__init__(1)
 
-    def knit(self, results: list[QuasiDistr]) -> QuasiDistr:
-        return QuasiDistr({state[1:]: prob for state, prob in results[0].items()})
+    def instantiate(self, inst_id: int) -> Instruction:
+        assert 0 <= inst_id < self._virtual_gate.num_instantiations
+        inst = self._virtual_gate.instantiate(inst_id)
+        inst_circuit = self._circuit_on_index(inst, self.qubit_idx)
+        return inst_circuit.to_instruction()
+
+    @staticmethod
+    def _circuit_on_index(circuit: QuantumCircuit, index: int) -> QuantumCircuit:
+        qreg = QuantumRegister(1)
+        new_circuit = QuantumCircuit(qreg, *circuit.cregs)
+        qubit = circuit.qubits[index]
+        for instr in circuit.data:
+            if len(instr.qubits) == 1 and instr.qubits[0] == qubit:
+                new_circuit.append(
+                    instr.operation, (new_circuit.qubits[0],), instr.clbits
+                )
+        return new_circuit
 
 
 class VirtualCZ(VirtualBinaryGate):
@@ -103,30 +117,13 @@ class VirtualCZ(VirtualBinaryGate):
 
         return [inst0, inst1, inst2, inst3, inst4, inst5]
 
-    def knit(self, results: list[QuasiDistr]) -> QuasiDistr:
-        r0, _ = results[0].divide_by_first_bit()
-        r1, _ = results[1].divide_by_first_bit()
-        r20, r21 = results[2].divide_by_first_bit()
-        r30, r31 = results[3].divide_by_first_bit()
-        r40, r41 = results[4].divide_by_first_bit()
-        r50, r51 = results[5].divide_by_first_bit()
-        return (r0 + r1 + (r21 - r20) + (r31 - r30) + (r40 - r41) + (r50 - r51)) * 0.5
-
-    def knit_one_state(self, results: list[QuasiDistr], state: str) -> float:
-        r0 = results[0].get("0" + state[1:], 0)
-        r1 = results[1].get("1" + state[1:], 0)
-        r20, r21 = results[2].get("0" + state[1:], 0), results[2].get(
-            "1" + state[1:], 0
-        )
-        r30, r31 = results[3].get("0" + state[1:], 0), results[3].get(
-            "1" + state[1:], 0
-        )
-        r40, r41 = results[4].get("0" + state[1:], 0), results[4].get(
-            "1" + state[1:], 0
-        )
-        r50, r51 = results[5].get("0" + state[1:], 0), results[5].get(
-            "1" + state[1:], 0
-        )
+    def knit(self, results: list[QuasiDistr], clbit_idx: int) -> QuasiDistr:
+        r0, d = results[0].split(clbit_idx)
+        r1, d = results[1].split(clbit_idx)
+        r20, r21 = results[2].split(clbit_idx)
+        r30, r31 = results[3].split(clbit_idx)
+        r40, r41 = results[4].split(clbit_idx)
+        r50, r51 = results[5].split(clbit_idx)
         return (r0 + r1 + (r21 - r20) + (r31 - r30) + (r40 - r41) + (r50 - r51)) * 0.5
 
 
@@ -195,25 +192,25 @@ class VirtualRZZ(VirtualBinaryGate):
 
         return [inst0, inst1, inst2, inst3, inst4, inst5]
 
-    def knit(self, results: list[QuasiDistr]) -> QuasiDistr:
+    def knit(self, results: list[QuasiDistr], clbit_idx: int) -> QuasiDistr:
         m_theta = -self._params[0]
 
         if abs(cos(m_theta / 2)) < RZZ_ACCURACY:
-            r, _ = results[0].divide_by_first_bit()
+            r, _ = results[0].split(clbit_idx)
             return r * sin(m_theta / 2) ** 2
 
         if abs(sin(m_theta / 2)) < RZZ_ACCURACY:
-            r, _ = results[0].divide_by_first_bit()
+            r, _ = results[0].split(clbit_idx)
             return r * cos(m_theta / 2) ** 2
 
-        r0, _ = results[0].divide_by_first_bit()
-        r1, _ = results[1].divide_by_first_bit()
+        r0, _ = results[0].split(clbit_idx)
+        r1, _ = results[1].split(clbit_idx)
 
         r23 = results[2] + results[3]
         r45 = results[4] + results[5]
 
-        r230, r231 = r23.divide_by_first_bit()
-        r450, r451 = r45.divide_by_first_bit()
+        r230, r231 = r23.split(clbit_idx)
+        r450, r451 = r45.split(clbit_idx)
 
         return (
             (r0 * cos(m_theta / 2) ** 2)

@@ -1,28 +1,31 @@
 from typing import Union
 
-ACCURACY = 1e-6
+ACCURACY = 1e-10
 
 
-class QuasiDistr(dict[str, float]):
-    def __init__(self, data: dict[str, float]) -> None:
+class QuasiDistr(dict[int, float]):
+    def __init__(self, data: dict[int, float]) -> None:
         super().__init__(
             {key: value for key, value in data.items() if abs(value) > ACCURACY}
         )
 
     @staticmethod
-    def from_counts(counts: dict[str, int], shots: int | None = None) -> "QuasiDistr":
-        if shots is None:
-            shots = sum(counts.values())
-        return QuasiDistr({"".join(k.split()): v / shots for k, v in counts.items()})
+    def from_counts(counts: dict[str, int]) -> "QuasiDistr":
+        shots = sum(counts.values())
+        return QuasiDistr(
+            {
+                int("".join(key.split()), 2): value / shots
+                for key, value in counts.items()
+            }
+        )
 
-    def to_counts(self, shots: int) -> dict[str, int]:
-        return {k: abs(int(v * shots)) for k, v in self.items()}
+    def to_counts(self, num_clbits: int, shots: int) -> dict[str, int]:
+        return {
+            bin(key)[2:].zfill(num_clbits): int(abs(value * shots))
+            for key, value in self.items()
+        }
 
-    @staticmethod
-    def from_sampler_distr(distr: dict[int, float], num_bits: int) -> "QuasiDistr":
-        return QuasiDistr({bin(k)[2:].zfill(num_bits): v for k, v in distr.items()})
-
-    def nearest_prob_distr(self) -> dict[str, float]:
+    def nearest_probability_distribution(self) -> dict[int, float]:
         sorted_probs = dict(sorted(self.items(), key=lambda item: item[1]))
         num_elems = len(sorted_probs)
         new_probs = {}
@@ -37,32 +40,23 @@ class QuasiDistr(dict[str, float]):
             else:
                 diff += (beta / num_elems) * (beta / num_elems)
                 new_probs[key] = sorted_probs[key] + beta / num_elems
-        return QuasiDistr(new_probs)
+        return new_probs
 
-    def divide_by_first_bit(self) -> tuple["QuasiDistr", "QuasiDistr"]:
+    def split(self, bit_index: int) -> tuple["QuasiDistr", "QuasiDistr"]:
         data1, data2 = {}, {}
         for key, value in self.items():
-            if key[0] == "0":
-                data1[key[1:]] = value
+            mask = 1 << bit_index
+            if key & mask == 0:
+                data1[key] = value
             else:
-                data2[key[1:]] = value
+                data2[key & ~(mask)] = value
         return QuasiDistr(data1), QuasiDistr(data2)
-
-    @staticmethod
-    def _merged_state(state1: str, state2: str) -> str:
-        if len(state1) != len(state2):
-            raise ValueError("States must have the same length")
-        return "".join(
-            ["1" if s1 == "1" or s2 == "1" else "0" for s1, s2 in zip(state1, state2)]
-        )
 
     def merge(self, other: "QuasiDistr") -> "QuasiDistr":
         merged_data = {}
         for key1, value1 in self.items():
             for key2, value2 in other.items():
-                new_value = value1 * value2
-                merged_key = self._merged_state(key1, key2)
-                merged_data[merged_key] = new_value
+                merged_data[key1 ^ key2] = value1 * value2
         return QuasiDistr(merged_data)
 
     def __add__(self, other: "QuasiDistr") -> "QuasiDistr":
@@ -89,4 +83,4 @@ class QuasiDistr(dict[str, float]):
         raise TypeError(f"Cannot multiply QuasiDistr by {type(other)}")
 
     def __rmul__(self, other: Union[int, float, "QuasiDistr"]) -> "QuasiDistr":
-        return self * other
+        return self.__mul__(other)
