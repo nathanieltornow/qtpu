@@ -1,0 +1,16 @@
+{
+    "experiments": [
+        {
+            "name": "vqe",
+            "param": 1,
+            "result_file": "mumbai/vqr.csv",
+            "max_vgates": 1
+        }
+    ],
+    "backend": "mumbai",
+    "nums_qubits": [
+        8,
+        10,
+        14
+    ]
+}

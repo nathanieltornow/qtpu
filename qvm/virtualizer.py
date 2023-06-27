@@ -57,9 +57,9 @@ class Virtualizer:
     def replace_fragment_circuit(
         self, fragment: Fragment, circuit: QuantumCircuit
     ) -> None:
-        # TODO more checks on the virtual endpoints
-        if set(fragment) != set(circuit.qubits):
-            raise ValueError("Fragment and circuit do not match.")
+        # TODO checks if fragment and circuit match
+        # if set(fragment) != set(circuit.qubits):
+        #     raise ValueError("Fragment and circuit do not match.")
         self._frag_circs[fragment] = circuit
 
     @staticmethod
@@ -164,7 +164,7 @@ def _instantiate_fragment(
             op = op.instantiate(inst_label[vgate_idx])
             clbits = [config_register[vgate_idx]]
         new_circuit.append(op, qubits, clbits)
-    return new_circuit
+    return new_circuit.decompose()
 
 
 def _merge_distrs(distrs: tuple[QuasiDistr, ...]) -> QuasiDistr:

@@ -1,11 +1,14 @@
 {
     "experiments": [
         {
-            "name": "hamsim",
-            "param": 2
+            "name": "vqe",
+            "param": 2,
+            "result_file": "results/qaoa.csv",
+            "max_vgates": 2
         }
     ],
-    "backend": "kolkata",
+    "backend": "perth",
+    "base_backend": "guadalupe",
     "nums_qubits": [
         12
     ],

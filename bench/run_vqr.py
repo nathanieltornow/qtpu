@@ -16,7 +16,7 @@ from _circuits import get_circuits
 from _util import (
     append_to_csv_file,
     calculate_total_variation_distance,
-    num_cnots,
+    get_num_cnots,
     overhead,
     load_config,
 )
@@ -89,8 +89,8 @@ def _run_vqr_on_circuit(
             fields[0]: circuit.num_qubits,
             fields[1]: base_fid,
             fields[2]: fid,
-            fields[3]: num_cnots(t_circuit),
-            fields[4]: num_cnots(frag_circuit),
+            fields[3]: get_num_cnots(t_circuit),
+            fields[4]: get_num_cnots(frag_circuit),
             fields[5]: overhead(v_circuit),
             fields[6]: cut_time,
             fields[7]: knit_time,

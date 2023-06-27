@@ -26,9 +26,10 @@ def decompose_qubit_sets(
 
 def virtualize_between_qubit_pairs(
     dag: DAG, qubit_pairs: set[tuple[Qubit, Qubit]], vgate_limit: int = -1
-) -> None:
+) -> int:
     if vgate_limit == -1:
         vgate_limit = dag.number_of_nodes()
+    before = vgate_limit
     for node in dag.nodes:
         instr = dag.get_node_instr(node)
         qubits = instr.qubits
@@ -47,4 +48,5 @@ def virtualize_between_qubit_pairs(
                 )
                 vgate_limit -= 1
                 if vgate_limit == 0:
-                    return
+                    break
+    return before - vgate_limit

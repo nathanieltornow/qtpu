@@ -7,7 +7,7 @@ from qiskit.circuit import Qubit, CircuitInstruction, Reset
 from .dag import DAG
 
 
-def qubit_reuse(dag: DAG, size_to_reach: int = 1) -> None:
+def random_qubit_reuse(dag: DAG, size_to_reach: int = 1) -> None:
     num_qubits = len(dag.qubits)
     while num_qubits > size_to_reach:
         qubit_pair = next(find_valid_reuse_pairs(dag), None)

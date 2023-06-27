@@ -7,9 +7,8 @@ from .gate_virt import (
 )
 from .gate_decomposition import decompose_optimal, decompose_qubit_bisection
 from .dag import DAG
-from .qubit_reuse import qubit_reuse
+from .qubit_reuse import random_qubit_reuse
 from .wire_cut import cut_wires
-from .vqr import perfect_virtual_qubit_routing
 
 
 def cut(
@@ -19,7 +18,6 @@ def cut(
     technique: str = "gate_optimal",
 ) -> QuantumCircuit:
     dag = DAG(circuit)
-    # dag.compact()
 
     if technique == "gate_optimal":
         decompose_optimal(dag, size_to_reach)
@@ -31,7 +29,7 @@ def cut(
         cut_wires(dag, size_to_reach)
 
     elif technique == "qubit_reuse":
-        qubit_reuse(dag, size_to_reach)
+        random_qubit_reuse(dag, size_to_reach)
         if len(dag.qubits) > size_to_reach:
             raise ValueError("Qubit reuse did not reach the desired size.")
 
@@ -51,11 +49,16 @@ def virtualize_optimal_gates(
     circuit: QuantumCircuit, max_vgates: int
 ) -> QuantumCircuit:
     dag = DAG(circuit)
-    dag.compact()
     minimize_qubit_dependencies(dag, max_vgates)
-    dag.remove_nodes_of_type(VirtualBinaryGate)
-    # qubit_reuse(dag)
-    dag.fragment()
+    dag.remove_nodes_of_type(Barrier)
+    return dag.to_circuit()
+
+
+def apply_qubit_reuse(
+    circuit: QuantumCircuit, size_to_reach: int = -1
+) -> QuantumCircuit:
+    dag = DAG(circuit)
+    random_qubit_reuse(dag, size_to_reach)
     return dag.to_circuit()
 
 
@@ -70,7 +73,7 @@ def vqr(
     dag.remove_nodes_of_type(Barrier)
 
     if technique == "perfect":
-        perfect_virtual_qubit_routing(dag, coupling_map, initial_layout)
+        pass
     else:
         raise ValueError(f"Invalid vqr-technique {technique}")
 

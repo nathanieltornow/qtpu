@@ -4,21 +4,27 @@ import os
 import csv
 
 from qiskit.circuit import QuantumCircuit
+from qiskit.compiler import transpile
+from qiskit.providers import BackendV2
 from qiskit.quantum_info import hellinger_fidelity
-from qiskit_aer import AerSimulator
 
-import qvm
-from qvm.quasi_distr import QuasiDistr
-from qvm.util import circuit_to_qcg
-from qvm.virtual_gates import VirtualBinaryGate, VirtualSWAP
+from qvm.virtual_gates import VirtualBinaryGate, VirtualSWAP, VirtualGateEndpoint
+from qvm.qvm_runner import QVMBackendRunner
+from qvm.virtualizer import Virtualizer
 
 
-def average_degree(cricuit: QuantumCircuit) -> float:
-    qcg = circuit_to_qcg(cricuit, use_qubit_idx=True)
-    return sum([d for _, d in qcg.degree(weight="weight")]) / qcg.number_of_nodes()
+def transpile_virtualizer(
+    virtualizer: Virtualizer, backend: BackendV2, optimization_level: int = 3
+) -> None:
+    pass
+    # fragment_circs = list(virtualizer.fragment_circuits.items())
+    # for frag, circ in fragment_circs:
+    #     t_circ = transpile(circ, backend, optimization_level=optimization_level)
+    #     assert sum(1 for instr in t_circ if isinstance(instr.operation, VirtualGateEndpoint)) > 0
+    #     virtualizer.replace_fragment_circuit(frag, t_circ)
 
 
-def num_cnots(circuit: QuantumCircuit) -> int:
+def get_num_cnots(circuit: QuantumCircuit) -> int:
     return sum(1 for instr in circuit if instr.operation.name == "cx")
 
 
@@ -45,7 +51,7 @@ def initial_layout_from_transpiled_circuit(
     return init_layout
 
 
-def total_variation_distance(p: QuasiDistr, q: QuasiDistr):
+def total_variation_distance(p: dict[int, float], q: dict[int, float]):
     events = set(p.keys()).union(set(q.keys()))
     tv_distance = 0.0
     for event in events:
@@ -55,25 +61,18 @@ def total_variation_distance(p: QuasiDistr, q: QuasiDistr):
     return tv_distance
 
 
-def calculate_total_variation_distance(
-    circuit: QuantumCircuit, noisy_distr: QuasiDistr
-) -> float:
-    return total_variation_distance(perfect_distr(circuit), noisy_distr)
-
-
-def perfect_distr(circuit: QuantumCircuit):
-    sim = AerSimulator(method="statevector")
-    counts = sim.run(circuit, shots=20000).result().get_counts()
-    return QuasiDistr.from_counts(counts, shots=20000)
-
-
-def calcultate_fidelity(circuit: QuantumCircuit, noisy_distr: QuasiDistr) -> float:
-    return hellinger_fidelity(perfect_distr(circuit), noisy_distr)
+def compute_fidelity(
+    circuit: QuantumCircuit, noisy_distr: dict[int, float], runner: QVMBackendRunner
+) -> tuple[float, float]:
+    job = runner.run(circuit)
+    perfect_distr = runner.get_results(job)[0].nearest_probability_distribution()
+    tv_fid = 1 - total_variation_distance(perfect_distr, noisy_distr)
+    hel_fid = hellinger_fidelity(perfect_distr, noisy_distr)
+    return hel_fid, tv_fid
 
 
 def append_to_csv_file(filepath: str, data: dict[str, int | float]) -> None:
     if not os.path.exists(filepath):
-
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "w") as csv_file:
             csv.DictWriter(csv_file, fieldnames=data.keys()).writeheader()
@@ -82,27 +81,6 @@ def append_to_csv_file(filepath: str, data: dict[str, int | float]) -> None:
 
     with open(filepath, "a") as csv_file:
         csv.DictWriter(csv_file, fieldnames=data.keys()).writerow(data)
-
-
-def find_cut(
-    circuit: QuantumCircuit, num_wire_cuts: int, num_gate_cuts: int, qpu_size: int
-) -> QuantumCircuit:
-    start = circuit.num_qubits // qpu_size + 1
-    for frags in range(start, start+1):
-        try:
-            circuit = qvm.cut(
-                circuit=circuit,
-                technique="optimal",
-                max_wire_cuts=num_wire_cuts,
-                max_gate_cuts=num_gate_cuts,
-                num_fragments=frags,
-                max_fragment_size=qpu_size,
-            )
-            print(f"Found cut with {frags} fragments.")
-            return qvm.fragment_circuit(circuit)
-        except ValueError:
-            continue
-    raise ValueError("No cut found.")
 
 
 def load_config() -> dict:

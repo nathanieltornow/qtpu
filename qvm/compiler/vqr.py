@@ -1,7 +1,6 @@
 from qiskit.circuit import Qubit
 from qiskit.transpiler import CouplingMap
 
-from qvm.virtual_gates import VIRTUAL_GATE_TYPES
 from .util import virtualize_between_qubit_pairs
 from .dag import DAG, dag_to_qcg
 

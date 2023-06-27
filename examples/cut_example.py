@@ -5,7 +5,12 @@ from qiskit.primitives import BackendSampler
 from qvm.quasi_distr import QuasiDistr
 from qvm.compiler import cut, virtualize_optimal_gates
 from qvm.virtualizer import Virtualizer, generate_instantiations
+from qvm.qvm_runner import LocalBackendRunner, IBMBackendRunner
+from qvm.run import run_virtualizer
 
+from qiskit_ibm_runtime import QiskitRuntimeService
+
+from qiskit.providers.fake_provider import FakeOslo
 
 from _example_circuit import example_circuit
 
@@ -22,29 +27,26 @@ def main():
 
     from qvm.virtual_gates import VirtualBinaryGate
 
-    print(
-        sum(
-            1
-            for instr in cut_circuit.data
-            if isinstance(instr.operation, VirtualBinaryGate)
-        )
-    )
-
     virt = Virtualizer(cut_circuit)
 
-    results = {}
-    fragments = virt.fragment_circuits
-    for frag, frag_circuit in fragments.items():
-        instance_labels = virt.get_instance_labels(frag)
-        instantiations = generate_instantiations(frag_circuit, instance_labels)
-        instantiations = [inst.decompose() for inst in instantiations]
-        dists = BackendSampler(AerSimulator()).run(instantiations).result().quasi_dists
-        results[frag] = [QuasiDistr(count) for count in dists]
+    runner = IBMBackendRunner(QiskitRuntimeService())
 
-    from multiprocessing import Pool
+    res, info = run_virtualizer(virt, runner, FakeOslo())
+    print(info)
 
-    with Pool() as pool:
-        result = virt.knit(results, pool)
+    # results = {}
+    # fragments = virt.fragment_circuits
+    # for frag, frag_circuit in fragments.items():
+    #     instance_labels = virt.get_instance_labels(frag)
+    #     instantiations = generate_instantiations(frag_circuit, instance_labels)
+    #     instantiations = [inst.decompose() for inst in instantiations]
+    #     dists = BackendSampler(AerSimulator()).run(instantiations).result().quasi_dists
+    #     results[frag] = [QuasiDistr(count) for count in dists]
+
+    # from multiprocessing import Pool
+
+    # with Pool() as pool:
+    #     result = virt.knit(results, pool)
 
     from qiskit.quantum_info import hellinger_fidelity
 
@@ -54,11 +56,9 @@ def main():
     print(
         hellinger_fidelity(
             act_result.nearest_probability_distribution(),
-            result.nearest_probability_distribution(),
+            res.nearest_probability_distribution(),
         )
     )
-
-    pass
     # QPU_SIZE = 3
 
     # circuit = example_circuit(14, 3, "circular")

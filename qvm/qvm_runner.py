@@ -1,4 +1,5 @@
 import abc
+from uuid import uuid4
 
 from qiskit.circuit import QuantumCircuit
 from qiskit.compiler import transpile
@@ -15,6 +16,11 @@ from qiskit_ibm_runtime.options import Options, SimulatorOptions, ExecutionOptio
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel
 
+from qvm.quasi_distr import QuasiDistr
+
+
+DEFAULT_SHOTS = 20000
+
 
 class QVMBackendRunner(abc.ABC):
     @abc.abstractmethod
@@ -24,11 +30,11 @@ class QVMBackendRunner(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def get_results(self, job_id: str) -> list[dict[int, float]]:
+    def get_results(self, job_id: str) -> list[QuasiDistr]:
         ...
 
 
-class IBMBackendRunner:
+class IBMBackendRunner(QVMBackendRunner):
     def __init__(
         self, service: QiskitRuntimeService, simulate_qpus: bool = True
     ) -> None:
@@ -50,10 +56,10 @@ class IBMBackendRunner:
                 basis_gates=["cx", "id", "rz", "sx", "x"],
             )
         return Options(
-            optimization_level=0,
+            optimization_level=3,
             resilience_level=0,
             execution=ExecutionOptions(
-                shots=20000,
+                shots=DEFAULT_SHOTS,
             ),
             simulator=sim_options,
         )
@@ -85,14 +91,19 @@ class IBMBackendRunner:
         circuits: list[QuantumCircuit],
         backend: BackendV2 | None = None,
     ) -> str:
+        if backend is not None:
+            circuits = transpile(circuits, backend, optimization_level=3)
+            circuits = [circuits] if isinstance(circuits, QuantumCircuit) else circuits
+
         sampler = self._sampler_from_backend(backend)
         job = sampler.run(circuits)
-        self._jobs[job.job_id()] = job
-        return job.job_id()
+        job_id = str(uuid4())
+        self._jobs[job_id] = job
+        return job_id
 
-    def get_results(self, job_id: str) -> list[dict[int, float]]:
+    def get_results(self, job_id: str) -> list[QuasiDistr]:
         job = self._jobs[job_id]
-        return job.result().quasi_dists
+        return [QuasiDistr(dist) for dist in job.result().quasi_dists]
 
 
 class LocalBackendRunner(QVMBackendRunner):
@@ -112,11 +123,12 @@ class LocalBackendRunner(QVMBackendRunner):
         backend: BackendV2 | None = None,
     ) -> str:
         sampler = self._get_sampler(backend)
-        circuits = transpile(circuits, backend)
-        job = sampler.run(circuits)
-        self._jobs[job.job_id()] = job
-        return job.job_id()
+        circuits = transpile(circuits, backend, optimization_level=3)
+        job = sampler.run(circuits, shots=DEFAULT_SHOTS)
+        job_id = str(uuid4())
+        self._jobs[job_id] = job
+        return job_id
 
-    def get_results(self, job_id: str) -> list[dict[int, float]]:
+    def get_results(self, job_id: str) -> list[QuasiDistr]:
         job = self._jobs[job_id]
-        return job.result().quasi_dists
+        return [QuasiDistr(dist) for dist in job.result().quasi_dists]
