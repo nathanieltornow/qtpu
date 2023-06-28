@@ -36,6 +36,7 @@ class ReduceSWAPCompiler(VirtualizationCompiler):
 
         dag = DAG(circuit)
         self._run_on_dag(dag, coupling_map, init_layout)
+        dag.fragment()
         return dag.to_circuit()
 
     def _run_on_dag(

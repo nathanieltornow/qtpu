@@ -16,6 +16,8 @@ dependencies = [
     "qiskit-ibm-runtime>=0.9.3",
     "qiskit-optimization>=0.5.0",
     "tqdm>=4.65.0",
+    "pandas>=2.0.2",
+    "mapomatic>=0.8.0",
 ]
 requires-python = ">=3.10"
 readme = "README.md"

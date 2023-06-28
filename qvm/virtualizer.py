@@ -20,8 +20,8 @@ class Virtualizer:
         self._vgate_instrs = [
             instr for instr in circuit if isinstance(instr.operation, VirtualBinaryGate)
         ]
-        if len(self._vgate_instrs) == 0:
-            raise ValueError("No virtual gates found in the circuit.")
+        # if len(self._vgate_instrs) == 0:
+        #     raise ValueError("No virtual gates found in the circuit.")
         self._circuit = self._replace_vgates_with_endpoints(circuit)
         self._frag_circs = {
             qreg: self._circuit_on_fragment(self._circuit, qreg)
@@ -29,6 +29,8 @@ class Virtualizer:
         }
 
     def get_instance_labels(self, fragment: Fragment) -> list[InstanceLabelType]:
+        if len(self._vgate_instrs) == 0:
+            return [()]
         inst_l = [
             tuple(range(len(vg.operation._instantiations())))
             if set(vg.qubits) & set(fragment)
@@ -38,6 +40,8 @@ class Virtualizer:
         return list(itertools.product(*inst_l))
 
     def knit(self, results: dict[Fragment, list[QuasiDistr]], pool: Pool) -> QuasiDistr:
+        if len(self._vgate_instrs) == 0:
+            return next(iter(results.values()))[0]
         merged_results = self._merge(results, pool)
         vgates = [instr.operation for instr in self._vgate_instrs]
         clbit_idx = self._circuit.num_qubits + len(vgates) - 1

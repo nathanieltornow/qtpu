@@ -11,7 +11,7 @@ from qiskit_optimization.applications import Maxcut
 
 
 def get_circuits(
-    benchname: str, param: int, nums_qubits: list[int] | None = None
+    benchname: str, param: int | float, nums_qubits: list[int] | None = None
 ) -> list[QuantumCircuit]:
     """Returns a list of quantum circuits for a specific benchmark."""
     if nums_qubits is None:
@@ -228,7 +228,7 @@ def get_examplary_max_cut_qp(n_nodes: int, degree: int = 3) -> QuadraticProgram:
     degree -- edges per node
     """
 
-    graph = nx.barabasi_albert_graph(n_nodes, degree)
+    graph = nx.barabasi_albert_graph(n_nodes, degree, seed=1000)
     maxcut = Maxcut(graph)
     return maxcut.to_quadratic_program()
 

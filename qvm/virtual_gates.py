@@ -70,7 +70,7 @@ class VirtualGateEndpoint(Barrier):
         self._virtual_gate = virtual_gate
         self.vgate_idx = vgate_idx
         self.qubit_idx = qubit_idx
-        super().__init__(1)
+        super().__init__(1, label=f"v_{virtual_gate.name}_{vgate_idx}_{qubit_idx}")
 
     def instantiate(self, inst_id: int) -> Instruction:
         assert 0 <= inst_id < self._virtual_gate.num_instantiations

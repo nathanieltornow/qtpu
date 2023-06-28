@@ -8,9 +8,15 @@ from qvm.virtual_gates import VIRTUAL_GATE_TYPES
 
 
 class GeneralBisectionCompiler(VirtualizationCompiler):
-    def __init__(self, max_virtual_gates: int = 3, reverse_order: bool = True) -> None:
+    def __init__(
+        self,
+        max_virtual_gates: int = 3,
+        reverse_order: bool = True,
+        optimal_bisection: bool = False,
+    ) -> None:
         self._max_virtual_gates = max_virtual_gates
         self._reverse_order = reverse_order
+        self._optimal_bisection = optimal_bisection
 
     def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
         dag = DAG(circuit)
@@ -23,12 +29,16 @@ class GeneralBisectionCompiler(VirtualizationCompiler):
         while vgates_inserted < self._max_virtual_gates:
             largest_fragment = max(partitions, key=lambda f: len(f))
             partitions.remove(largest_fragment)
+            if len(largest_fragment) == 1:
+                partitions += [largest_fragment]
+                break
             A, B = bisect(qcg.subgraph(largest_fragment))
             vgates_inserted += self._virtualize_between_qubit_sets(
                 dag, A, B, self._max_virtual_gates - vgates_inserted
             )
             partitions += [A, B]
 
+        dag.fragment()
         return dag.to_circuit()
 
     def _virtualize_between_qubit_sets(

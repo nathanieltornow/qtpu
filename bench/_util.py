@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import json
 import sys
 import os
@@ -13,15 +14,40 @@ from qvm.qvm_runner import QVMBackendRunner
 from qvm.virtualizer import Virtualizer
 
 
+@dataclass
+class BenchmarkResult:
+    num_qubits: int
+    h_fid: float = 0.0
+    h_fid_base: float = 0.0
+    tv_fid: float = 0.0
+    tv_fid_base: float = 0.0
+    num_cnots: int = 0
+    num_cnots_base: int = 0
+    depth: int = 0
+    depth_base: int = 0
+    num_vgates: int = 0
+    run_time: float = 0.0
+    knit_time: float = 0.0
+
+
+@dataclass
+class CircuitProperties:
+    num_qubits: int
+    num_cnots: int = 0
+    num_cnots_base: int = 0
+    depth: int = 0
+    depth_base: int = 0
+    num_vgates: int = 0
+    num_fragments: int = 0
+
+
 def transpile_virtualizer(
     virtualizer: Virtualizer, backend: BackendV2, optimization_level: int = 3
 ) -> None:
-    pass
-    # fragment_circs = list(virtualizer.fragment_circuits.items())
-    # for frag, circ in fragment_circs:
-    #     t_circ = transpile(circ, backend, optimization_level=optimization_level)
-    #     assert sum(1 for instr in t_circ if isinstance(instr.operation, VirtualGateEndpoint)) > 0
-    #     virtualizer.replace_fragment_circuit(frag, t_circ)
+    fragment_circs = list(virtualizer.fragment_circuits.items())
+    for frag, circ in fragment_circs:
+        t_circ = transpile(circ, backend, optimization_level=optimization_level)
+        virtualizer.replace_fragment_circuit(frag, t_circ)
 
 
 def get_num_cnots(circuit: QuantumCircuit) -> int:

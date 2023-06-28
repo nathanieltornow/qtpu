@@ -15,6 +15,7 @@ class BisectionCompiler(VirtualizationCompiler):
     def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
         dag = DAG(circuit)
         self._recursive_bisection(dag)
+        dag.fragment()
         return dag.to_circuit()
 
     def _recursive_bisection(self, dag: DAG) -> int:
@@ -35,6 +36,7 @@ class OptimalDecompositionCompiler(VirtualizationCompiler):
     def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
         dag = DAG(circuit)
         self._optimal_decomposition(dag)
+        dag.fragment()
         return dag.to_circuit()
 
     def _asp_code(self, num_partitions: int) -> str:
