@@ -3,8 +3,20 @@
         {
             "name": "vqe",
             "param": 1,
-            "result_file": "mumbai/vqr.csv",
+            "result_file": "results/vqr/vqe1_1.csv",
             "max_vgates": 1
+        },
+        {
+            "name": "vqe",
+            "param": 2,
+            "result_file": "results/vqr/vqe2_1.csv",
+            "max_vgates": 1
+        },
+        {
+            "name": "vqe",
+            "param": 3,
+            "result_file": "results/vqr/vqe3_2.csv",
+            "max_vgates": 2
         }
     ],
     "backend": "mumbai",

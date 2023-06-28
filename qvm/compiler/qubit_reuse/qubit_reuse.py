@@ -4,7 +4,7 @@ from itertools import permutations
 import networkx as nx
 from qiskit.circuit import Qubit, CircuitInstruction, Reset
 
-from .dag import DAG
+from qvm.compiler.dag import DAG
 
 
 def random_qubit_reuse(dag: DAG, size_to_reach: int = 1) -> None:

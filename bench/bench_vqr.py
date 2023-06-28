@@ -16,9 +16,9 @@ from _run_experiment import run_experiment
 def run_bench_vqr(config: dict) -> None:
     backend: BackendV2 = get_backend(config["backend"])
 
-    # service = QiskitRuntimeService()
-    # runner = IBMBackendRunner(service)
-    runner = LocalBackendRunner()
+    service = QiskitRuntimeService()
+    runner = IBMBackendRunner(service)
+    # runner = LocalBackendRunner()
 
     progress = tqdm(total=len(config["experiments"]))
     progress.set_description("Running experiments")
@@ -31,7 +31,10 @@ def run_bench_vqr(config: dict) -> None:
         circ_progress.set_description("Running circuits")
 
         comp = ReduceSWAPCompiler(
-            backend, max_virtual_gates=bench["max_vgates"], reverse_order=False, max_distance=2
+            backend,
+            max_virtual_gates=bench["max_vgates"],
+            reverse_order=True,
+            max_distance=2,
         )
 
         for circ in circuits:

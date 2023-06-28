@@ -1,0 +1,2 @@
+num_qubits,h_fid_baseline,tv_fid_baseline,h_fid,tv_fid,num_cnots_baseline,depth_baseline,num_cnots,depth,num_vgates,run_time,knit_time
+8,0.9182735597764461,0.8260500000000001,0.9291298777946719,0.8445551310043667,20,28,7,10,1,92.50268243100436,4.363608871004544

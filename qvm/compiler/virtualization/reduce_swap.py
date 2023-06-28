@@ -36,7 +36,6 @@ class ReduceSWAPCompiler(VirtualizationCompiler):
 
         dag = DAG(circuit)
         self._run_on_dag(dag, coupling_map, init_layout)
-
         return dag.to_circuit()
 
     def _run_on_dag(
@@ -69,6 +68,7 @@ class ReduceSWAPCompiler(VirtualizationCompiler):
                     budget -= 1
                     if budget == 0:
                         break
+
 
 def _get_initial_layout(circuit: QuantumCircuit, backend: BackendV2) -> list[int]:
     t_circuit = transpile(circuit, backend, optimization_level=3)

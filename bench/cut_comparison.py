@@ -2,7 +2,7 @@ from qiskit.circuit import QuantumCircuit, Barrier
 
 from qvm.compiler.gate_virt import cut_gates_bisection, cut_gates_optimal, minimize_qubit_dependencies
 from qvm.compiler.wire_cut import cut_wires
-from qvm.compiler.qubit_reuse import random_qubit_reuse
+from qvm.compiler.qubit_reuse.qubit_reuse import random_qubit_reuse
 from qvm.virtual_gates import VirtualBinaryGate, WireCut
 from qvm.compiler.dag import DAG
 
