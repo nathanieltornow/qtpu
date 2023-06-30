@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import networkx as nx
 
@@ -48,10 +50,8 @@ def vqe(num_qubits: int, reps: int = 1) -> QuantumCircuit:
     ansatz = RealAmplitudes(num_qubits, reps=reps, entanglement="circular")
     vqe = VQE(ansatz=ansatz, optimizer=SLSQP(maxiter=25), estimator=Estimator())
 
-    qc = vqe.ansatz.bind_parameters(np.random.rand(ansatz.num_parameters))
-    if num_qubits < 1:
-        vqe_result = vqe.compute_minimum_eigenvalue(qp.to_ising()[0])
-        qc = vqe.ansatz.bind_parameters(vqe_result.optimal_point)
+    vqe_result = vqe.compute_minimum_eigenvalue(qp.to_ising()[0])
+    qc = vqe.ansatz.bind_parameters(vqe_result.optimal_point)
 
     qc.measure_all()
     qc.name = "vqe"
@@ -65,7 +65,7 @@ def two_local(
     np.random.seed(100)
     qc = TwoLocal(
         num_qubits,
-        rotation_blocks=["rx"],
+        rotation_blocks=["ry"],
         entanglement_blocks="rzz",
         entanglement=entanglement,
         reps=reps,
@@ -84,31 +84,62 @@ def qft(num_qubits: int, approx: int = 0) -> QuantumCircuit:
     return circuit.decompose()
 
 
-def qaoa(num_qubits: int, density: float = 0.1, reps: int = 1) -> QuantumCircuit:
-    """Returns a quantum circuit implementing the Quantum Approximation Optimization Algorithm for a specific max-cut
-     example.
+def qaoa(num_qubits: int, deg: int):
+    G = nx.powerlaw_cluster_graph(num_qubits, deg, 0.1)
 
-    Keyword arguments:
-    num_qubits -- number of qubits of the returned quantum circuit
-    """
-    degree = max(int(num_qubits * density), 1)
+    if True:
+        import matplotlib.pyplot as plt
 
-    qp = get_examplary_max_cut_qp(num_qubits, degree=degree)
-    assert isinstance(qp, QuadraticProgram)
+        nx.draw(G, with_labels=True, node_color="lightblue", edge_color="gray")
 
-    qaoa = QAOA(sampler=Sampler(), reps=reps, optimizer=SLSQP(maxiter=25))
+        # Show the plot
+        plt.show()
 
-    qaoa._check_operator_ansatz(qp.to_ising()[0])
+    nqubits = len(G.nodes())
+    qc = QuantumCircuit(nqubits)
 
-    qc = qaoa.ansatz.bind_parameters(np.random.rand(qaoa.ansatz.num_parameters))
+    # initial_state
+    for i in range(0, nqubits):
+        qc.h(i)
 
-    if num_qubits < 1:
-        qaoa_result = qaoa.compute_minimum_eigenvalue(qp.to_ising()[0])
-        qc = qaoa.ansatz.bind_parameters(qaoa_result.optimal_point)
+    gamma = np.random.uniform(0, 2 * np.pi, 1)[0]
+    beta = np.random.uniform(0, np.pi, 1)[0]
 
-    qc.name = "qaoa"
+    for pair in sorted(G.edges(), key=lambda x: (x[0], x[1])):
+        qc.rzz(gamma, pair[0], pair[1])
+    # mixer unitary
+    for i in range(0, nqubits):
+        qc.rx(beta, i)
 
-    return qc.decompose().decompose()
+    qc.measure_all()
+
+    return qc
+
+
+# def qaoa(num_qubits: int, degree: int = 1, reps: int = 1) -> QuantumCircuit:
+#     """Returns a quantum circuit implementing the Quantum Approximation Optimization Algorithm for a specific max-cut
+#      example.
+
+#     Keyword arguments:
+#     num_qubits -- number of qubits of the returned quantum circuit
+#     """
+
+#     qp = get_examplary_max_cut_qp(num_qubits, degree=degree)
+#     assert isinstance(qp, QuadraticProgram)
+
+#     qaoa = QAOA(sampler=Sampler(), reps=reps, optimizer=SLSQP(maxiter=25))
+
+#     qaoa._check_operator_ansatz(qp.to_ising()[0])
+
+#     qc = qaoa.ansatz.bind_parameters(np.random.rand(qaoa.ansatz.num_parameters))
+
+#     if num_qubits < 1:
+#         qaoa_result = qaoa.compute_minimum_eigenvalue(qp.to_ising()[0])
+#         qc = qaoa.ansatz.bind_parameters(qaoa_result.optimal_point)
+
+#     qc.name = "qaoa"
+
+#     return qc.decompose().decompose()
 
 
 def hamsim(num_qubits: int, total_time: int) -> QuantumCircuit:
@@ -220,7 +251,7 @@ def dj(n: int, balanced: bool = True) -> QuantumCircuit:
     return qc
 
 
-def get_examplary_max_cut_qp(n_nodes: int, degree: int = 3) -> QuadraticProgram:
+def get_examplary_max_cut_qp(n_nodes: int, degree: int = 1) -> QuadraticProgram:
     """Returns a quadratic problem formulation of a max cut problem of a random graph.
 
     Keyword arguments:
@@ -228,11 +259,25 @@ def get_examplary_max_cut_qp(n_nodes: int, degree: int = 3) -> QuadraticProgram:
     degree -- edges per node
     """
 
-    graph = nx.barabasi_albert_graph(n_nodes, degree, seed=1000)
+    graph = nx.barabasi_albert_graph(n_nodes, degree)
     maxcut = Maxcut(graph)
     return maxcut.to_quadratic_program()
 
 
 if __name__ == "__main__":
-    circ = qaoa(10, 0.1)
-    print(circ)
+    import os
+    import itertools
+    from qiskit.compiler import transpile
+
+    layers = [1, 2, 3]
+    num_qubits = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26]
+
+    for layer, nq in itertools.product(layers, num_qubits):
+        circuit = transpile(vqe(nq, layer), basis_gates=["cx", "sx", "rz", "x"], optimization_level=3)
+        qasm = circuit.qasm()
+
+        file_name = f"bench/qasm/vqe_{layer}_{nq}.qasm"
+        os.makedirs(os.path.dirname(file_name), exist_ok=True)
+
+        with open(file_name, "w") as f:
+            f.write(qasm)

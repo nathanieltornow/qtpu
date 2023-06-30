@@ -1,6 +1,7 @@
 import abc
 from uuid import uuid4
 
+import mapomatic as mm
 from qiskit.circuit import QuantumCircuit
 from qiskit.compiler import transpile
 from qiskit.primitives import BackendSampler
@@ -16,6 +17,7 @@ from qiskit_ibm_runtime.options import Options, SimulatorOptions, ExecutionOptio
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel
 
+from qvm.compiler.dag import DAG
 from qvm.quasi_distr import QuasiDistr
 
 
@@ -56,7 +58,7 @@ class IBMBackendRunner(QVMBackendRunner):
                 basis_gates=["cx", "id", "rz", "sx", "x"],
             )
         return Options(
-            optimization_level=3,
+            optimization_level=0,
             resilience_level=0,
             execution=ExecutionOptions(
                 shots=DEFAULT_SHOTS,
@@ -92,11 +94,11 @@ class IBMBackendRunner(QVMBackendRunner):
         backend: BackendV2 | None = None,
     ) -> str:
         if backend is not None:
-            circuits = transpile(circuits, backend, optimization_level=3)
+            circuits = [transpile_circuit(circ, backend) for circ in circuits]
             circuits = [circuits] if isinstance(circuits, QuantumCircuit) else circuits
 
         sampler = self._sampler_from_backend(backend)
-        job = sampler.run(circuits)
+        job = sampler.run(circuits, shots=DEFAULT_SHOTS)
         job_id = str(uuid4())
         self._jobs[job_id] = job
         return job_id
@@ -122,6 +124,9 @@ class LocalBackendRunner(QVMBackendRunner):
         circuits: list[QuantumCircuit],
         backend: BackendV2 | None = None,
     ) -> str:
+        if backend is not None:
+            circuits = [transpile_circuit(circ, backend) for circ in circuits]
+
         sampler = self._get_sampler(backend)
         circuits = transpile(circuits, backend, optimization_level=3)
         job = sampler.run(circuits, shots=DEFAULT_SHOTS)
@@ -132,3 +137,18 @@ class LocalBackendRunner(QVMBackendRunner):
     def get_results(self, job_id: str) -> list[QuasiDistr]:
         job = self._jobs[job_id]
         return [QuasiDistr(dist) for dist in job.result().quasi_dists]
+
+
+def transpile_circuit(
+    circuit: QuantumCircuit, backend: BackendV2
+) -> list[QuantumCircuit]:
+    t_circ = transpile(circuit, backend=backend, optimization_level=3)
+    dag = DAG(t_circ)
+    dag.compact()
+    small_qc = dag.to_circuit()
+    layouts = mm.matching_layouts(small_qc, backend)
+    best_score = mm.evaluate_layouts(small_qc, layouts, backend)
+    print(best_score[0][1])
+    return transpile(
+        small_qc, backend, optimization_level=3, initial_layout=best_score[0][0]
+    )

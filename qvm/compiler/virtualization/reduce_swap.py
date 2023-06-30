@@ -5,7 +5,7 @@ from qiskit.transpiler import CouplingMap
 from qiskit.providers import BackendV2
 
 from qvm.compiler._types import VirtualizationCompiler
-from qvm.compiler.dag import DAG
+from qvm.compiler.dag import DAG, dag_to_qcg
 from qvm.virtual_gates import VIRTUAL_GATE_TYPES
 
 
@@ -14,13 +14,11 @@ class ReduceSWAPCompiler(VirtualizationCompiler):
         self,
         backend: BackendV2,
         max_virtual_gates: int = 3,
-        max_distance: int = 2,
         reverse_order: bool = False,
         initial_layout: list[int] | None = None,
     ) -> None:
         self._backend = backend
         self._max_virtual_gates = max_virtual_gates
-        self._max_distance = max_distance
         self._reverse_order = reverse_order
         self._initial_layout = initial_layout
 
@@ -54,21 +52,34 @@ class ReduceSWAPCompiler(VirtualizationCompiler):
 
         qubit_mapping = dict(zip(dag.qubits, initial_layout))
 
-        for node in sorted_nodes:
-            instr = dag.get_node_instr(node)
-            if len(instr.qubits) == 1 or isinstance(instr.operation, Barrier):
-                continue
-            elif len(instr.qubits) > 2:
-                raise ValueError(f"Instruction acts on more than two qubits: {instr}")
-            elif len(instr.qubits) == 2:
-                p1, p2 = tuple(qubit_mapping[qubit] for qubit in instr.qubits)
-                if coupling_map.distance(p1, p2) >= self._max_distance:
-                    instr.operation = VIRTUAL_GATE_TYPES[instr.operation.name](
-                        instr.operation
+        max_distance = 0
+        qcg = dag_to_qcg(dag)
+        max_distance = max(
+            coupling_map.distance(qubit_mapping[q1], qubit_mapping[q2])
+            for q1, q2 in qcg.edges
+        )
+        print(max_distance)
+
+        while max_distance > 1:
+            for node in sorted_nodes:
+                if budget == 0:
+                    break
+                instr = dag.get_node_instr(node)
+                if len(instr.qubits) == 1 or isinstance(instr.operation, Barrier):
+                    continue
+                elif len(instr.qubits) > 2:
+                    raise ValueError(
+                        f"Instruction acts on more than two qubits: {instr}"
                     )
-                    budget -= 1
-                    if budget == 0:
-                        break
+                elif len(instr.qubits) == 2:
+                    p1, p2 = tuple(qubit_mapping[qubit] for qubit in instr.qubits)
+                    if coupling_map.distance(p1, p2) >= max_distance:
+                        instr.operation = VIRTUAL_GATE_TYPES[instr.operation.name](
+                            instr.operation
+                        )
+                        budget -= 1
+
+            max_distance -= 1
 
 
 def _get_initial_layout(circuit: QuantumCircuit, backend: BackendV2) -> list[int]:

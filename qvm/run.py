@@ -24,6 +24,11 @@ def run_virtualizer(
     virt: Virtualizer, runner: QVMBackendRunner, backend: BackendV2 | None = None
 ) -> tuple[dict[int, float], RunTimeInfo]:
     jobs: dict[Fragment, str] = {}
+
+    logger.info(
+        f"Running virtualizer with {len(virt.fragment_circuits)} fragments and {len(virt._vgate_instrs)} vgates."
+    )
+
     now = perf_counter()
     for frag, frag_circuit in virt.fragment_circuits.items():
         instance_labels = virt.get_instance_labels(frag)

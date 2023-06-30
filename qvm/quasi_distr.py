@@ -1,6 +1,6 @@
 from typing import Union
 
-ACCURACY = 1e-6
+ACCURACY = 1e-8
 
 
 class QuasiDistr(dict[int, float]):
