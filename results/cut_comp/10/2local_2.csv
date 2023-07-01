@@ -1,0 +1,5 @@
+num_qubits,wire_overhead,gate_overhead,gate_qr_overhead
+15,256,1296,6
+20,4096,1296,6
+15,256,1296,6
+20,4096,1296,6
