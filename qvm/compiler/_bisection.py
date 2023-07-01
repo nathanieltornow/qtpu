@@ -43,7 +43,6 @@ def _bisection_asp() -> str:
     
     num_qubits_in_partition(P, N) :- partition(P), N = #count{{Qubit : qubit_in_partition(Qubit, P)}}.
     
-    
     #minimize{{ |N0 - N1| : num_qubits_in_partition(0, N0), num_qubits_in_partition(1, N1) }}.
     
     #minimize{{ 100@N : num_vgates(N) }}.

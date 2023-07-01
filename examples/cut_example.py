@@ -4,7 +4,7 @@ from qiskit.primitives import BackendSampler
 
 from qvm.quasi_distr import QuasiDistr
 from qvm.compiler import cut, virtualize_optimal_gates
-from qvm.virtualizer import Virtualizer, generate_instantiations
+from qvm.virtual_circuit import VirtualCircuit, generate_instantiations
 from qvm.qvm_runner import LocalBackendRunner, IBMBackendRunner
 from qvm.run import run_virtualizer
 
@@ -27,7 +27,7 @@ def main():
 
     from qvm.virtual_gates import VirtualBinaryGate
 
-    virt = Virtualizer(cut_circuit)
+    virt = VirtualCircuit(cut_circuit)
 
     runner = IBMBackendRunner(QiskitRuntimeService())
 

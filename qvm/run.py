@@ -7,7 +7,7 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.providers import BackendV2
 from qiskit.circuit import QuantumRegister as Fragment
 
-from qvm.virtualizer import Virtualizer, generate_instantiations
+from qvm.virtual_circuit import VirtualCircuit, generate_instantiations
 from qvm.qvm_runner import QVMBackendRunner
 
 
@@ -21,7 +21,7 @@ class RunTimeInfo:
 
 
 def run_virtualizer(
-    virt: Virtualizer, runner: QVMBackendRunner, backend: BackendV2 | None = None
+    virt: VirtualCircuit, runner: QVMBackendRunner, backend: BackendV2 | None = None
 ) -> tuple[dict[int, float], RunTimeInfo]:
     jobs: dict[Fragment, str] = {}
 

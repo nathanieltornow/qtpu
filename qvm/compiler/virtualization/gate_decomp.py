@@ -3,11 +3,11 @@ from qiskit.circuit import QuantumCircuit, Qubit
 
 from qvm.compiler._asp import qcg_to_asp, get_optimal_symbols
 from qvm.compiler.dag import DAG, dag_to_qcg
-from qvm.compiler._types import VirtualizationCompiler
+from qvm.compiler._types import CutCompiler
 from qvm.virtual_gates import VIRTUAL_GATE_TYPES
 
 
-class BisectionCompiler(VirtualizationCompiler):
+class BisectionCompiler(CutCompiler):
     def __init__(self, size_to_reach: int) -> None:
         self._size_to_reach = size_to_reach
         super().__init__()
@@ -28,7 +28,7 @@ class BisectionCompiler(VirtualizationCompiler):
         return _decompose_qubit_sets(dag, partitions)
 
 
-class OptimalDecompositionCompiler(VirtualizationCompiler):
+class OptimalDecompositionCompiler(CutCompiler):
     def __init__(self, size_to_reach: int) -> None:
         self._size_to_reach = size_to_reach
         super().__init__()

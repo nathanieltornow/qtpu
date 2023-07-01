@@ -1,1 +1,1 @@
-from ._types import VirtualizationCompiler
+from ._types import CutCompiler

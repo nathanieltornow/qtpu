@@ -2,12 +2,12 @@ import networkx as nx
 from networkx.algorithms.community import kernighan_lin_bisection as bisect
 from qiskit.circuit import QuantumCircuit, Qubit, Barrier
 
-from qvm.compiler._types import VirtualizationCompiler
+from qvm.compiler._types import CutCompiler
 from qvm.compiler.dag import DAG, dag_to_qcg
 from qvm.virtual_gates import VIRTUAL_GATE_TYPES
 
 
-class GeneralBisectionCompiler(VirtualizationCompiler):
+class GeneralBisectionCompiler(CutCompiler):
     def __init__(
         self,
         max_virtual_gates: int = 3,

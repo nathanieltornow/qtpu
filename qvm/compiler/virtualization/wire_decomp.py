@@ -1,12 +1,12 @@
 from qiskit.circuit import QuantumCircuit, CircuitInstruction
 
-from qvm.compiler._types import VirtualizationCompiler
+from qvm.compiler._types import CutCompiler
 from qvm.compiler.dag import DAG
 from qvm.compiler._asp import dag_to_asp, get_optimal_symbols
 from qvm.virtual_gates import WireCut
 
 
-class OptimalWireCutCompiler(VirtualizationCompiler):
+class OptimalWireCutCompiler(CutCompiler):
     def __init__(self, size_to_reach: int) -> None:
         self._size_to_reach = size_to_reach
         super().__init__()

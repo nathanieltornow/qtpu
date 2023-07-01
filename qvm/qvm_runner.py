@@ -148,7 +148,9 @@ def transpile_circuit(
     small_qc = dag.to_circuit()
     layouts = mm.matching_layouts(small_qc, backend)
     best_score = mm.evaluate_layouts(small_qc, layouts, backend)
-    print(best_score[0][1])
+    best_layout = best_score[0][0]
+    if best_score[0][1] >= 1.0:
+        best_layout = None
     return transpile(
-        small_qc, backend, optimization_level=3, initial_layout=best_score[0][0]
+        small_qc, backend=backend, optimization_level=3, initial_layout=best_layout
     )
