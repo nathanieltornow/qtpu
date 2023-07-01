@@ -1,4 +1,0 @@
-num_qubits,num_qubits_after,num_cnots,num_cnots_base,depth,depth_base,num_vgates
-8,27,34,60,49,81,2
-10,27,40,48,56,69,2
-14,27,59,86,85,101,2
