@@ -17,7 +17,7 @@ def bench_hamsim(
         circuits=[hamsim(i, layers) for i in range(2, 15, 2)],
         backend=backend,
         base_backend=base_backend,
-        result_file=f"results/vqr/{backend.name}_{base_backend}/hamsim_{layers}.csv",
+        result_file=f"bench/results/vqr/{backend.name}_{base_backend}/hamsim_{layers}.csv",
         virt_compiler=OptimalDecompositionCompiler(5),
     )
     run_benchmark(benchmark, runner)
@@ -33,7 +33,7 @@ def bench_vqe(
         circuits=[hamsim(i, layers) for i in range(2, 15, 2)],
         backend=backend,
         base_backend=base_backend,
-        result_file=f"results/noisy_scale/{backend.name}_{base_backend}/vqe_{layers}.csv",
+        result_file=f"bench/results/noisy_scale/{backend.name}_{base_backend}/vqe_{layers}.csv",
         virt_compiler=OptimalDecompositionCompiler(5),
     )
     run_benchmark(benchmark, runner)
@@ -49,5 +49,4 @@ if __name__ == "__main__":
 
     runner = IBMBackendRunner(service=service)
 
-    bench_vqe(3, backend, base_backend, runner)
-    # bench_vqr_qaoa(2, backend)
+    bench_vqe(3, backend, base_backend)

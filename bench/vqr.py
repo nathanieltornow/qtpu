@@ -13,7 +13,7 @@ def bench_vqr_two_local(
     benchmark = Benchmark(
         circuits=[two_local(i, layers) for i in range(4, backend.num_qubits, 2)],
         backend=backend,
-        result_file=f"results/vqr/{backend.name}/2local_{layers}.csv",
+        result_file=f"bench/results/vqr/{backend.name}/2local_{layers}.csv",
         virt_compiler=ReduceSWAPCompiler(backend, 2, True),
     )
     run_benchmark(benchmark, runner)
@@ -25,7 +25,7 @@ def bench_vqr_qaoa(
     benchmark = Benchmark(
         circuits=[qaoa(i, deg) for i in range(4, backend.num_qubits, 2)],
         backend=backend,
-        result_file=f"results/vqr/{backend.name}/qaoa_{deg}.csv",
+        result_file=f"bench/results/vqr/{backend.name}/qaoa_{deg}.csv",
         virt_compiler=ReduceSWAPCompiler(backend, 2, False),
     )
     run_benchmark(benchmark, runner)
@@ -33,12 +33,14 @@ def bench_vqr_qaoa(
 
 if __name__ == "__main__":
     from qiskit_ibm_runtime import QiskitRuntimeService
+    
+    from qiskit.providers.fake_provider import FakeMontrealV2
 
-    service = QiskitRuntimeService()
+    # service = QiskitRuntimeService()
 
-    backend = service.get_backend("ibmq_kolkata")
+    # backend = service.get_backend("ibmq_kolkata")
 
-    runner = IBMBackendRunner(service=service)
+    # runner = IBMBackendRunner(service=service)
 
-    bench_vqr_two_local(1, backend)
+    bench_vqr_two_local(1, FakeMontrealV2())
     # bench_vqr_qaoa(2, backend)
