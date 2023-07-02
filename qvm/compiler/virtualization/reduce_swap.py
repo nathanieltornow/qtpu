@@ -6,7 +6,6 @@ from qiskit.providers import BackendV2
 
 from qvm.compiler.types import CutCompiler
 from qvm.compiler.dag import DAG, dag_to_qcg
-from qvm.virtual_gates import VIRTUAL_GATE_TYPES
 
 
 class ReduceSWAPCompiler(CutCompiler):
@@ -79,9 +78,7 @@ class ReduceSWAPCompiler(CutCompiler):
                 ):
                     p1, p2 = tuple(qubit_mapping[qubit] for qubit in instr.qubits)
                     if coupling_map.distance(p1, p2) > 1 or self._always_cut:
-                        instr.operation = VIRTUAL_GATE_TYPES[instr.operation.name](
-                            instr.operation
-                        )
+                        dag.virtualize_node(node)
                         budget -= 1
 
 

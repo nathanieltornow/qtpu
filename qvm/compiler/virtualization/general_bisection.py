@@ -4,7 +4,6 @@ from qiskit.circuit import QuantumCircuit, Qubit, Barrier
 
 from qvm.compiler.types import CutCompiler
 from qvm.compiler.dag import DAG, dag_to_qcg
-from qvm.virtual_gates import VIRTUAL_GATE_TYPES
 
 
 class GeneralBisectionCompiler(CutCompiler):
@@ -60,9 +59,7 @@ class GeneralBisectionCompiler(CutCompiler):
                 if (qubit1 in qubits1 and qubit2 in qubits2) or (
                     qubit1 in qubits2 and qubit2 in qubits1
                 ):
-                    instr.operation = VIRTUAL_GATE_TYPES[instr.operation.name](
-                        instr.operation
-                    )
+                    dag.virtualize_node(node)
                     num_new_vgates += 1
                     vgate_limit -= 1
                     if vgate_limit == 0:
