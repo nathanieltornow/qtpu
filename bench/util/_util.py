@@ -14,6 +14,19 @@ from qvm.qvm_runner import QVMBackendRunner
 from qvm.virtual_circuit import VirtualCircuit
 
 
+def append_dict_to_csv(filepath: str, data: dict) -> None:
+    if not os.path.exists(filepath):
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, "w") as csv_file:
+            csv.DictWriter(csv_file, fieldnames=data.keys()).writeheader()
+            csv.DictWriter(csv_file, fieldnames=data.keys()).writerow(data)
+        return
+
+    with open(filepath, "a") as csv_file:
+        csv.DictWriter(csv_file, fieldnames=data.keys()).writerow(data)
+
+
+
 def transpile_virtualizer(
     virtualizer: VirtualCircuit, backend: BackendV2, optimization_level: int = 3
 ) -> None:

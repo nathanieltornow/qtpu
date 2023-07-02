@@ -60,6 +60,21 @@ class DAG(nx.DiGraph):
             raise ValueError(f"Classical register {creg} already exists")
         self._cregs.append(creg)
 
+    def remove_1q_gates(self) -> None:
+        nodes = list(self.nodes)
+        nodes_to_remove = []
+        for node in nodes:
+            instr = self.get_node_instr(node)
+            if len(instr.qubits) == 1:
+                pred = next(self.predecessors(node), None)
+                succ = next(self.successors(node), None)
+                if pred is not None and succ is not None:
+                    self.add_edge(pred, succ)
+                nodes_to_remove.append(node)
+
+        for node in nodes_to_remove:
+            self.remove_node(node)
+
     def virtualize_node(self, node: int) -> None:
         instr = self.get_node_instr(node)
         instr.operation = VIRTUAL_GATE_TYPES[instr.operation.name](instr.operation)
@@ -195,7 +210,7 @@ def get_qubit_dependencies(dag: DAG) -> dict[Qubit, Counter[Qubit]]:
             continue
         elif len(qubits) == 2:
             q1, q2 = qubits
-            
+
             to_add1 = Counter(qubit_depends_on[q2].keys()) + Counter([q2])
             to_add2 = Counter(qubit_depends_on[q1].keys()) + Counter([q1])
 

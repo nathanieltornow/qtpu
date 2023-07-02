@@ -124,10 +124,8 @@ class QubitDependencyMinimizer(ReduceQubitDependenciesCompiler):
 
         symbols = get_optimal_symbols(asp)
         for symbol in symbols:
-            print(symbol)
             if symbol.name != "vgate":
                 continue
-
             gate_idx = symbol.arguments[0].number
             dag.virtualize_node(gate_idx)
 
