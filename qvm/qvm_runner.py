@@ -110,26 +110,36 @@ class IBMBackendRunner(QVMBackendRunner):
 
 class LocalBackendRunner(QVMBackendRunner):
     def __init__(self) -> None:
+        self._samplers: dict[str, BackendSampler] = {}
+        self._samplers["simulator"] = BackendSampler(AerSimulator())
         self._jobs: dict[str, RuntimeJob] = {}
         super().__init__()
 
-    def _get_sampler(self, backend: BackendV2 | None = None) -> BackendSampler:
+    def _sampler_from_backend(self, backend: BackendV2 | None = None) -> BackendSampler:
         if backend is None:
-            return BackendSampler(AerSimulator())
-        elif isinstance(backend, BackendV2):
-            return BackendSampler(AerSimulator.from_backend(backend))
+            return self._samplers["simulator"]
+        if backend.name not in self._samplers:
+            self._samplers[backend.name] = BackendSampler(
+                AerSimulator.from_backend(backend)
+            )
+        return self._samplers[backend.name]
 
     def run(
         self,
         circuits: list[QuantumCircuit],
         backend: BackendV2 | None = None,
     ) -> str:
+        noise_model, coupling_map = None, None
         if backend is not None:
             circuits = [transpile_circuit(circ, backend) for circ in circuits]
 
-        sampler = self._get_sampler(backend)
-        circuits = transpile(circuits, backend, optimization_level=3)
-        job = sampler.run(circuits, shots=DEFAULT_SHOTS)
+        sampler = self._sampler_from_backend(backend)
+        job = sampler.run(
+            circuits,
+            shots=DEFAULT_SHOTS,
+            noise_model=noise_model,
+            coupling_map=coupling_map,
+        )
         job_id = str(uuid4())
         self._jobs[job_id] = job
         return job_id

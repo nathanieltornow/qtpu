@@ -1,5 +1,4 @@
-import os
-import csv
+from time import perf_counter
 from dataclasses import dataclass, asdict
 
 from tqdm import tqdm
@@ -38,13 +37,15 @@ class BenchmarkResult:
     depth_base: int = 0
     num_vgates: int = 0
     num_fragments: int = 0
+    num_instances: int = 0
     run_time: float = 0.0
     knit_time: float = 0.0
+    run_time_base: float = 0.0
 
     def append_to_csv(self, filepath: str) -> None:
         append_dict_to_csv(filepath, asdict(self))
-        
-        
+
+
 def run_benchmark(bench: Benchmark, runner: QVMBackendRunner | None = None) -> None:
     progress = tqdm(total=len(bench.circuits))
     progress.set_description("Running Bench Circuits")
@@ -69,6 +70,7 @@ def _run_experiment(
     backend: BackendV2,
     runner: QVMBackendRunner | None = None,
     base_backend: BackendV2 | None = None,
+    run_base: bool = True,
 ) -> BenchmarkResult:
     if base_backend is None:
         base_backend = backend
@@ -78,12 +80,14 @@ def _run_experiment(
     num_cnots, depth = _virtualizer_stats(virt, backend)
     num_cnots_base, depth_base = get_num_cnots(t_circ), t_circ.depth()
     num_vgates = len(virt._vgate_instrs)
-    if num_vgates > 4:
-        print(f"WARN: {num_vgates}")
-
     num_fragments = len(virt.fragment_circuits)
 
+    num_instances = 0
+    for frag in virt.fragment_circuits.keys():
+        num_instances += len(virt.get_instance_labels(frag))
+
     if runner is None or num_vgates > 4:
+        # NOTE: when num_vgates > 4, the virtual circuit is too large to run on the QVM
         return BenchmarkResult(
             num_qubits=original_circuit.num_qubits,
             num_cnots=num_cnots,
@@ -92,6 +96,7 @@ def _run_experiment(
             depth_base=depth_base,
             num_vgates=num_vgates,
             num_fragments=num_fragments,
+            num_instances=num_instances,
         )
 
     result, timing = run_virtualizer(virt, runner, backend)
@@ -102,11 +107,16 @@ def _run_experiment(
 
     h_fid_base, tv_fid_base = 0.0, 0.0
 
-    if original_circuit.num_qubits < 25:
+    run_time_base = 0.0
+    if run_base:
+        now = perf_counter()
         job_id = runner.run([t_circ], base_backend)
         noisy_base_res = runner.get_results(job_id)[
             0
         ].nearest_probability_distribution()
+        run_time_base = perf_counter() - now
+
+    if original_circuit.num_qubits < 25 and run_base:
         h_fid_base, tv_fid_base = compute_fidelity(
             original_circuit, noisy_base_res, runner
         )
@@ -125,10 +135,14 @@ def _run_experiment(
         run_time=timing.run_time,
         knit_time=timing.knit_time,
         num_fragments=num_fragments,
+        num_instances=num_instances,
+        run_time_base=run_time_base,
     )
 
 
-def _virtualizer_stats(virtualizer: VirtualCircuit, backend: BackendV2) -> tuple[int, int]:
+def _virtualizer_stats(
+    virtualizer: VirtualCircuit, backend: BackendV2
+) -> tuple[int, int]:
     frag_circs = list(virtualizer.fragment_circuits.values())
     frag_circs = [transpile(circ, backend, optimization_level=3) for circ in frag_circs]
     num_cnots = max(get_num_cnots(circ) for circ in frag_circs)

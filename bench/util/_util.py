@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-import json
-import sys
+import logging
 import os
 import csv
 
@@ -14,6 +13,26 @@ from qvm.qvm_runner import QVMBackendRunner
 from qvm.virtual_circuit import VirtualCircuit
 
 
+def enable_logging() -> None:
+    logger = logging.getLogger("qvm")
+
+    # Set the log level
+    logger.setLevel(logging.DEBUG)
+
+    # Create a formatter
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+
+    # Create a StreamHandler to write log messages to stdout
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.DEBUG)
+    stream_handler.setFormatter(formatter)
+
+    # Add the StreamHandler to the logger
+    logger.addHandler(stream_handler)
+
+
 def append_dict_to_csv(filepath: str, data: dict) -> None:
     if not os.path.exists(filepath):
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -24,7 +43,6 @@ def append_dict_to_csv(filepath: str, data: dict) -> None:
 
     with open(filepath, "a") as csv_file:
         csv.DictWriter(csv_file, fieldnames=data.keys()).writerow(data)
-
 
 
 def transpile_virtualizer(

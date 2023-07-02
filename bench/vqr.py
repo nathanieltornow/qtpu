@@ -3,8 +3,8 @@ from qiskit.providers import BackendV2
 from qvm.qvm_runner import QVMBackendRunner, IBMBackendRunner, LocalBackendRunner
 from qvm.compiler.virtualization.reduce_swap import ReduceSWAPCompiler
 
-from bench_util.circuits import two_local, qaoa
-from bench_util.run import Benchmark, run_benchmark
+from util.circuits import two_local, qaoa
+from util.run import Benchmark, run_benchmark
 
 
 def bench_vqr_two_local(
@@ -33,7 +33,7 @@ def bench_vqr_qaoa(
 
 if __name__ == "__main__":
     from qiskit_ibm_runtime import QiskitRuntimeService
-    
+
     from qiskit.providers.fake_provider import FakeMontrealV2
 
     # service = QiskitRuntimeService()
