@@ -1,6 +1,7 @@
+import networkx as nx
 from qiskit.providers import BackendV2
-
 from qiskit.circuit import QuantumCircuit
+
 from qvm.qvm_runner import QVMBackendRunner, IBMBackendRunner, LocalBackendRunner
 from qvm.compiler.virtualization.gate_decomp import OptimalGateDecomposer
 
@@ -44,10 +45,61 @@ def main() -> None:
     # runner = IBMBackendRunner(service=service)
     runner = LocalBackendRunner()
 
-    # ghz
-    circuits = [ghz(i) for i in range(4, 17, 2)]
+    # circuits = [ghz(i) for i in range(4, 17, 2)]
+    # bench_noisy_scale(
+    #     result_file=f"{result_dir}/ghz.csv",
+    #     circuits=circuits,
+    #     backend=backend,
+    #     base_backend=base_backend,
+    #     runner=runner,
+    #     fragment_size=4,
+    # )
+
+    # for layer, fragsize, max_circ in zip(range(1, 4), [4, 7, 7], [16, 14, 14]):
+    #     circuits = [hamsim(i, layer) for i in range(4, max_circ + 1, 2)]
+    #     bench_noisy_scale(
+    #         result_file=f"{result_dir}/hamsim_{layer}.csv",
+    #         circuits=circuits,
+    #         backend=backend,
+    #         base_backend=base_backend,
+    #         runner=runner,
+    #         fragment_size=fragsize,
+    #     )
+
+    # for layer, fragsize in zip(range(1, 4), [4, 7, 7]):
+    #     circuits = [vqe(i, layer) for i in range(4, 17, 2)]
+    #     bench_noisy_scale(
+    #         result_file=f"{result_dir}/vqe_{layer}.csv",
+    #         circuits=circuits,
+    #         backend=backend,
+    #         base_backend=base_backend,
+    #         runner=runner,
+    #         fragment_size=fragsize,
+    #     )
+
+    # circuits = [two_local(i, 1) for i in range(4, 15, 2)]
+    # bench_noisy_scale(
+    #     result_file=f"{result_dir}/2local_1.csv",
+    #     circuits=circuits,
+    #     backend=backend,
+    #     base_backend=base_backend,
+    #     runner=runner,
+    #     fragment_size=7,
+    # )
+
+    # circuits = [qaoa(nx.barbell_graph(i, 0)) for i in range(2, 8)]
+    # bench_noisy_scale(
+    #     result_file=f"{result_dir}/qaoa_b.csv",
+    #     circuits=circuits,
+    #     backend=backend,
+    #     base_backend=base_backend,
+    #     runner=runner,
+    #     fragment_size=7,
+    # )
+
+    circuits = [qaoa(nx.random_powerlaw_tree(i)) for i in range(4, 17, 2)]
     bench_noisy_scale(
-        result_file=f"{result_dir}/ghz.csv",
+        result_file=f"{result_dir}/qaoa_p.csv",
         circuits=circuits,
         backend=backend,
         base_backend=base_backend,
@@ -55,50 +107,14 @@ def main() -> None:
         fragment_size=4,
     )
 
-    # hamsim
-    for layer, fragsize in zip(range(1, 4), [4, 7, 7]):
-        circuits = [hamsim(i, layer) for i in range(4, 17, 2)]
-        bench_noisy_scale(
-            result_file=f"{result_dir}/hamsim_{layer}.csv",
-            circuits=circuits,
-            backend=backend,
-            base_backend=base_backend,
-            runner=runner,
-            fragment_size=fragsize,
-        )
-
-    # vqe
-    for layer, fragsize in zip(range(1, 4), [4, 7, 7]):
-        circuits = [vqe(i, layer) for i in range(4, 17, 2)]
-        bench_noisy_scale(
-            result_file=f"{result_dir}/vqe_{layer}.csv",
-            circuits=circuits,
-            backend=backend,
-            base_backend=base_backend,
-            runner=runner,
-            fragment_size=fragsize,
-        )
-
-    # 2local
-    circuits = [two_local(i, 1) for i in range(4, 15, 2)]
+    circuits = [qaoa(nx.random_regular_graph(i, 1)) for i in range(4, 17, 2)]
     bench_noisy_scale(
-        result_file=f"{result_dir}/2local_1.csv",
+        result_file=f"{result_dir}/qaoa_r1.csv",
         circuits=circuits,
         backend=backend,
         base_backend=base_backend,
         runner=runner,
-        fragment_size=7,
-    )
-
-    # qaoa
-    circuits = [qaoa(i, 1) for i in range(4, 15, 2)]
-    bench_noisy_scale(
-        result_file=f"{result_dir}/qaoa_1.csv",
-        circuits=circuits,
-        backend=backend,
-        base_backend=base_backend,
-        runner=runner,
-        fragment_size=7,
+        fragment_size=4,
     )
 
 

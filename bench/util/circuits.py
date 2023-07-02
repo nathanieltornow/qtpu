@@ -23,13 +23,13 @@ def vqe(num_qubits: int, reps: int = 1) -> QuantumCircuit:
     qp = get_examplary_max_cut_qp(num_qubits)
     assert isinstance(qp, QuadraticProgram)
 
-    ansatz = RealAmplitudes(num_qubits, reps=reps, entanglement="linear")
+    ansatz = RealAmplitudes(num_qubits, reps=reps, entanglement="reverse_linear")
     vqe = VQE(ansatz=ansatz, optimizer=SLSQP(maxiter=25), estimator=Estimator())
 
     vqe_result = vqe.compute_minimum_eigenvalue(qp.to_ising()[0])
     qc = vqe.ansatz.bind_parameters(vqe_result.optimal_point)
 
-    qc.measure_all()
+    _measure_all(qc)
     qc.name = "vqe"
 
     return qc.decompose().decompose()
@@ -56,21 +56,11 @@ def two_local(
 
 def qft(num_qubits: int, approx: int = 0) -> QuantumCircuit:
     circuit = QFT(num_qubits, approximation_degree=approx, do_swaps=False)
-    circuit.measure_all()
+    _measure_all(circuit)
     return circuit.decompose()
 
 
-def qaoa(num_qubits: int, deg: int):
-    G = nx.powerlaw_cluster_graph(num_qubits, deg, 0.1)
-
-    # if True:
-    #     import matplotlib.pyplot as plt
-
-    #     nx.draw(G, with_labels=True, node_color="lightblue", edge_color="gray")
-
-    #     # Show the plot
-    #     plt.show()
-
+def qaoa(G: nx.Graph):
     nqubits = len(G.nodes())
     qc = QuantumCircuit(nqubits)
 
@@ -89,7 +79,7 @@ def qaoa(num_qubits: int, deg: int):
     for i in range(0, nqubits):
         qc.rx(beta, i)
 
-    qc.measure_all()
+    _measure_all(qc)
 
     return qc
 
@@ -155,7 +145,7 @@ def ghz(num_qubits: int) -> QuantumCircuit:
     circuit = QuantumCircuit(num_qubits)
     circuit.h(0)
     circuit.cx(range(num_qubits - 1), range(1, num_qubits))
-    circuit.measure_all()
+    _measure_all(circuit)
     return circuit
 
 

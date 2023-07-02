@@ -1,5 +1,5 @@
 from networkx.algorithms.community import kernighan_lin_bisection as bisect
-from qiskit.circuit import QuantumCircuit, Qubit
+from qiskit.circuit import QuantumCircuit, Qubit, Barrier
 
 from qvm.compiler.asp import qcg_to_asp, get_optimal_symbols
 from qvm.compiler.dag import DAG, dag_to_qcg
@@ -91,12 +91,13 @@ class OptimalGateDecomposer(CutCompiler):
 def _decompose_qubit_sets(dag: DAG, qubit_sets: list[set[Qubit]]) -> int:
     vgates = 0
     for node in dag.nodes:
-        qubits = dag.get_node_instr(node).qubits
+        instr = dag.get_node_instr(node)
+        qubits = instr.qubits
 
         nums_of_frags = sum(1 for qubit_set in qubit_sets if set(qubits) & qubit_set)
         if nums_of_frags == 0:
             raise ValueError(f"No fragment found for qubit {qubits}.")
-        elif nums_of_frags > 1:
+        elif nums_of_frags > 1 and not isinstance(instr.operation, Barrier):
             dag.virtualize_node(node)
             vgates += 1
     return vgates
