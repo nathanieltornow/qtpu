@@ -56,8 +56,16 @@ class OptimalDecompositionCompiler(CutCompiler):
         
         num_qubits_in_partition(P, N) :- partition(P), N = #count{{Qubit : qubit_in_partition(Qubit, P)}}.
         :- num_qubits_in_partition(P, N), N > {self._size_to_reach}.
+
+        qubit_diff(P1, P2, D) :- 
+            partition(P1), partition(P2), P1 < P2, 
+            num_qubits_in_partition(P1, N1), num_qubits_in_partition(P2, N2),
+            D = |N1 - N2|.
         
-        #minimize{{ N : num_vgates(N) }}.
+        total_qubit_diff(TD) :- TD = #sum{{ D : qubit_diff(_, _, D) }}.
+        
+        #minimize{{ 100000@N : num_vgates(N) }}.
+        #minimize{{ 1@D : total_qubit_diff(D) }}.
         #show qubit_in_partition/2.
         """
         return asp
