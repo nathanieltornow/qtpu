@@ -27,7 +27,7 @@ class BisectionCompiler(CutCompiler):
         return _decompose_qubit_sets(dag, partitions)
 
 
-class OptimalDecompositionCompiler(CutCompiler):
+class OptimalGateDecomposer(CutCompiler):
     def __init__(self, size_to_reach: int) -> None:
         self._size_to_reach = size_to_reach
         super().__init__()

@@ -4,7 +4,7 @@ from qiskit.circuit import QuantumCircuit
 from tqdm import tqdm
 
 from qvm.compiler.virtualization.wire_decomp import OptimalWireCutter
-from qvm.compiler.virtualization.gate_decomp import OptimalDecompositionCompiler
+from qvm.compiler.virtualization.gate_decomp import OptimalGateDecomposer
 from qvm.compiler.virtualization.reduce_deps import QubitDependencyMinimizer
 from qvm.compiler.qubit_reuse import QubitReuseCompiler
 from qvm.virtual_circuit import VirtualCircuit
@@ -37,7 +37,7 @@ def _num_wire_cuts(circuit: QuantumCircuit, qpu_size: int) -> int:
 
 def _num_vgates(circuit: QuantumCircuit, qpu_size: int) -> int:
     print("cutting vgates...")
-    cutter = OptimalDecompositionCompiler(qpu_size)
+    cutter = OptimalGateDecomposer(qpu_size)
     cut_circ = cutter.run(circuit)
     return sum(
         1 for instr in cut_circ.data if isinstance(instr.operation, VirtualBinaryGate)

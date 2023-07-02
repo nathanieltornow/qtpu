@@ -1,7 +1,7 @@
 from qiskit.providers import BackendV2
 
 from qvm.qvm_runner import QVMBackendRunner, IBMBackendRunner, LocalBackendRunner
-from qvm.compiler.virtualization.gate_decomp import OptimalDecompositionCompiler
+from qvm.compiler.virtualization.gate_decomp import OptimalGateDecomposer
 
 from bench_util.circuits import hamsim, qaoa, vqe
 from bench_util.run import Benchmark, run_benchmark
@@ -18,7 +18,7 @@ def bench_hamsim(
         backend=backend,
         base_backend=base_backend,
         result_file=f"bench/results/vqr/{backend.name}_{base_backend}/hamsim_{layers}.csv",
-        virt_compiler=OptimalDecompositionCompiler(5),
+        virt_compiler=OptimalGateDecomposer(5),
     )
     run_benchmark(benchmark, runner)
     
@@ -34,7 +34,7 @@ def bench_vqe(
         backend=backend,
         base_backend=base_backend,
         result_file=f"bench/results/noisy_scale/{backend.name}_{base_backend}/vqe_{layers}.csv",
-        virt_compiler=OptimalDecompositionCompiler(5),
+        virt_compiler=OptimalGateDecomposer(5),
     )
     run_benchmark(benchmark, runner)
 
