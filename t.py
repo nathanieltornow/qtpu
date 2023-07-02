@@ -1,38 +1,51 @@
+from bench.util.circuits import qaoa, hamsim, two_local
+
+if __name__ == "__main__":
+    circ = hamsim(4, 2)
+    print(circ)
+
+    from qvm.compiler.dag import DAG, get_qubit_dependencies
+    from qvm.compiler.virtualization.reduce_deps import CircularDependencyBreaker, QubitDependencyMinimizer
+    from qvm.compiler.virtualization.wire_decomp import OptimalWireCutter
+    from qvm.compiler.qubit_reuse import QubitReuseCompiler
+    from qvm.virtual_circuit import VirtualCircuit
+
+    cut_circ = OptimalWireCutter(3).run(circ)
+
+    print(cut_circ)    
+
+    # virt = VirtualCircuit(cut_circ)
+
+    # QubitReuseCompiler(3).run(virt)
 
 
-# from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
+    # for fragcirc in virt.fragment_circuits.values():
+    #     dag = DAG(fragcirc)
+    #     print(dag.to_circuit())
 
 
-# from qiskit.providers.fake_provider import FakeOslo
+    # from qvm.run import run_virtualizer
+    # from qvm.qvm_runner import LocalBackendRunner
 
-# circuit = QuantumCircuit(3)
-# circuit.h(0)
-# for i in range(100000):
-#     circuit.cx(0, 1)
-# circuit.measure_all()
+    # runner = LocalBackendRunner()
 
+    # res, _ = run_virtualizer(virt, runner)
 
-# t1 = transpile(circuit,  basis_gates=["cz", "h"], backend=FakeOslo(), optimization_level=3)
+    # from bench.util._util import compute_fidelity
 
-# from qvm._circuit_hash import circuit_hash
-# from time import perf_counter
+    # fid1, fid2 = compute_fidelity(circ, res, runner)
+    # print(fid1, fid2)
 
-# t0 = perf_counter()
-# print(circuit_hash(circuit))
-# print(perf_counter() - t0)
+#     # dag = DAG(circ)
+#     # qdg = get_qubit_dependencies(dag)
+#     # from pprint import pprint
 
-import networkx as nx
-import matplotlib.pyplot as plt
+#     # pprint(qdg)
+#     # import networkx as nx
+#     # import matplotlib.pyplot as plt
 
-# Generate a power-law graph with density 0.5
-num_nodes = 16  # Number of nodes in the graph
-avg_degree = int(num_nodes * 0.1)  # Average degree for each node
+#     # print(qdg.number_of_edges())
 
-# Create the power-law graph
-graph = nx.barabasi_albert_graph(num_nodes, 4)
+#     # nx.draw(qdg)
+#     # plt.show()
 
-# Plot the graph
-pos = nx.spring_layout(graph)  # Position nodes using a spring layout
-nx.draw(graph, pos, with_labels=True, node_size=100)
-plt.title("Power-Law Graph with Density 0.5")
-plt.show()
