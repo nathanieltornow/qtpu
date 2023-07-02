@@ -9,7 +9,7 @@ from qiskit.compiler import transpile
 from qiskit.providers import BackendV2
 from qiskit.quantum_info import hellinger_fidelity
 
-from qvm.virtual_gates import VirtualBinaryGate, VirtualSWAP, VirtualGateEndpoint
+from qvm.virtual_gates import VirtualBinaryGate, VirtualMove, VirtualGateEndpoint
 from qvm.qvm_runner import QVMBackendRunner
 from qvm.virtual_circuit import VirtualCircuit
 
@@ -32,7 +32,7 @@ def overhead(circuit: QuantumCircuit) -> int:
         1 for instr in circuit if isinstance(instr.operation, VirtualBinaryGate)
     )
     num_wire_cuts = sum(
-        1 for instr in circuit if isinstance(instr.operation, VirtualSWAP)
+        1 for instr in circuit if isinstance(instr.operation, VirtualMove)
     )
     return 4**num_vgates * 6**num_wire_cuts
 

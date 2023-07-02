@@ -14,9 +14,9 @@ class WireCut(Barrier):
         self._definition = QuantumCircuit(1)
 
 
-class VirtualSWAP(Barrier):
+class VirtualMove(Barrier):
     def __init__(self):
-        super().__init__(num_qubits=2, label="vswap")
+        super().__init__(num_qubits=2, label="vmove")
 
     def _define(self):
         circ = QuantumCircuit(2)

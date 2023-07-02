@@ -81,7 +81,9 @@ def qaoa(num_qubits: int, deg: int):
     gamma = np.random.uniform(0, 2 * np.pi, 1)[0]
     beta = np.random.uniform(0, np.pi, 1)[0]
 
-    for pair in sorted(G.edges(), key=lambda x: (x[0], x[1])):
+    edges = list(G.edges())
+    # edges = sorted(edges, key=lambda x: (x[0], x[1]))
+    for pair in edges:
         qc.rzz(gamma, pair[0], pair[1])
     # mixer unitary
     for i in range(0, nqubits):

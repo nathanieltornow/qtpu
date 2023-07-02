@@ -1,9 +1,9 @@
 from networkx.algorithms.community import kernighan_lin_bisection as bisect
 from qiskit.circuit import QuantumCircuit, Qubit
 
-from qvm.compiler._asp import qcg_to_asp, get_optimal_symbols
+from qvm.compiler.asp import qcg_to_asp, get_optimal_symbols
 from qvm.compiler.dag import DAG, dag_to_qcg
-from qvm.compiler._types import CutCompiler
+from qvm.compiler.types import CutCompiler
 from qvm.virtual_gates import VIRTUAL_GATE_TYPES
 
 

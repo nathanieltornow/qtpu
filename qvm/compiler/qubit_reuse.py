@@ -2,16 +2,18 @@ from typing import Iterator
 from itertools import permutations
 
 import networkx as nx
-from qiskit.circuit import Qubit, CircuitInstruction, Reset
+from qiskit.circuit import Qubit, CircuitInstruction, Reset, Measure
+from qiskit.circuit.library.standard_gates import XGate
 
 from qvm.compiler.dag import DAG
-from qvm.compiler._types import VirtualCircuitCompiler
+from qvm.compiler.types import VirtualCircuitCompiler
 from qvm.virtual_circuit import VirtualCircuit
 
 
 class QubitReuseCompiler(VirtualCircuitCompiler):
-    def __init__(self, size_to_reach: int) -> None:
+    def __init__(self, size_to_reach: int, dynamic: int = True) -> None:
         self._size_to_reach = size_to_reach
+        self._dynamic = dynamic
         super().__init__()
 
     def run(self, virt: VirtualCircuit) -> None:
@@ -19,7 +21,35 @@ class QubitReuseCompiler(VirtualCircuitCompiler):
         for frag, frag_circ in frag_circs:
             dag = DAG(frag_circ)
             random_qubit_reuse(dag, self._size_to_reach)
+            if self._dynamic:
+                dynamic_measure_and_reset(dag)
             virt.replace_fragment_circuit(frag, dag.to_circuit())
+
+
+def dynamic_measure_and_reset(dag: DAG) -> None:
+    """Converts measure-resets to a measure and a dynamic conditional X gate.
+
+    Args:
+        dag (DAG): The DAG to modify.
+    """
+    nodes = list(dag.nodes())
+    for node in nodes:
+        instr = dag.get_node_instr(node)
+
+        if not isinstance(instr.operation, Measure):
+            continue
+
+        clbit = instr.clbits[0]
+
+        next_node = next(dag.successors(node), None)
+        if next_node is None:
+            continue
+
+        next_instr = dag.get_node_instr(next_node)
+        if not isinstance(next_instr.operation, Reset):
+            continue
+
+        next_instr.operation = XGate().c_if(clbit, 1)
 
 
 def random_qubit_reuse(dag: DAG, size_to_reach: int = 1) -> None:

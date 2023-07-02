@@ -2,16 +2,19 @@ import networkx as nx
 
 from clingo.solving import Symbol
 from clingo.control import Control
+from qiskit.circuit import Barrier
 
 from .dag import DAG
 
 
 def dag_to_asp(dag: DAG) -> str:
+    dag.remove_nodes_of_type(Barrier)
     qubits = dag.qubits
     asp = ""
     for node in dag.nodes:
+        instr = dag.get_node_instr(node)
         asp += f"gate({node}).\n"
-        qubits = dag.get_node_instr(node).qubits
+        qubits = instr.qubits
         for qubit in dag.get_node_instr(node).qubits:
             asp += f"gate_on_qubit({node}, {dag.qubits.index(qubit)}).\n"
 

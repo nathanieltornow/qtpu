@@ -4,7 +4,7 @@ from qiskit.compiler import transpile
 from qiskit.transpiler import CouplingMap
 from qiskit.providers import BackendV2
 
-from qvm.compiler._types import CutCompiler
+from qvm.compiler.types import CutCompiler
 from qvm.compiler.dag import DAG, dag_to_qcg
 from qvm.virtual_gates import VIRTUAL_GATE_TYPES
 

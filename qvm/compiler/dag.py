@@ -1,5 +1,6 @@
 from typing import Iterator
 import itertools
+from collections import Counter
 
 import networkx as nx
 from qiskit.circuit import (
@@ -11,6 +12,8 @@ from qiskit.circuit import (
     Qubit,
     Barrier,
 )
+
+from qvm.virtual_gates import VIRTUAL_GATE_TYPES
 
 
 class DAG(nx.DiGraph):
@@ -56,6 +59,10 @@ class DAG(nx.DiGraph):
         if creg in self._cregs:
             raise ValueError(f"Classical register {creg} already exists")
         self._cregs.append(creg)
+
+    def virtualize_node(self, node: int) -> None:
+        instr = self.get_node_instr(node)
+        instr.operation = VIRTUAL_GATE_TYPES[instr.operation.name](instr.operation)
 
     def to_circuit(self) -> QuantumCircuit:
         order = list(nx.topological_sort(self))
@@ -170,4 +177,35 @@ def dag_to_qcg(dag: DAG, use_qubit_idx: bool = False) -> nx.Graph:
     return graph
 
 
+def get_qubit_dependencies(dag: DAG) -> dict[Qubit, Counter[Qubit]]:
+    """Converts a graph into a qubit-dependency relations
 
+    qubit -> {qubits it depends on}
+    """
+
+    qubit_depends_on: dict[Qubit, Counter[Qubit]] = {
+        qubit: Counter() for qubit in dag.qubits
+    }
+
+    for node in nx.topological_sort(dag):
+        instr = dag.get_node_instr(node)
+        qubits = instr.qubits
+
+        if len(qubits) == 1 or isinstance(instr.operation, Barrier):
+            continue
+        elif len(qubits) == 2:
+            q1, q2 = qubits
+            
+            to_add1 = Counter(qubit_depends_on[q2].keys()) + Counter([q2])
+            to_add2 = Counter(qubit_depends_on[q1].keys()) + Counter([q1])
+
+            qubit_depends_on[q1] += to_add1
+            qubit_depends_on[q2] += to_add2
+
+        elif len(qubits) > 2:
+            raise ValueError("Cannot convert dag to qdg, too many qubits")
+
+    for qubit in dag.qubits:
+        qubit_depends_on[qubit].pop(qubit, None)
+
+    return qubit_depends_on

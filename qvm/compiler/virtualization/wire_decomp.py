@@ -1,19 +1,22 @@
-from qiskit.circuit import QuantumCircuit, CircuitInstruction
+import networkx as nx
+from qiskit.circuit import QuantumCircuit, QuantumRegister, CircuitInstruction, Qubit
 
-from qvm.compiler._types import CutCompiler
+from qvm.compiler.types import CutCompiler
 from qvm.compiler.dag import DAG
-from qvm.compiler._asp import dag_to_asp, get_optimal_symbols
-from qvm.virtual_gates import WireCut
+from qvm.compiler.asp import dag_to_asp, get_optimal_symbols
+from qvm.virtual_gates import WireCut, VirtualMove
 
 
-class OptimalWireCutCompiler(CutCompiler):
+class OptimalWireCutter(CutCompiler):
     def __init__(self, size_to_reach: int) -> None:
         self._size_to_reach = size_to_reach
         super().__init__()
 
     def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
         dag = DAG(circuit)
-        self._cut_wires(dag)
+        num_cuts = self._cut_wires(dag)
+        self._wire_cuts_to_moves(dag, num_cuts)
+        dag.fragment()
         return dag.to_circuit()
 
     def _cut_wires(self, dag: DAG) -> int:
@@ -42,6 +45,27 @@ class OptimalWireCutCompiler(CutCompiler):
                     dag.add_edge(w, v)
                     vgates += 1
         return vgates
+
+    def _wire_cuts_to_moves(self, dag: DAG, num_wire_cuts: int) -> None:
+        move_reg = QuantumRegister(num_wire_cuts, "vmove")
+        dag.add_qreg(move_reg)
+
+        qubit_mapping: dict[Qubit, Qubit] = {}
+
+        def _find_qubit(qubit: Qubit) -> Qubit:
+            while qubit in qubit_mapping:
+                qubit = qubit_mapping[qubit]
+            return qubit
+
+        cut_ctr = 0
+        for node in nx.topological_sort(dag):
+            instr = dag.get_node_instr(node)
+            instr.qubits = [_find_qubit(qubit) for qubit in instr.qubits]
+            if isinstance(instr.operation, WireCut):
+                instr.operation = VirtualMove()
+                instr.qubits.append(move_reg[cut_ctr])
+                qubit_mapping[instr.qubits[0]] = instr.qubits[1]
+                cut_ctr += 1
 
     def _find_optimal_partitons(
         self, dag: DAG, num_fragments: int
