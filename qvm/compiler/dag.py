@@ -3,6 +3,7 @@ import itertools
 from collections import Counter
 
 import networkx as nx
+from networkx.classes.graph import Graph
 from qiskit.circuit import (
     QuantumCircuit,
     QuantumRegister,
@@ -37,6 +38,9 @@ class DAG(nx.DiGraph):
 
         self._qregs = circuit.qregs
         self._cregs = circuit.cregs
+
+    def copy(self) -> "DAG":
+        return DAG(self.to_circuit())
 
     @property
     def qubits(self) -> list[Qubit]:

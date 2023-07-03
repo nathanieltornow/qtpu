@@ -32,6 +32,7 @@ def bench_noisy_scale(
 
 def main() -> None:
     from qiskit_ibm_runtime import QiskitRuntimeService
+    from qiskit.providers.fake_provider import FakeGuadalupeV2
 
     service = QiskitRuntimeService()
 
@@ -40,71 +41,62 @@ def main() -> None:
     result_dir = f"bench/results/noisy_scale/{small_qpu}_vs_{large_qpu}"
 
     backend = service.get_backend(small_qpu)
-    base_backend = service.get_backend(large_qpu)
+    # TODO change this to the real backend
+    base_backend = FakeGuadalupeV2()
 
     # runner = IBMBackendRunner(service=service)
     runner = LocalBackendRunner()
 
-    # circuits = [ghz(i) for i in range(4, 17, 2)]
-    # bench_noisy_scale(
-    #     result_file=f"{result_dir}/ghz.csv",
-    #     circuits=circuits,
-    #     backend=backend,
-    #     base_backend=base_backend,
-    #     runner=runner,
-    #     fragment_size=4,
-    # )
-
-    # for layer, fragsize, max_circ in zip(range(1, 4), [4, 7, 7], [16, 14, 14]):
-    #     circuits = [hamsim(i, layer) for i in range(4, max_circ + 1, 2)]
-    #     bench_noisy_scale(
-    #         result_file=f"{result_dir}/hamsim_{layer}.csv",
-    #         circuits=circuits,
-    #         backend=backend,
-    #         base_backend=base_backend,
-    #         runner=runner,
-    #         fragment_size=fragsize,
-    #     )
-
-    # for layer, fragsize in zip(range(1, 4), [4, 7, 7]):
-    #     circuits = [vqe(i, layer) for i in range(4, 17, 2)]
-    #     bench_noisy_scale(
-    #         result_file=f"{result_dir}/vqe_{layer}.csv",
-    #         circuits=circuits,
-    #         backend=backend,
-    #         base_backend=base_backend,
-    #         runner=runner,
-    #         fragment_size=fragsize,
-    #     )
-
-    # circuits = [two_local(i, 1) for i in range(4, 15, 2)]
-    # bench_noisy_scale(
-    #     result_file=f"{result_dir}/2local_1.csv",
-    #     circuits=circuits,
-    #     backend=backend,
-    #     base_backend=base_backend,
-    #     runner=runner,
-    #     fragment_size=7,
-    # )
-
-    # circuits = [qaoa(nx.barbell_graph(i, 0)) for i in range(2, 8)]
-    # bench_noisy_scale(
-    #     result_file=f"{result_dir}/qaoa_b.csv",
-    #     circuits=circuits,
-    #     backend=backend,
-    #     base_backend=base_backend,
-    #     runner=runner,
-    #     fragment_size=7,
-    # )
-
-    circuits = [qaoa(nx.random_powerlaw_tree(i)) for i in range(4, 17, 2)]
+    circuits = [ghz(i) for i in range(4, 17, 2)]
     bench_noisy_scale(
-        result_file=f"{result_dir}/qaoa_p.csv",
+        result_file=f"{result_dir}/ghz.csv",
         circuits=circuits,
         backend=backend,
         base_backend=base_backend,
         runner=runner,
         fragment_size=4,
+    )
+
+    for layer, fragsize, max_circ in zip(range(1, 4), [4, 7, 7], [16, 14, 14]):
+        circuits = [hamsim(i, layer) for i in range(4, max_circ + 1, 2)]
+        bench_noisy_scale(
+            result_file=f"{result_dir}/hamsim_{layer}.csv",
+            circuits=circuits,
+            backend=backend,
+            base_backend=base_backend,
+            runner=runner,
+            fragment_size=fragsize,
+        )
+
+    for layer, fragsize in zip(range(1, 4), [4, 7, 7]):
+        circuits = [vqe(i, layer) for i in range(4, 17, 2)]
+        bench_noisy_scale(
+            result_file=f"{result_dir}/vqe_{layer}.csv",
+            circuits=circuits,
+            backend=backend,
+            base_backend=base_backend,
+            runner=runner,
+            fragment_size=fragsize,
+        )
+
+    circuits = [two_local(i, 1) for i in range(4, 15, 2)]
+    bench_noisy_scale(
+        result_file=f"{result_dir}/2local_1.csv",
+        circuits=circuits,
+        backend=backend,
+        base_backend=base_backend,
+        runner=runner,
+        fragment_size=7,
+    )
+
+    circuits = [qaoa(nx.barbell_graph(i, 0)) for i in range(2, 8)]
+    bench_noisy_scale(
+        result_file=f"{result_dir}/qaoa_b.csv",
+        circuits=circuits,
+        backend=backend,
+        base_backend=base_backend,
+        runner=runner,
+        fragment_size=7,
     )
 
     circuits = [qaoa(nx.random_regular_graph(i, 1)) for i in range(4, 17, 2)]

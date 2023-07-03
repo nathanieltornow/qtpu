@@ -21,14 +21,17 @@ def _run_circuit(
 ) -> BenchmarkResult:
     comp = OptimalGateDecomposer(fragment_size)
     cut_circ = comp.run(circuit)
+
     virt = VirtualCircuit(cut_circ)
     _, run_time_info = run_virtualizer(virt, runner)
+
     run_time_base = 0.0
     if run_base:
         now = perf_counter()
         job_id = runner.run(circuit)
         runner.get_results(job_id)
         run_time_base = perf_counter() - now
+
     return BenchmarkResult(
         num_qubits=circuit.num_qubits,
         run_time=run_time_info.run_time,
