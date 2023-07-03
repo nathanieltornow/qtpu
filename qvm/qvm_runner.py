@@ -149,18 +149,19 @@ class LocalBackendRunner(QVMBackendRunner):
         return [QuasiDistr(dist) for dist in job.result().quasi_dists]
 
 
-def transpile_circuit(
-    circuit: QuantumCircuit, backend: BackendV2
-) -> list[QuantumCircuit]:
+def transpile_circuit(circuit: QuantumCircuit, backend: BackendV2) -> QuantumCircuit:
     t_circ = transpile(circuit, backend=backend, optimization_level=3)
-    dag = DAG(t_circ)
-    dag.compact()
-    small_qc = dag.to_circuit()
-    layouts = mm.matching_layouts(small_qc, backend)
-    best_score = mm.evaluate_layouts(small_qc, layouts, backend)
-    best_layout = best_score[0][0]
-    if best_score[0][1] >= 1.0:
-        best_layout = None
+    try:
+        dag = DAG(t_circ)
+        dag.compact()
+        small_qc = dag.to_circuit()
+        layouts = mm.matching_layouts(small_qc, backend)
+        best_score = mm.evaluate_layouts(small_qc, layouts, backend)
+        best_layout = best_score[0][0]
+        if best_score[0][1] >= 1.0:
+            best_layout = None
+    except AttributeError:
+        return t_circ
     return transpile(
         small_qc, backend=backend, optimization_level=3, initial_layout=best_layout
     )
