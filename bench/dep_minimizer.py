@@ -1,3 +1,4 @@
+import networkx as nx
 from qiskit.circuit import QuantumCircuit
 from qiskit.providers import BackendV2
 
@@ -26,7 +27,7 @@ def bench_dep_min(
 
 
 def main():
-    from qiskit_ibm_runtime import QiskitRuntimeService
+    # from qiskit_ibm_runtime import QiskitRuntimeService
     from qiskit.providers.fake_provider import FakeMontrealV2
 
     result_dir = f"bench/results/dep_min"
@@ -38,9 +39,16 @@ def main():
     # backend = service.get_backend("ibmq_kolkata")
     runner = LocalBackendRunner()
 
-    for layer in range(1, 4):
-        circuits = [two_local(i, layer) for i in range(4, backend.num_qubits, 2)]
-        bench_dep_min(f"{result_dir}/2local_{layer}.csv", circuits, backend, layer)
+    # for layer in range(1, 4):
+    #     circuits = [two_local(i, layer) for i in range(4, backend.num_qubits, 2)]
+    #     bench_dep_min(f"{result_dir}/2local_{layer}.csv", circuits, backend, layer)
+
+    for degree in range(2, 4):
+        circuits = [
+            qaoa(nx.random_regular_graph(degree, i))
+            for i in range(8, backend.num_qubits, 2)
+        ]
+        bench_dep_min(f"{result_dir}/qaoa_r{degree}.csv", circuits, backend, 3)
 
 
 if __name__ == "__main__":
