@@ -41,11 +41,10 @@ def main() -> None:
     result_dir = f"bench/results/noisy_scale/{small_qpu}_vs_{large_qpu}"
 
     backend = service.get_backend(small_qpu)
-    # TODO change this to the real backend
-    base_backend = FakeGuadalupeV2()
+    base_backend = service.get_backend(large_qpu)
 
-    # runner = IBMBackendRunner(service=service)
-    runner = LocalBackendRunner()
+    runner = IBMBackendRunner(service=service, simulate_qpus=False)
+    # runner = LocalBackendRunner()
 
     circuits = [ghz(i) for i in range(4, 17, 2)]
     bench_noisy_scale(
@@ -99,9 +98,9 @@ def main() -> None:
         fragment_size=7,
     )
 
-    circuits = [qaoa(nx.random_regular_graph(i, 1)) for i in range(4, 17, 2)]
+    circuits = [qaoa(nx.random_regular_graph(2, i)) for i in range(4, 17, 2)]
     bench_noisy_scale(
-        result_file=f"{result_dir}/qaoa_r1.csv",
+        result_file=f"{result_dir}/qaoa_r2.csv",
         circuits=circuits,
         backend=backend,
         base_backend=base_backend,
