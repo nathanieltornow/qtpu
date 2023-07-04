@@ -41,6 +41,16 @@ def plot_swap_reduce() -> None:
         output_file="figures/swap_reduce/depth.pdf",
     )
 
+    plot_dataframes(
+        dataframes=dfs,
+        keys=["tv_fid", "tv_fid_base"],
+        labels=["Ours", "Baseline"],
+        titles=titles,
+        ylabel="Fidelity",
+        xlabel="Number of Qubits",
+        output_file="figures/swap_reduce/fid.pdf",
+    )
+
 
 def plot_dep_min() -> None:
     dfs = [pd.read_csv(file) for file in DEP_MIN_DATA.values()]
@@ -49,7 +59,7 @@ def plot_dep_min() -> None:
     plot_dataframes(
         dataframes=dfs,
         keys=["num_cnots", "num_cnots_base"],
-        labels=["Dep Min", "Baseline"],
+        labels=["Ours", "Baseline"],
         titles=titles,
         ylabel="Number of CNOTs",
         xlabel="Number of Qubits",
@@ -58,11 +68,21 @@ def plot_dep_min() -> None:
     plot_dataframes(
         dataframes=dfs,
         keys=["depth", "depth_base"],
-        labels=["Dep Min", "Baseline"],
+        labels=["Ours", "Baseline"],
         titles=titles,
         ylabel="Circuit Depth",
         xlabel="Number of Qubits",
         output_file="figures/dep_min/depth.pdf",
+    )
+
+    plot_dataframes(
+        dataframes=dfs,
+        keys=["tv_fid", "tv_fid_base"],
+        labels=["Ours", "Baseline"],
+        titles=titles,
+        ylabel="Fidelity",
+        xlabel="Number of Qubits",
+        output_file="figures/dep_min/fid.pdf",
     )
 
 
@@ -78,6 +98,7 @@ def plot_noisy_scale() -> None:
         ylabel="Number of CNOTs",
         xlabel="Number of Qubits",
         output_file="figures/noisy_scale/algiers_cnot.pdf",
+        nrows=2,
     )
     plot_dataframes(
         dataframes=dfs,
@@ -87,6 +108,7 @@ def plot_noisy_scale() -> None:
         ylabel="Circuit Depth",
         xlabel="Number of Qubits",
         output_file="figures/noisy_scale/algiers_depth.pdf",
+        nrows=2,
     )
     plot_dataframes(
         dataframes=dfs,
@@ -108,7 +130,7 @@ def plot_dataframes(
     ylabel: str,
     xlabel: str,
     output_file: str = "noisy_scale.pdf",
-    nrows: int = 1,
+    nrows: int = 2,
 ) -> None:
     ncols = len(dataframes) // nrows + len(dataframes) % nrows
     # plotting the absolute fidelities
@@ -120,7 +142,8 @@ def plot_dataframes(
     for i, ax in enumerate(axis):
         if i % nrows == 0:
             ax.set_ylabel(ylabel=ylabel)
-        ax.set_xlabel(xlabel=xlabel)
+        if i >= len(axis) - ncols:
+            ax.set_xlabel(xlabel=xlabel)
 
     for let, title, ax, df in zip(string.ascii_lowercase, titles, axis, dataframes):
         plot_lines(ax, keys, labels, [df])
@@ -133,26 +156,58 @@ def plot_dataframes(
 
 
 def plot_relative(
+    ax,
     dataframes: list[pd.DataFrame],
     num_key: str,
     denom_key: str,
-    label: str,
-    titles: list[str],
+    labels: list[str],
     ylabel: str,
     xlabel: str,
-    output_file: str = "noisy_scale.pdf",
+    title: str | None = None,
 ):
-    pass
+    for df in dataframes:
+        df["relative"] = df[num_key] / df[denom_key]
+
+    plot_lines(ax, ["relative"], labels, dataframes)
+    ax.set_ylabel(ylabel=ylabel)
+    ax.set_xlabel(xlabel=xlabel)
+
+    # line at 1
+    ax.axhline(y=1, color="black", linestyle="--")
+    ax.set_title(title)
+    ax.legend()
+
+
+def plot_relative_swap_reduce() -> None:
+    DATAFRAMES = [pd.read_csv(file) for file in SWAP_REDUCE_DATA.values()]
+    LABELS = list(SWAP_REDUCE_DATA.keys())
+
+    fig, ax = plt.subplots(1, 1, figsize=calculate_figure_size(1, 1))
+    plot_relative(
+        ax,
+        DATAFRAMES,
+        "num_cnots",
+        "num_cnots_base",
+        labels=LABELS,
+        ylabel="Reulative Number of CNOTs",
+        xlabel="Number of Qubits",
+    )
+
+    output_file = "figures/swap_reduce/cnot_relative.pdf"
+
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(output_file, bbox_inches="tight")
 
 
 def main():
-    print("Plotting figures...")
     print("Plotting swap reduce...")
     plot_swap_reduce()
     print("Plotting dep min...")
     plot_dep_min()
     print("Plotting noisy scale...")
     plot_noisy_scale()
+    # plot_relative_swap_reduce()
 
 
 if __name__ == "__main__":

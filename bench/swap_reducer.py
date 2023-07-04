@@ -31,20 +31,21 @@ def main():
     from qiskit.providers.fake_provider import FakeMontrealV2
 
     result_dir = f"bench/results/swap_reduce"
-    # service = QiskitRuntimeService()
+    service = QiskitRuntimeService()
 
-    backend = FakeMontrealV2()
+    # backend = FakeMontrealV2()
 
     # TODO: use this once we have access
-    # backend = service.get_backend("ibmq_kolkata")
+    backend = service.get_backend("ibm_algiers")
+    runner = IBMBackendRunner(service)
     # runner = LocalBackendRunner()
-    runner = None
+    # runner = None
 
-    for layer in range(1, 4):
-        circuits = [two_local(i, layer) for i in range(4, backend.num_qubits, 2)]
-        bench_reduce_swap(
-            f"{result_dir}/2local_{layer}.csv", circuits, backend, layer, runner
-        )
+    # for layer in range(1, 4):
+    #     circuits = [two_local(i, layer) for i in range(4, backend.num_qubits, 2)]
+    #     bench_reduce_swap(
+    #         f"{result_dir}/2local_{layer}.csv", circuits, backend, layer, runner
+    #     )
 
     for degree in range(2, 4):
         circuits = [

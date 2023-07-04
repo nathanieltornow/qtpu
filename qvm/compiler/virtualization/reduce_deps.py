@@ -117,15 +117,14 @@ class GreedyDependencyBreaker(QubitDependencyReducer):
 
         instersect: dict[int, int] = {}
         for node in two_qubit_nodes:
-            instersect[node] = len(op_influences[node] - op_influenced_by[node]) + len(
-                op_influenced_by[node] - op_influences[node]
-            )
-            print(node, instersect[node])
+            instersect[node] = len(op_influenced_by[node]) * len(
+                op_influences[node]
+            ) - len(op_influenced_by[node] & op_influences[node])
 
         sorted_nodes = sorted(
             instersect, key=lambda node: instersect[node], reverse=True
         )
-        print(sorted_nodes)
+
         for node in sorted_nodes:
             if budget <= 0:
                 return
@@ -175,3 +174,14 @@ class QubitDependencyMinimizer(QubitDependencyReducer):
         #show vgate/1.
         """
         return asp
+
+
+def number_of_dependecies(dag: DAG) -> int:
+    num_deps = 0
+    for node in dag.nodes:
+        instr = dag.get_node_instr(node)
+        qubits = instr.qubits
+        if len(qubits) == 2:
+            q1, q2 = qubits
+            num_deps += len(dag.get_node_deps(node)) + 1
+    return num_deps

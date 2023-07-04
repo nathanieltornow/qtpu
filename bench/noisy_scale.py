@@ -72,16 +72,16 @@ def main() -> None:
     #         fragment_size=fragsize,
         # )
 
-    for layer, fragsize in zip(range(1, 4), [4, 7, 7]):
-        circuits = [vqe(i, layer) for i in range(4, 17, 2)]
-        bench_noisy_scale(
-            result_file=f"{result_dir}/vqe_{layer}.csv",
-            circuits=circuits,
-            backend=backend,
-            base_backend=base_backend,
-            runner=runner,
-            fragment_size=fragsize,
-        )
+    # for layer, fragsize in zip(range(1, 4), [4, 7, 7]):
+    #     circuits = [vqe(i, layer) for i in range(4, 17, 2)]
+    #     bench_noisy_scale(
+    #         result_file=f"{result_dir}/vqe_{layer}.csv",
+    #         circuits=circuits,
+    #         backend=backend,
+    #         base_backend=base_backend,
+    #         runner=runner,
+    #         fragment_size=fragsize,
+    #     )
 
     circuits = [two_local(i, 1) for i in range(4, 15, 2)]
     bench_noisy_scale(

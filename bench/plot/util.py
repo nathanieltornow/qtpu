@@ -10,10 +10,12 @@ LINE_STYLES = ["-", "--", "-.", ":", "-", "--", "-.", ":"]
 
 
 def plot_lines(ax, keys: list[str], labels: list[str], dataframes: list[pd.DataFrame]):
+    all_x = set()
     for ls, key in enumerate(keys):
         for df in dataframes:
             grouped_df = prepare_dataframe(df, key)
             x = grouped_df[X_KEY]
+            all_x.update(set(x))
             y_mean = grouped_df[key]["mean"]
             y_error = grouped_df[key]["sem"]
             if np.isnan(y_error).any():
@@ -35,7 +37,8 @@ def plot_lines(ax, keys: list[str], labels: list[str], dataframes: list[pd.DataF
                 capthick=1.5,
                 ecolor="black",
             )
-
+    x = sorted(list(all_x))
+    ax.set_xticks(x)
 
 def prepare_dataframe(df: pd.DataFrame, key: str) -> pd.DataFrame:
     res_df = df.loc[df[key] > 0.0]
@@ -49,12 +52,21 @@ def prepare_dataframe(df: pd.DataFrame, key: str) -> pd.DataFrame:
 
 
 def calculate_figure_size(num_rows, num_cols):
-    width = 4 * num_cols
-    height = 3 * num_rows
+    # Calculate the total number of axes in the plot
+    num_axes = num_rows * num_cols
 
-    if num_cols > 3:
-        width += math.ceil((num_cols - 3) / 2) / 2
-    if num_rows > 5:
-        height += math.ceil((num_rows - 5) / 2) / 2
+    # Determine the width and height of each axis
+    axis_width = 3.5  # Adjust as needed
+    axis_height = 2.6  # Adjust as needed
+
+    # Determine the width and height of the figure based on the number of axes
+    width = 1 * num_cols * axis_width
+    height = 1 * num_rows * axis_height
+
+    # # Adjust the figure size if there are more than 3 axes per row or 5 axes per column
+    # if num_cols > 3:
+    #     width += math.ceil((num_cols - 3) / 2) * axis_width
+    # if num_rows > 5:
+    #     height += math.ceil((num_rows - 5) / 2) * axis_height
 
     return width, height
