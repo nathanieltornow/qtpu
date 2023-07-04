@@ -37,18 +37,38 @@ def main():
 
     # TODO: use this once we have access
     # backend = service.get_backend("ibmq_kolkata")
-    runner = LocalBackendRunner()
+    runner = None
 
     # for layer in range(1, 4):
     #     circuits = [two_local(i, layer) for i in range(4, backend.num_qubits, 2)]
-    #     bench_dep_min(f"{result_dir}/2local_{layer}.csv", circuits, backend, layer)
+    #     bench_dep_min(
+    #         f"{result_dir}/2local_{layer}.csv", circuits, backend, layer, runner
+    #     )
 
-    for degree in range(2, 4):
+    # for degree in range(2, 4):
+    #     circuits = [
+    #         qaoa(nx.random_regular_graph(degree, i))
+    #         for i in range(4, backend.num_qubits, 2)
+    #     ]
+    #     bench_dep_min(
+    #         f"{result_dir}/qaoa_r{degree}.csv", circuits, backend, degree, runner
+    #     )
+        
+    circuits = [qaoa(nx.barbell_graph(i, 0)) for i in range(2, backend.num_qubits//2, 1)]
+    bench_dep_min(
+        f"{result_dir}/qaoa_b.csv", circuits, backend, 2, runner   
+    )
+
+    exit(0)
+
+    for degree in range(1, 4):
         circuits = [
-            qaoa(nx.random_regular_graph(degree, i))
-            for i in range(8, backend.num_qubits, 2)
+            qaoa(nx.barabasi_albert_graph(i, degree))
+            for i in range(4, backend.num_qubits, 2)
         ]
-        bench_dep_min(f"{result_dir}/qaoa_r{degree}.csv", circuits, backend, 3)
+        bench_dep_min(
+            f"{result_dir}/qaoa_ba{degree}.csv", circuits, backend, degree, runner
+        )
 
 
 if __name__ == "__main__":

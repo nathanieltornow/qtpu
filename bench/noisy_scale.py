@@ -36,8 +36,8 @@ def main() -> None:
 
     service = QiskitRuntimeService()
 
-    small_qpu = "ibm_perth"
-    large_qpu = "ibmq_guadalupe"
+    small_qpu = "ibm_algiers"
+    large_qpu = "ibm_algiers"
     result_dir = f"bench/results/noisy_scale/{small_qpu}_vs_{large_qpu}"
 
     # backend = FakePerth()
@@ -47,29 +47,30 @@ def main() -> None:
     base_backend = service.get_backend(large_qpu)
     base_backend = FakeGuadalupeV2()
 
-    runner = IBMBackendRunner(service=service)
-    # runner = LocalBackendRunner()
+    # runner = IBMBackendRunner(service=service)
+    runner = LocalBackendRunner()
+    # runner = None
 
-    circuits = [ghz(i) for i in range(4, 17, 2)]
-    bench_noisy_scale(
-        result_file=f"{result_dir}/ghz.csv",
-        circuits=circuits,
-        backend=backend,
-        base_backend=base_backend,
-        runner=runner,
-        fragment_size=4,
-    )
+    # circuits = [ghz(i) for i in range(4, 17, 2)]
+    # bench_noisy_scale(
+    #     result_file=f"{result_dir}/ghz.csv",
+    #     circuits=circuits,
+    #     backend=backend,
+    #     base_backend=base_backend,
+    #     runner=runner,
+    #     fragment_size=4,
+    # )
 
-    for layer, fragsize, max_circ in zip(range(1, 4), [4, 7, 7], [16, 14, 14]):
-        circuits = [hamsim(i, layer) for i in range(4, max_circ + 1, 2)]
-        bench_noisy_scale(
-            result_file=f"{result_dir}/hamsim_{layer}.csv",
-            circuits=circuits,
-            backend=backend,
-            base_backend=base_backend,
-            runner=runner,
-            fragment_size=fragsize,
-        )
+    # for layer, fragsize, max_circ in zip(range(1, 4), [4, 7, 7], [16, 14, 14]):
+    #     circuits = [hamsim(i, layer) for i in range(4, max_circ + 1, 2)]
+    #     bench_noisy_scale(
+    #         result_file=f"{result_dir}/hamsim_{layer}.csv",
+    #         circuits=circuits,
+    #         backend=backend,
+    #         base_backend=base_backend,
+    #         runner=runner,
+    #         fragment_size=fragsize,
+        # )
 
     for layer, fragsize in zip(range(1, 4), [4, 7, 7]):
         circuits = [vqe(i, layer) for i in range(4, 17, 2)]
