@@ -49,7 +49,7 @@ class VirtualCircuit:
             vgate = vgates.pop(-1)
             chunks = _chunk(merged_results, vgate.num_instantiations)
             merged_results = pool.starmap(
-                vgate.knit, zip(chunks, itertools.repeat(clbit_idx))
+                vgate.knit, list(zip(chunks, itertools.repeat(clbit_idx)))
             )
             clbit_idx -= 1
         return merged_results[0]
