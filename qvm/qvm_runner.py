@@ -14,7 +14,7 @@ from qiskit_ibm_runtime import (
     RuntimeJob,
 )
 from qiskit_ibm_runtime.options import Options, SimulatorOptions, ExecutionOptions
-from qiskit_aer import AerSimulator
+from qiskit_aer import AerSimulator, AerJob
 from qiskit_aer.noise import NoiseModel
 
 from qvm.compiler.dag import DAG
@@ -110,33 +110,26 @@ class IBMBackendRunner(QVMBackendRunner):
 
 class LocalBackendRunner(QVMBackendRunner):
     def __init__(self) -> None:
-        self._samplers: dict[str, BackendSampler] = {}
-        self._samplers["simulator"] = BackendSampler(AerSimulator())
-        self._jobs: dict[str, RuntimeJob] = {}
+        self._simulator = AerSimulator()
+        self._jobs: dict[str, AerJob] = {}
         super().__init__()
-
-    def _sampler_from_backend(self, backend: BackendV2 | None = None) -> BackendSampler:
-        if backend is None:
-            return self._samplers["simulator"]
-        if backend.name not in self._samplers:
-            self._samplers[backend.name] = BackendSampler(
-                AerSimulator.from_backend(backend)
-            )
-        return self._samplers[backend.name]
 
     def run(
         self,
         circuits: list[QuantumCircuit],
         backend: BackendV2 | None = None,
     ) -> str:
-        noise_model, coupling_map = None, None
+        noise_model, coupling_map, basis_gates = None, None, None
         if backend is not None:
             circuits = [transpile_circuit(circ, backend) for circ in circuits]
+            coupling_map = backend.coupling_map.get_edges()
+            noise_model = NoiseModel.from_backend(backend)
+            basis_gates = ["cx", "id", "rz", "sx", "x"]
 
-        sampler = self._sampler_from_backend(backend)
-        job = sampler.run(
+        job = self._simulator.run(
             circuits,
             shots=DEFAULT_SHOTS,
+            baisis_gates=basis_gates,
             noise_model=noise_model,
             coupling_map=coupling_map,
         )
@@ -146,7 +139,9 @@ class LocalBackendRunner(QVMBackendRunner):
 
     def get_results(self, job_id: str) -> list[QuasiDistr]:
         job = self._jobs[job_id]
-        return [QuasiDistr(dist) for dist in job.result().quasi_dists]
+        counts = job.result().get_counts()
+        counts = [counts] if isinstance(counts, dict) else counts
+        return [QuasiDistr.from_counts(count) for count in counts]
 
 
 def transpile_circuit(circuit: QuantumCircuit, backend: BackendV2) -> QuantumCircuit:
