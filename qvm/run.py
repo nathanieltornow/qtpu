@@ -47,9 +47,11 @@ def run_virtualizer(
 
     logger.info(f"Knitting...")
 
-    with Pool() as pool:
+    with Pool(processes=8) as pool:
         now = perf_counter()
         res_dist = virt.knit(results, pool)
         knit_time = perf_counter() - now
+        
+    logger.info(f"Knitted in {knit_time:.2f}s.")
 
     return res_dist.nearest_probability_distribution(), RunTimeInfo(run_time, knit_time)

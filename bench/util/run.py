@@ -144,7 +144,12 @@ def _virtualizer_stats(
     virtualizer: VirtualCircuit, backend: BackendV2
 ) -> tuple[int, int]:
     frag_circs = list(virtualizer.fragment_circuits.values())
-    frag_circs = [transpile(circ, backend, optimization_level=3) for circ in frag_circs]
+    try:
+        frag_circs = [
+            transpile(circ, backend, optimization_level=3) for circ in frag_circs
+        ]
+    except Exception:
+        return 0, 0
     num_cnots = sum(get_num_cnots(circ) for circ in frag_circs)
     depth = max(circ.depth() for circ in frag_circs)
     return num_cnots, depth

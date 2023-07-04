@@ -32,7 +32,7 @@ def bench_noisy_scale(
 
 def main() -> None:
     from qiskit_ibm_runtime import QiskitRuntimeService
-    from qiskit.providers.fake_provider import FakeGuadalupeV2
+    from qiskit.providers.fake_provider import FakeGuadalupeV2, FakePerth
 
     service = QiskitRuntimeService()
 
@@ -40,11 +40,15 @@ def main() -> None:
     large_qpu = "ibmq_guadalupe"
     result_dir = f"bench/results/noisy_scale/{small_qpu}_vs_{large_qpu}"
 
+    # backend = FakePerth()
+    # base_backend = FakeGuadalupeV2()
+
     backend = service.get_backend(small_qpu)
+    base_backend = service.get_backend(large_qpu)
     base_backend = FakeGuadalupeV2()
 
-    # runner = IBMBackendRunner(service=service, simulate_qpus=False)
-    runner = LocalBackendRunner()
+    runner = IBMBackendRunner(service=service)
+    # runner = LocalBackendRunner()
 
     circuits = [ghz(i) for i in range(4, 17, 2)]
     bench_noisy_scale(

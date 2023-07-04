@@ -61,14 +61,23 @@ def main() -> None:
 
     frag_size = 10
 
-    circuits = [hamsim(i, 1) for i in range(frag_size, 51, 10)]
+    circuits = [hamsim(i, 1) for i in range(frag_size, 51, frag_size)]
     bench_scale_sim(
         result_file=f"{result_dir}/hamsim_1_{frag_size}.csv",
         circuits=circuits,
         runner=runner,
         fragment_size=frag_size,
-        sim_limit=20,
+        sim_limit=10,
     )
+
+    # circuits = [hamsim(i, 2) for i in range(frag_size, 31, 10)]
+    # bench_scale_sim(
+    #     result_file=f"{result_dir}/hamsim_2_{frag_size}.csv",
+    #     circuits=circuits,
+    #     runner=runner,
+    #     fragment_size=frag_size,
+    #     sim_limit=10,
+    # )
 
 
 if __name__ == "__main__":
