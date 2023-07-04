@@ -41,10 +41,10 @@ def main() -> None:
     result_dir = f"bench/results/noisy_scale/{small_qpu}_vs_{large_qpu}"
 
     backend = service.get_backend(small_qpu)
-    base_backend = service.get_backend(large_qpu)
+    base_backend = FakeGuadalupeV2()
 
-    runner = IBMBackendRunner(service=service, simulate_qpus=False)
-    # runner = LocalBackendRunner()
+    # runner = IBMBackendRunner(service=service, simulate_qpus=False)
+    runner = LocalBackendRunner()
 
     circuits = [ghz(i) for i in range(4, 17, 2)]
     bench_noisy_scale(
