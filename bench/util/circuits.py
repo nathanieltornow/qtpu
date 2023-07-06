@@ -26,8 +26,15 @@ def vqe(num_qubits: int, reps: int = 1) -> QuantumCircuit:
     ansatz = RealAmplitudes(num_qubits, reps=reps, entanglement="reverse_linear")
     vqe = VQE(ansatz=ansatz, optimizer=SLSQP(maxiter=25), estimator=Estimator())
 
-    vqe_result = vqe.compute_minimum_eigenvalue(qp.to_ising()[0])
-    qc = vqe.ansatz.bind_parameters(vqe_result.optimal_point)
+    vqe._check_operator_ansatz(qp.to_ising()[0])
+    qc = vqe.ansatz.bind_parameters(np.random.rand(vqe.ansatz.num_parameters))
+
+    if num_qubits <= 16:
+        qaoa_result = vqe.compute_minimum_eigenvalue(qp.to_ising()[0])
+        qc = vqe.ansatz.bind_parameters(qaoa_result.optimal_point)
+
+    # vqe_result = vqe.compute_minimum_eigenvalue(qp.to_ising()[0])
+    # qc = vqe.ansatz.bind_parameters(vqe_result.optimal_point)
 
     _measure_all(qc)
     qc.name = "vqe"
@@ -55,7 +62,7 @@ def two_local(
 
 
 def qft(num_qubits: int, approx: int = 0) -> QuantumCircuit:
-    circuit = QFT(num_qubits, approximation_degree=approx, do_swaps=False)
+    circuit = QFT(num_qubits, approximation_degree=num_qubits - approx, do_swaps=False)
     _measure_all(circuit)
     return circuit.decompose()
 
@@ -216,7 +223,7 @@ def dj(n: int, balanced: bool = True) -> QuantumCircuit:
     qc = dj_algorithm(oracle_gate, n)
     qc.name = "dj"
 
-    return qc
+    return qc.decompose().decompose()
 
 
 def get_examplary_max_cut_qp(n_nodes: int, degree: int = 1) -> QuadraticProgram:
@@ -237,17 +244,28 @@ if __name__ == "__main__":
     import itertools
     from qiskit.compiler import transpile
 
-    layers = [1, 2, 3]
-    num_qubits = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26]
+    # name = "vqe"
 
-    for layer, nq in itertools.product(layers, num_qubits):
-        circuit = transpile(
-            vqe(nq, layer), basis_gates=["cx", "sx", "rz", "x"], optimization_level=3
-        )
-        qasm = circuit.qasm()
+    # for layer in [1, 2, 3]:
+    #     dirname = f"bench/circuits/{name}_{layer}"
+    #     os.makedirs(dirname, exist_ok=True)
 
-        file_name = f"bench/qasm/vqe_{layer}_{nq}.qasm"
-        os.makedirs(os.path.dirname(file_name), exist_ok=True)
+    #     circuits = [vqe(i, layer) for i in range(4, 30, 2)]
+    #     circuits += [vqe(i, layer) for i in range(30, 101, 10)]
 
-        with open(file_name, "w") as f:
-            f.write(qasm)
+    #     for circ in circuits:
+    #         with open(f"{dirname}/{circ.num_qubits}.qasm", "w") as f:
+    #             f.write(circ.qasm())
+
+    name = "ghz"
+
+    for layer in [1]:
+        dirname = f"bench/circuits/{name}"
+        os.makedirs(dirname, exist_ok=True)
+
+        circuits = [ghz(i) for i in range(6, 30, 2)]
+        circuits += [ghz(i) for i in range(30, 101, 10)]
+
+        for circ in circuits:
+            with open(f"{dirname}/{circ.num_qubits}.qasm", "w") as f:
+                f.write(circ.qasm())

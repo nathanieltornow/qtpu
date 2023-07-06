@@ -25,7 +25,7 @@ def plot_swap_reduce() -> None:
     plot_dataframes(
         dataframes=dfs,
         keys=["num_cnots", "num_cnots_base"],
-        labels=["SWAP Reduced", "Baseline"],
+        labels=["Ours", "Baseline"],
         titles=titles,
         ylabel="Number of CNOTs",
         xlabel="Number of Qubits",
@@ -34,7 +34,7 @@ def plot_swap_reduce() -> None:
     plot_dataframes(
         dataframes=dfs,
         keys=["depth", "depth_base"],
-        labels=["SWAP Reduced", "Baseline"],
+        labels=["Ours", "Baseline"],
         titles=titles,
         ylabel="Circuit Depth",
         xlabel="Number of Qubits",
@@ -43,7 +43,7 @@ def plot_swap_reduce() -> None:
 
     plot_dataframes(
         dataframes=dfs,
-        keys=["tv_fid", "tv_fid_base"],
+        keys=["h_fid", "h_fid_base"],
         labels=["Ours", "Baseline"],
         titles=titles,
         ylabel="Fidelity",
@@ -77,7 +77,7 @@ def plot_dep_min() -> None:
 
     plot_dataframes(
         dataframes=dfs,
-        keys=["tv_fid", "tv_fid_base"],
+        keys=["h_fid", "h_fid_base"],
         labels=["Ours", "Baseline"],
         titles=titles,
         ylabel="Fidelity",
@@ -98,7 +98,7 @@ def plot_noisy_scale() -> None:
         ylabel="Number of CNOTs",
         xlabel="Number of Qubits",
         output_file="figures/noisy_scale/algiers_cnot.pdf",
-        nrows=2,
+        nrows=3,
     )
     plot_dataframes(
         dataframes=dfs,
@@ -108,17 +108,17 @@ def plot_noisy_scale() -> None:
         ylabel="Circuit Depth",
         xlabel="Number of Qubits",
         output_file="figures/noisy_scale/algiers_depth.pdf",
-        nrows=2,
+        nrows=3,
     )
     plot_dataframes(
         dataframes=dfs,
-        keys=["tv_fid", "tv_fid_base"],
+        keys=["h_fid", "h_fid_base"],
         labels=["Ours", "Baseline"],
         titles=titles,
         ylabel="Fidelity",
         xlabel="Number of Qubits",
         output_file="figures/noisy_scale/algiers_fid.pdf",
-        nrows=2,
+        nrows=3,
     )
 
 
@@ -140,7 +140,7 @@ def plot_dataframes(
     axis = [fig.add_subplot(gs[i, j]) for i in range(nrows) for j in range(ncols)]
 
     for i, ax in enumerate(axis):
-        if i % nrows == 0:
+        if i % ncols == 0:
             ax.set_ylabel(ylabel=ylabel)
         if i >= len(axis) - ncols:
             ax.set_xlabel(xlabel=xlabel)

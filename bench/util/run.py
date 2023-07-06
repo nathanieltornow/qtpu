@@ -10,6 +10,7 @@ from qvm.qvm_runner import QVMBackendRunner
 from qvm.run import run_virtualizer
 from qvm.virtual_circuit import VirtualCircuit
 from qvm.compiler import CutCompiler
+from qvm.compiler.dag import DAG
 
 
 from ._util import compute_fidelity, get_num_cnots, append_dict_to_csv

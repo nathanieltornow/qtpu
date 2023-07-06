@@ -1,4 +1,2 @@
 num_qubits,num_vgates,num_wire_cuts,num_vgates_qr
-10,6,8,2
-14,6,11,3
-10,6,8,2
+14,8,11,8

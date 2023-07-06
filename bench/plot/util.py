@@ -52,21 +52,14 @@ def prepare_dataframe(df: pd.DataFrame, key: str) -> pd.DataFrame:
 
 
 def calculate_figure_size(num_rows, num_cols):
-    # Calculate the total number of axes in the plot
-    num_axes = num_rows * num_cols
+    subplot_width_inches = 3.0  # Adjust this value based on your desired subplot width
 
-    # Determine the width and height of each axis
-    axis_width = 3.5  # Adjust as needed
-    axis_height = 2.6  # Adjust as needed
+    # Define the number of columns and rows of subplots
+    num_cols = 2
+    num_rows = 3
 
-    # Determine the width and height of the figure based on the number of axes
-    width = 1 * num_cols * axis_width
-    height = 1 * num_rows * axis_height
+    # Calculate the total width and height based on the subplot width and number of columns and rows
+    fig_width_inches = subplot_width_inches * num_cols
+    fig_height_inches = fig_width_inches / 1.618 * num_rows  # Incorporate the golden ratio (1.618) for the height
 
-    # # Adjust the figure size if there are more than 3 axes per row or 5 axes per column
-    # if num_cols > 3:
-    #     width += math.ceil((num_cols - 3) / 2) * axis_width
-    # if num_rows > 5:
-    #     height += math.ceil((num_rows - 5) / 2) * axis_height
-
-    return width, height
+    return fig_width_inches, fig_height_inches
