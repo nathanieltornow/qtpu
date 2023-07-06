@@ -114,7 +114,7 @@ class DAG(nx.DiGraph):
             depends_on[qubit].discard(qubit)
         return depends_on
 
-    def num_qubit_dependencies(self) -> int:
+    def num_dependencies(self) -> int:
         return sum(len(deps) for deps in self.qubit_dependencies().values())
 
     def add_instr_node(self, instr: CircuitInstruction) -> int:

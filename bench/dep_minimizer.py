@@ -6,8 +6,8 @@ from qvm.qvm_runner import QVMBackendRunner, IBMBackendRunner, LocalBackendRunne
 from qvm.compiler.virtualization.reduce_deps import QubitDependencyMinimizer
 
 from util.run import Benchmark, run_benchmark
-from util.circuits import two_local, qaoa, qft, dj
 from util._util import enable_logging
+from circuits import get_circuits, BENCHMARKS
 
 
 def bench_dep_min(
@@ -30,7 +30,9 @@ def main():
     # from qiskit_ibm_runtime import QiskitRuntimeService
     from qiskit.providers.fake_provider import FakeMontrealV2
 
-    result_dir = f"bench/results/dep_min"
+    NUM_VGATES = 3
+
+    result_dir = f"bench/results/dep_min/{NUM_VGATES}"
     # service = QiskitRuntimeService()
 
     backend = FakeMontrealV2()
@@ -39,45 +41,10 @@ def main():
     # backend = service.get_backend("ibmq_kolkata")
     runner = None
 
-    # for layer in range(1, 4):
-    #     circuits = [two_local(i, layer) for i in range(4, backend.num_qubits, 2)]
-    #     bench_dep_min(
-    #         f"{result_dir}/2local_{layer}.csv", circuits, backend, layer, runner
-    #     )
-
-    # for degree in range(2, 4):
-    #     circuits = [
-    #         qaoa(nx.random_regular_graph(degree, i))
-    #         for i in range(4, backend.num_qubits, 2)
-    #     ]
-    #     bench_dep_min(
-    #         f"{result_dir}/qaoa_r{degree}.csv", circuits, backend, degree, runner
-    #     )
-
-    # for degree in range(2, 4):
-    #     circuits = [qft(i, degree) for i in range(4, backend.num_qubits, 2)]
-    #     bench_dep_min(
-    #         f"{result_dir}/qft_{degree}.csv", circuits, backend, 3, runner
-    #     )
-        
-    circuits = [dj(i) for i in range(8, backend.num_qubits, 2)]
-    bench_dep_min(f"{result_dir}/dj.csv", circuits, backend, 3, runner)
-
-    
-    # circuits = [qaoa(nx.barbell_graph(i, 0)) for i in range(2, backend.num_qubits//2, 1)]
-    # bench_dep_min(
-    #     f"{result_dir}/qaoa_b.csv", circuits, backend, 2, runner   
-    # )
-
-    exit(0)
-
-    for degree in range(1, 4):
-        circuits = [
-            qaoa(nx.barabasi_albert_graph(i, degree))
-            for i in range(4, backend.num_qubits, 2)
-        ]
+    for benchname in BENCHMARKS:
+        circuits = get_circuits(benchname, (6, backend.num_qubits))
         bench_dep_min(
-            f"{result_dir}/qaoa_ba{degree}.csv", circuits, backend, degree, runner
+            f"{result_dir}/{benchname}.csv", circuits, backend, NUM_VGATES, runner
         )
 
 

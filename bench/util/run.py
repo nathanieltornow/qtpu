@@ -36,6 +36,8 @@ class BenchmarkResult:
     num_cnots_base: int = 0
     depth: int = 0
     depth_base: int = 0
+    num_deps: int = 0
+    num_deps_base: int = 0
     num_vgates: int = 0
     num_fragments: int = 0
     num_instances: int = 0
@@ -78,8 +80,12 @@ def _run_experiment(
 
     t_circ = transpile(original_circuit, backend=base_backend, optimization_level=3)
 
-    num_cnots, depth = _virtualizer_stats(virt, backend)
-    num_cnots_base, depth_base = get_num_cnots(t_circ), t_circ.depth()
+    num_cnots, depth, num_deps = _virtualizer_stats(virt, backend)
+    num_cnots_base, depth_base, num_deps_base = (
+        get_num_cnots(t_circ),
+        t_circ.depth(),
+        DAG(original_circuit).num_dependencies(),
+    )
     num_vgates = len(virt._vgate_instrs)
     num_fragments = len(virt.fragment_circuits)
 
@@ -95,6 +101,8 @@ def _run_experiment(
             num_cnots_base=num_cnots_base,
             depth=depth,
             depth_base=depth_base,
+            num_deps=num_deps,
+            num_deps_base=num_deps_base,
             num_vgates=num_vgates,
             num_fragments=num_fragments,
             num_instances=num_instances,
@@ -143,14 +151,18 @@ def _run_experiment(
 
 def _virtualizer_stats(
     virtualizer: VirtualCircuit, backend: BackendV2
-) -> tuple[int, int]:
+) -> tuple[int, int, int]:
     frag_circs = list(virtualizer.fragment_circuits.values())
+    num_deps = max(DAG(circ).num_dependencies() for circ in frag_circs)
+
     try:
         frag_circs = [
             transpile(circ, backend, optimization_level=3) for circ in frag_circs
         ]
     except Exception:
-        return 0, 0
-    num_cnots = sum(get_num_cnots(circ) for circ in frag_circs)
+        print("Transpilation failed")
+        return 0, 0, 0
+    num_cnots = max(get_num_cnots(circ) for circ in frag_circs)
     depth = max(circ.depth() for circ in frag_circs)
-    return num_cnots, depth
+
+    return num_cnots, depth, num_deps

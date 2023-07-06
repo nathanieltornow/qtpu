@@ -20,6 +20,61 @@ DEP_MIN_DATA = {
     "QAOA-3": "bench/results/dep_min/qaoa_r3.csv",
 }
 
+DEP_MIN_DATA_2 = {
+    "BV": "bench/results/dep_min/2/bv.csv",
+    "QSVM": "bench/results/dep_min/2/qsvm.csv",
+    
+    # "W": "bench/results/dep_min/2/wstate.csv",
+    # "GHZ": "bench/results/dep_min/2/ghz.csv",
+    # "HS-1": "bench/results/dep_min/2/hamsim_1.csv",
+    "HS-2": "bench/results/dep_min/2/hamsim_2.csv",
+    "VQE-2": "bench/results/dep_min/2/vqe_2.csv",
+    # "HS-3": "bench/results/dep_min/2/hamsim_3.csv",
+    # "QAOA-B": "bench/results/dep_min/2/qaoa_b.csv",
+    
+    # "QAOA-4": "bench/results/dep_min/2/qaoa_ba4.csv",
+    "TL-1": "bench/results/dep_min/2/twolocal_1.csv",
+    "TL-2": "bench/results/dep_min/2/twolocal_2.csv",
+    "TL-3": "bench/results/dep_min/2/twolocal_3.csv",
+    # "VQE-1": "bench/results/dep_min/2/vqe_1.csv",
+    
+    # "VQE-3": "bench/results/dep_min/2/vqe_3.csv",
+    
+    # "QAOA-2": "bench/results/dep_min/2/qaoa_r2.csv",
+    "QAOA-R3": "bench/results/dep_min/2/qaoa_r3.csv",
+    "QAOA-B": "bench/results/dep_min/2/qaoa_b.csv",
+
+    # "QAOA-3": "bench/results/dep_min/2/qaoa_r4.csv",
+}
+
+DEP_MIN_DATA_3 = {
+    "BV": "bench/results/dep_min/3/bv.csv",
+    # "QSVM": "bench/results/dep_min/3/qsvm.csv",
+    
+    # "W": "bench/results/dep_min/2/wstate.csv",
+    # "GHZ": "bench/results/dep_min/2/ghz.csv",
+    # "HS-1": "bench/results/dep_min/2/hamsim_1.csv",
+    "HS-3": "bench/results/dep_min/3/hamsim_3.csv",
+    # "VQE-3": "bench/results/dep_min/3/vqe_2.csv",
+    # "HS-3": "bench/results/dep_min/2/hamsim_3.csv",
+    # "QAOA-B": "bench/results/dep_min/2/qaoa_b.csv",
+    
+    # "QAOA-4": "bench/results/dep_min/2/qaoa_ba4.csv",
+    
+    # "TL-1": "bench/results/dep_min/3/twolocal_1.csv",
+    # "TL-2": "bench/results/dep_min/3/twolocal_2.csv",
+    # "TL-3": "bench/results/dep_min/3/twolocal_3.csv",
+    
+    # "VQE-1": "bench/results/dep_min/2/vqe_1.csv",
+    
+    # "VQE-3": "bench/results/dep_min/2/vqe_3.csv",
+    
+    "QAOA-2": "bench/results/dep_min/2/qaoa_2.csv",
+    "QAOA-3": "bench/results/dep_min/2/qaoa_3.csv",
+    # "QAOA-3": "bench/results/dep_min/2/qaoa_r4.csv",
+}
+
+
 NOISE_SCALE_ALGIERS_DATA = {
     "GHZ": "bench/results/noisy_scale/ibm_algiers_vs_ibm_algiers/ghz.csv",
     # "HamSim (1-rep)": "bench/results/noisy_scale/ibm_algiers_vs_ibm_algiers/hamsim_1.csv",

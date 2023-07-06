@@ -27,7 +27,7 @@ hatches = [
     "/",
     "\\\\\\",
     "o",
-    "///"
+    "///",
 ]
 
 
@@ -110,10 +110,7 @@ def plot_bars(
         if np.isnan(yerr).any():
             yerr = None
 
-        color, hatch = colors[i], hatches[i]
-
-        if labels[i] in styles:
-            color, hatch = styles[labels[i]]
+        color, hatch = colors[i % len(colors)], hatches[i % len(hatches)]
 
         ax.bar(
             x + (i * bar_width),
@@ -236,7 +233,7 @@ def plot_swap_reduce():
         num_key="depth",
         denom_key="depth_base",
         xlabel="Number of Qubits",
-        ylabel="Relative CNOTs",
+        ylabel="Relative Depth",
         title="(a) Depth (lower is better)",
     )
     ax0.yaxis.set_major_locator(ticker.MultipleLocator(base=0.5))
@@ -262,48 +259,72 @@ def plot_swap_reduce():
     plt.savefig("figures/swap_reduce/plot.pdf", bbox_inches="tight")
 
 
+def plot_dep_min():
+    from data import DEP_MIN_DATA_2
+
+    dfs = [pd.read_csv(file) for file in DEP_MIN_DATA_2.values()]
+    labels = list(DEP_MIN_DATA_2.keys())
+
+    fig = plt.figure(figsize=(12.5, 2.8))
+    
+    xvalues=[8, 16, 24]
+
+    gs = gridspec.GridSpec(nrows=1, ncols=2)
+    ax0 = fig.add_subplot(gs[0, 0])
+    ax1 = fig.add_subplot(gs[0, 1])
+    # ax2 = fig.add_subplot(gs[0, 2])
+
+    # plot_relative(
+    #     ax=ax0,
+    #     dataframes=dfs,
+    #     labels=labels,
+    #     xkey="num_qubits",
+    #     xvalues=xvalues,
+    #     num_key="num_cnots",
+    #     denom_key="num_cnots_base",
+    #     xlabel="Number of Qubits",
+    #     ylabel="Relative CNOTs",
+    #     title="(a) CNOTs (lower is better)",
+    # )
+    
+    plot_relative(
+        ax=ax1,
+        dataframes=dfs,
+        labels=labels,
+        xkey="num_qubits",
+        xvalues=xvalues,
+        num_key="depth",
+        denom_key="depth_base",
+        xlabel="Number of Qubits",
+        ylabel="Relative Depth",
+        title="(b) Depth (lower is better)",
+    )
+    
+    plot_relative(
+        ax=ax0,
+        dataframes=dfs,
+        labels=labels,
+        xkey="num_qubits",
+        xvalues=xvalues,
+        num_key="num_deps",
+        denom_key="num_deps_base",
+        xlabel="Number of Qubits",
+        ylabel="Relative Qubit Deps",
+        title="(a) Qubit Dependencies (lower is better)",
+    )
+
+    ax1.yaxis.set_major_locator(ticker.MultipleLocator(base=0.5))
+    ax0.yaxis.set_major_locator(ticker.MultipleLocator(base=0.5))
+
+
+    handles, labels = ax0.get_legend_handles_labels()
+    nrows = 1
+    ncols = len(labels) // nrows
+    fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, -0.1 * nrows), ncol=ncols)
+
+    plt.tight_layout()
+    plt.savefig("figures/dep_min/overall_depmin.pdf", bbox_inches="tight")
+
+
 # plot_noisy_scale()
-plot_swap_reduce()
-
-# dfs = [pd.read_csv(file) for file in SWAP_REDUCE_DATA.values()]
-# labels = list(SWAP_REDUCE_DATA.keys())
-
-# from util import calculate_figure_size
-
-# aspect_ratio = 1.618
-
-# # Define the width of the figure in inches
-# # fig_width_inches = 8.5  # Adjust this value based on your paper's width requirements
-
-# # # Calculate the height of the figure based on the aspect ratio
-# # fig_height_inches = fig_width_inches / aspect_ratio
-
-
-# fig = plt.figure(figsize=(5, 3))
-# gs = gridspec.GridSpec(nrows=1, ncols=1)
-# ax0 = fig.add_subplot(gs[0, 0])
-# # ax1 = fig.add_subplot(gs[0, 1])
-# # ax2 = fig.add_subplot(gs[0, 2])
-
-# plot_relative(
-#     ax0,
-#     dfs,
-#     labels,
-#     "num_cnots_base",
-#     "num_cnots",
-#     "Number of Qubits",
-#     "Relative Number of CNOTs",
-#     title="(a) CNOTs",
-# )
-# # plot_relative(ax1, dfs, labels)
-
-# ax0.set_ylim(bottom=0.9)
-# # ax1.set_ylim(bottom=0.9)
-
-
-# handles, labels = ax0.get_legend_handles_labels()
-# fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, -0.07), ncol=5)
-
-
-# plt.tight_layout()
-# plt.savefig("figures/swap_reduce/cnot_relative_bar.pdf", bbox_inches="tight")
+plot_dep_min()

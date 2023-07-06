@@ -1,4 +1,5 @@
 import random
+import os
 
 import numpy as np
 import networkx as nx
@@ -10,6 +11,58 @@ from qiskit.circuit.library import RealAmplitudes, TwoLocal, QFT
 from qiskit.primitives import Estimator, Sampler
 from qiskit_optimization import QuadraticProgram
 from qiskit_optimization.applications import Maxcut
+from qiskit.converters import circuit_to_dag, dag_to_circuit
+
+
+BENCHMARK_CIRCUITS = [
+    "adder",
+    # "qaoa_r2",
+    # "qaoa_r3",
+    # "qaoa_r4",
+    "bv",
+    # "ghz",
+    # # "hamsim_1",
+    # # "hamsim_2",
+    # # "hamsim_3",
+    # # "qaoa_b",
+    # # "qaoa_ba1",
+    # # "qaoa_ba2",
+    # # "qaoa_ba3",
+    # # "qaoa_ba4",
+    # # "qsvm",
+    # # "twolocal_1",
+    # # "twolocal_2",
+    # # "twolocal_3",
+    # # "vqe_1",
+    # # "vqe_2",
+    # # "vqe_3",
+    # "wstate",
+]
+
+
+def get_circuits(benchname: str, qubit_range: tuple[int, int]) -> list[QuantumCircuit]:
+    abs_path = os.path.dirname(os.path.abspath(__file__))
+    circuits_dir = os.path.join(abs_path, benchname)
+    files = [
+        fname
+        for fname in os.listdir(circuits_dir)
+        if fname.endswith(".qasm")
+        and fname.split(".")[0].isdigit()
+        and int(fname.split(".")[0]) in range(*qubit_range)
+    ]
+    if len(files) == 0:
+        raise ValueError("No circuits found for the given qubit range.")
+    circuits = sorted(
+        [
+            QuantumCircuit.from_qasm_file(os.path.join(circuits_dir, fname))
+            for fname in files
+        ],
+        key=lambda x: x.num_qubits,
+    )
+    dags = [circuit_to_dag(circ) for circ in circuits]
+    for dag in dags:
+        dag.remove_all_ops_named("barrier")
+    return [dag_to_circuit(dag) for dag in dags]
 
 
 def _measure_all(circuit: QuantumCircuit) -> None:
@@ -257,14 +310,14 @@ if __name__ == "__main__":
     #         with open(f"{dirname}/{circ.num_qubits}.qasm", "w") as f:
     #             f.write(circ.qasm())
 
-    name = "ghz"
+    name = "qaoa"
 
     for layer in [1]:
-        dirname = f"bench/circuits/{name}"
+        dirname = f"bench/circuits/{name}_b"
         os.makedirs(dirname, exist_ok=True)
 
-        circuits = [ghz(i) for i in range(6, 30, 2)]
-        circuits += [ghz(i) for i in range(30, 101, 10)]
+        circuits = [qaoa(nx.barbell_graph(i, 0)) for i in range(3, 15, 1)]
+        circuits += [qaoa(nx.barbell_graph(i, 0)) for i in range(15, 51, 5)]
 
         for circ in circuits:
             with open(f"{dirname}/{circ.num_qubits}.qasm", "w") as f:
