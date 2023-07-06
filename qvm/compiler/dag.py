@@ -91,6 +91,32 @@ class DAG(nx.DiGraph):
             circuit.append(instr)
         return circuit
 
+    def qubit_dependencies(self) -> dict[Qubit, set[Qubit]]:
+        depends_on: dict[Qubit, set[Qubit]] = {qubit: set() for qubit in self.qubits}
+        for node in nx.topological_sort(self):
+            instr = self.get_node_instr(node)
+            qubits = instr.qubits
+            if len(qubits) == 1 or isinstance(instr.operation, Barrier):
+                continue
+            elif len(qubits) == 2:
+                q1, q2 = qubits
+
+                add1 = depends_on[q2].copy()
+                add1.add(q2)
+                add2 = depends_on[q1].copy()
+                add2.add(q1)
+
+                depends_on[q1].update(add1)
+                depends_on[q2].update(add2)
+            else:
+                raise ValueError("More than 2 qubits in instruction")
+        for qubit in self.qubits:
+            depends_on[qubit].discard(qubit)
+        return depends_on
+
+    def num_qubit_dependencies(self) -> int:
+        return sum(len(deps) for deps in self.qubit_dependencies().values())
+
     def add_instr_node(self, instr: CircuitInstruction) -> int:
         new_id = max(self.nodes) + 1 if len(self.nodes) > 0 else 0
         self.add_node(new_id, instr=instr)

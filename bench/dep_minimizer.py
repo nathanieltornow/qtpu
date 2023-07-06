@@ -6,7 +6,7 @@ from qvm.qvm_runner import QVMBackendRunner, IBMBackendRunner, LocalBackendRunne
 from qvm.compiler.virtualization.reduce_deps import QubitDependencyMinimizer
 
 from util.run import Benchmark, run_benchmark
-from util.circuits import two_local, qaoa
+from util.circuits import two_local, qaoa, qft, dj
 from util._util import enable_logging
 
 
@@ -53,11 +53,21 @@ def main():
     #     bench_dep_min(
     #         f"{result_dir}/qaoa_r{degree}.csv", circuits, backend, degree, runner
     #     )
+
+    # for degree in range(2, 4):
+    #     circuits = [qft(i, degree) for i in range(4, backend.num_qubits, 2)]
+    #     bench_dep_min(
+    #         f"{result_dir}/qft_{degree}.csv", circuits, backend, 3, runner
+    #     )
         
-    circuits = [qaoa(nx.barbell_graph(i, 0)) for i in range(2, backend.num_qubits//2, 1)]
-    bench_dep_min(
-        f"{result_dir}/qaoa_b.csv", circuits, backend, 2, runner   
-    )
+    circuits = [dj(i) for i in range(8, backend.num_qubits, 2)]
+    bench_dep_min(f"{result_dir}/dj.csv", circuits, backend, 3, runner)
+
+    
+    # circuits = [qaoa(nx.barbell_graph(i, 0)) for i in range(2, backend.num_qubits//2, 1)]
+    # bench_dep_min(
+    #     f"{result_dir}/qaoa_b.csv", circuits, backend, 2, runner   
+    # )
 
     exit(0)
 

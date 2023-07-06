@@ -1,5 +1,6 @@
 from dataclasses import dataclass, asdict
 
+import networkx as nx
 from qiskit.circuit import QuantumCircuit
 from tqdm import tqdm
 
@@ -81,18 +82,34 @@ def run_overhead_comparison(
 
 
 def two_local_comp(layers: int):
-    circuits = [two_local(i, layers) for i in [10, 14, 19]]
+    circuits = [two_local(13, layers)]
     run_overhead_comparison(
         f"bench/results/cut_comp/two_local_{layers}.csv", circuits, QPU_SIZE
     )
 
 
 def hamsim_comp(layers: int):
-    circuits = [hamsim(i, layers) for i in [10, 14, 19]]
+    circuits = [hamsim(13, layers)]
     run_overhead_comparison(
         f"bench/results/cut_comp/hamsim_{layers}.csv", circuits, QPU_SIZE
     )
 
 
+def qaoa_comp(degree: int):
+    circuits = [qaoa(nx.random_regular_graph(degree, 14))]
+    run_overhead_comparison(
+        f"bench/results/cut_comp/qaoa_{degree}.csv", circuits, QPU_SIZE
+    )
+
+
 if __name__ == "__main__":
-    two_local_comp(3)
+    # hamsim_comp(1)
+    # hamsim_comp(2)
+    # hamsim_comp(3)
+    # two_local_comp(1)
+    # two_local_comp(2)
+    # two_local_comp(3)
+    # qaoa_comp()
+    qaoa_comp(2)
+    qaoa_comp(3)
+    qaoa_comp(4)
