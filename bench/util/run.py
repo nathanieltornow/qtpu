@@ -11,9 +11,17 @@ from qvm.run import run_virtualizer
 from qvm.virtual_circuit import VirtualCircuit
 from qvm.compiler import CutCompiler
 from qvm.compiler.dag import DAG
+from qvm.compiler.qubit_reuse import QubitReuseCompiler
 
 
-from ._util import compute_fidelity, get_num_cnots, append_dict_to_csv
+from ._util import (
+    compute_fidelity,
+    get_num_cnots,
+    get_circuit_depth,
+    append_dict_to_csv,
+)
+
+DYNAMIC_CIRCUITS = True
 
 
 @dataclass
@@ -77,13 +85,12 @@ def _run_experiment(
 ) -> BenchmarkResult:
     if base_backend is None:
         base_backend = backend
-
     t_circ = transpile(original_circuit, backend=base_backend, optimization_level=3)
 
     num_cnots, depth, num_deps = _virtualizer_stats(virt, backend)
     num_cnots_base, depth_base, num_deps_base = (
         get_num_cnots(t_circ),
-        t_circ.depth(),
+        get_circuit_depth(t_circ),
         DAG(original_circuit).num_dependencies(),
     )
     num_vgates = len(virt._vgate_instrs)
@@ -149,6 +156,12 @@ def _run_experiment(
     )
 
 
+def prepare_virtual_circuit(vc: VirtualCircuit, backend: BackendV2) -> None:
+    QubitReuseCompiler(backend.num_qubits)
+    
+    
+
+
 def _virtualizer_stats(
     virtualizer: VirtualCircuit, backend: BackendV2
 ) -> tuple[int, int, int]:
@@ -163,6 +176,6 @@ def _virtualizer_stats(
         print("Transpilation failed")
         return 0, 0, 0
     num_cnots = max(get_num_cnots(circ) for circ in frag_circs)
-    depth = max(circ.depth() for circ in frag_circs)
+    depth = max(get_circuit_depth(circ) for circ in frag_circs)
 
     return num_cnots, depth, num_deps
