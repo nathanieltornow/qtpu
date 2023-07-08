@@ -260,10 +260,10 @@ def plot_swap_reduce():
 
 
 def plot_dep_min():
-    from data import DEP_MIN_DATA_2
+    from data import DEP_MIN_DATA_3
 
-    dfs = [pd.read_csv(file) for file in DEP_MIN_DATA_2.values()]
-    labels = list(DEP_MIN_DATA_2.keys())
+    dfs = [pd.read_csv(file) for file in DEP_MIN_DATA_3.values()]
+    labels = list(DEP_MIN_DATA_3.keys())
 
     fig = plt.figure(figsize=(12.5, 2.8))
     
