@@ -9,7 +9,7 @@ import seaborn as sns
 import pandas as pd
 
 from util import calculate_figure_size, plot_lines
-from data import SWAP_REDUCE_DATA, DEP_MIN_DATA, NOISE_SCALE_ALGIERS_DATA
+from data import SWAP_REDUCE_DATA, DEP_MIN_DATA, NOISE_SCALE_ALGIERS_DATA, SCALE_SIM_DATA
 
 
 sns.set_theme(style="whitegrid", color_codes=True)
@@ -51,6 +51,45 @@ def plot_swap_reduce() -> None:
         output_file="figures/swap_reduce/fid.pdf",
     )
 
+def insert_column(df):
+    df['total_runtime'] = df['run_time'] + df['knit_time']
+
+    return df
+
+def dataframe_out_of_columns(dfs, lines, columns):
+    merged_df = pd.DataFrame()
+
+    merged_df["num_qubits"] = dfs[0]["num_qubits"].copy()
+    merged_df.set_index("num_qubits")
+
+    for i,f in enumerate(dfs):
+        merged_df[lines[i]] = f[columns].copy()
+
+    #merged_df.reset_index(drop = True, inplace = True)
+    merged_df.set_index("num_qubits", inplace = True)
+
+    return merged_df
+
+def plot_endtoend_runtimes():
+    dfs = [pd.read_csv(file) for file in SCALE_SIM_DATA.values()]
+ 
+    lines = [s.split("-")[-1] for s in SCALE_SIM_DATA.keys()]
+    titles = list(SCALE_SIM_DATA.keys())
+
+    dfs = [insert_column(i) for i in dfs]
+    big_dfs = dataframe_out_of_columns(dfs, lines, ["total_runtime"])
+    print(big_dfs)
+
+    plot_dataframes(
+        dataframes=[big_dfs],
+        keys=big_dfs.keys(),
+        labels=big_dfs.keys(),
+        titles=titles,
+        ylabel="Runtime (seconds)",
+        xlabel="Number of Qubits",
+        output_file="figures/scale_sim/hamsim_1.pdf",
+        logscale=True,
+    )    
 
 def plot_dep_min() -> None:
     dfs = [pd.read_csv(file) for file in DEP_MIN_DATA.values()]
@@ -131,6 +170,7 @@ def plot_dataframes(
     xlabel: str,
     output_file: str = "noisy_scale.pdf",
     nrows: int = 2,
+    logscale = False,
 ) -> None:
     ncols = len(dataframes) // nrows + len(dataframes) % nrows
     # plotting the absolute fidelities
@@ -140,6 +180,8 @@ def plot_dataframes(
     axis = [fig.add_subplot(gs[i, j]) for i in range(nrows) for j in range(ncols)]
 
     for i, ax in enumerate(axis):
+        if logscale:
+            ax.set_yscale("log")
         if i % ncols == 0:
             ax.set_ylabel(ylabel=ylabel)
         if i >= len(axis) - ncols:
@@ -201,13 +243,14 @@ def plot_relative_swap_reduce() -> None:
 
 
 def main():
-    print("Plotting swap reduce...")
-    plot_swap_reduce()
-    print("Plotting dep min...")
-    plot_dep_min()
-    print("Plotting noisy scale...")
-    plot_noisy_scale()
+    #print("Plotting swap reduce...")
+    #plot_swap_reduce()
+    #print("Plotting dep min...")
+    #plot_dep_min()
+    #print("Plotting noisy scale...")
+    #plot_noisy_scale()
     # plot_relative_swap_reduce()
+    plot_endtoend_runtimes()
 
 
 if __name__ == "__main__":

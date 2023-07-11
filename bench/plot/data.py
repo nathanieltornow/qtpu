@@ -75,6 +75,7 @@ DEP_MIN_DATA_3 = {
 }
 
 
+
 NOISE_SCALE_ALGIERS_DATA = {
     "GHZ": "bench/results/noisy_scale/ibm_algiers_vs_ibm_algiers/ghz.csv",
     # "HamSim (1-rep)": "bench/results/noisy_scale/ibm_algiers_vs_ibm_algiers/hamsim_1.csv",
@@ -92,4 +93,9 @@ NOISE_SCALE_ALGIERS_DATA = {
     # "HamSim 3": "bench/results/noisy_scale/ibm_algiers_vs_ibm_algiers/hamsim_3.csv",
     # "QAOA R2": "bench/results/dep_min/qaoa_r2.csv",
     # "QAOA R3": "bench/results/dep_min/qaoa_r3.csv",
+}
+
+SCALE_SIM_DATA = {
+    "HS-1-20" : "bench/results/scale_sim/hamsim_1_20.csv",
+    "HS-1-25" : "bench/results/scale_sim/hamsim_1_25.csv",
 }
