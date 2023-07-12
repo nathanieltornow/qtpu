@@ -95,7 +95,12 @@ NOISE_SCALE_ALGIERS_DATA = {
     # "QAOA R3": "bench/results/dep_min/qaoa_r3.csv",
 }
 
-SCALE_SIM_DATA = {
-    "HS-1-20" : "bench/results/scale_sim/hamsim_1_20.csv",
-    "HS-1-25" : "bench/results/scale_sim/hamsim_1_25.csv",
+SCALE_SIM_TIME = {
+	"HS-1-15q" : "bench/results/scale_sim/hamsim_1_15.csv",
+    "HS-1-20q" : "bench/results/scale_sim/hamsim_1_20.csv",
+    "HS-1-25q" : "bench/results/scale_sim/hamsim_1_25.csv",
+}
+
+SCALE_SIM_MEMORY = {
+	"HS-1-20mem" : "bench/results/scale_sim/hamsim_1_20_memory.csv",
 }

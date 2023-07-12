@@ -110,7 +110,7 @@ class IBMBackendRunner(QVMBackendRunner):
 
 class LocalBackendRunner(QVMBackendRunner):
     def __init__(self) -> None:
-        self._simulator = AerSimulator()
+        self._simulator = AerSimulator(method="statevector")
         self._jobs: dict[str, AerJob] = {}
         super().__init__()
 
