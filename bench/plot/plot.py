@@ -8,7 +8,7 @@ from matplotlib.ticker import MaxNLocator
 import seaborn as sns
 import pandas as pd
 
-from util import calculate_figure_size, plot_lines
+from util import calculate_figure_size, plot_lines, grouped_bar_plot, data_frames_to_y_yerr
 from data import SWAP_REDUCE_DATA, DEP_MIN_DATA, NOISE_SCALE_ALGIERS_DATA, SCALE_SIM_TIME, SCALE_SIM_MEMORY
 
 
@@ -76,7 +76,7 @@ def plot_endtoend_runtimes():
  
 	lines = [s.split("-")[-1] for s in SCALE_SIM_TIME.keys()]
 
-	titles = ["(a) Εnd-to-end runtime", "(b) Memory requirements", "(c) Runtime breakdown"]
+	titles = ["(a) Εnd-to-end Runtime", "(b) Runtime Breakdown", "(c) Memory Consumption"]
 
 	dfs = [insert_column(i) for i in dfs]
 	big_dfs = dataframe_out_of_columns(dfs, lines, ["total_runtime"])
@@ -98,16 +98,113 @@ def plot_endtoend_runtimes():
 	keys = keys[1:]
 
 	custom_plot_dataframes(
-		dataframes=[big_dfs, dfs_mem_new, dfs_ratio],
-		keys=[big_dfs.keys(), dfs_mem_new.keys(), keys],
-		labels=[big_dfs.keys(), dfs_mem_new.keys(), dfs_ratio["qpu_size"].tolist()],
+		dataframes=[big_dfs, dfs_ratio, dfs_mem_new],
+		keys=[big_dfs.keys(), keys, dfs_mem_new.keys()],
+		labels=[big_dfs.keys(), dfs_ratio["qpu_size"].tolist(), dfs_mem_new.keys()],
 		titles=titles,
-		ylabel=["Runtime (seconds)", "Memory (GBs)", "Time (seconds)"],
-		xlabel=["Circuit size (# of qubits)", "Circuit size (# of qubits)", "QPU size (# of qubits)"],
+		ylabel=["Runtime (seconds)", "Time (seconds)", "Memory (GBs)"],
+		xlabel=["Number of Qubits", "QPU Size (Number of Qubits)", "Number of Qubits"],
 		output_file="figures/scale_sim/hamsim_1.pdf",
 		logscale=True,
 		nrows=1
 	)	
+
+hatches = [
+    "/",
+	"\\",
+	"//",
+	"\\\\",
+	"x",
+	".",
+	",",
+	"*",
+	"o",
+	"O",
+	"+",
+	"X",
+	"s",
+	"S",
+	"d",
+	"D",
+	"^",
+	"v",
+	"<",
+	">",
+	"p",
+	"P",
+	"$",
+	"#",
+	"%",
+]
+
+def custom_plot_dataframes(
+	dataframes: list[pd.DataFrame],
+	keys: list[list[str]],
+	labels: list[list[str]],
+	titles: list[str],
+	ylabel: list[str],
+	xlabel: list[str],
+	output_file: str = "noisy_scale.pdf",
+	nrows: int = 2,
+	logscale = False,
+) -> None:
+	ncols = len(dataframes)
+	fig = plt.figure(figsize=[13, 2.8])
+	gs = gridspec.GridSpec(nrows=nrows, ncols=ncols)
+
+	axis = [fig.add_subplot(gs[i, j]) for i in range(nrows) for j in range(ncols)]
+	
+	axis[0].set_yscale("log")
+	axis[1].set_yscale("log")
+	axis[2].set_yscale("log")
+	#axis[2].set_xlim([10, 30])
+	axis[1].set_ylim([1, 50000])
+	#axis[2].set_ylim([10, 10 ** 20])
+	#axis[2].set_yscale("log")
+
+	for i, ax in enumerate(axis):
+		ax.set_ylabel(ylabel=ylabel[i])
+		ax.set_xlabel(xlabel=xlabel[i])
+	
+	#print(keys)
+	plot_lines(axis[0], keys[0], labels[0], [dataframes[0]])
+	axis[0].legend()		
+	axis[0].set_title(titles[0], fontsize=12, fontweight="bold")
+	
+	plot_lines(axis[2], keys[2], labels[2], [dataframes[2]])
+	axis[2].legend()		
+	axis[2].set_title(titles[2], fontsize=12, fontweight="bold")
+
+	num_vgates = dataframes[1]['qpu_size'].tolist()
+	simulation = dataframes[1]['simulation'].tolist()
+	knitting = dataframes[1]['knitting'].tolist()
+	data = {
+			"Simulation" : simulation,
+		"Knitting" : knitting,
+	}
+
+	x = np.arange(len(num_vgates))  # the label locations
+	width = 0.25  # the width of the bars
+	multiplier = 0
+
+	for lbl, d in data.items():
+		offset = width * multiplier
+		rects = axis[1].bar(x + offset, d, width, label=lbl, color=colors[multiplier], hatch=hatches[multiplier])
+		#axis[1].bar_label(rects, padding=3)
+		multiplier += 1
+
+	#bar0 = axis[1].bar(num_vgates, simulation, width=3, color=colors[0])
+	#bar1 = axis[1].bar(num_vgates, knitting, width=3, color=colors[1],bottom=simulation)
+	
+	axis[1].legend()
+	axis[1].set_xticks(x + 0.10, num_vgates)
+	#print(np.logspace(1, 5, base=10, num=5, dtype='int'))
+	axis[1].set_yticks(np.logspace(1, 5, base=10, num=5, dtype='int'))
+	axis[1].set_title(titles[1], fontsize=12, fontweight="bold")
+	
+	os.makedirs(os.path.dirname(output_file), exist_ok=True)
+	plt.tight_layout()
+	plt.savefig(output_file, bbox_inches="tight")
 
 def plot_dep_min() -> None:
 	dfs = [pd.read_csv(file) for file in DEP_MIN_DATA.values()]
@@ -177,76 +274,6 @@ def plot_noisy_scale() -> None:
 		output_file="figures/noisy_scale/algiers_fid.pdf",
 		nrows=3,
 	)
-
-hatches = [
-    "///",
-    "\\\\",
-    "o",
-    "//",
-    "--",
-    "*",
-    "//",
-    "\\",
-    "O",
-    ".",
-    "||",
-    "/",
-    "\\\\\\",
-    "o",
-    "///",
-]
-
-def custom_plot_dataframes(
-	dataframes: list[pd.DataFrame],
-	keys: list[list[str]],
-	labels: list[list[str]],
-	titles: list[str],
-	ylabel: list[str],
-	xlabel: list[str],
-	output_file: str = "noisy_scale.pdf",
-	nrows: int = 2,
-	logscale = False,
-) -> None:
-	ncols = len(dataframes)
-	fig = plt.figure(figsize=[12, 3])
-	gs = gridspec.GridSpec(nrows=nrows, ncols=ncols)
-
-	axis = [fig.add_subplot(gs[i, j]) for i in range(nrows) for j in range(ncols)]
-	
-	axis[0].set_yscale("log")
-	axis[1].set_yscale("log")
-	axis[2].set_yscale("log")
-	#axis[2].set_xlim([10, 30])
-	axis[2].set_ylim([100, 50000])
-	#axis[2].set_yscale("log")
-
-	for i, ax in enumerate(axis):
-		ax.set_ylabel(ylabel=ylabel[i])
-		ax.set_xlabel(xlabel=xlabel[i])
-	
-	#print(keys)
-	plot_lines(axis[0], keys[0], labels[0], [dataframes[0]])
-	axis[0].legend()		
-	axis[0].set_title(titles[0], fontsize=12, fontweight="bold")
-	
-	plot_lines(axis[1], keys[1], labels[1], [dataframes[1]])
-	axis[1].legend()		
-	axis[1].set_title(titles[1], fontsize=12, fontweight="bold")
-
-	num_vgates = dataframes[2]['qpu_size'].tolist()
-	simulation = dataframes[2]['simulation'].tolist()
-	knitting = dataframes[2]['knitting'].tolist()
-
-	bar0 = axis[2].bar(num_vgates, simulation, width=3, color=colors[0])
-	bar1 = axis[2].bar(num_vgates, knitting, width=3, color=colors[1],bottom=simulation)
-	
-	axis[2].legend((bar0[0], bar1[0]), ("Simulation", "Knitting"))
-	axis[2].set_xticks(dataframes[2]['qpu_size'].tolist())
-	axis[2].set_title(titles[2], fontsize=12, fontweight="bold")
-	
-	os.makedirs(os.path.dirname(output_file), exist_ok=True)
-	plt.tight_layout()
-	plt.savefig(output_file, bbox_inches="tight")
 
 def plot_dataframes(
 	dataframes: list[pd.DataFrame],
