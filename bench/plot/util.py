@@ -14,6 +14,7 @@ LINE_STYLES = ["-", "--", "-.", ":", "-", "--", "-.", ":"]
 
 
 def plot_lines(ax, keys: list[str], labels: list[str], dataframes: list[pd.DataFrame]):
+    colors = sns.color_palette("pastel")
     all_x = set()
     for ls, key in enumerate(keys):
         for df in dataframes:
@@ -30,10 +31,10 @@ def plot_lines(ax, keys: list[str], labels: list[str], dataframes: list[pd.DataF
                 y_mean,
                 yerr=y_error,
                 label=labels[ls],
-                # color=COLORS[ls],
+                color=colors[ls],
                 marker=MARKER_STYLES[ls],
-                markersize=6,
-                markeredgewidth=1.5,
+                markersize=4,
+                markeredgewidth=1,
                 markeredgecolor="black",
                 linestyle=LINE_STYLES[ls],
                 linewidth=2,
@@ -61,8 +62,11 @@ def grouped_bar_plot(
     bar_labels: list[str],
     colors: list[str] | None = None,
     hatches: list[str] | None = None,
+    show_average_text: bool = False,
+    average_text_position: float = 1.05,
     spacing: float = 0.95,
-    ):
+    zorder: int = 2000,
+):
     if colors is None:
         colors = sns.color_palette("pastel")
     if hatches is None:
@@ -96,6 +100,7 @@ def grouped_bar_plot(
 
     assert len(y.shape) == len(yerr.shape) == 2
     assert y.shape == yerr.shape
+
     num_groups, num_bars = y.shape
     assert len(bar_labels) == num_bars
 
@@ -106,21 +111,28 @@ def grouped_bar_plot(
         y_bars = y[:, i]
         yerr_bars = yerr[:, i]
 
-    color, hatch = colors[i % len(colors)], hatches[i % len(hatches)]
-    
-    ax.bar(
-        x + (i * bar_width),
-        y_bars,
-        bar_width,
-        hatch=hatch,
-        label=bar_labels[i],
-        yerr=yerr_bars,
-        color=color,
-        edgecolor="black",
-        linewidth=1.5,
-        error_kw=dict(lw=2, capsize=3),
-    )
+        color, hatch = colors[i % len(colors)], hatches[i % len(hatches)]
+
+        ax.bar(
+            x + (i * bar_width),
+            y_bars,
+            bar_width,
+            hatch=hatch,
+            label=bar_labels[i],
+            yerr=yerr_bars,
+            color=color,
+            edgecolor="black",
+            linewidth=1.5,
+            error_kw=dict(lw=2, capsize=3),
+            zorder=zorder,
+        )
     ax.set_xticks(x + ((num_bars - 1) / 2) * bar_width)
+
+    if show_average_text:
+        for i, x_pos in enumerate(ax.get_xticks()):
+            y_avg = np.average(y[i])
+            text = f"{y_avg:.2f}"
+            ax.text(x_pos, average_text_position, text, ha="center")
 
 def index_dataframe_mean_std(
     df: pd.DataFrame,

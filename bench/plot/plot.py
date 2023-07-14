@@ -102,7 +102,7 @@ def plot_endtoend_runtimes():
 		keys=[big_dfs.keys(), keys, dfs_mem_new.keys()],
 		labels=[big_dfs.keys(), dfs_ratio["qpu_size"].tolist(), dfs_mem_new.keys()],
 		titles=titles,
-		ylabel=["Runtime (seconds)", "Time (seconds)", "Memory (GBs)"],
+		ylabel=["Runtime [s]", "Time [s]", "Memory [GBs]"],
 		xlabel=["Number of Qubits", "QPU Size (Number of Qubits)", "Number of Qubits"],
 		output_file="figures/scale_sim/hamsim_1.pdf",
 		logscale=True,
@@ -149,7 +149,7 @@ def custom_plot_dataframes(
 	logscale = False,
 ) -> None:
 	ncols = len(dataframes)
-	fig = plt.figure(figsize=[13, 2.8])
+	fig = plt.figure(figsize=[13, 3.4])
 	gs = gridspec.GridSpec(nrows=nrows, ncols=ncols)
 
 	axis = [fig.add_subplot(gs[i, j]) for i in range(nrows) for j in range(ncols)]
@@ -157,6 +157,7 @@ def custom_plot_dataframes(
 	axis[0].set_yscale("log")
 	axis[1].set_yscale("log")
 	axis[2].set_yscale("log")
+
 	#axis[2].set_xlim([10, 30])
 	axis[1].set_ylim([1, 50000])
 	#axis[2].set_ylim([10, 10 ** 20])
@@ -179,31 +180,35 @@ def custom_plot_dataframes(
 	simulation = dataframes[1]['simulation'].tolist()
 	knitting = dataframes[1]['knitting'].tolist()
 	data = {
-			"Simulation" : simulation,
+		"Simulation" : simulation,
 		"Knitting" : knitting,
 	}
 
-	x = np.arange(len(num_vgates))  # the label locations
-	width = 0.25  # the width of the bars
-	multiplier = 0
+	x = np.array([15, 20, 25])
+	#x = np.arange(len(num_vgates))  # the label locations
+	#width = 0.25  # the width of the bars
+	#multiplier = 0
+	y = np.array(
+		[
+			[120.0079321230296, 801.0942367650568],
+			[726.3718322570203, 208.40429024997866],
+			[5857.7779290829785, 305.2052580610034]
+		]
+	)
 
-	for lbl, d in data.items():
-		offset = width * multiplier
-		rects = axis[1].bar(x + offset, d, width, label=lbl, color=colors[multiplier], hatch=hatches[multiplier])
-		#axis[1].bar_label(rects, padding=3)
-		multiplier += 1
-
-	#bar0 = axis[1].bar(num_vgates, simulation, width=3, color=colors[0])
-	#bar1 = axis[1].bar(num_vgates, knitting, width=3, color=colors[1],bottom=simulation)
+	yerr = np.zeros_like(y)
 	
+	axis[1].set_xticklabels(x)
+	axis[1].grid(axis="y", linestyle="-", zorder=-1)	
+	grouped_bar_plot(axis[1], y, yerr, ["Simulation", "Knitting"])
 	axis[1].legend()
-	axis[1].set_xticks(x + 0.10, num_vgates)
-	#print(np.logspace(1, 5, base=10, num=5, dtype='int'))
+
 	axis[1].set_yticks(np.logspace(1, 5, base=10, num=5, dtype='int'))
 	axis[1].set_title(titles[1], fontsize=12, fontweight="bold")
 	
+	fig.text(0.5, 1, "Lower is better ↓", ha="center", va="center", fontweight="bold", color="navy", fontsize=14)
 	os.makedirs(os.path.dirname(output_file), exist_ok=True)
-	plt.tight_layout()
+	plt.tight_layout(pad=2)
 	plt.savefig(output_file, bbox_inches="tight")
 
 def plot_dep_min() -> None:
