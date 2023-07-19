@@ -7,7 +7,7 @@ from qiskit.circuit import QuantumCircuit, Qubit, Barrier
 
 from qvm.compiler.asp import get_optimal_symbols, dag_to_asp
 from qvm.compiler.types import CutCompiler
-from qvm.compiler.dag import DAG
+from qvm.compiler.dag import DAG, dag_to_qcg
 
 
 class QubitDependencyReducer(CutCompiler, abc.ABC):
@@ -29,9 +29,10 @@ class CircularDependencyBreaker(QubitDependencyReducer):
         super().__init__()
 
     def _pass(self, dag: DAG) -> None:
-        qubit_depends_on: dict[Qubit, Counter[Qubit]] = {
-            qubit: Counter() for qubit in dag.qubits
+        qubit_depends_on: dict[Qubit, set[Qubit]] = {
+            qubit: set() for qubit in dag.qubits
         }
+        qcg = dag_to_qcg(dag)
         budget = self._max_vgates
         nodes = nx.topological_sort(dag)
         for node in nodes:
@@ -45,19 +46,20 @@ class CircularDependencyBreaker(QubitDependencyReducer):
             elif len(qubits) == 2:
                 q1, q2 = qubits
 
-                if (
-                    int(q2 in qubit_depends_on[q1]) + int(q1 in qubit_depends_on[q2])
-                    == 1
+                if (q1 in qubit_depends_on[q2] or q2 in qubit_depends_on[q1]) and not (
+                    qcg.has_edge(q1, q2) or qcg.has_edge(q2, q1)
                 ):
                     dag.virtualize_node(node)
                     budget -= 1
                     continue
 
-                to_add1 = Counter(qubit_depends_on[q2].keys()) + Counter([q2])
-                to_add2 = Counter(qubit_depends_on[q1].keys()) + Counter([q1])
+                to_add1 = qubit_depends_on[q2].copy()
+                to_add1.add(q2)
+                to_add2 = qubit_depends_on[q1].copy()
+                to_add2.add(q1)
 
-                qubit_depends_on[q1] += to_add1
-                qubit_depends_on[q2] += to_add2
+                qubit_depends_on[q1].update(to_add1)
+                qubit_depends_on[q2].update(to_add2)
 
             elif len(qubits) > 2:
                 raise ValueError("Cannot convert dag to qdg, too many qubits")

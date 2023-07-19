@@ -5,17 +5,35 @@ from qvm.compiler.virtualization.reduce_deps import (
     GreedyDependencyBreaker,
     QubitDependencyMinimizer,
 )
-
+from qvm.compiler.qubit_reuse import QubitReuseCompiler
+from qvm.virtual_circuit import VirtualCircuit
 from qvm.compiler.dag import DAG
 
-circuit = get_circuits("twolocal_2", (5, 11))[0]
+from qiskit_aer import StatevectorSimulator
 
-cut_circuit = QubitDependencyMinimizer(2).run(circuit)
+circuit = QuantumCircuit(3, 3)
+circuit.h(0)
+circuit.cx(0, 1)
+circuit.cx(1, 2)
 
-print(cut_circuit)
+print(StatevectorSimulator().run(circuit, shots=1000).result().get_counts())
 
-print(DAG(circuit).num_dependencies())
-print(DAG(cut_circuit).num_dependencies())
+
+circuit2 = circuit.copy()
+circuit2.measure(0, 0)
+
+
+circuit3 = circuit.copy()
+circuit3.measure(1, 1)
+circuit3.measure(2, 2)
+print(StatevectorSimulator().run(circuit2, shots=1000).result().get_counts())
+print(StatevectorSimulator().run(circuit3, shots=1000).result().get_counts())
+
+# vc = VirtualCircuit(cut_circuit)
+# QubitReuseCompiler(1).run(vc)
+
+# c = list(vc.fragment_circuits.values())[0]
+# print(c)
 
 # print(circuit)
 # print(cut_circuit)

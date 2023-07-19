@@ -9,7 +9,7 @@ from qiskit.circuit import (
 )
 
 from qvm.quasi_distr import QuasiDistr
-from qvm.virtual_gates import VirtualBinaryGate, VirtualGateEndpoint
+from qvm.virtual_gates import VirtualBinaryGate, VirtualGateEndpoint, VirtualMove
 
 
 InstanceLabelType = tuple[int, ...]
@@ -18,7 +18,10 @@ InstanceLabelType = tuple[int, ...]
 class VirtualCircuit:
     def __init__(self, circuit: QuantumCircuit) -> None:
         self._vgate_instrs = [
-            instr for instr in circuit if isinstance(instr.operation, VirtualBinaryGate)
+            instr
+            for instr in circuit
+            if isinstance(instr.operation, VirtualBinaryGate)
+            or isinstance(instr.operation, VirtualMove)
         ]
         # if len(self._vgate_instrs) == 0:
         #     raise ValueError("No virtual gates found in the circuit.")
@@ -157,6 +160,8 @@ def _chunk(lst: list, n: int) -> list[list]:
 def _instantiate_fragment(
     fragment_circuit: QuantumCircuit, inst_label: InstanceLabelType
 ) -> QuantumCircuit:
+    if len(inst_label) == 0:
+        return fragment_circuit.copy()
     config_register = ClassicalRegister(len(inst_label), "vgate_c")
     new_circuit = QuantumCircuit(
         *fragment_circuit.qregs, *(fragment_circuit.cregs + [config_register])

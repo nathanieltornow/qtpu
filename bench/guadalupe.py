@@ -26,7 +26,7 @@ def bench_noisy_scale(
         backend=backend,
         base_backend=base_backend,
         result_file=result_file,
-        compiler=QVMCompiler(OptimalGateDecomposer(fragment_size)),
+        compiler=QVMCompiler(),
     )
     run_benchmark(benchmark, runner)
 
@@ -37,9 +37,9 @@ def main() -> None:
 
     service = QiskitRuntimeService()
 
-    small_qpu = "ibm_perth"
-    large_qpu = "ibmq_lima"
-    result_dir = f"bench/results/noisy_scale_real/{small_qpu}_vs_{large_qpu}"
+    small_qpu = "ibmq_guadalupe"
+    large_qpu = "ibmq_belem"
+    result_dir = f"bench/results/guadalupe/{small_qpu}_vs_{large_qpu}"
 
     # backend = FakePerth()
     # base_backend = FakeGuadalupeV2()
@@ -47,108 +47,15 @@ def main() -> None:
     backend = service.get_backend(small_qpu)
     base_backend = service.get_backend(large_qpu)
 
-    runner = IBMBackendRunner(service=service, simulate_qpus=False)
+    runner = IBMBackendRunner(service=service, simulate_qpus=True)
     # runner = LocalBackendRunner()
     # runner = None
 
-    # for benchname in BENCHMARK_CIRCUITS:
-    #     circuits = get_circuits(benchname, (6, 17))
-
-    # benchname = "vqe_1"
-    # circuits = (
-    #     # get_circuits(benchname, (6, 7))
-    #     # + get_circuits(benchname, (10, 11))
-    #     get_circuits(benchname, (12, 13))
-    # )
-    # bench_noisy_scale(
-    #     result_file=f"{result_dir}/{benchname}.csv",
-    #     circuits=circuits,
-    #     backend=backend,
-    #     base_backend=base_backend,
-    #     runner=runner,
-    #     fragment_size=4,
-    # )
-
-    # benchname = "vqe_2"
-    # circuits = (
-    #     get_circuits(benchname, (6, 7))
-    #     + get_circuits(benchname, (10, 11))
-    #     + get_circuits(benchname, (12, 13))
-    # )
-    # bench_noisy_scale(
-    #     result_file=f"{result_dir}/{benchname}.csv",
-    #     circuits=circuits,
-    #     backend=backend,
-    #     base_backend=base_backend,
-    #     runner=runner,
-    #     fragment_size=7,
-    # )
-
-    # benchname = "vqe_3"
-    # circuits = (
-    #     get_circuits(benchname, (6, 7))
-    #     + get_circuits(benchname, (10, 11))
-    #     + get_circuits(benchname, (14, 15))
-    # )
-    # bench_noisy_scale(
-    #     result_file=f"{result_dir}/{benchname}.csv",
-    #     circuits=circuits,
-    #     backend=backend,
-    #     base_backend=base_backend,
-    #     runner=runner,
-    #     fragment_size=7,
-    # )
-
-    benchname = "qaoa_b"
-    circuits = (
-        get_circuits(benchname, (6, 7))
-        + get_circuits(benchname, (10, 11))
-        + get_circuits(benchname, (12, 13))
-    )
-    bench_noisy_scale(
-        result_file=f"{result_dir}/{benchname}.csv",
-        circuits=circuits,
-        backend=backend,
-        base_backend=base_backend,
-        runner=runner,
-        fragment_size=7,
-    )
-
-    benchname = "hamsim_1"
-    circuits = (
-        get_circuits(benchname, (6, 7))
-        + get_circuits(benchname, (10, 11))
-        + get_circuits(benchname, (12, 13))
-    )
-    bench_noisy_scale(
-        result_file=f"{result_dir}/{benchname}.csv",
-        circuits=circuits,
-        backend=backend,
-        base_backend=base_backend,
-        runner=runner,
-        fragment_size=4,
-    )
-
-    benchname = "hamsim_2"
-    circuits = (
-        get_circuits(benchname, (6, 7))
-        + get_circuits(benchname, (10, 11))
-        + get_circuits(benchname, (12, 13))
-    )
-    bench_noisy_scale(
-        result_file=f"{result_dir}/{benchname}.csv",
-        circuits=circuits,
-        backend=backend,
-        base_backend=base_backend,
-        runner=runner,
-        fragment_size=7,
-    )
-
     benchname = "ghz"
     circuits = (
-        # get_circuits(benchname, (6, 7))
-        # + get_circuits(benchname, (10, 11))
-        get_circuits(benchname, (12, 13))
+        get_circuits(benchname, (6, 7))
+        + get_circuits(benchname, (10, 11))
+        + get_circuits(benchname, (14, 15))
     )
     bench_noisy_scale(
         result_file=f"{result_dir}/{benchname}.csv",
@@ -163,7 +70,7 @@ def main() -> None:
     circuits = (
         get_circuits(benchname, (6, 7))
         + get_circuits(benchname, (10, 11))
-        + get_circuits(benchname, (12, 15))
+        + get_circuits(benchname, (14, 15))
     )
     bench_noisy_scale(
         result_file=f"{result_dir}/{benchname}.csv",
@@ -178,7 +85,7 @@ def main() -> None:
     circuits = (
         get_circuits(benchname, (6, 7))
         + get_circuits(benchname, (10, 11))
-        + get_circuits(benchname, (12, 13))
+        + get_circuits(benchname, (14, 15))
     )
     bench_noisy_scale(
         result_file=f"{result_dir}/{benchname}.csv",
@@ -189,20 +96,110 @@ def main() -> None:
         fragment_size=7,
     )
 
-    # benchname = "hamsim_3"
-    # circuits = (
-    #     get_circuits(benchname, (6, 7))
-    #     + get_circuits(benchname, (10, 11))
-    #     + get_circuits(benchname, (14, 15))
-    # )
-    # bench_noisy_scale(
-    #     result_file=f"{result_dir}/{benchname}.csv",
-    #     circuits=circuits,
-    #     backend=backend,
-    #     base_backend=base_backend,
-    #     runner=runner,
-    #     fragment_size=7,
-    # )
+    benchname = "vqe_1"
+    circuits = (
+        get_circuits(benchname, (6, 7))
+        + get_circuits(benchname, (10, 11))
+        + get_circuits(benchname, (14, 15))
+    )
+    bench_noisy_scale(
+        result_file=f"{result_dir}/{benchname}.csv",
+        circuits=circuits,
+        backend=backend,
+        base_backend=base_backend,
+        runner=runner,
+        fragment_size=4,
+    )
+
+    benchname = "vqe_2"
+    circuits = (
+        get_circuits(benchname, (6, 7))
+        + get_circuits(benchname, (10, 11))
+        + get_circuits(benchname, (14, 15))
+    )
+    bench_noisy_scale(
+        result_file=f"{result_dir}/{benchname}.csv",
+        circuits=circuits,
+        backend=backend,
+        base_backend=base_backend,
+        runner=runner,
+        fragment_size=7,
+    )
+
+    benchname = "vqe_3"
+    circuits = (
+        get_circuits(benchname, (6, 7))
+        + get_circuits(benchname, (10, 11))
+        + get_circuits(benchname, (14, 15))
+    )
+    bench_noisy_scale(
+        result_file=f"{result_dir}/{benchname}.csv",
+        circuits=circuits,
+        backend=backend,
+        base_backend=base_backend,
+        runner=runner,
+        fragment_size=7,
+    )
+
+    benchname = "qaoa-b"
+    circuits = (
+        get_circuits(benchname, (6, 7))
+        + get_circuits(benchname, (10, 11))
+        + get_circuits(benchname, (14, 15))
+    )
+    bench_noisy_scale(
+        result_file=f"{result_dir}/{benchname}.csv",
+        circuits=circuits,
+        backend=backend,
+        base_backend=base_backend,
+        runner=runner,
+        fragment_size=7,
+    )
+
+    benchname = "hamsim_1"
+    circuits = (
+        get_circuits(benchname, (6, 7))
+        + get_circuits(benchname, (10, 11))
+        + get_circuits(benchname, (14, 15))
+    )
+    bench_noisy_scale(
+        result_file=f"{result_dir}/{benchname}.csv",
+        circuits=circuits,
+        backend=backend,
+        base_backend=base_backend,
+        runner=runner,
+        fragment_size=4,
+    )
+
+    benchname = "hamsim_2"
+    circuits = (
+        get_circuits(benchname, (6, 7))
+        + get_circuits(benchname, (10, 11))
+        + get_circuits(benchname, (14, 15))
+    )
+    bench_noisy_scale(
+        result_file=f"{result_dir}/{benchname}.csv",
+        circuits=circuits,
+        backend=backend,
+        base_backend=base_backend,
+        runner=runner,
+        fragment_size=7,
+    )
+
+    benchname = "hamsim_3"
+    circuits = (
+        get_circuits(benchname, (6, 7))
+        + get_circuits(benchname, (10, 11))
+        + get_circuits(benchname, (14, 15))
+    )
+    bench_noisy_scale(
+        result_file=f"{result_dir}/{benchname}.csv",
+        circuits=circuits,
+        backend=backend,
+        base_backend=base_backend,
+        runner=runner,
+        fragment_size=7,
+    )
 
 
 if __name__ == "__main__":

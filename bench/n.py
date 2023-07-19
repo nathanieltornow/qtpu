@@ -37,9 +37,9 @@ def main() -> None:
 
     service = QiskitRuntimeService()
 
-    small_qpu = "ibm_perth"
-    large_qpu = "ibmq_lima"
-    result_dir = f"bench/results/noisy_scale_real/{small_qpu}_vs_{large_qpu}"
+    small_qpu = "ibmq_kolkata"
+    large_qpu = "ibmq_kolkata"
+    result_dir = f"bench/results/noisy_scale_lol/{small_qpu}_vs_{large_qpu}"
 
     # backend = FakePerth()
     # base_backend = FakeGuadalupeV2()
@@ -47,13 +47,21 @@ def main() -> None:
     backend = service.get_backend(small_qpu)
     base_backend = service.get_backend(large_qpu)
 
-    runner = IBMBackendRunner(service=service, simulate_qpus=False)
+    # runner = IBMBackendRunner(service=service, simulate_qpus=False)
     # runner = LocalBackendRunner()
-    # runner = None
-
-    # for benchname in BENCHMARK_CIRCUITS:
-    #     circuits = get_circuits(benchname, (6, 17))
-
+    runner = None
+    for benchname in BENCHMARK_CIRCUITS:
+        circuits = get_circuits(benchname, (6, 27))
+        bench_noisy_scale(
+            result_file=f"{result_dir}/{benchname}.csv",
+            circuits=circuits,
+            backend=backend,
+            base_backend=base_backend,
+            runner=runner,
+            fragment_size=13,
+        )
+        
+    exit(0)
     # benchname = "vqe_1"
     # circuits = (
     #     # get_circuits(benchname, (6, 7))

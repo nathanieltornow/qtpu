@@ -37,16 +37,12 @@ class QVMBackendRunner(abc.ABC):
 
 
 class IBMBackendRunner(QVMBackendRunner):
-    def __init__(
-        self, service: QiskitRuntimeService, simulate_qpus: bool = True
-    ) -> None:
-        self._service = service
+    def __init__(self, provider, simulate_qpus: bool = True) -> None:
         self.simulate_qpus = simulate_qpus
+        self._sim = provider.get_backend("ibmq_qasm_simulator")
 
-        self._qpu_sessions: dict[str, Session] = {}
-        self._simulator_session = Session(
-            service=service, backend="ibmq_qasm_simulator"
-        )
+        # self._qpu_sessions: dict[str, Session] = {}
+        # self._simulat )
         self._jobs: dict[str, RuntimeJob] = {}
 
     def _options(self, noisy_backend: BackendV2 | None = None) -> Options:
@@ -66,27 +62,27 @@ class IBMBackendRunner(QVMBackendRunner):
             simulator=sim_options,
         )
 
-    def _sampler_from_backend(self, backend: BackendV2 | None = None) -> Sampler:
-        if backend is None:
-            return Sampler(session=self._simulator_session, options=self._options())
-        if isinstance(backend, IBMBackend):
-            if self.simulate_qpus:
-                return Sampler(
-                    session=self._simulator_session, options=self._options(backend)
-                )
-            if backend.name not in self._qpu_sessions:
-                self._qpu_sessions[backend.name] = Session(
-                    service=self._service, backend=backend.name
-                )
-            return Sampler(
-                session=self._qpu_sessions[backend.name], options=self._options()
-            )
-        if isinstance(backend, BackendV2):
-            return Sampler(
-                session=self._simulator_session, options=self._options(backend)
-            )
-        else:
-            raise TypeError(f"Unknown backend type: {type(backend)}")
+    # def _sampler_from_backend(self, backend: BackendV2 | None = None) -> Sampler:
+    #     # if backend is None:
+    #     #     return Sampler(session=self._simulator_session, options=self._options())
+    #     if isinstance(backend, IBMBackend):
+    #         if self.simulate_qpus:
+    #             return Sampler(
+    #                 session=self._simulator_session, options=self._options(backend)
+    #             )
+    #         if backend.name not in self._qpu_sessions:
+    #             self._qpu_sessions[backend.name] = Session(
+    #                 service=self._service, backend=backend.name
+    #             )
+    #         return Sampler(
+    #             session=self._qpu_sessions[backend.name], options=self._options()
+    #         )
+    #     if isinstance(backend, BackendV2):
+    #         return Sampler(
+    #             session=self._simulator_session, options=self._options(backend)
+    #         )
+    #     else:
+    #         raise TypeError(f"Unknown backend type: {type(backend)}")
 
     def run(
         self,
@@ -96,16 +92,19 @@ class IBMBackendRunner(QVMBackendRunner):
         if backend is not None:
             circuits = [transpile_circuit(circ, backend) for circ in circuits]
             circuits = [circuits] if isinstance(circuits, QuantumCircuit) else circuits
+        else:
+            backend = self._sim
 
-        sampler = self._sampler_from_backend(backend)
-        job = sampler.run(circuits, shots=DEFAULT_SHOTS)
+        job = backend.run(circuits, shots=DEFAULT_SHOTS, dynamic=True)
         job_id = str(uuid4())
         self._jobs[job_id] = job
         return job_id
 
     def get_results(self, job_id: str) -> list[QuasiDistr]:
         job = self._jobs[job_id]
-        return [QuasiDistr(dist) for dist in job.result().quasi_dists]
+        counts = job.result().get_counts()
+        counts = [counts] if isinstance(counts, dict) else counts
+        return [QuasiDistr.from_counts(count) for count in counts]
 
 
 class LocalBackendRunner(QVMBackendRunner):

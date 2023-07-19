@@ -24,6 +24,7 @@ class QubitReuseCompiler(VirtualCircuitCompiler):
             if self._dynamic:
                 dynamic_measure_and_reset(dag)
             virt.replace_fragment_circuit(frag, dag.to_circuit())
+        print(max(circ.num_qubits for circ in virt.fragment_circuits.values()))
 
 
 def dynamic_measure_and_reset(dag: DAG) -> None:

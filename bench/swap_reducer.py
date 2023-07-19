@@ -21,7 +21,7 @@ def bench_reduce_swap(
         circuits=circuits,
         backend=backend,
         result_file=result_file,
-        virt_compiler=ReduceSWAPCompiler(backend, num_vgates),
+        compiler=ReduceSWAPCompiler(backend, num_vgates),
     )
     run_benchmark(benchmark, runner)
 

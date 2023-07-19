@@ -15,12 +15,14 @@ class OptimalWireCutter(CutCompiler):
     def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
         dag = DAG(circuit)
         num_cuts = self._cut_wires(dag)
+        print(dag.to_circuit())
         self._wire_cuts_to_moves(dag, num_cuts)
         dag.fragment()
         return dag.to_circuit()
 
     def _cut_wires(self, dag: DAG) -> int:
         min_num_fragments = len(dag.qubits) // self._size_to_reach
+        min_num_fragments = max(min_num_fragments, 2)
         partitions: dict[int, int] | None = None
         while partitions is None:
             if min_num_fragments > len(dag.qubits):

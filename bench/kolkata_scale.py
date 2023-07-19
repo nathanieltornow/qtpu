@@ -1,47 +1,44 @@
-import networkx as nx
-from qiskit.circuit import QuantumCircuit
 from qiskit.providers import BackendV2
+from qiskit.circuit import QuantumCircuit
 
 from qvm.qvm_runner import QVMBackendRunner, IBMBackendRunner, LocalBackendRunner
+from qvm.compiler.virtualization.gate_decomp import OptimalGateDecomposer
 from qvm.compiler import QVMCompiler
-from qvm.compiler.virtualization.reduce_deps import (
-    GreedyDependencyBreaker,
-    CircularDependencyBreaker,
-    QubitDependencyMinimizer,
-)
 
+from circuits import get_circuits
 from util.run import Benchmark, run_benchmark
 from util._util import enable_logging
-from circuits import get_circuits, BENCHMARK_CIRCUITS
 
 
-def bench_dep_min(
+def bench_noisy_scale(
     result_file: str,
     circuits: list[QuantumCircuit],
     backend: BackendV2,
-    num_vgates: int,
+    base_backend: BackendV2,
     runner: QVMBackendRunner | None = None,
+    fragment_size: int | None = None,
 ) -> None:
+    if fragment_size is None:
+        fragment_size = backend.num_qubits
     benchmark = Benchmark(
         circuits=circuits,
         backend=backend,
+        base_backend=base_backend,
         result_file=result_file,
-        compiler=QVMCompiler(GreedyDependencyBreaker(num_vgates)),
+        compiler=QVMCompiler(OptimalGateDecomposer(fragment_size)),
     )
     run_benchmark(benchmark, runner)
 
 
-def main():
+def main() -> None:
     from qiskit_ibm_runtime import QiskitRuntimeService
     from qiskit_ibm_provider import IBMProvider
 
     provider = IBMProvider(instance="ibm-q-unibw/reservations/reservations")
 
-    NUM_VGATES = 1
-
     small_qpu = "ibmq_kolkata"
     large_qpu = "ibmq_kolkata"
-    result_dir = f"bench/kolkata_results/dep_min/{NUM_VGATES}"
+    result_dir = f"bench/perth_results/noisy_scale/"
 
     backend = provider.get_backend(small_qpu)
     base_backend = provider.get_backend(large_qpu)
@@ -51,35 +48,33 @@ def main():
     runner = IBMBackendRunner(provider2, simulate_qpus=False)
 
     for benchname in [
-        # "bv",
+        # "twolocal_1",
+        # "hamsim_1",
+        # "hamsim_2",
         # "vqe_1",
         # "vqe_2",
-        # "vqe_3",
-        # "twolocal_1",
-        "twolocal_2",
-        "twolocal_3",
-        "qaoa_r2",
-        # "qaoa_r3"
-        # "twolocal_3",
-        "hamsim_1",
-        "hamsim_2",
-        "hamsim_3",
+        # "wstate",
+        "qsvm",
+        "ghz",
         "qaoa_b",
-        "vqe_1",
-        "vqe_2",
-        "vqe_3",
-        # "qaoa_ba2",
-        # "qaoa_ba3",
+        "qaoa_ba2",
     ]:
         circuits = (
-            get_circuits(benchname, (6, 7))
-            + get_circuits(benchname, (8, 10))
+            # get_circuits(benchname, (10, 11))
+            get_circuits(benchname, (8, 9))
             + get_circuits(benchname, (10, 11))
-            + get_circuits(benchname, (12, 13))
+            + get_circuits(benchname, (14, 15))
+            # + get_circuits(benchname, (18, 19))
+            # + get_circuits(benchname, (20, 21))
             # + get_circuits(benchname, (24, 25))
         )
-        bench_dep_min(
-            f"{result_dir}/{benchname}.csv", circuits, backend, NUM_VGATES, runner
+        bench_noisy_scale(
+            result_file=f"{result_dir}/{benchname}.csv",
+            circuits=circuits,
+            backend=backend,
+            base_backend=base_backend,
+            runner=runner,
+            fragment_size=13,
         )
 
 
