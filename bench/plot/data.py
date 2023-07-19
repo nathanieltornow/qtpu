@@ -44,8 +44,9 @@ DEP_MIN_DATA_2 = {
 
 DEP_MIN_DATA_3 = {
     "BV": "bench/results/greedy_dep_min/3/bv.csv",
-    "W-State": "bench/results/greedy_dep_min/3/wstate.csv",
+    # "W-State": "bench/results/greedy_dep_min/3/wstate.csv",
     # "QSVM": "bench/results/greedy_dep_min/3/qsvm.csv",
+    "VQE-1": "bench/results/greedy_dep_min/3/vqe_1.csv",
     "HS-2": "bench/results/greedy_dep_min/3/hamsim_2.csv",
     "TL-1": "bench/results/greedy_dep_min/3/twolocal_1.csv",
     "TL-2": "bench/results/greedy_dep_min/3/twolocal_2.csv",
@@ -53,9 +54,9 @@ DEP_MIN_DATA_3 = {
     # "HS-1": "bench/results/greedy_dep_min/3/hamsim_1.csv",
     # "HS-3": "bench/results/greedy_dep_min/3/hamsim_3.csv",
     "QAOA-B": "bench/results/greedy_dep_min/3/qaoa_b.csv",
-    "QAOA-2": "bench/results/greedy_dep_min/3/qaoa_r2.csv",
+    # "QAOA-2": "bench/results/greedy_dep_min/3/qaoa_r2.csv",
     "QAOA-3": "bench/results/greedy_dep_min/3/qaoa_r3.csv",
-    # "QAOA-4": "bench/results/greedy_dep_min/3/qaoa_r4.csv",
+    "QAOA-4": "bench/results/greedy_dep_min/3/qaoa_r4.csv",
     # "BV": "bench/results/greedy_dep_min/3/bv.csv",
 }
 
@@ -77,4 +78,80 @@ NOISE_SCALE_ALGIERS_DATA = {
     # "HamSim 3": "bench/results/noisy_scale/ibm_algiers_vs_ibm_algiers/hamsim_3.csv",
     # "QAOA R2": "bench/results/dep_min/qaoa_r2.csv",
     # "QAOA R3": "bench/results/dep_min/qaoa_r3.csv",
+}
+
+NOISE_SCALE_KOLKATA = {
+    # "GHZ": "bench/results/noisy_scale_lol/ibmq_kolkata_vs_ibmq_kolkata/ghz.csv",
+    "W-State": "bench/results/noisy_scale_lol/ibmq_kolkata_vs_ibmq_kolkata/wstate.csv",
+    "QSVM": "bench/results/noisy_scale_lol/ibmq_kolkata_vs_ibmq_kolkata/qsvm.csv",
+    "TL-1": "bench/results/noisy_scale_lol/ibmq_kolkata_vs_ibmq_kolkata/twolocal_1.csv",
+    "HS-1": "bench/results/noisy_scale_lol/ibmq_kolkata_vs_ibmq_kolkata/hamsim_1.csv",
+    "HS-2": "bench/results/noisy_scale_lol/ibmq_kolkata_vs_ibmq_kolkata/hamsim_2.csv",
+    "VQE-1": "bench/results/noisy_scale_lol/ibmq_kolkata_vs_ibmq_kolkata/vqe_1.csv",
+    "VQE-2": "bench/results/noisy_scale_lol/ibmq_kolkata_vs_ibmq_kolkata/vqe_2.csv",
+    "QAOA-B": "bench/results/noisy_scale_lol/ibmq_kolkata_vs_ibmq_kolkata/qaoa_b.csv",
+    "QAOA-2": "bench/results/noisy_scale_lol/ibmq_kolkata_vs_ibmq_kolkata/qaoa_ba2.csv",
+    # "VQE-3": "bench/results/noisy_scale_lol/ibmq_kolkata_vs_ibmq_kolkata/vqe_3.csv"
+}
+
+NOISE_SCALE_KOLKATA_REAL = {
+    "HS-1": "bench/kolkata_results/noisy_scale/hamsim_1.csv",
+    "HS-2": "bench/kolkata_results/noisy_scale/hamsim_2.csv",
+    "TL-1": "bench/kolkata_results/noisy_scale/twolocal_1.csv",
+    "VQE-1": "bench/kolkata_results/noisy_scale/vqe_1.csv",
+    "VQE-2": "bench/kolkata_results/noisy_scale/vqe_2.csv",
+    # "W-State": "bench/kolkata_results/noisy_scale/wstate.csv",
+    "QSVM": "bench/kolkata_results/noisy_scale/qsvm.csv",
+    "QAOA-B": "bench/kolkata_results/noisy_scale/qaoa_b.csv",
+}
+
+
+NOISE_SCALE_PERTH_REAL = {
+    "HS-1": (
+        "bench/perth_results/noisy_scale/hamsim_1.csv",
+        "bench/kolkata_results/noisy_scale/hamsim_1.csv",
+    ),
+    "HS-2": (
+        "bench/perth_results/noisy_scale/hamsim_2.csv",
+        "bench/kolkata_results/noisy_scale/hamsim_2.csv",
+    ),
+    "TL-1": (
+        "bench/perth_results/noisy_scale/twolocal_1.csv",
+        "bench/kolkata_results/noisy_scale/twolocal_1.csv",
+    ),
+    "VQE-1": (
+        "bench/perth_results/noisy_scale/vqe_1.csv",
+        "bench/kolkata_results/noisy_scale/vqe_1.csv",
+    ),
+    "VQE-2": (
+        "bench/perth_results/noisy_scale/vqe_2.csv",
+        "bench/kolkata_results/noisy_scale/vqe_2.csv",
+    ),
+    "QSVM": (
+        "bench/perth_results/noisy_scale/qsvm.csv",
+        "bench/kolkata_results/noisy_scale/qsvm.csv",
+    ),
+    "QAOA-B": (
+        "bench/perth_results/noisy_scale/qaoa_b.csv",
+        "bench/kolkata_results/noisy_scale/qaoa_b.csv",
+    ),
+    # "HS-2": "bench/perth_results/noisy_scale/hamsim_2.csv",
+    # "TL-1": "bench/perth_results/noisy_scale/twolocal_1.csv",
+    # "VQE-1": "bench/perth_results/noisy_scale/vqe_1.csv",
+    # "VQE-2": "bench/perth_results/noisy_scale/vqe_2.csv",
+    # "QSVM": "bench/perth_results/noisy_scale/qsvm.csv",
+    # "QAOA-B": "bench/perth_results/noisy_scale/qaoa_b.csv",
+}
+
+
+DEP_MIN_KOLKATA_REAL = {
+    "HS-1": "bench/kolkata_results/dep_min/1/hamsim_1.csv",
+    "TL-1": "bench/kolkata_results/dep_min/1/twolocal_1.csv",
+    "TL-2": "bench/kolkata_results/dep_min/1/twolocal_2.csv",
+    "TL-3": "bench/kolkata_results/dep_min/1/twolocal_3.csv",
+    "VQE-1": "bench/kolkata_results/dep_min/1/vqe_1.csv",
+    "VQE-2": "bench/kolkata_results/dep_min/1/vqe_2.csv",
+    # "VQE-3": "bench/kolkata_results/dep_min/1/vqe_3.csv",
+    "QAOA-B": "bench/kolkata_results/dep_min/1/qaoa_b.csv",
+    # "QAOA-R2": "bench/kolkata_results/dep_min/1/qaoa_ba2.csv",
 }
