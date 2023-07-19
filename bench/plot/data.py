@@ -44,8 +44,9 @@ DEP_MIN_DATA_2 = {
 
 DEP_MIN_DATA_3 = {
     "BV": "bench/results/greedy_dep_min/3/bv.csv",
-    "W-State": "bench/results/greedy_dep_min/3/wstate.csv",
+    # "W-State": "bench/results/greedy_dep_min/3/wstate.csv",
     # "QSVM": "bench/results/greedy_dep_min/3/qsvm.csv",
+    "VQE-1": "bench/results/greedy_dep_min/3/vqe_1.csv",
     "HS-2": "bench/results/greedy_dep_min/3/hamsim_2.csv",
     "TL-1": "bench/results/greedy_dep_min/3/twolocal_1.csv",
     "TL-2": "bench/results/greedy_dep_min/3/twolocal_2.csv",
@@ -53,9 +54,9 @@ DEP_MIN_DATA_3 = {
     # "HS-1": "bench/results/greedy_dep_min/3/hamsim_1.csv",
     # "HS-3": "bench/results/greedy_dep_min/3/hamsim_3.csv",
     "QAOA-B": "bench/results/greedy_dep_min/3/qaoa_b.csv",
-    "QAOA-2": "bench/results/greedy_dep_min/3/qaoa_r2.csv",
+    # "QAOA-2": "bench/results/greedy_dep_min/3/qaoa_r2.csv",
     "QAOA-3": "bench/results/greedy_dep_min/3/qaoa_r3.csv",
-    # "QAOA-4": "bench/results/greedy_dep_min/3/qaoa_r4.csv",
+    "QAOA-4": "bench/results/greedy_dep_min/3/qaoa_r4.csv",
     # "BV": "bench/results/greedy_dep_min/3/bv.csv",
 }
 

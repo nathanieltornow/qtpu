@@ -9,9 +9,8 @@ from qiskit.compiler import transpile
 from qvm.qvm_runner import QVMBackendRunner
 from qvm.run import run_virtualizer
 from qvm.virtual_circuit import VirtualCircuit
-from qvm.compiler import CutCompiler
+from qvm.compiler import QVMCompiler
 from qvm.compiler.dag import DAG
-from qvm.compiler.qubit_reuse import QubitReuseCompiler
 
 
 from ._util import (
@@ -29,7 +28,8 @@ class Benchmark:
     circuits: list[QuantumCircuit]
     backend: BackendV2
     result_file: str
-    virt_compiler: CutCompiler
+    compiler: QVMCompiler
+    base_compiler: QVMCompiler | None = None
     base_backend: BackendV2 | None = None
 
 
@@ -62,11 +62,17 @@ def run_benchmark(bench: Benchmark, runner: QVMBackendRunner | None = None) -> N
     progress.set_description("Running Bench Circuits")
 
     for circ in bench.circuits:
-        cut_circuit = bench.virt_compiler.run(circ)
-        virt = VirtualCircuit(cut_circuit)
+        virt = bench.compiler.run(circ)
+
+        if bench.base_compiler is not None:
+            base_virt = bench.base_compiler.run(circ)
+        else:
+            base_virt = VirtualCircuit(circ)
+
         res = _run_experiment(
             circ,
             virt,
+            base_virt,
             bench.backend,
             runner=runner,
             base_backend=bench.base_backend,
@@ -78,6 +84,7 @@ def run_benchmark(bench: Benchmark, runner: QVMBackendRunner | None = None) -> N
 def _run_experiment(
     original_circuit: QuantumCircuit,
     virt: VirtualCircuit,
+    base_virt: VirtualCircuit,
     backend: BackendV2,
     runner: QVMBackendRunner | None = None,
     base_backend: BackendV2 | None = None,
@@ -85,14 +92,11 @@ def _run_experiment(
 ) -> BenchmarkResult:
     if base_backend is None:
         base_backend = backend
-    t_circ = transpile(original_circuit, backend=base_backend, optimization_level=3)
 
     num_cnots, depth, num_deps = _virtualizer_stats(virt, backend)
-    num_cnots_base, depth_base, num_deps_base = (
-        get_num_cnots(t_circ),
-        get_circuit_depth(t_circ),
-        DAG(original_circuit).num_dependencies(),
-    )
+
+    num_cnots_base, depth_base, num_deps_base = _virtualizer_stats(base_virt, backend)
+
     num_vgates = len(virt._vgate_instrs)
     num_fragments = len(virt.fragment_circuits)
 
@@ -123,18 +127,14 @@ def _run_experiment(
 
     h_fid_base, tv_fid_base = 0.0, 0.0
 
-    run_time_base = 0.0
-    if run_base:
-        now = perf_counter()
-        job_id = runner.run([t_circ], base_backend)
-        noisy_base_res = runner.get_results(job_id)[
-            0
-        ].nearest_probability_distribution()
-        run_time_base = perf_counter() - now
+    base_result, base_time = None, 0.0
+    if run_base and original_circuit.num_qubits < base_backend.num_qubits:
+        base_result, base_timing = run_virtualizer(base_virt, runner, base_backend)
+        base_time = base_timing.run_time
 
-    if original_circuit.num_qubits < 25 and run_base:
+    if base_result is not None and run_base:
         h_fid_base, tv_fid_base = compute_fidelity(
-            original_circuit, noisy_base_res, runner
+            original_circuit, base_result, runner
         )
 
     return BenchmarkResult(
@@ -152,14 +152,8 @@ def _run_experiment(
         knit_time=timing.knit_time,
         num_fragments=num_fragments,
         num_instances=num_instances,
-        run_time_base=run_time_base,
+        run_time_base=base_time,
     )
-
-
-def prepare_virtual_circuit(vc: VirtualCircuit, backend: BackendV2) -> None:
-    QubitReuseCompiler(backend.num_qubits)
-    
-    
 
 
 def _virtualizer_stats(

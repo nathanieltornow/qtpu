@@ -1,0 +1,6 @@
+num_qubits,h_fid,h_fid_base,tv_fid,tv_fid_base,num_cnots,num_cnots_base,depth,depth_base,num_deps,num_deps_base,num_vgates,num_fragments,num_instances,run_time,knit_time,run_time_base
+6,0.0,0.0,0.0,0.0,6,10,16,18,8,16,1,2,12,0.0,0.0,0.0
+8,0.0,0.0,0.0,0.0,8,23,19,36,13,30,1,2,12,0.0,0.0,0.0
+10,0.0,0.0,0.0,0.0,13,27,28,45,16,42,1,2,12,0.0,0.0,0.0
+12,0.0,0.0,0.0,0.0,15,37,28,33,21,47,1,2,12,0.0,0.0,0.0
+14,0.0,0.0,0.0,0.0,16,41,41,71,27,72,3,4,234,0.0,0.0,0.0
