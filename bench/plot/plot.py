@@ -1,12 +1,72 @@
-import matplotlib.pyplot as plt
-import string
-import math
-import os
-import numpy as np
-from matplotlib import gridspec
-from matplotlib.ticker import MaxNLocator
-import seaborn as sns
-import pandas as pd
+from util import *
+
+HIGHERISBETTER = "Higher is better ↑"
+LOWERISBETTER = "Lower is better ↓"
+
+from get_average import get_average
+
+
+
+def plot_dep_min_stats() -> plt.Figure:
+    DEP_MIN_DATA_3 = {
+        "BV": "bench/results/greedy_dep_min/3/bv.csv",
+        "VQE-1": "bench/results/greedy_dep_min/3/vqe_1.csv",
+        "HS-2": "bench/results/greedy_dep_min/3/hamsim_2.csv",
+        "TL-1": "bench/results/greedy_dep_min/3/twolocal_1.csv",
+        "TL-2": "bench/results/greedy_dep_min/3/twolocal_2.csv",
+        "TL-3": "bench/results/greedy_dep_min/3/twolocal_3.csv",
+        "QAOA-B": "bench/results/greedy_dep_min/3/qaoa_b.csv",
+        "QAOA-3": "bench/results/greedy_dep_min/3/qaoa_r3.csv",
+        "QAOA-4": "bench/results/greedy_dep_min/3/qaoa_r4.csv",
+    }
+
+    dfs = [pd.read_csv(file) for file in DEP_MIN_DATA_3.values()]
+    labels = list(DEP_MIN_DATA_3.keys())
+
+    fig, (ax0, ax1) = plt.subplots(ncols=2, figsize=WIDE_FIGSIZE, sharey=True)
+    xvalues = [8, 16, 24]
+
+    ax0.set_ylim(0, 1.2)
+
+    y, yerr = data_frames_to_y_yerr(
+        dfs, "num_qubits", np.array(xvalues), "num_deps", "num_deps_base"
+    )
+    grouped_bar_plot(ax0, y.T, yerr.T, labels, show_average_text=True)
+    ax0.set_ylabel("Rel. Qubit Dependencies")
+    ax0.set_title("(a) Qubit Dependencies", fontweight="bold", fontsize=FONTSIZE)
+    ax0.set_xlabel("Number of Qubits")
+    ax0.set_xticklabels(xvalues)
+    _relative_plot(ax0)
+
+    y, yerr = data_frames_to_y_yerr(
+        dfs, "num_qubits", np.array(xvalues), "depth", "depth_base"
+    )
+    grouped_bar_plot(ax1, y.T, yerr.T, labels, show_average_text=True)
+    ax1.set_ylabel("Rel. Circuit Depth")
+    ax1.set_title("(b) Circuit Depth", fontweight="bold", fontsize=FONTSIZE)
+    ax1.set_xlabel("Number of Qubits")
+    ax1.set_xticklabels(xvalues)
+    _relative_plot(ax1)
+
+    handles, labels = ax0.get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="lower center",
+        bbox_to_anchor=(0.5, -0.1),
+        ncol=10,
+        frameon=False,
+    )
+
+    fig.text(
+        0.51,
+        0.9,
+        LOWERISBETTER,
+        ha="center",
+        fontsize=ISBETTER_FONTSIZE,
+        fontweight="bold",
+        color="midnightblue",
+    )
 
 from util import calculate_figure_size, plot_lines, grouped_bar_plot, data_frames_to_y_yerr
 from data import SWAP_REDUCE_DATA, DEP_MIN_DATA, NOISE_SCALE_ALGIERS_DATA, SCALE_SIM_TIME, SCALE_SIM_MEMORY
@@ -41,14 +101,14 @@ def plot_swap_reduce() -> None:
         output_file="figures/swap_reduce/depth.pdf",
     )
 
-    plot_dataframes(
-        dataframes=dfs,
-        keys=["h_fid", "h_fid_base"],
-        labels=["Ours", "Baseline"],
-        titles=titles,
-        ylabel="Fidelity",
-        xlabel="Number of Qubits",
-        output_file="figures/swap_reduce/fid.pdf",
+    fig.text(
+        0.51,
+        0.98,
+        HIGHERISBETTER,
+        ha="center",
+        fontsize=ISBETTER_FONTSIZE,
+        fontweight="bold",
+        color="midnightblue",
     )
 
 def insert_column(df):

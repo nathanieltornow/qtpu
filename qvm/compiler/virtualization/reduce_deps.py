@@ -14,12 +14,12 @@ class QubitDependencyReducer(CutCompiler, abc.ABC):
     def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
         dag = DAG(circuit)
         dag.compact()
-        self._run_on_dag(dag)
+        self._pass(dag)
         dag.fragment()
         return dag.to_circuit()
 
     @abc.abstractmethod
-    def _run_on_dag(self, dag: DAG) -> None:
+    def _pass(self, dag: DAG) -> None:
         ...
 
 
@@ -28,7 +28,7 @@ class CircularDependencyBreaker(QubitDependencyReducer):
         self._max_vgates = max_vgates
         super().__init__()
 
-    def _run_on_dag(self, dag: DAG) -> None:
+    def _pass(self, dag: DAG) -> None:
         qubit_depends_on: dict[Qubit, Counter[Qubit]] = {
             qubit: Counter() for qubit in dag.qubits
         }
@@ -64,72 +64,77 @@ class CircularDependencyBreaker(QubitDependencyReducer):
 
 
 class GreedyDependencyBreaker(QubitDependencyReducer):
+    """
+    A dependency breaker that greedily virtualizes the gates which
+    depend on and influence the most other binary gates.
+    """
+
     def __init__(self, max_vgates: int) -> None:
         self._max_vgates = max_vgates
         super().__init__()
 
-    def _run_on_dag(self, dag: DAG) -> None:
-        # we want to find out the nodes that connect the most qubit-pairs
-        # for this, for each node, we find out which qubits depend on it
-        # and with qubits the node depends on
+    def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
+        dag = DAG(circuit)
+        # dag.compact()
+        for _ in range(self._max_vgates):
+            self._pass(dag)
+        dag.fragment()
+        return dag.to_circuit()
 
-        # these are the results we need
-        op_influenced_by: dict[int, set[Qubit]] = {}
-        op_influences: dict[int, set[Qubit]] = {}
-        # # we keep track of the qubits influence by nodes
-        qubit_depends_on: dict[Qubit, set[int]] = {qubit: set() for qubit in dag.qubits}
+    def _pass(self, dag: DAG) -> None:
+        node_depends_on: dict[int, set[int]] = {}
+        previous_node: dict[Qubit, int] = {qubit: -1 for qubit in dag.qubits}
 
-        budget = self._max_vgates
-        two_qubit_nodes = set()
         nodes = list(nx.topological_sort(dag))
-        for node in nodes:
-            if budget <= 0:
-                return
 
+        nodes_2q = set()
+        for node in nodes:
             instr = dag.get_node_instr(node)
             qubits = instr.qubits
 
             if len(qubits) == 1 or isinstance(instr.operation, Barrier):
                 continue
             elif len(qubits) == 2:
-                two_qubit_nodes.add(node)
+                nodes_2q.add(node)
+
                 q1, q2 = qubits
 
-                op_influences[node] = {q1, q2}
-                op_influenced_by[node] = {q1, q2}
+                prev_q1 = previous_node[q1]
+                prev_q2 = previous_node[q2]
 
-                # all operations the qubit 1 depends on
-                for q1_dep_op in qubit_depends_on[q1]:
-                    op_influenced_by[node].update(op_influenced_by[q1_dep_op])
-                    op_influences[q1_dep_op].update({q1, q2})
-                    qubit_depends_on[q2].add(q1_dep_op)
+                node_depends_on[node] = set()
 
-                for q2_dep_op in qubit_depends_on[q2]:
-                    op_influenced_by[node].update(op_influenced_by[q2_dep_op])
-                    op_influences[q2_dep_op].update({q1, q2})
-                    qubit_depends_on[q1].add(q2_dep_op)
+                if prev_q1 > -1:
+                    node_depends_on[node].add(prev_q1)
+                    node_depends_on[node].update(node_depends_on[prev_q1])
 
-                qubit_depends_on[q1].add(node)
-                qubit_depends_on[q2].add(node)
+                if prev_q2 > -1:
+                    node_depends_on[node].add(prev_q2)
+                    node_depends_on[node].update(node_depends_on[prev_q2])
+
+                previous_node[q1] = node
+                previous_node[q2] = node
 
             elif len(qubits) > 2:
                 raise ValueError("Cannot handle more than 2 qubits")
 
-        instersect: dict[int, int] = {}
-        for node in two_qubit_nodes:
-            instersect[node] = len(op_influenced_by[node]) * len(
-                op_influences[node]
-            ) - len(op_influenced_by[node] & op_influences[node])
+        node_influences: dict[int, set[int]] = {}
+        for node in nodes_2q:
+            node_influences[node] = set(
+                n for n, deps in node_depends_on.items() if node in deps
+            )
 
-        sorted_nodes = sorted(
-            instersect, key=lambda node: instersect[node], reverse=True
+        if len(nodes_2q) == 0:
+            return
+
+        node_to_virt = min(
+            nodes_2q,
+            key=lambda x: (
+                -len(node_depends_on[x]) * len(node_influences[x]),
+                x,
+            ),
         )
-
-        for node in sorted_nodes:
-            if budget <= 0:
-                return
-            dag.virtualize_node(node)
-            budget -= 1
+        dag.virtualize_node(node_to_virt)
 
 
 class QubitDependencyMinimizer(QubitDependencyReducer):
@@ -137,7 +142,7 @@ class QubitDependencyMinimizer(QubitDependencyReducer):
         self._max_vgates = max_vgates
         super().__init__()
 
-    def _run_on_dag(self, dag: DAG) -> None:
+    def _pass(self, dag: DAG) -> None:
         asp = dag_to_asp(dag)
         asp += self._min_dep_asp()
 

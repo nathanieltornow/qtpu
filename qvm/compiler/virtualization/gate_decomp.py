@@ -76,6 +76,7 @@ class OptimalGateDecomposer(CutCompiler):
         num_partitions = qcg.number_of_nodes() // self._size_to_reach + (
             qcg.number_of_nodes() % self._size_to_reach != 0
         )
+        num_partitions = max(2, num_partitions)
         asp += self._asp_code(num_partitions=num_partitions)
         symbols = get_optimal_symbols(asp)
         qubit_sets: list[set[Qubit]] = [set() for _ in range(num_partitions)]

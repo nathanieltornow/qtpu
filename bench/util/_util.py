@@ -58,6 +58,10 @@ def get_num_cnots(circuit: QuantumCircuit) -> int:
     return sum(1 for instr in circuit if instr.operation.name == "cx")
 
 
+def get_circuit_depth(circuit: QuantumCircuit) -> int:
+    return circuit.depth(filter_function=lambda x: True)
+
+
 def overhead(circuit: QuantumCircuit) -> int:
     num_vgates = sum(
         1 for instr in circuit if isinstance(instr.operation, VirtualBinaryGate)

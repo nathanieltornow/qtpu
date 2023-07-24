@@ -1,0 +1,2 @@
+num_qubits,h_fid,h_fid_base,tv_fid,tv_fid_base,num_cnots,num_cnots_base,depth,depth_base,num_deps,num_deps_base,num_vgates,num_fragments,num_instances,run_time,knit_time,run_time_base
+12,0.6599238783471919,0.6704,0.6588538479709962,0.6704000000000006,3,11,14,20,0,0,2,3,48,133.00047859900224,3.9918271670030663,3.5739400049933465
