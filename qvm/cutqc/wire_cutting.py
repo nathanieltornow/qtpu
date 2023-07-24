@@ -621,7 +621,7 @@ def _subcircuits_parser(
         circuit: The original circuit
 
     Returns:
-        A tuple containing he subcircuits and the paths in the quantum circuit DAGs
+        A tuple containing the subcircuits and the paths in the quantum circuit DAGs
     """
     """
     Assign the single qubit gates to the closest two-qubit gates

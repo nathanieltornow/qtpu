@@ -84,8 +84,10 @@ def plot_endtoend_runtimes():
 	dfs_mem_new = pd.DataFrame()
 	dfs_mem_new["num_qubits"] = dfs_mem[0]["num_qubits"].copy()
 	dfs_mem_new["Baseline"] = dfs_mem[0]["h_fid"]
-	dfs_mem_new["QVM"] = dfs_mem[0]["h_fid_base"]	
+	dfs_mem_new["QVM"] = dfs_mem[0]["h_fid_base"]
+	dfs_mem_new["CutQC"] = dfs_mem[0]["tv_fid"]
 	dfs_mem_new.set_index("num_qubits", inplace = True)
+	#print(dfs_mem_new)
 	
 	dfs_ratio = pd.DataFrame()
 	dfs_ratio["qpu_size"] = [15, 20, 25]
@@ -102,7 +104,7 @@ def plot_endtoend_runtimes():
 		keys=[big_dfs.keys(), keys, dfs_mem_new.keys()],
 		labels=[big_dfs.keys(), dfs_ratio["qpu_size"].tolist(), dfs_mem_new.keys()],
 		titles=titles,
-		ylabel=["Runtime [s]", "Time [s]", "Memory [GBs]"],
+		ylabel=["Runtime [s]", "Runtime [s]", "Memory [GBs]"],
 		xlabel=["Number of Qubits", "QPU Size (Number of Qubits)", "Number of Qubits"],
 		output_file="figures/scale_sim/hamsim_1.pdf",
 		logscale=True,
@@ -149,7 +151,7 @@ def custom_plot_dataframes(
 	logscale = False,
 ) -> None:
 	ncols = len(dataframes)
-	fig = plt.figure(figsize=[13, 3.4])
+	fig = plt.figure(figsize=[13, 3.2])
 	gs = gridspec.GridSpec(nrows=nrows, ncols=ncols)
 
 	axis = [fig.add_subplot(gs[i, j]) for i in range(nrows) for j in range(ncols)]
@@ -190,17 +192,23 @@ def custom_plot_dataframes(
 	#multiplier = 0
 	y = np.array(
 		[
-			[120.0079321230296, 801.0942367650568],
-			[726.3718322570203, 208.40429024997866],
-			[5857.7779290829785, 305.2052580610034]
+			[9.52130384114571, 120.0079321230296, 801.0942367650568],
+			[11.77336971112527, 726.3718322570203, 208.40429024997866],
+			[1.7376548638567328, 5857.7779290829785, 305.2052580610034]
 		]
 	)
 
-	yerr = np.zeros_like(y)
+	yerr = np.array(
+		[
+			[1.3718322570203, 6.270605635945685, 41.68920839508064],
+			[2.7376548638567328, 33.503638901049, 8.03563788096653],
+			[0.2052580610034, 155.2813523421064, 22.93891781999264]
+		]
+	)
 	
 	axis[1].set_xticklabels(x)
 	axis[1].grid(axis="y", linestyle="-", zorder=-1)	
-	grouped_bar_plot(axis[1], y, yerr, ["Simulation", "Knitting"])
+	grouped_bar_plot(axis[1], y, yerr, ["Compilation", "Simulation", "Knitting"])
 	axis[1].legend()
 
 	axis[1].set_yticks(np.logspace(1, 5, base=10, num=5, dtype='int'))
@@ -208,7 +216,7 @@ def custom_plot_dataframes(
 	
 	fig.text(0.5, 1, "Lower is better ↓", ha="center", va="center", fontweight="bold", color="navy", fontsize=14)
 	os.makedirs(os.path.dirname(output_file), exist_ok=True)
-	plt.tight_layout(pad=2)
+	plt.tight_layout(pad=1)
 	plt.savefig(output_file, bbox_inches="tight")
 
 def plot_dep_min() -> None:
@@ -359,6 +367,7 @@ def plot_relative_swap_reduce() -> None:
 	os.makedirs(os.path.dirname(output_file), exist_ok=True)
 	plt.tight_layout()
 	plt.savefig(output_file, bbox_inches="tight")
+
 
 
 def main():
