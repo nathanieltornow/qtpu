@@ -34,10 +34,10 @@ def main() -> None:
     from qiskit_ibm_runtime import QiskitRuntimeService
     from qiskit_ibm_provider import IBMProvider
 
-    provider = IBMProvider(instance="ibm-q-unibw/reservations/reservations")
+    provider = IBMProvider(instance="ibm-q-education/uni-bundeswer-1/quantum-sw-dev")
 
-    small_qpu = "ibmq_kolkata"
-    large_qpu = "ibmq_kolkata"
+    small_qpu = "ibm_perth"
+    large_qpu = "ibm_perth"
     result_dir = f"bench/perth_results/noisy_scale/"
 
     backend = provider.get_backend(small_qpu)
@@ -48,14 +48,14 @@ def main() -> None:
     runner = IBMBackendRunner(provider2, simulate_qpus=False)
 
     for benchname in [
-        # "twolocal_1",
-        # "hamsim_1",
-        # "hamsim_2",
-        # "vqe_1",
-        # "vqe_2",
+        "vqe_1",
+        "twolocal_1",
+        "vqe_2",
+        "hamsim_1",
+        "hamsim_2",
         # "wstate",
         "qsvm",
-        "ghz",
+        # "ghz",
         "qaoa_b",
         "qaoa_ba2",
     ]:
