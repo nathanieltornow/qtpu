@@ -5,7 +5,7 @@ import seaborn as sns
 import matplotlib.ticker as ticker
 from matplotlib import gridspec
 
-FONTSIZE = 12
+FONTSIZE = 14
 ISBETTER_FONTSIZE = FONTSIZE + 2
 WIDE_FIGSIZE = (13, 2.8)
 COLUMN_FIGSIZE = (6.5, 3.4)

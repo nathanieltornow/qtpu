@@ -34,7 +34,7 @@ def main() -> None:
     from qiskit_ibm_runtime import QiskitRuntimeService
     from qiskit_ibm_provider import IBMProvider
 
-    provider = IBMProvider(instance="ibm-q-education/uni-bundeswer-1/quantum-sw-dev")
+    provider = IBMProvider(instance="ibm-q-unibw/reservations/reservations")
 
     small_qpu = "ibm_perth"
     large_qpu = "ibm_perth"
@@ -48,16 +48,16 @@ def main() -> None:
     runner = IBMBackendRunner(provider2, simulate_qpus=False)
 
     for benchname in [
-        "vqe_1",
-        "twolocal_1",
-        "vqe_2",
-        "hamsim_1",
-        "hamsim_2",
-        # "wstate",
-        "qsvm",
+        # "vqe_1",
+        # "twolocal_1",
+        # "vqe_2",
+        # "hamsim_1",
+        # "hamsim_2",
+        "wstate",
+        # "qsvm",
         # "ghz",
-        "qaoa_b",
-        "qaoa_ba2",
+        # "qaoa_b",
+        # "qaoa_ba2",
     ]:
         circuits = (
             # get_circuits(benchname, (10, 11))

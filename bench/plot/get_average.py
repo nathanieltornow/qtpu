@@ -9,4 +9,11 @@ def get_average(dataframes: list[pd.DataFrame], key: str, base_key: str | None =
 
     # concatenate all dataframes into one
     df = pd.concat(dataframes, ignore_index=True)
-    return np.average(df["for_mean"])
+    print("median:", np.median(df["for_mean"]))
+    print("mean:", np.average(df["for_mean"]))
+    print("std:", np.std(df["for_mean"]))
+    print("min:", np.min(df["for_mean"]))
+    print("max:", np.max(df["for_mean"]))
+    print()
+    
+    
