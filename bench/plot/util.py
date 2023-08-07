@@ -13,6 +13,86 @@ COLUMN_FIGSIZE = (6.5, 3.4)
 plt.rcParams.update({"font.size": FONTSIZE})
 
 
+def custom_bar_plot(
+    ax: plt.Axes,
+    y: np.ndarray,
+    yerr: np.ndarray,
+    bar_labels: list[str],
+    colors: list[str] | None = None,
+    hatches: list[str] | None = None,
+    show_average_text: bool = False,
+    average_text_position: float = 1.05,
+    spacing: float = 0.95,
+    zorder: int = 2000, 
+):
+    if colors is None:
+        colors = sns.color_palette("pastel")
+    if hatches is None:
+        hatches = hatches = [
+            "/",
+            "\\",
+            "//",
+            "\\\\",
+            "x",
+            ".",
+            ",",
+            "*",
+            "o",
+            "O",
+            "+",
+            "X",
+            "s",
+            "S",
+            "d",
+            "D",
+            "^",
+            "v",
+            "<",
+            ">",
+            "p",
+            "P",
+            "$",
+            "#",
+            "%",
+        ]
+
+    assert len(y.shape) == len(yerr.shape) == 2
+    assert y.shape == yerr.shape
+
+    num_groups, num_bars = y.shape
+
+    colors = [colors[i] for i in range(num_bars)]
+    hatches = [hatches[i] for i in range(num_bars)]
+
+    assert len(bar_labels) == num_bars
+
+    bar_width = spacing / (num_bars + 1)
+   
+    x = len(y[0])
+
+    ax.bar(
+        bar_labels,
+        y[0],
+        bar_width,
+        hatch=hatches,
+        label=bar_labels,
+        yerr=yerr[0],
+        color=colors,
+        edgecolor="black",
+        linewidth=1.5,
+        error_kw=dict(lw=2, capsize=3),
+        zorder=zorder,
+    )
+
+    #ax.set_xticks(x + ((num_bars - 1) / 2) * bar_width)
+
+    if show_average_text:
+        for i, x_pos in enumerate(ax.get_xticks()):
+            y_avg = np.average(y[i])
+            text = f"{y_avg:.2f}"
+            ax.text(x_pos, average_text_position, text, ha="center")
+
+
 def grouped_bar_plot(
     ax: plt.Axes,
     y: np.ndarray,
@@ -60,6 +140,7 @@ def grouped_bar_plot(
     assert y.shape == yerr.shape
 
     num_groups, num_bars = y.shape
+
     assert len(bar_labels) == num_bars
 
     bar_width = spacing / (num_bars + 1)
@@ -70,7 +151,7 @@ def grouped_bar_plot(
         yerr_bars = yerr[:, i]
 
         color, hatch = colors[i % len(colors)], hatches[i % len(hatches)]
-
+        print(y_bars)
         ax.bar(
             x + (i * bar_width),
             y_bars,
@@ -99,6 +180,7 @@ def index_dataframe_mean_std(
     xvalues: np.ndarray,
     ykey: str,
 ) -> tuple[np.ndarray, np.ndarray]:
+
     df = (
         df.groupby(xkey)
         .agg({ykey: ["mean", "sem"]})
@@ -152,46 +234,50 @@ def save_figure(fig: plt.Figure, exp_name: str):
 # #         )
 #     )
 
-# def plot_lines(ax, keys: list[str], labels: list[str], dataframes: list[pd.DataFrame]):
-#     all_x = set()
-#     for ls, key in enumerate(keys):
-#         for df in dataframes:
-#             grouped_df = prepare_dataframe(df, key)
-#             x = grouped_df[X_KEY]
-#             all_x.update(set(x))
-#             y_mean = grouped_df[key]["mean"]
-#             y_error = grouped_df[key]["sem"]
-#             if np.isnan(y_error).any():
-#                 y_error = None
+MARKER_STYLES = ["v", "o", "p", "^", "s", "D"]
+LINE_STYLES = ["-", "--", "-.", ":", "-", "--", "-.", ":"]
+COLORS = sns.color_palette("pastel")
 
-#             ax.errorbar(
-#                 x,
-#                 y_mean,
-#                 yerr=y_error,
-#                 label=labels[ls],
-#                 # color=COLORS[ls],
-#                 marker=MARKER_STYLES[ls],
-#                 markersize=6,
-#                 markeredgewidth=1.5,
-#                 markeredgecolor="black",
-#                 linestyle=LINE_STYLES[ls],
-#                 linewidth=2,
-#                 capsize=3,
-#                 capthick=1.5,
-#                 ecolor="black",
-#             )
-#     x = sorted(list(all_x))
-#     ax.set_xticks(x)
+def plot_lines(ax, keys: list[str], labels: list[str], dataframes: list[pd.DataFrame]):
+    all_x = set()
+    for ls, key in enumerate(keys):
+        for df in dataframes:
+            grouped_df = prepare_dataframe(df, key)
+            x = grouped_df["num_qubits"]
+            all_x.update(set(x))
+            y_mean = grouped_df[key]["mean"]
+            y_error = grouped_df[key]["sem"]
+            if np.isnan(y_error).any():
+                y_error = None
 
-# def prepare_dataframe(df: pd.DataFrame, key: str) -> pd.DataFrame:
-#     res_df = df.loc[df[key] > 0.0]
-#     res_df = (
-#         res_df.groupby("num_qubits")
-#         .agg({key: ["mean", "sem"]})
-#         .sort_values(by=["num_qubits"])
-#         .reset_index()
-#     )
-#     return res_df
+            ax.errorbar(
+                x,
+                y_mean,
+                yerr=y_error,
+                label=labels[ls],
+                color=COLORS[ls],
+                marker=MARKER_STYLES[ls],
+                markersize=6,
+                markeredgewidth=1.5,
+                markeredgecolor="black",
+                linestyle=LINE_STYLES[ls],
+                linewidth=2,
+                capsize=3,
+                capthick=1.5,
+                ecolor="black",
+            )
+    x = sorted(list(all_x))
+    ax.set_xticks(x)
+
+def prepare_dataframe(df: pd.DataFrame, key: str) -> pd.DataFrame:
+    res_df = df.loc[df[key] > 0.0]
+    res_df = (
+        res_df.groupby("num_qubits")
+        .agg({key: ["mean", "sem"]})
+        .sort_values(by=["num_qubits"])
+        .reset_index()
+    )
+    return res_df
 
 
 # def calculate_figure_size(num_rows, num_cols):

@@ -22,23 +22,26 @@ def _run_circuit(
     fragment_size: int,
     run_base: bool = True,
 ) -> BenchmarkResult:
-    #comp = OptimalGateDecomposer(fragment_size)
-    #cut_circ = comp.run(circuit)
+    comp = OptimalGateDecomposer(fragment_size)
+    cut_circ = comp.run(circuit)
 
-    #virt = VirtualCircuit(cut_circ)
-    #_, run_time_info = run_virtualizer(virt, runner)
     backend = FakeTorontoV2()
-    #backend = None
+
+    virt = VirtualCircuit(cut_circ)
+    perf_counts, run_time_info = run_virtualizer(virt, runner)
+    #perf_counts = perf_counts.to_counts(circuit.num_clbits, 20000)
+    noisy_counts, run_time_info = run_virtualizer(virt, runner, backend=backend)
+    fid = hellinger_fidelity(perf_counts, noisy_counts)
     
     run_time_base = 0.0
-    if run_base:
-        now = perf_counter()
-        job_id = runner.run([circuit])
-        perf_counts = runner.get_results(job_id)[0].to_counts(circuit.num_clbits, 20000)
-        job_id = runner.run([circuit], backend)
-        noisy_counts = runner.get_results(job_id)[0].to_counts(circuit.num_clbits, 20000)
-        fid = hellinger_fidelity(perf_counts, noisy_counts)
-        run_time_base = perf_counter() - now
+    #if run_base:
+        #now = perf_counter()
+        #job_id = runner.run([circuit])
+        #perf_counts = runner.get_results(job_id)[0].to_counts(circuit.num_clbits, 20000)
+        #job_id = runner.run([circuit], backend)
+        #noisy_counts = runner.get_results(job_id)[0].to_counts(circuit.num_clbits, 20000)
+        #fid = hellinger_fidelity(perf_counts, noisy_counts)
+        #run_time_base = perf_counter() - now
 
     return BenchmarkResult(
         num_qubits=circuit.num_qubits,
@@ -64,17 +67,17 @@ def bench_scale_sim(
 
 
 def main() -> None:
-    #graph = nx.random_regular_graph(1, 4)
-    #circ = qaoa(graph)
-    #circ.qasm(filename="bench/circuits/qaoa_r2/4qasm")
-    #exit()
+    graph = nx.barbell_graph(3, 1)
+    circ = qaoa(graph)
+    circ.qasm(filename="bench/circuits/qaoa_ba3/7.qasm")
+    exit()
 
     bench = sys.argv[1]
     result_dir = f"bench/results/scale_sim"
 
     runner = LocalBackendRunner()
 
-    frag_size = 100
+    frag_size = int(sys.argv[4])
 
     circuits = get_circuits(bench, (int(sys.argv[2]), int(sys.argv[3])))
 	

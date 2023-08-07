@@ -30,13 +30,13 @@ def plot_abs22(
             .sort_values(by=[xkey])
             .reset_index()[[xkey, ykey]]
         )
+        
         gdf = gdf.set_index(xkey)
         gdf = gdf.reindex(sorted(xvalues))
         gdf[ykey] = gdf[ykey].fillna(0.0)
         gdf = gdf.reset_index()
         grouped_dfs.append(gdf)
     dfs = grouped_dfs
-
     spacing = 0.95
     nums_qubits = sorted(list(xvalues))  # type: ignore
     bar_width = spacing / (len(ykeys) + 1)
@@ -599,7 +599,7 @@ def plot_fid_side_by_side():
     plt.tight_layout()
     plt.savefig("figures/noisy_scale/fid2.pdf", bbox_inches="tight")
 
-
+"""
 def plot_fid_dep_min():
     from data import DEP_MIN_KOLKATA_REAL
 
@@ -655,3 +655,5 @@ plot_fid_dep_min()
 # plot_noisy_scale()
 # plot_dep_min()
 # plot_noise_scale_data()
+
+"""

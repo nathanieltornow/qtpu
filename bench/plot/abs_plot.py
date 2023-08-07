@@ -53,5 +53,5 @@ def plot_abs(
             error_kw=dict(lw=2, capsize=3),
         )
 
-    ax.set_xticks(x + ((ykeys) - 1) / 2) * bar_width)))
+    ax.set_xticks(x + (ykeys - 1) / 2 * bar_width)
     ax.set_xticklabels(nums_qubits)

@@ -9,7 +9,7 @@ from qiskit.compiler import transpile
 from qvm.qvm_runner import QVMBackendRunner
 from qvm.run import run_virtualizer
 from qvm.virtual_circuit import VirtualCircuit
-from qvm.compiler import QVMCompiler
+from qvm.compiler import CutCompiler
 from qvm.compiler.dag import DAG
 
 
@@ -28,8 +28,8 @@ class Benchmark:
     circuits: list[QuantumCircuit]
     backend: BackendV2
     result_file: str
-    compiler: QVMCompiler
-    base_compiler: QVMCompiler | None = None
+    compiler: CutCompiler
+    base_compiler: CutCompiler | None = None
     base_backend: BackendV2 | None = None
 
 

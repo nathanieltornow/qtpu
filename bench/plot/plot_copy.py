@@ -1,7 +1,7 @@
 from util import *
 
-HIGHERISBETTER = "Higher is better ↑"
-LOWERISBETTER = "Lower is better ↓"
+HIGHERISBETTER = "Higher is better \x8593"
+LOWERISBETTER = u"Lower is better \x8595"
 
 from get_average import get_average
 
