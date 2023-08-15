@@ -7,6 +7,8 @@ from qiskit.circuit import (
     QuantumCircuit,
     QuantumRegister as Fragment,
 )
+from qiskit.providers import BackendV2
+from qiskit_aer import AerSimulator
 
 from qvm.quasi_distr import QuasiDistr
 from qvm.virtual_gates import VirtualBinaryGate, VirtualGateEndpoint, VirtualMove
@@ -29,6 +31,9 @@ class VirtualCircuit:
         self._frag_circs = {
             qreg: self._circuit_on_fragment(self._circuit, qreg)
             for qreg in circuit.qregs
+        }
+        self._frag_to_backend = {
+            qreg: AerSimulator() for qreg in self._frag_circs.keys()
         }
 
     def get_instance_labels(self, fragment: Fragment) -> list[InstanceLabelType]:
@@ -68,6 +73,16 @@ class VirtualCircuit:
         # if set(fragment) != set(circuit.qubits):
         #     raise ValueError("Fragment and circuit do not match.")
         self._frag_circs[fragment] = circuit
+        
+    def get_backend(self, fragment: Fragment) -> BackendV2:
+        if fragment not in self._frag_to_backend:
+            raise ValueError("Fragment not found.")
+        return self._frag_to_backend[fragment]
+
+    def set_backend(self, fragment: Fragment, backend: BackendV2) -> None:
+        if fragment not in self._frag_to_backend:
+            raise ValueError("Fragment not found.")
+        self._frag_to_backend[fragment] = backend
 
     @staticmethod
     def _replace_vgates_with_endpoints(circuit: QuantumCircuit) -> QuantumCircuit:

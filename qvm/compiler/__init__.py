@@ -1,1 +1,1 @@
-from .compiler import QVMCompiler, StandardQVMCompiler
+from .compiler import QVMCompiler, StandardQVMCompiler, CutterCompiler

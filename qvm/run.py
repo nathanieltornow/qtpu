@@ -3,11 +3,11 @@ from time import perf_counter
 from dataclasses import dataclass
 from multiprocessing import Pool
 
-from qiskit.providers import BackendV2
+from qiskit.providers import Job
 from qiskit.circuit import QuantumRegister as Fragment
 
 from qvm.virtual_circuit import VirtualCircuit, generate_instantiations
-from qvm.qvm_runner import QVMBackendRunner
+from qvm.quasi_distr import QuasiDistr
 
 
 logger = logging.getLogger("qvm")
@@ -19,10 +19,10 @@ class RunTimeInfo:
     knit_time: float
 
 
-def run_virtualizer(
-    virt: VirtualCircuit, runner: QVMBackendRunner, backend: BackendV2 | None = None
+def run_virtual_circuit(
+    virt: VirtualCircuit, shots: int = 20000
 ) -> tuple[dict[int, float], RunTimeInfo]:
-    jobs: dict[Fragment, str] = {}
+    jobs: dict[Fragment, Job] = {}
 
     logger.info(
         f"Running virtualizer with {len(virt.fragment_circuits)} "
@@ -36,12 +36,14 @@ def run_virtualizer(
         instance_labels = virt.get_instance_labels(frag)
         instantiations = generate_instantiations(frag_circuit, instance_labels)
         num_instances += len(instantiations)
-        jobs[frag] = runner.run(instantiations, backend)
+        jobs[frag] = virt.get_backend(frag).run(instantiations, shots=shots)
 
     logger.info(f"Running {num_instances} instances...")
     results = {}
-    for frag, job_id in jobs.items():
-        results[frag] = runner.get_results(job_id)
+    for frag, job in jobs.items():
+        counts = job.result().get_counts()
+        counts = [counts] if isinstance(counts, dict) else counts
+        results[frag] = [QuasiDistr.from_counts(c) for c in counts]
 
     run_time = perf_counter() - now
 
@@ -51,7 +53,7 @@ def run_virtualizer(
         now = perf_counter()
         res_dist = virt.knit(results, pool)
         knit_time = perf_counter() - now
-        
+
     logger.info(f"Knitted in {knit_time:.2f}s.")
 
     return res_dist.nearest_probability_distribution(), RunTimeInfo(run_time, knit_time)

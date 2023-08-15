@@ -7,6 +7,7 @@ from qvm.compiler.virtualization import (
 )
 from qvm.compiler.distr_transpiler import QubitReuser
 from qvm.compiler.types import DistributedTranspilerPass, VirtualizationPass
+from qvm.compiler.util import num_virtual_gates
 
 
 class QVMCompiler:
@@ -21,7 +22,12 @@ class QVMCompiler:
     def run(self, circuit: QuantumCircuit, budget: int) -> VirtualCircuit:
         circuit = circuit.copy()
         for vpass in self._virt_passes:
+            if budget == 0:
+                break
+            elif budget < 0:
+                raise ValueError("Compiler failed to keep budget.")
             circuit = vpass.run(circuit, budget)
+            budget -= num_virtual_gates(circuit)
 
         virt_circuit = VirtualCircuit(circuit)
         for dtpass in self._distributed_transpilers:
@@ -38,3 +44,8 @@ class StandardQVMCompiler(QVMCompiler):
             ],
             dt_passes=[QubitReuser(size_to_reach)],
         )
+
+
+class CutterCompiler(QVMCompiler):
+    def __init__(self, size_to_reach: int) -> None:
+        super().__init__([OptimalDecompositionPass(size_to_reach)])
