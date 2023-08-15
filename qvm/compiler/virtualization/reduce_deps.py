@@ -1,39 +1,32 @@
 import abc
-from itertools import chain, combinations, product
-from collections import Counter
 
 import networkx as nx
 from qiskit.circuit import QuantumCircuit, Qubit, Barrier
 
 from qvm.compiler.asp import get_optimal_symbols, dag_to_asp
-from qvm.compiler.types import CutCompiler
+from qvm.compiler.types import VirtualizationPass
 from qvm.compiler.dag import DAG, dag_to_qcg
 
 
-class QubitDependencyReducer(CutCompiler, abc.ABC):
-    def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
+class QubitDependencyReducer(VirtualizationPass, abc.ABC):
+    def run(self, circuit: QuantumCircuit, budget: int) -> QuantumCircuit:
         dag = DAG(circuit)
         dag.compact()
-        self._pass(dag)
+        self._pass(dag, budget)
         dag.fragment()
         return dag.to_circuit()
 
     @abc.abstractmethod
-    def _pass(self, dag: DAG) -> None:
+    def _pass(self, dag: DAG, budget: int) -> None:
         ...
 
 
 class CircularDependencyBreaker(QubitDependencyReducer):
-    def __init__(self, max_vgates: int) -> None:
-        self._max_vgates = max_vgates
-        super().__init__()
-
-    def _pass(self, dag: DAG) -> None:
+    def _pass(self, dag: DAG, budget: int) -> None:
         qubit_depends_on: dict[Qubit, set[Qubit]] = {
             qubit: set() for qubit in dag.qubits
         }
         qcg = dag_to_qcg(dag)
-        budget = self._max_vgates
         nodes = nx.topological_sort(dag)
         for node in nodes:
             if budget <= 0:
@@ -65,20 +58,15 @@ class CircularDependencyBreaker(QubitDependencyReducer):
                 raise ValueError("Cannot convert dag to qdg, too many qubits")
 
 
-class GreedyDependencyBreaker(QubitDependencyReducer):
+class GreedyDependencyBreaker(VirtualizationPass):
     """
     A dependency breaker that greedily virtualizes the gates which
     depend on and influence the most other binary gates.
     """
 
-    def __init__(self, max_vgates: int) -> None:
-        self._max_vgates = max_vgates
-        super().__init__()
-
-    def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
+    def run(self, circuit: QuantumCircuit, budget: int) -> QuantumCircuit:
         dag = DAG(circuit)
-        # dag.compact()
-        for _ in range(self._max_vgates):
+        for _ in range(budget):
             self._pass(dag)
         dag.fragment()
         return dag.to_circuit()
@@ -140,13 +128,9 @@ class GreedyDependencyBreaker(QubitDependencyReducer):
 
 
 class QubitDependencyMinimizer(QubitDependencyReducer):
-    def __init__(self, max_vgates: int) -> None:
-        self._max_vgates = max_vgates
-        super().__init__()
-
-    def _pass(self, dag: DAG) -> None:
+    def _pass(self, dag: DAG, budget: int) -> None:
         asp = dag_to_asp(dag)
-        asp += self._min_dep_asp()
+        asp += self._min_dep_asp(budget)
 
         symbols = get_optimal_symbols(asp)
         for symbol in symbols:
@@ -155,11 +139,11 @@ class QubitDependencyMinimizer(QubitDependencyReducer):
             gate_idx = symbol.arguments[0].number
             dag.virtualize_node(gate_idx)
 
-    def _min_dep_asp(self) -> str:
+    def _min_dep_asp(self, budget: int) -> str:
         asp = f"""
         {{ vgate(Gate) }} :- gate_on_qubit(Gate, Qubit1), gate_on_qubit(Gate, Qubit2), Qubit1 != Qubit2.
         
-        :- N = #count{{Gate : vgate(Gate)}}, N != {self._max_vgates}.
+        :- N = #count{{Gate : vgate(Gate)}}, N != {budget}.
         
         path(Gate1, Gate2) :- wire(_, Gate1, Gate2), not vgate(Gate1), not vgate(Gate2).
         path(Gate1, Gate3) :- path(Gate1, Gate2), path(Gate2, Gate3).
@@ -181,14 +165,3 @@ class QubitDependencyMinimizer(QubitDependencyReducer):
         #show vgate/1.
         """
         return asp
-
-
-def number_of_dependecies(dag: DAG) -> int:
-    num_deps = 0
-    for node in dag.nodes:
-        instr = dag.get_node_instr(node)
-        qubits = instr.qubits
-        if len(qubits) == 2:
-            q1, q2 = qubits
-            num_deps += len(dag.get_node_deps(node)) + 1
-    return num_deps

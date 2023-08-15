@@ -1,20 +1,24 @@
 from networkx.algorithms.community import kernighan_lin_bisection as bisect
 from qiskit.circuit import QuantumCircuit, Qubit, Barrier
 
+from qvm.compiler.util import num_virtual_gates
 from qvm.compiler.asp import qcg_to_asp, get_optimal_symbols
 from qvm.compiler.dag import DAG, dag_to_qcg
-from qvm.compiler.types import CutCompiler
+from qvm.compiler.types import VirtualizationPass
 
 
-class BisectionCompiler(CutCompiler):
+class BisectionPass(VirtualizationPass):
     def __init__(self, size_to_reach: int) -> None:
         self._size_to_reach = size_to_reach
         super().__init__()
 
-    def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
+    def run(self, circuit: QuantumCircuit, budget: int) -> QuantumCircuit:
         dag = DAG(circuit)
         self._recursive_bisection(dag)
         dag.fragment()
+        v_circuit = dag.to_circuit()
+        if num_virtual_gates(v_circuit) > budget:
+            return circuit.copy()
         return dag.to_circuit()
 
     def _recursive_bisection(self, dag: DAG) -> int:
@@ -27,15 +31,18 @@ class BisectionCompiler(CutCompiler):
         return _decompose_qubit_sets(dag, partitions)
 
 
-class OptimalGateDecomposer(CutCompiler):
+class OptimalDecompositionPass(VirtualizationPass):
     def __init__(self, size_to_reach: int) -> None:
         self._size_to_reach = size_to_reach
         super().__init__()
 
-    def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
+    def run(self, circuit: QuantumCircuit, budget: int) -> QuantumCircuit:
         dag = DAG(circuit)
         self._optimal_decomposition(dag)
         dag.fragment()
+        v_circuit = dag.to_circuit()
+        if num_virtual_gates(v_circuit) > budget:
+            return circuit.copy()
         return dag.to_circuit()
 
     def _asp_code(self, num_partitions: int) -> str:

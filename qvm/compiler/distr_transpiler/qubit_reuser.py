@@ -6,11 +6,11 @@ from qiskit.circuit import Qubit, CircuitInstruction, Reset, Measure
 from qiskit.circuit.library.standard_gates import XGate
 
 from qvm.compiler.dag import DAG
-from qvm.compiler.types import VirtualCircuitCompiler
+from qvm.compiler.types import DistributedTranspilerPass
 from qvm.virtual_circuit import VirtualCircuit
 
 
-class QubitReuseCompiler(VirtualCircuitCompiler):
+class QubitReuser(DistributedTranspilerPass):
     def __init__(self, size_to_reach: int, dynamic: int = True) -> None:
         self._size_to_reach = size_to_reach
         self._dynamic = dynamic
@@ -24,7 +24,6 @@ class QubitReuseCompiler(VirtualCircuitCompiler):
             if self._dynamic:
                 dynamic_measure_and_reset(dag)
             virt.replace_fragment_circuit(frag, dag.to_circuit())
-        print(max(circ.num_qubits for circ in virt.fragment_circuits.values()))
 
 
 def dynamic_measure_and_reset(dag: DAG) -> None:

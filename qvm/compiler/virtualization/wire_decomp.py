@@ -1,13 +1,13 @@
 import networkx as nx
 from qiskit.circuit import QuantumCircuit, QuantumRegister, CircuitInstruction, Qubit
 
-from qvm.compiler.types import CutCompiler
+from qvm.compiler.types import VirtualizationPass
 from qvm.compiler.dag import DAG
 from qvm.compiler.asp import dag_to_asp, get_optimal_symbols
 from qvm.virtual_gates import WireCut, VirtualMove
 
 
-class OptimalWireCutter(CutCompiler):
+class OptimalWireCutter(VirtualizationPass):
     def __init__(self, size_to_reach: int) -> None:
         self._size_to_reach = size_to_reach
         super().__init__()

@@ -1,24 +1,40 @@
 from qiskit.circuit import QuantumCircuit
 
 from qvm.virtual_circuit import VirtualCircuit
-from .types import VirtualCircuitCompiler, CutCompiler
+from qvm.compiler.virtualization import (
+    OptimalDecompositionPass,
+    GreedyDependencyBreaker,
+)
+from qvm.compiler.distr_transpiler import QubitReuser
+from qvm.compiler.types import DistributedTranspilerPass, VirtualizationPass
 
 
 class QVMCompiler:
     def __init__(
         self,
-        cut_compiler: CutCompiler | None = None,
-        vc_compiler: VirtualCircuitCompiler | None = None,
+        virt_passes: list[VirtualizationPass] | None = None,
+        dt_passes: list[DistributedTranspilerPass] | None = None,
     ):
-        self._cut_compiler = cut_compiler
-        self._vc_compiler = vc_compiler
+        self._virt_passes = virt_passes or []
+        self._distributed_transpilers = dt_passes or []
 
-    def run(self, circuit: QuantumCircuit) -> VirtualCircuit:
-        cut_circuit = circuit.copy()
-        if self._cut_compiler is not None:
-            cut_circuit = self._cut_compiler.run(cut_circuit)
-        vc = VirtualCircuit(cut_circuit)
+    def run(self, circuit: QuantumCircuit, budget: int) -> VirtualCircuit:
+        circuit = circuit.copy()
+        for vpass in self._virt_passes:
+            circuit = vpass.run(circuit, budget)
 
-        if self._vc_compiler is not None:
-            self._vc_compiler.run(vc)
-        return vc
+        virt_circuit = VirtualCircuit(circuit)
+        for dtpass in self._distributed_transpilers:
+            dtpass.run(virt_circuit)
+        return virt_circuit
+
+
+class StandardQVMCompiler(QVMCompiler):
+    def __init__(self, size_to_reach: int) -> None:
+        super().__init__(
+            virt_passes=[
+                OptimalDecompositionPass(size_to_reach),
+                GreedyDependencyBreaker(),
+            ],
+            dt_passes=[QubitReuser(size_to_reach)],
+        )
