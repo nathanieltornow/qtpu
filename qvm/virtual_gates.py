@@ -14,16 +14,6 @@ class WireCut(Barrier):
         self._definition = QuantumCircuit(1)
 
 
-class VirtualMove(Barrier):
-    def __init__(self):
-        super().__init__(num_qubits=2, label="vmove")
-
-    def _define(self):
-        circ = QuantumCircuit(2)
-        circ.swap(0, 1)
-        self._definition = circ
-
-
 class VirtualBinaryGate(Barrier, abc.ABC):
     def __init__(self, original_gate: Gate):
         self._original_gate = original_gate
@@ -65,6 +55,72 @@ class VirtualBinaryGate(Barrier, abc.ABC):
         self._definition = circuit
 
 
+class VirtualMove(VirtualBinaryGate):
+    def _instantiations(self) -> list[QuantumCircuit]:
+        q0, q1 = 0, 1
+
+        inst0 = QuantumCircuit(2, 1)
+
+        inst1 = QuantumCircuit(2, 1)
+        inst1.x(q1)
+
+        inst2 = QuantumCircuit(2, 1)
+        inst2.h(q0)
+        inst2.measure(q0, 0)
+        inst2.h(q1)
+
+        inst3 = QuantumCircuit(2, 1)
+        inst3.h(q0)
+        inst3.measure(q0, 0)
+        inst3.x(q1)
+        inst3.h(q1)
+
+        inst4 = QuantumCircuit(2, 1)
+        inst4.sdg(q0)
+        inst4.h(q0)
+        inst4.measure(q0, 0)
+        inst4.h(q1)
+        inst4.s(q1)
+
+        inst5 = QuantumCircuit(2, 1)
+        inst5.sdg(q0)
+        inst5.h(q0)
+        inst5.measure(q0, 0)
+        inst5.x(q1)
+        inst5.h(q1)
+        inst5.s(q1)
+
+        inst6 = QuantumCircuit(2, 1)
+        inst6.measure(q0, 0)
+
+        inst7 = QuantumCircuit(2, 1)
+        inst7.measure(q0, 0)
+        inst7.x(q1)
+
+        return [inst0, inst1, inst2, inst3, inst4, inst5, inst6, inst7]
+
+    def knit(self, results: list[QuasiDistr], clbit_idx: int) -> QuasiDistr:
+        r00, r01 = results[0].split(clbit_idx)
+        r10, r11 = results[1].split(clbit_idx)
+        r20, r21 = results[2].split(clbit_idx)
+        r30, r31 = results[3].split(clbit_idx)
+        r40, r41 = results[4].split(clbit_idx)
+        r50, r51 = results[5].split(clbit_idx)
+        r60, r61 = results[6].split(clbit_idx)
+        r70, r71 = results[7].split(clbit_idx)
+
+        return 0.5 * (
+            (r00 - r01)
+            + (r10 - r11)
+            + (r20 - r21)
+            - (r30 - r31)
+            + (r40 - r41)
+            - (r50 - r51)
+            + (r60 - r61)
+            - (r70 - r71)
+        )
+
+
 class VirtualGateEndpoint(Barrier):
     def __init__(self, virtual_gate: VirtualBinaryGate, vgate_idx: int, qubit_idx: int):
         self._virtual_gate = virtual_gate
@@ -94,37 +150,45 @@ class VirtualGateEndpoint(Barrier):
 class VirtualCZ(VirtualBinaryGate):
     def _instantiations(self) -> list[QuantumCircuit]:
         inst0 = QuantumCircuit(2, 1)
-        inst0.rz(pi / 2, 0)
-        inst0.rz(pi / 2, 1)
+        inst0.sdg(0)
+        inst0.sdg(1)
 
         inst1 = QuantumCircuit(2, 1)
-        inst1.rz(-pi / 2, 0)
-        inst1.rz(-pi / 2, 1)
+        inst1.s(0)
+        inst1.s(1)
 
         inst2 = QuantumCircuit(2, 1)
-        inst2.rz(pi, 0)
-        inst2.measure(1, 0)
+        inst2.measure(0, 0)
 
         inst3 = QuantumCircuit(2, 1)
         inst3.measure(0, 0)
-        inst3.rz(pi, 1)
+        inst3.z(1)
 
         inst4 = QuantumCircuit(2, 1)
-        inst4.measure(0, 0)
+        inst4.measure(1, 0)
 
         inst5 = QuantumCircuit(2, 1)
+        inst5.z(0)
         inst5.measure(1, 0)
 
         return [inst0, inst1, inst2, inst3, inst4, inst5]
 
     def knit(self, results: list[QuasiDistr], clbit_idx: int) -> QuasiDistr:
-        r0, d = results[0].split(clbit_idx)
-        r1, d = results[1].split(clbit_idx)
+        r00, r01 = results[0].split(clbit_idx)
+        r10, r11 = results[1].split(clbit_idx)
         r20, r21 = results[2].split(clbit_idx)
         r30, r31 = results[3].split(clbit_idx)
         r40, r41 = results[4].split(clbit_idx)
         r50, r51 = results[5].split(clbit_idx)
-        return (r0 + r1 + (r21 - r20) + (r31 - r30) + (r40 - r41) + (r50 - r51)) * 0.5
+
+        return 0.5 * (
+            (r00 - r01)
+            + (r10 - r11)
+            + (r20 - r21)
+            - (r30 - r31)
+            + (r40 - r41)
+            - (r50 - r51)
+        )
 
 
 class VirtualCX(VirtualCZ):

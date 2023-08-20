@@ -1,10 +1,12 @@
 import networkx as nx
 from qiskit.circuit import QuantumCircuit, QuantumRegister, CircuitInstruction, Qubit
+from qiskit.circuit.library import SwapGate
 
 from qvm.compiler.types import VirtualizationPass
 from qvm.compiler.dag import DAG
 from qvm.compiler.asp import dag_to_asp, get_optimal_symbols
 from qvm.virtual_gates import WireCut, VirtualMove
+from qvm.compiler.util import num_virtual_gates
 
 
 class OptimalWireCutter(VirtualizationPass):
@@ -12,13 +14,15 @@ class OptimalWireCutter(VirtualizationPass):
         self._size_to_reach = size_to_reach
         super().__init__()
 
-    def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
+    def run(self, circuit: QuantumCircuit, budget: int) -> QuantumCircuit:
         dag = DAG(circuit)
         num_cuts = self._cut_wires(dag)
-        print(dag.to_circuit())
         self._wire_cuts_to_moves(dag, num_cuts)
         dag.fragment()
-        return dag.to_circuit()
+        new_circuit = dag.to_circuit()
+        if num_virtual_gates(new_circuit) > budget:
+            raise ValueError("Could not find a solution (internal error)")
+        return new_circuit
 
     def _cut_wires(self, dag: DAG) -> int:
         min_num_fragments = len(dag.qubits) // self._size_to_reach
@@ -64,7 +68,7 @@ class OptimalWireCutter(VirtualizationPass):
             instr = dag.get_node_instr(node)
             instr.qubits = [_find_qubit(qubit) for qubit in instr.qubits]
             if isinstance(instr.operation, WireCut):
-                instr.operation = VirtualMove()
+                instr.operation = VirtualMove(SwapGate())
                 instr.qubits.append(move_reg[cut_ctr])
                 qubit_mapping[instr.qubits[0]] = instr.qubits[1]
                 cut_ctr += 1

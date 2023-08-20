@@ -11,7 +11,7 @@ def main():
     circuit = EfficientSU2(8, entanglement="linear", reps=2).decompose()
     circuit.measure_all()
     circuit = circuit.bind_parameters(
-        {param: np.pi / 2 for param in circuit.parameters}
+        {param: np.random.randn() / 2 for param in circuit.parameters}
     )
 
     print(circuit)

@@ -52,7 +52,7 @@ class VirtualCircuit:
             return next(iter(results.values()))[0]
         merged_results = self._merge(results, pool)
         vgates = [instr.operation for instr in self._vgate_instrs]
-        clbit_idx = self._circuit.num_qubits + len(vgates) - 1
+        clbit_idx = self._circuit.num_clbits + len(vgates) - 1
         while len(vgates) > 0:
             vgate = vgates.pop(-1)
             chunks = _chunk(merged_results, vgate.num_instantiations)
