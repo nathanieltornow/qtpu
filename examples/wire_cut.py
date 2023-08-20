@@ -17,12 +17,6 @@ def main():
     )
     print(circuit.draw())
 
-    # circuit = QuantumCircuit(3, 3)
-    # circuit.h(0)
-    # circuit.cx(0, 1)
-    # circuit.cx(1, 2)
-    # circuit.measure(range(3), range(3))
-
     cp = circuit.copy()
     comp_pass = OptimalWireCutter(4)
     cut_circuit = comp_pass.run(circuit, 2)
