@@ -48,9 +48,9 @@ class VirtualCircuit:
         return list(itertools.product(*inst_l))
 
     def knit(self, results: dict[Fragment, list[QuasiDistr]], pool: Pool) -> QuasiDistr:
-        if len(self._vgate_instrs) == 0:
-            return next(iter(results.values()))[0]
         merged_results = self._merge(results, pool)
+        if len(self._vgate_instrs) == 0:
+            return merged_results[0]
         vgates = [instr.operation for instr in self._vgate_instrs]
         clbit_idx = self._circuit.num_clbits + len(vgates) - 1
         while len(vgates) > 0:
