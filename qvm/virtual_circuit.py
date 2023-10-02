@@ -73,7 +73,7 @@ class VirtualCircuit:
         # if set(fragment) != set(circuit.qubits):
         #     raise ValueError("Fragment and circuit do not match.")
         self._frag_circs[fragment] = circuit
-        
+
     def get_backend(self, fragment: Fragment) -> BackendV2:
         if fragment not in self._frag_to_backend:
             raise ValueError("Fragment not found.")

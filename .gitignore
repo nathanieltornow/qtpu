@@ -1,6 +1,6 @@
 bench_results/
 .vscode/
-.pdm.toml
+.pdm-python
 .DS_Store
 # Byte-compiled / optimized / DLL files
 __pycache__/

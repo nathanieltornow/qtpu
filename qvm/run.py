@@ -5,6 +5,7 @@ from multiprocessing import Pool
 
 from qiskit.providers import Job
 from qiskit.circuit import QuantumRegister as Fragment
+from qiskit.compiler import transpile
 
 from qvm.virtual_circuit import VirtualCircuit, generate_instantiations
 from qvm.quasi_distr import QuasiDistr
@@ -36,6 +37,7 @@ def run_virtual_circuit(
         instance_labels = virt.get_instance_labels(frag)
         instantiations = generate_instantiations(frag_circuit, instance_labels)
         num_instances += len(instantiations)
+        instantiations = transpile(instantiations, backend=virt.get_backend(frag), optimization_level=0)
         jobs[frag] = virt.get_backend(frag).run(instantiations, shots=shots)
 
     logger.info(f"Running {num_instances} instances...")
