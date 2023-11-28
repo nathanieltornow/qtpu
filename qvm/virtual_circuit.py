@@ -1,13 +1,10 @@
 from dataclasses import dataclass
 
-from qiskit.circuit import (
-    Barrier,
-    QuantumCircuit,
-    QuantumRegister as Fragment,
-)
+from qiskit.circuit import Barrier, QuantumCircuit
+from qiskit.circuit import QuantumRegister as Fragment
 
-from qvm.virtual_gates import VirtualBinaryGate, VirtualGateEndpoint
 from qvm.frag_meta import FragmentMetadata
+from qvm.virtual_gates import VirtualBinaryGate, VirtualGateEndpoint
 
 
 @dataclass

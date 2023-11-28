@@ -1,10 +1,9 @@
 import numpy as np
+from fid import calculate_fidelity
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import EfficientSU2
 
 import qvm
-
-from fid import calculate_fidelity
 
 
 def main():

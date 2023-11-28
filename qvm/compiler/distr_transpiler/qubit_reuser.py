@@ -1,8 +1,8 @@
-from typing import Iterator
 from itertools import permutations
+from typing import Iterator
 
 import networkx as nx
-from qiskit.circuit import Qubit, CircuitInstruction, Reset, Measure
+from qiskit.circuit import CircuitInstruction, Measure, Qubit, Reset
 from qiskit.circuit.library.standard_gates import XGate
 
 from qvm.compiler.dag import DAG

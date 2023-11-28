@@ -1,10 +1,10 @@
 import numpy as np
-from qiskit.circuit.library import EfficientSU2
-from qiskit.circuit import QuantumCircuit, ClassicalRegister
-
-from qvm.compiler.virtualization.wire_decomp import OptimalWireCutter
-from qvm import run, VirtualCircuit
 from fid import calculate_fidelity
+from qiskit.circuit import ClassicalRegister, QuantumCircuit
+from qiskit.circuit.library import EfficientSU2
+
+from qvm import VirtualCircuit, run
+from qvm.compiler.virtualization.wire_decomp import OptimalWireCutter
 
 
 def main():

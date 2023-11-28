@@ -1,19 +1,14 @@
-import abc
 import itertools
 
-import tensornetwork as tn
-from tensornetwork.backends.numpy.numpy_backend import NumPyBackend
 import numpy as np
-from qiskit.circuit import (
-    QuantumCircuit,
-    QuantumRegister as Fragment,
-    ClassicalRegister,
-)
+import tensornetwork as tn
+from qiskit.circuit import ClassicalRegister, QuantumCircuit
+from qiskit.circuit import QuantumRegister as Fragment
+from tensornetwork.backends.numpy.numpy_backend import NumPyBackend
 
-from qvm.virtual_circuit import VirtualCircuit
-from qvm.virtual_gates import VirtualGateEndpoint, VirtualBinaryGate
 from qvm.quasi_distr import QuasiDistr, prepare_quasidist
-
+from qvm.virtual_circuit import VirtualCircuit
+from qvm.virtual_gates import VirtualGateEndpoint
 
 InstanceLabelType = tuple[int, ...]
 
@@ -24,6 +19,8 @@ class _CustomNumpyBackend(NumPyBackend):
         self.name = "custom_numpy"
 
     def tensordot(self, a, b, axes):
+        # we need to override this method because the default implementation
+        # does not support tensors with dtype=object
         return np.tensordot(a, b, axes=axes)
 
 

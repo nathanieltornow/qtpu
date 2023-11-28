@@ -1,23 +1,23 @@
 import abc
-import numpy as np
 
+import numpy as np
 from qiskit.circuit import (
     Barrier,
     Gate,
-    QuantumCircuit,
     Instruction,
-    Parameter,
     Measure,
+    Parameter,
+    QuantumCircuit,
 )
 from qiskit.circuit.library.standard_gates import (
-    SXdgGate,
-    SXGate,
-    SdgGate,
-    SGate,
-    ZGate,
-    XGate,
     HGate,
     RZGate,
+    SdgGate,
+    SGate,
+    SXdgGate,
+    SXGate,
+    XGate,
+    ZGate,
 )
 
 from qvm.quasi_distr import QuasiDistr
@@ -200,7 +200,7 @@ class VirtualMove(VirtualBinaryGate):
         return 0.5 * np.array([1, 1, 1, -1, 1, -1, 1, -1])
 
 
-VIRTUAL_GATE_TYPES: dict[str, type[VirtualBinaryGate]] = {
+VIRTUAL_GATE_TYPES = {
     "cx": VirtualCX,
     "cy": VirtualCY,
     "cz": VirtualCZ,

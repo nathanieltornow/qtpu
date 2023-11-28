@@ -1,17 +1,17 @@
-from typing import Iterator
 import itertools
 from collections import Counter
+from typing import Iterator
 
 import networkx as nx
 from networkx.classes.graph import Graph
 from qiskit.circuit import (
+    Barrier,
+    CircuitInstruction,
+    ClassicalRegister,
+    Instruction,
     QuantumCircuit,
     QuantumRegister,
-    ClassicalRegister,
-    CircuitInstruction,
-    Instruction,
     Qubit,
-    Barrier,
 )
 
 from qvm.virtual_gates import VIRTUAL_GATE_TYPES

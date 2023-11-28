@@ -1,7 +1,6 @@
 import networkx as nx
-
-from clingo.solving import Symbol
 from clingo.control import Control
+from clingo.solving import Symbol
 from qiskit.circuit import Barrier
 
 from .dag import DAG

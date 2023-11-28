@@ -1,10 +1,10 @@
 from networkx.algorithms.community import kernighan_lin_bisection as bisect
-from qiskit.circuit import QuantumCircuit, Qubit, Barrier
+from qiskit.circuit import Barrier, QuantumCircuit, Qubit
 
-from qvm.compiler.util import num_virtual_gates
-from qvm.compiler.asp import qcg_to_asp, get_optimal_symbols
+from qvm.compiler.asp import get_optimal_symbols, qcg_to_asp
 from qvm.compiler.dag import DAG, dag_to_qcg
 from qvm.compiler.types import VirtualizationPass
+from qvm.compiler.util import num_virtual_gates
 
 
 class BisectionPass(VirtualizationPass):

@@ -1,13 +1,13 @@
 from qiskit.circuit import QuantumCircuit
 
-from qvm.virtual_circuit import VirtualCircuit
-from qvm.compiler.virtualization import (
-    OptimalDecompositionPass,
-    GreedyDependencyBreaker,
-)
 from qvm.compiler.distr_transpiler import QubitReuser
 from qvm.compiler.types import DistributedTranspilerPass, VirtualizationPass
 from qvm.compiler.util import num_virtual_gates
+from qvm.compiler.virtualization import (
+    GreedyDependencyBreaker,
+    OptimalDecompositionPass,
+)
+from qvm.virtual_circuit import VirtualCircuit
 
 
 class QVMCompiler:
