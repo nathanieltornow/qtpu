@@ -5,20 +5,23 @@ import csv
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit.providers import BackendV2
-from qvm.compiler import QVMCompiler
+
+import qvm
 
 
 @dataclass
 class RunConfiguration:
-    compiler: QVMCompiler
+    compiler: qvm.QVMCompiler
     shots: int = 20000
+    optimization_level: int = 3
 
 
 @dataclass
 class Benchmark:
     result_file: str
     circuits: list[QuantumCircuit]
-    compiler: QVMCompiler
+    run_config: RunConfiguration
+    base_run_config: RunConfiguration | None = None
 
 
 @dataclass
@@ -76,3 +79,30 @@ def run_benchmark(bench: Benchmark) -> None:
         )
         res.append_to_csv(bench.result_file)
         progress.update(1)
+
+
+def _run_experiment(
+    circuit: QuantumCircuit,
+    run_config: RunConfiguration,
+    base_run_config: RunConfiguration | None = None,
+) -> BenchmarkResult:
+    res = BenchmarkResult(num_qubits=circuit.num_qubits)
+
+    vc = run_config.compiler.run(circuit)
+    res.num_fragments = len(vc.fragment_circuits)
+    res.num_instances = sum(len(insts) for insts in vc.instantiations().values())
+
+
+def _virtual_circuit_info(
+    vc: VirtualCircuit,
+) -> tuple[int, int, int, int]:
+    num_vgates = sum(len(frag.virtual_gates) for frag in vc.fragment_circuits.values())
+    num_deps = sum(len(frag.virtual_gates) for frag in vc.fragment_circuits.values())
+    num_cnots = sum(
+        1
+        for frag in vc.fragment_circuits.values()
+        for instr in frag
+        if instr.operation.name == "cx"
+    )
+    depth = vc.depth()
+    return num_vgates, num_deps, num_cnots, depth
