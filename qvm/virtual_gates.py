@@ -6,7 +6,6 @@ from qiskit.circuit import (
     Gate,
     Instruction,
     Measure,
-    Parameter,
     QuantumCircuit,
 )
 from qiskit.circuit.library.standard_gates import (
@@ -63,12 +62,14 @@ class VirtualBinaryGate(Barrier, abc.ABC):
         self._definition = circuit
 
 
-class VirtualGateEndpoint(Gate):
+class VirtualGateEndpoint(Barrier):
     def __init__(self, virtual_gate: VirtualBinaryGate, vgate_idx: int, qubit_idx: int):
         self._virtual_gate = virtual_gate
         self.vgate_idx = vgate_idx
         self.qubit_idx = qubit_idx
-        super().__init__("vge", 1, params=[Parameter(f"vgate_{vgate_idx}_{qubit_idx}")])
+        super().__init__(
+            num_qubits=1, label=f"{virtual_gate.name}_{vgate_idx}_{qubit_idx}"
+        )
 
     def instantiate(self, inst_id: int) -> QuantumCircuit:
         circuit = QuantumCircuit(1, 1)
