@@ -19,7 +19,7 @@ def main():
     virtual_circuit = comp.run(circuit, budget=2)
     for frag in virtual_circuit.fragment_circuits.values():
         print(frag)
-    result, _ = qvm.run_virtual_circuit(virtual_circuit, shots=10000)
+    result, _ = qvm.run(virtual_circuit, shots=10000)
     print(calculate_fidelity(circuit, result))
 
 

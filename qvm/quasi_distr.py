@@ -1,13 +1,11 @@
 from typing import Union
 
-ACCURACY = 1e-5
+ACCURACY = 1e-6
 
 
 class QuasiDistr(dict[int, float]):
     def __init__(self, data: dict[int, float]) -> None:
-        super().__init__(
-            {key: value for key, value in data.items() if abs(value) > ACCURACY}
-        )
+        super().__init__(data)
 
     @staticmethod
     def from_counts(counts: dict[str, int]) -> "QuasiDistr":
@@ -42,21 +40,12 @@ class QuasiDistr(dict[int, float]):
                 new_probs[key] = sorted_probs[key] + beta / num_elems
         return new_probs
 
-    def split(self, bit_index: int) -> tuple["QuasiDistr", "QuasiDistr"]:
-        data1, data2 = {}, {}
-        for key, value in self.items():
-            mask = 1 << bit_index
-            if key & mask == 0:
-                data1[key] = value
-            else:
-                data2[key & ~(mask)] = value
-        return QuasiDistr(data1), QuasiDistr(data2)
-
     def merge(self, other: "QuasiDistr") -> "QuasiDistr":
         merged_data = {}
         for key1, value1 in self.items():
             for key2, value2 in other.items():
-                merged_data[key1 ^ key2] = value1 * value2
+                if abs(value1 * value2) > ACCURACY:
+                    merged_data[key1 ^ key2] = value1 * value2
         return QuasiDistr(merged_data)
 
     def __add__(self, other: "QuasiDistr") -> "QuasiDistr":
@@ -79,8 +68,28 @@ class QuasiDistr(dict[int, float]):
         if isinstance(other, QuasiDistr):
             return self.merge(other)
         elif isinstance(other, float) or isinstance(other, int):
-            return QuasiDistr({key: self[key] * other for key in self.keys()})
+            return QuasiDistr(
+                {
+                    key: self[key] * other
+                    for key in self.keys()
+                    if abs(self[key] * other) > ACCURACY
+                }
+            )
         raise TypeError(f"Cannot multiply QuasiDistr by {type(other)}")
 
     def __rmul__(self, other: Union[int, float, "QuasiDistr"]) -> "QuasiDistr":
         return self.__mul__(other)
+
+    def add_value(self, key: int, value: float) -> None:
+        self[key] = self.get(key, 0.0) + value
+
+
+def prepare_quasidist(quasidist: QuasiDistr, num_bits: int) -> QuasiDistr:
+    new_quasidist = QuasiDistr({})
+    for key, value in quasidist.items():
+        mask = (1 << num_bits) - 1
+        first_bits = bin(key & ~mask)[2:]
+        parity = sum(int(c) for c in first_bits) % 2
+        new_value = value if parity == 0 else -value
+        new_quasidist.add_value(key & mask, new_value)
+    return new_quasidist

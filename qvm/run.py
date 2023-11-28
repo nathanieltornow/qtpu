@@ -7,7 +7,7 @@ from qiskit.providers import Job
 from qiskit.circuit import QuantumRegister as Fragment
 from qiskit.compiler import transpile
 
-from qvm.virtual_circuit import VirtualCircuit, generate_instantiations
+from qvm.virtual_circuit import VirtualCircuit
 from qvm.quasi_distr import QuasiDistr
 
 

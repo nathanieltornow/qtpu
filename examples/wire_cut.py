@@ -3,7 +3,7 @@ from qiskit.circuit.library import EfficientSU2
 from qiskit.circuit import QuantumCircuit, ClassicalRegister
 
 from qvm.compiler.virtualization.wire_decomp import OptimalWireCutter
-from qvm import run_virtual_circuit, VirtualCircuit
+from qvm import run, VirtualCircuit
 from fid import calculate_fidelity
 
 
@@ -24,7 +24,7 @@ def main():
 
     virt_circ = VirtualCircuit(cut_circuit)
 
-    result, _ = run_virtual_circuit(virt_circ, shots=10000)
+    result, _ = run(virt_circ, shots=10000)
     print(calculate_fidelity(cp, result))
 
 
