@@ -15,8 +15,23 @@ class RuntimeInfo:
 
 
 def run(
-    virtual_circuit: VirtualCircuit, shots: int = 20000
+    virtual_circuit: VirtualCircuit, shots: int = 20000, optimization_level: int = 0
 ) -> tuple[dict[int, float], RuntimeInfo]:
+    """Run a virtual circuit.
+
+    Args:
+        virtual_circuit (VirtualCircuit): The virtual circuit to run.
+        shots (int, optional):
+            The number of shots for each fragment instantiation. Defaults to 20000.
+        optimization_level (int, optional):
+            The pre-run optimization level. Since optimization should idealy be
+            done on the respective fragments, it defaults to 0. Defaults to 0.
+
+    Returns:
+        tuple[dict[int, float], RuntimeInfo]:
+            The resulting distribution and a runtime info for benchmarking.
+    """
+
     virt = Virtualizer(virtual_circuit)
     instantiations = virt.instantiations()
 
@@ -27,7 +42,9 @@ def run(
     jobs = {}
     for frag, insts in instantiations.items():
         insts = [
-            transpile(inst, backend=meta[frag].backend, optimization_level=0)
+            transpile(
+                inst, backend=meta[frag].backend, optimization_level=optimization_level
+            )
             for inst in insts
         ]
         job = meta[frag].backend.run(insts, shots=shots)
