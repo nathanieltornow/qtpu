@@ -9,6 +9,12 @@ from qvm.compiler import QVMCompiler
 
 
 @dataclass
+class RunConfiguration:
+    compiler: QVMCompiler
+    shots: int = 20000
+
+
+@dataclass
 class Benchmark:
     result_file: str
     circuits: list[QuantumCircuit]
