@@ -58,27 +58,7 @@ class BenchmarkResult:
 
 
 def run_benchmark(bench: Benchmark) -> None:
-    progress = tqdm(total=len(bench.circuits))
-    progress.set_description("Running Bench Circuits")
-
-    for circ in bench.circuits:
-        virt = bench.compiler.run(circ)
-
-        if bench.base_compiler is not None:
-            base_virt = bench.base_compiler.run(circ)
-        else:
-            base_virt = VirtualCircuit(circ)
-
-        res = _run_experiment(
-            circ,
-            virt,
-            base_virt,
-            bench.backend,
-            runner=runner,
-            base_backend=bench.base_backend,
-        )
-        res.append_to_csv(bench.result_file)
-        progress.update(1)
+    pass
 
 
 def _run_experiment(
@@ -93,16 +73,19 @@ def _run_experiment(
     res.num_instances = sum(len(insts) for insts in vc.instantiations().values())
 
 
-def _virtual_circuit_info(
-    vc: VirtualCircuit,
-) -> tuple[int, int, int, int]:
-    num_vgates = sum(len(frag.virtual_gates) for frag in vc.fragment_circuits.values())
-    num_deps = sum(len(frag.virtual_gates) for frag in vc.fragment_circuits.values())
+def _virtual_circuit_stats(virtual_circuit: qvm.VirtualCircuit) -> tuple[int, int, int]:
+    fragments = virtual_circuit.fragment_circuits.values()
+    num_vgates = sum(
+        len(frag.virtual_gates) for frag in virtual_circuit.fragment_circuits.values()
+    )
+    num_deps = sum(
+        len(frag.virtual_gates) for frag in virtual_circuit.fragment_circuits.values()
+    )
     num_cnots = sum(
         1
-        for frag in vc.fragment_circuits.values()
+        for frag in virtual_circuit.fragment_circuits.values()
         for instr in frag
         if instr.operation.name == "cx"
     )
-    depth = vc.depth()
+    depth = virtual_circuit.depth()
     return num_vgates, num_deps, num_cnots, depth
