@@ -35,6 +35,7 @@ bench = [
     "pandas>=2.1.0",
     "matplotlib>=3.8.2",
     "seaborn>=0.13.0",
+    "tqdm>=4.66.1",
 ]
 
 [build-system]
