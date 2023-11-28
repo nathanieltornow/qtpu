@@ -25,6 +25,7 @@ class IdentityCompiler(qvm.QVMCompiler):
 @dataclass
 class RunConfiguration:
     compiler: qvm.QVMCompiler
+    budget: int = 0
     shots: int = 20000
     optimization_level: int = 3
 
@@ -94,7 +95,7 @@ def _run_experiment(
     br = BenchmarkResult(num_qubits=circuit.num_qubits)
 
     # first, do the qvm run
-    vc = run_config.compiler.run(circuit)
+    vc = run_config.compiler.run(circuit, budget=run_config.budget)
     br.num_fragments = len(vc.fragment_circuits)
     br.num_instances = sum(len(insts) for insts in vc.instantiations().values())
     br.num_cnots, br.depth, br.num_deps = _virtual_circuit_stats(vc)
@@ -113,7 +114,7 @@ def _run_experiment(
 
     # now, do the base run if it exists
 
-    vc_base = base_run_config.compiler.run(circuit)
+    vc_base = base_run_config.compiler.run(circuit, 0)
     br.num_cnots_base, br.depth_base, br.num_deps_base = _virtual_circuit_stats(vc_base)
     br.esp_base = _compute_esp(vc_base)
 

@@ -36,6 +36,7 @@ bench = [
     "matplotlib>=3.8.2",
     "seaborn>=0.13.0",
     "tqdm>=4.66.1",
+    "circuit-knitting-toolbox>=0.5.0",
 ]
 
 [build-system]
