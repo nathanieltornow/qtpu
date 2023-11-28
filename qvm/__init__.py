@@ -1,3 +1,4 @@
-from .run import run_virtual_circuit
-from .compiler import StandardQVMCompiler, CutterCompiler
-from .virtual_circuit import VirtualCircuit
+from .compiler import CutterCompiler, StandardQVMCompiler
+from .quasi_distr import QuasiDistr
+from .runtime.runner import run
+from .virtual_circuit import FragmentMetadata, VirtualCircuit

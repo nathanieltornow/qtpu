@@ -1,8 +1,8 @@
-from typing import Iterator
 from itertools import permutations
+from typing import Iterator
 
 import networkx as nx
-from qiskit.circuit import Qubit, CircuitInstruction, Reset, Measure
+from qiskit.circuit import CircuitInstruction, Measure, Qubit, Reset
 from qiskit.circuit.library.standard_gates import XGate
 
 from qvm.compiler.dag import DAG
@@ -17,13 +17,13 @@ class QubitReuser(DistributedTranspilerPass):
         super().__init__()
 
     def run(self, virt: VirtualCircuit) -> None:
-        frag_circs = virt.fragment_circuits.items()
+        frag_circs = list(virt.fragment_circuits.items())
         for frag, frag_circ in frag_circs:
             dag = DAG(frag_circ)
             random_qubit_reuse(dag, self._size_to_reach)
             if self._dynamic:
                 dynamic_measure_and_reset(dag)
-            virt.replace_fragment_circuit(frag, dag.to_circuit())
+            virt.fragment_circuits[frag] = dag.to_circuit()
 
 
 def dynamic_measure_and_reset(dag: DAG) -> None:
