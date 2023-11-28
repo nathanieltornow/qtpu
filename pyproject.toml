@@ -32,7 +32,9 @@ dev = [
     "isort>=5.12.0",
 ]
 bench = [
-    "pandas>=2.0.1",
+    "pandas>=2.1.0",
+    "matplotlib>=3.8.2",
+    "seaborn>=0.13.0",
 ]
 
 [build-system]
