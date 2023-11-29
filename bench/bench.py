@@ -9,6 +9,7 @@ from qiskit.compiler import transpile
 from qiskit_aer import AerSimulator
 from qiskit.providers import BackendV2
 from qiskit.quantum_info import hellinger_fidelity
+from qiskit_aer.noise import NoiseModel
 
 import qvm
 from qvm.compiler.dag import DAG
@@ -160,5 +161,12 @@ def _compute_fidelity(circuit: QuantumCircuit, noisy_result: qvm.QuasiDistr) -> 
     return hellinger_fidelity(ideal_result, noisy_result)
 
 
+NOISE_MODEL: NoiseModel | None = None
+
+
 def _compute_esp(virtual_circuit: qvm.VirtualCircuit) -> float:
+    global NOISE_MODEL
+
+    # if backend is simulator, use noise model and heavy hex
+
     return 0.0
