@@ -19,8 +19,6 @@ from qiskit.circuit.library.standard_gates import (
     ZGate,
 )
 
-from qvm.quasi_distr import QuasiDistr
-
 
 class WireCut(Barrier):
     def __init__(self):

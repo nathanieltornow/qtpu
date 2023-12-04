@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+import numpy as np
 from qiskit.circuit import Barrier, QuantumCircuit
 from qiskit.circuit import QuantumRegister as Fragment
 
@@ -33,6 +34,16 @@ class VirtualCircuit:
         }
 
         self._metadata = {frag: FragmentMetadata() for frag in circuit.qregs}
+
+    @property
+    def num_instantiations(self) -> int:
+        inst_per_fragment = {
+            frag: np.prod(
+                [vg.num_instantiations for vg in self.virtual_gates_in_fragment(frag)]
+            )
+            for frag in self._orig_circuit.qregs
+        }
+        return sum(list(inst_per_fragment.values()))
 
     @property
     def virtual_gates(self) -> list[VirtualBinaryGate]:

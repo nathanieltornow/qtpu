@@ -33,14 +33,15 @@ def run(
     """
 
     virt = Virtualizer(virtual_circuit)
-    instantiations = virt.instantiations()
 
     meta = virtual_circuit.metadata
+
+    print(f"Running {virtual_circuit.num_instantiations} instantiations...")
 
     now = perf_counter()
 
     jobs = {}
-    for frag, insts in instantiations.items():
+    for frag, insts in virt.instantiations().items():
         insts = [
             transpile(
                 inst, backend=meta[frag].backend, optimization_level=optimization_level
@@ -58,6 +59,8 @@ def run(
         results[frag] = dists
 
     runtime = perf_counter() - now
+
+    print("Knitting results...")
     res = virt.knit(results)
     knit_time = perf_counter() - now - runtime
     return res, RuntimeInfo(runtime, knit_time)
