@@ -70,8 +70,8 @@ class Virtualizer:
 
         full_frag_results[-1] = all_coeffiecients
 
+        chunks = np.array_split(full_frag_results, num_processes, axis=1)
         with mp.Pool(num_processes) as pool:
-            chunks = np.array_split(full_frag_results, pool._processes, axis=1)
             knit_results = pool.map(_merge_and_knit, chunks)
 
         return np.sum(knit_results).nearest_probability_distribution()
