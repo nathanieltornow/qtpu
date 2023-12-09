@@ -4,7 +4,8 @@ from time import perf_counter
 from qiskit.compiler import transpile
 
 from qvm.quasi_distr import QuasiDistr
-from qvm.runtime.virtualizer import Virtualizer
+# from qvm.runtime.virtualizer import Virtualizer
+from qvm.runtime.standard_virtualizer import Virtualizer
 from qvm.virtual_circuit import VirtualCircuit
 
 

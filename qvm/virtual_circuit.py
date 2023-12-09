@@ -32,6 +32,14 @@ class VirtualCircuit:
             qreg: self._circuit_on_fragment(divided_circuit, qreg)
             for qreg in circuit.qregs
         }
+        self._frag_to_vgate_ids = {
+            frag: list(
+                i
+                for i, vgate_info in enumerate(vgate_infos)
+                if frag == vgate_info.frag1 or frag == vgate_info.frag2
+            )
+            for frag in circuit.qregs
+        }
 
         self._metadata = {frag: FragmentMetadata() for frag in circuit.qregs}
 
