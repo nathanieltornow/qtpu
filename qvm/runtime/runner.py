@@ -4,7 +4,9 @@ from time import perf_counter
 from qiskit.compiler import transpile
 
 from qvm.quasi_distr import QuasiDistr
-from qvm.runtime.virtualizer import Virtualizer
+
+# from qvm.runtime.virtualizer import Virtualizer
+from qvm.runtime.standard_virtualizer import Virtualizer
 from qvm.virtual_circuit import VirtualCircuit
 
 
@@ -15,7 +17,10 @@ class RuntimeInfo:
 
 
 def run(
-    virtual_circuit: VirtualCircuit, shots: int = 20000, optimization_level: int = 0
+    virtual_circuit: VirtualCircuit,
+    shots: int = 20000,
+    optimization_level: int = 0,
+    num_processes: int = 1,
 ) -> tuple[dict[int, float], RuntimeInfo]:
     """Run a virtual circuit.
 
@@ -33,14 +38,15 @@ def run(
     """
 
     virt = Virtualizer(virtual_circuit)
-    instantiations = virt.instantiations()
 
     meta = virtual_circuit.metadata
+
+    print(f"Running {virtual_circuit.num_instantiations} instantiations...")
 
     now = perf_counter()
 
     jobs = {}
-    for frag, insts in instantiations.items():
+    for frag, insts in virt.instantiations().items():
         insts = [
             transpile(
                 inst, backend=meta[frag].backend, optimization_level=optimization_level
@@ -58,6 +64,8 @@ def run(
         results[frag] = dists
 
     runtime = perf_counter() - now
-    res = virt.knit(results)
+
+    print("Knitting results...")
+    res = virt.knit(results, num_processes=num_processes)
     knit_time = perf_counter() - now - runtime
     return res, RuntimeInfo(runtime, knit_time)
