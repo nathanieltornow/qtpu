@@ -10,7 +10,7 @@ from qiskit_aer import AerSimulator
 from qiskit.providers import BackendV2
 from qiskit.quantum_info import hellinger_fidelity
 from qiskit.circuit import Barrier, Measure
-from qiskit_aer.noise import NoiseModel
+from qiskit.transpiler import CouplingMap
 
 import qvm
 from qvm.virtual_gates import VirtualGateEndpoint
@@ -98,12 +98,16 @@ def _run_experiment(
 ) -> BenchmarkResult:
     br = BenchmarkResult(num_qubits=circuit.num_qubits)
 
+    print("compiling...")
     # first, do the qvm run
-    vc = run_config.compiler.run(circuit, budget=run_config.budget)
+    try:
+        vc = run_config.compiler.run(circuit, budget=run_config.budget)
+    except Exception:
+        return br
+    print("done")
     br.num_fragments = len(vc.fragment_circuits)
     br.num_instances = vc.num_instantiations
-    br.num_cnots, br.depth, br.num_deps = _virtual_circuit_stats(vc)
-    br.esp = _compute_esp(vc)
+    br.num_cnots, br.depth, br.num_deps, br.esp = _virtual_circuit_stats(vc)
 
     if run_on_hardware:
         qvm_result, run_info = qvm.run(
@@ -118,8 +122,12 @@ def _run_experiment(
 
     # now, do the base run if it exists
     vc_base = base_run_config.compiler.run(circuit, 0)
-    br.num_cnots_base, br.depth_base, br.num_deps_base = _virtual_circuit_stats(vc_base)
-    br.esp_base = _compute_esp(vc_base)
+    (
+        br.num_cnots_base,
+        br.depth_base,
+        br.num_deps_base,
+        br.esp_base,
+    ) = _virtual_circuit_stats(vc_base)
 
     if run_on_hardware:
         qvm_result_base, run_info_base = qvm.run(
@@ -134,27 +142,41 @@ def _run_experiment(
     return br
 
 
-def _virtual_circuit_stats(virtual_circuit: qvm.VirtualCircuit) -> tuple[int, int, int]:
+def _virtual_circuit_stats(
+    virtual_circuit: qvm.VirtualCircuit,
+) -> tuple[int, int, int, int]:
+    if any(
+        circ.num_qubits > 100 for circ in virtual_circuit.fragment_circuits.values()
+    ):
+        cm = CouplingMap.from_heavy_hex(15)
+        frags = [
+            transpile(
+                frag_circ,
+                optimization_level=3,
+                basis_gates=["cx", "rz", "sx", "x"],
+                coupling_map=cm,
+            )
+            for frag_circ in virtual_circuit.fragment_circuits.values()
+        ]
+        return np.nan, np.nan, np.nan, max(_esp(frag) for frag in frags)
     num_deps = max(
         DAG(frag_circ).num_dependencies()
         for frag_circ in virtual_circuit.fragment_circuits.values()
     )
-    try:
-        fragments = [
-            transpile(
-                frag_circ,
-                backend=virtual_circuit.metadata[frag].backend,
-                optimization_level=3,
-            )
-            for frag, frag_circ in virtual_circuit.fragment_circuits.items()
-        ]
-    except Exception:
-        return np.nan, np.nan, num_deps
+    fragments = [
+        transpile(
+            frag_circ,
+            backend=virtual_circuit.metadata[frag].backend,
+            optimization_level=3,
+        )
+        for frag, frag_circ in virtual_circuit.fragment_circuits.items()
+    ]
     num_cnots = max(
         sum(1 for instr in frag if instr.operation.name == "cx") for frag in fragments
     )
     depth = max(frag.depth() for frag in fragments)
-    return num_cnots, depth, num_deps
+    esp = max(_esp(frag) for frag in fragments)
+    return num_cnots, depth, num_deps, esp
 
 
 def _compute_fidelity(circuit: QuantumCircuit, noisy_result: qvm.QuasiDistr) -> float:
@@ -165,12 +187,6 @@ def _compute_fidelity(circuit: QuantumCircuit, noisy_result: qvm.QuasiDistr) -> 
         .get_counts()
     )
     return hellinger_fidelity(ideal_result, noisy_result)
-
-
-def _compute_esp(virtual_circuit: qvm.VirtualCircuit) -> float:
-    return max(
-        _esp(frag_circ) for frag_circ in virtual_circuit.fragment_circuits.values()
-    )
 
 
 def _esp(circuit: QuantumCircuit) -> float:
