@@ -37,6 +37,7 @@ bench = [
     "seaborn>=0.13.0",
     "tqdm>=4.66.1",
     "circuit-knitting-toolbox>=0.5.0",
+    "qiskit-optimization>=0.6.0",
 ]
 
 [build-system]
