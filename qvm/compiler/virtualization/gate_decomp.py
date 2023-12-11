@@ -18,7 +18,7 @@ class BisectionPass(VirtualizationPass):
         dag.fragment()
         v_circuit = dag.to_circuit()
         if num_virtual_gates(v_circuit) > budget:
-            return circuit.copy()
+            raise ValueError("Budget exceeded.")
         return dag.to_circuit()
 
     def _recursive_bisection(self, dag: DAG) -> int:
