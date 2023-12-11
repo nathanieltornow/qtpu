@@ -2,8 +2,8 @@ import os
 import csv
 from dataclasses import dataclass, asdict
 from time import perf_counter
-from multiprocessing.pool import ThreadPool
-from random import randint
+from multiprocessing.pool import ThreadPool, Pool
+from random import randint, random
 
 import numpy as np
 
@@ -42,18 +42,23 @@ class BenchmarkResult:
 
 
 def run_bench(benchmark: Benchmark) -> None:
+    print(f"Generating workload")
     workload = _generate_knit_workload(
         num_fragments=benchmark.num_fragments,
         num_qubits=benchmark.num_qubits,
         num_vgates=benchmark.num_vgates,
         num_shots=benchmark.num_shots,
     )
+    num_threads = min(benchmark.num_threads, workload.shape[1])
 
-    split = np.array_split(workload, benchmark.num_threads)
+    print(f"Running benchmark with {num_threads} threads")
+    print(f"Workload shape: {workload.shape}")
 
-    with ThreadPool(benchmark.num_threads) as pool:
+    split = np.array_split(workload, num_threads, axis=1)
+    with Pool(num_threads) as pool:
         start = perf_counter()
-        pool.map(_merge_and_knit, split)
+        results = pool.map(_merge_and_knit, split)
+        _ = np.sum(results)
         end = perf_counter()
 
     t = end - start
@@ -73,9 +78,9 @@ def _generate_quasidistr(num_qubits: int, num_shots: int) -> QuasiDistr:
     for _ in range(num_shots):
         key = randint(0, 2**num_qubits - 1)
         if key in qd:
-            qd[key] += 0.1
+            qd[key] += random() * 0.01
         else:
-            qd[key] = 0.1
+            qd[key] = random() * 0.01
     return qd
 
 
@@ -95,19 +100,17 @@ def _generate_knit_workload(
 
 def _merge_and_knit(results: np.ndarray) -> QuasiDistr:
     merged_results = np.prod(results, axis=0)
-    return np.sum(merged_results)
+    return np.sum(merged_results, axis=0)
 
 
 if __name__ == "__main__":
-    for num_vgates in [2, 4, 6, 8]:
-        for procs in [1, 2, 4]:
-            for num_qubits in [30]:
-                for num_fragments in [1, 2, 3]:
-                    bench = Benchmark(
-                        f"bench/results/knit_mac.csv",
-                        num_qubits=num_qubits,
-                        num_fragments=num_fragments,
-                        num_vgates=num_vgates,
-                        num_threads=procs,
-                    )
-                    run_bench(bench)
+    for num_fragments, num_vgates in [(2, 1), (3, 2), (4, 3), (5, 4)]:
+        for procs in [1, 2, 4, 8, 16]:
+            bench = Benchmark(
+                f"bench/results/knit_mac.csv",
+                num_qubits=70,
+                num_fragments=num_fragments,
+                num_vgates=num_vgates,
+                num_threads=procs,
+            )
+            run_bench(bench)

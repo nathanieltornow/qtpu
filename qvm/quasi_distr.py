@@ -1,6 +1,6 @@
 from typing import Union
 
-ACCURACY = 1e-6
+ACCURACY = 1e-4
 
 
 class QuasiDistr(dict[int, float]):
@@ -79,6 +79,9 @@ class QuasiDistr(dict[int, float]):
 
     def __rmul__(self, other: Union[int, float, "QuasiDistr"]) -> "QuasiDistr":
         return self.__mul__(other)
+
+    def __repr__(self) -> str:
+        return "QuasiDistr(" + str(len(self)) + ")"
 
     def add_value(self, key: int, value: float) -> None:
         self[key] = self.get(key, 0.0) + value
