@@ -37,19 +37,19 @@ def generate_large_scale_bench(
 def scale_virts():
     from qiskit.providers.fake_provider import FakeSherbrooke
 
-    circuits = get_circuits("vqe_1", (20, 100)) * 3
-    for budget in [0, 2, 4, 6, 8]:
-        bench = generate_large_scale_bench(
-            f"bench/results/large_scale_{budget}.csv",
-            circuits,
-            FakeSherbrooke(),
-            size_to_reach=20,
-            budget=budget,
-            compare_to_base=False,
-        )
-        run_benchmark(bench)
+    # circuits = get_circuits("vqe_2", (20, 100)) * 3
+    # for budget in [0, 2, 4, 6, 8]:
+    #     bench = generate_large_scale_bench(
+    #         f"bench/results/large_scale_{budget}.csv",
+    #         circuits,
+    #         FakeSherbrooke(),
+    #         size_to_reach=20,
+    #         budget=budget,
+    #         compare_to_base=False,
+    #     )
+    #     run_benchmark(bench)
 
-    circuits = get_circuits("vqe_1", (100, 501)) * 3
+    circuits = get_circuits("vqe_2", (30, 501)) * 3
     for budget in [0, 2, 4, 6, 8]:
         bench = generate_large_scale_bench(
             f"bench/results/large_scale_{budget}.csv",
@@ -61,16 +61,6 @@ def scale_virts():
         )
 
         run_benchmark(bench)
-
-    # bench = generate_large_scale_bench(
-    #     "bench/results/large_scale.csv",
-    #     circuits,
-    #     FakeSherbrooke(),
-    #     size_to_reach=100,
-    #     budget=10,
-    # )
-
-    run_benchmark(bench)
 
 
 if __name__ == "__main__":
