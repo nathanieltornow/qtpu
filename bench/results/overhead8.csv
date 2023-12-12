@@ -1,0 +1,12 @@
+name,num_vgates,vgate_depth,num_wires,wire_depth
+hamsim_2,2,29,2,64
+hamsim_3,3,43,3,58
+twolocal_1,2,20,2,29
+twolocal_2,4,30,4,39
+vqe_2,2,19,2,18
+vqe_3,3,25,3,52
+qaoa_r2,2,16,2,24
+qaoa_r3,3,41,3,36
+qaoa_r4,4,45,4,62
+hamsim_3,3,39,3,58
+hamsim_2,2,29,2,26
