@@ -100,12 +100,10 @@ def _run_experiment(
 
     print("compiling...")
     # first, do the qvm run
-    try:
-        vc = run_config.compiler.run(circuit, budget=run_config.budget)
-    except Exception:
-        return br
+    vc = run_config.compiler.run(circuit, budget=run_config.budget)
     print("done")
     br.num_fragments = len(vc.fragment_circuits)
+    br.num_vgates = len(vc.virtual_gates)
     br.num_instances = vc.num_instantiations
     br.num_cnots, br.depth, br.num_deps, br.esp = _virtual_circuit_stats(vc)
 
@@ -146,7 +144,7 @@ def _virtual_circuit_stats(
     virtual_circuit: qvm.VirtualCircuit,
 ) -> tuple[int, int, int, int]:
     if any(
-        circ.num_qubits > 100 for circ in virtual_circuit.fragment_circuits.values()
+        circ.num_qubits > 99 for circ in virtual_circuit.fragment_circuits.values()
     ):
         cm = CouplingMap.from_heavy_hex(15)
         frags = [
@@ -159,6 +157,7 @@ def _virtual_circuit_stats(
             for frag_circ in virtual_circuit.fragment_circuits.values()
         ]
         return np.nan, np.nan, np.nan, max(_esp(frag) for frag in frags)
+
     num_deps = max(
         DAG(frag_circ).num_dependencies()
         for frag_circ in virtual_circuit.fragment_circuits.values()
