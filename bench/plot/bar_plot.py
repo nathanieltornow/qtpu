@@ -5,7 +5,7 @@ import seaborn as sns
 import matplotlib.ticker as ticker
 from matplotlib import gridspec
 
-from data import SWAP_REDUCE_DATA, NOISE_SCALE_ALGIERS_DATA, DEP_MIN_DATA
+from bench.plot.data import SWAP_REDUCE_DATA, NOISE_SCALE_ALGIERS_DATA, DEP_MIN_DATA
 
 
 FONTSIZE = 12

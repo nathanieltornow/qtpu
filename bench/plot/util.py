@@ -267,7 +267,8 @@ def plot_lines(ax, keys: list[str], labels: list[str], dataframes: list[pd.DataF
                 ecolor="black",
             )
     x = sorted(list(all_x))
-    ax.set_xticks(x)
+    print(x)
+    ax.set_xticks(x, x)
 
 def prepare_dataframe(df: pd.DataFrame, key: str) -> pd.DataFrame:
     res_df = df.loc[df[key] > 0.0]

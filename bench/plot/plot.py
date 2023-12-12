@@ -1,11 +1,11 @@
-from util import *
+from bench.plot.util import *
 import os
-from bar_plot import *
-from data import *
+from bench.plot.bar_plot import *
+from bench.plot.data import *
 HIGHERISBETTER = "Higher is better ↑"
 LOWERISBETTER = "Lower is better ↓"
 
-from get_average import get_average
+from bench.plot.get_average import get_average
 
 def plot_fidelities():
 	FID_DATA = {
@@ -474,10 +474,17 @@ def dataframe_out_of_columns(dfs, lines, columns):
 def plot_endtoend_runtimes():
 	dfs = [pd.read_csv(file) for file in SCALE_SIM_TIME.values()]
 	dfs_mem = [pd.read_csv(file) for file in SCALE_SIM_MEMORY.values()]
+	dfs_knit_time = [pd.read_csv(file) for file in SCALE_SIM_KNIT_TIME.values()]
+
+	pivot_df = dfs_knit_time[0].pivot_table(index='num_threads', columns='num_vgates', values='time', aggfunc='mean')
+	pivot_df.columns = ['1 vgate', '2 vgates', '3 vgates', '4 vgates']
+	pivot_df = pivot_df.rename_axis('num_qubits')
+	print(pivot_df)
+	#print(pivot_df.keys())
  
 	lines = [s.split("-")[-1] for s in SCALE_SIM_TIME.keys()]
 
-	titles = ["(a) Εnd-to-end Runtime", "(b) Runtime Breakdown", "(c) Memory Consumption"]
+	titles = ["(a) Εnd-to-end Runtime", "(b) Runtime Breakdown", "(c) Knitting Scaling", "(d) Memory Consumption"]
 
 	dfs = [insert_column(i) for i in dfs]
 	big_dfs = dataframe_out_of_columns(dfs, lines, ["total_runtime"])
@@ -501,12 +508,12 @@ def plot_endtoend_runtimes():
 	keys = keys[1:]
 
 	custom_plot_dataframes(
-		dataframes=[big_dfs, dfs_ratio, dfs_mem_new],
-		keys=[big_dfs.keys(), keys, dfs_mem_new.keys()],
-		labels=[big_dfs.keys(), dfs_ratio["qpu_size"].tolist(), dfs_mem_new.keys()],
+		dataframes=[big_dfs, dfs_ratio, pivot_df, dfs_mem_new],
+		keys=[big_dfs.keys(), keys, pivot_df.keys(), dfs_mem_new.keys()],
+		labels=[big_dfs.keys(), dfs_ratio["qpu_size"].tolist(), pivot_df.keys(), dfs_mem_new.keys()],
 		titles=titles,
-		ylabel=["Runtime [s]", "Runtime [s]", "Memory [GBs]"],
-		xlabel=["Number of Qubits", "QPU Size [Number of Qubits]", "Number of Qubits"],
+		ylabel=["Runtime [s]", "Runtime [s]", "Knitting Time [s]", "Memory [GBs]"],
+		xlabel=["Number of Qubits", "QPU Size [Number of Qubits]", "Number of Threads", "Number of Qubits"],
 		output_file="figures/scale_sim/hamsim_1.pdf",
 		logscale=True,
 		nrows=1
@@ -552,7 +559,7 @@ def custom_plot_dataframes(
 	logscale = False,
 ) -> None:
 	ncols = len(dataframes)
-	fig = plt.figure(figsize=[13, 2.8])
+	fig = plt.figure(figsize=WIDE_FIGSIZE)
 	gs = gridspec.GridSpec(nrows=nrows, ncols=ncols)
 
 	axis = [fig.add_subplot(gs[i, j]) for i in range(nrows) for j in range(ncols)]
@@ -560,10 +567,13 @@ def custom_plot_dataframes(
 	axis[0].set_yscale("log")
 	axis[1].set_yscale("log")
 	axis[2].set_yscale("log")
+	axis[2].set_xscale("log")
+	axis[3].set_yscale("log")
 
 	#axis[2].set_xlim([10, 30])
 	axis[1].set_ylim([1, 50000])
-	#axis[2].set_ylim([10, 10 ** 20])
+	#axis[2].set_yticks([0, 1, 10, 100, 1000], [0, 1, 10, 100, 1000])
+	axis[2].set_ylim([3*10**(-2), 10**3])
 	#axis[2].set_yscale("log")
 
 	for i, ax in enumerate(axis):
@@ -574,10 +584,15 @@ def custom_plot_dataframes(
 	plot_lines(axis[0], keys[0], labels[0], [dataframes[0]])
 	axis[0].legend()		
 	axis[0].set_title(titles[0], fontsize=12, fontweight="bold")
-	
+
+	print(keys[2])
 	plot_lines(axis[2], keys[2], labels[2], [dataframes[2]])
 	axis[2].legend()		
 	axis[2].set_title(titles[2], fontsize=12, fontweight="bold")
+	
+	plot_lines(axis[3], keys[3], labels[3], [dataframes[3]])
+	axis[3].legend()		
+	axis[3].set_title(titles[3], fontsize=12, fontweight="bold")
 
 	num_vgates = dataframes[1]['qpu_size'].tolist()
 	simulation = dataframes[1]['simulation'].tolist()
@@ -610,14 +625,15 @@ def custom_plot_dataframes(
 	axis[1].set_xticklabels(x)
 	axis[1].grid(axis="y", linestyle="-", zorder=-1)	
 	grouped_bar_plot(axis[1], y, yerr, ["Compilation", "Simulation", "Knitting"])
+	axis[1].set(ylabel=None)
 	axis[1].legend(loc="upper left", ncols=2)
 
 	axis[1].set_yticks(np.logspace(1, 5, base=10, num=5, dtype='int'))
 	axis[1].set_title(titles[1], fontsize=12, fontweight="bold")
 	
-	fig.text(0.51, 1, LOWERISBETTER, ha="center", fontweight="heavy", color="midnightblue", fontsize=ISBETTER_FONTSIZE)
+	fig.text(0.51, 1.17, LOWERISBETTER, ha="center", fontweight="heavy", color="midnightblue", fontsize=ISBETTER_FONTSIZE)
 	os.makedirs(os.path.dirname(output_file), exist_ok=True)
-	plt.tight_layout(pad=1)
+	plt.tight_layout(pad=-2.3)
 	plt.savefig(output_file, bbox_inches="tight")
 
 def plot_dep_min() -> None:

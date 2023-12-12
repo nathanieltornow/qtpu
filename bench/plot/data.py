@@ -90,3 +90,8 @@ SCALE_SIM_TIME = {
 SCALE_SIM_MEMORY = {
 	"HS-1-20mem" : "bench/results/scale_sim/hamsim_1_20_memory.csv",
 }
+
+
+SCALE_SIM_KNIT_TIME = {
+	"HS-1-70" : "bench/results/scale_sim/hamsim_1_70.csv",
+}
