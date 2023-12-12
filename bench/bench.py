@@ -143,10 +143,8 @@ def _run_experiment(
 def _virtual_circuit_stats(
     virtual_circuit: qvm.VirtualCircuit,
 ) -> tuple[int, int, int, int]:
-    if any(
-        circ.num_qubits > 99 for circ in virtual_circuit.fragment_circuits.values()
-    ):
-        cm = CouplingMap.from_heavy_hex(15)
+    if True:
+        cm = CouplingMap.from_heavy_hex(21)
         frags = [
             transpile(
                 frag_circ,
@@ -156,7 +154,11 @@ def _virtual_circuit_stats(
             )
             for frag_circ in virtual_circuit.fragment_circuits.values()
         ]
-        return np.nan, np.nan, np.nan, max(_esp(frag) for frag in frags)
+        num_cnots = max(
+            sum(1 for instr in frag if instr.operation.name == "cx") for frag in frags
+        )
+        depth = max(frag.depth() for frag in frags)
+        return num_cnots, depth, np.nan, min(_esp(frag) for frag in frags)
 
     num_deps = max(
         DAG(frag_circ).num_dependencies()
@@ -174,7 +176,7 @@ def _virtual_circuit_stats(
         sum(1 for instr in frag if instr.operation.name == "cx") for frag in fragments
     )
     depth = max(frag.depth() for frag in fragments)
-    esp = max(_esp(frag) for frag in fragments)
+    esp = min(_esp(frag) for frag in fragments)
     return num_cnots, depth, num_deps, esp
 
 

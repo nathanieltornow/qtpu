@@ -1,0 +1,10 @@
+num_qubits,fid,fid_base,esp,esp_base,num_cnots,num_cnots_base,depth,depth_base,num_deps,num_deps_base,num_vgates,num_fragments,num_instances,run_time,knit_time,run_time_base
+100,nan,nan,0.8876845553994387,nan,0,nan,128,nan,347,nan,6,4,2664,nan,nan,nan
+150,nan,nan,0.8310546787085871,nan,0,nan,199,nan,776,nan,6,4,2664,nan,nan,nan
+200,nan,nan,0.7841312948849896,nan,0,nan,249,nan,1322,nan,6,4,2664,nan,nan,nan
+250,nan,nan,0.7356509262268779,nan,0,nan,305,nan,2076,nan,6,4,2664,nan,nan,nan
+300,nan,nan,0.6923810671411906,nan,0,nan,369,nan,2922,nan,6,4,2664,nan,nan,nan
+350,nan,nan,0.6494434179647217,nan,0,nan,428,nan,4001,nan,6,4,2664,nan,nan,nan
+400,nan,nan,0.6582601244880185,nan,nan,nan,nan,nan,nan,nan,6,4,2664,nan,nan,nan
+450,nan,nan,0.6232700463538898,nan,nan,nan,nan,nan,nan,nan,6,4,2664,nan,nan,nan
+500,nan,nan,0.5926246046203913,nan,nan,nan,nan,nan,nan,nan,6,4,2664,nan,nan,nan

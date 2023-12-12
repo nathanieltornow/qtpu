@@ -72,38 +72,47 @@ LINE_STYLES = ["-", "--", "-.", ":", "-", "--", "-.", ":"]
 COLORS = sns.color_palette("pastel")
 
 
-def lines_plot(
-    ax,
-    labels: list[str],
+def line_plot(
+    ax: plt.Axes,
     x: np.ndarray,
-    y_matrix: np.ndarray,
-    yerr_matrix: np.ndarray | None = None,
-    xticks: list[str] | None = None,
+    y: np.ndarray,
+    yerr: np.ndarray,
+    line_labels: list[str],
+    colors: list[str] | None = None,
+    markers: list[str] | None = None,
 ):
-    if yerr is None:
-        yerr = np.zeros_like(y)
+    if colors is None:
+        colors = sns.color_palette("pastel")
+    if markers is None:
+        markers = ["v", "o", "p", "^", "s", "D"]
 
-    for i, (label, y, yerr) in enumerate(zip(labels, y_matrix, yerr_matrix)):
+    assert len(y.shape) == len(yerr.shape) == 2
+    assert y.shape == yerr.shape
+
+    num_lines, _ = y.shape
+    assert len(line_labels) == num_lines
+
+
+    for i in range(num_lines):
+        y_line = y[i]
+        yerr_line = yerr[i]
+
+        color, marker = colors[i % len(colors)], markers[i % len(markers)]
+
         ax.errorbar(
             x,
-            y,
-            yerr=yerr,
-            label=label,
-            color=COLORS[i % len(COLORS)],
-            marker=MARKER_STYLES[i % len(MARKER_STYLES)],
-            markersize=6,
-            markeredgewidth=1.5,
-            markeredgecolor="black",
-            linestyle=LINE_STYLES[i % len(LINE_STYLES)],
+            y_line,
+            yerr=yerr_line,
+            label=line_labels[i],
+            color=color,
+            marker=marker,
+            markersize=8,
             linewidth=2,
+            linestyle=LINE_STYLES[i % len(LINE_STYLES)],
             capsize=3,
-            capthick=1.5,
-            ecolor="black",
         )
 
-    if xticks is not None:
-        assert len(xticks) == x.shape[0]
-        ax.set_xticks(xticks)
+    ax.set_xticks(x)
 
 
 def index_dataframe_mean_std(

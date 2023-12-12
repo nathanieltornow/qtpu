@@ -408,14 +408,57 @@ def plot_cut_vs_qubit_reuse() -> plt.Figure:
     return fig
 
 
-def plot_thread_scaling(ax: plt.Axes) -> None:
-    results = pd.read_csv("bench/results/knit_mac.csv")
-    for num_frags in [2, 3, 4, 5]:
-        df = results[results["num_fragments"] == num_frags]
-        x = df["num_threads"]
-        y = df["time"]
-        ax.plot(x, y, label=f"{num_frags} fragments")
-        
+def plot_large_scale() -> plt.Figure:
+    scale_data = [
+        ("0", "bench/results/large_scale_0.csv"),
+        ("1", "bench/results/large_scale_2.csv"),
+        ("2", "bench/results/large_scale_4.csv"),
+        ("3", "bench/results/large_scale_6.csv"),
+        ("4", "bench/results/large_scale_8.csv"),
+    ]
+    fig, ax0 = plt.subplots(ncols=1, figsize=COLUMN_FIGSIZE)
+
+    xvalues = [20, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+
+    labels = [label for label, _ in scale_data]
+    dfs = [pd.read_csv(file) for _, file in scale_data]
+
+    y, yerr = data_frames_to_y_yerr(
+        dfs,
+        "num_qubits",
+        np.array(xvalues),
+        "esp",
+    )
+    # grouped_bar_plot(
+    #     ax0, y.T, yerr.T, labels, average_text_position=0.6
+    # )
+    line_plot(ax0, np.array(xvalues), y, yerr, labels)
+
+    # ax0.set_title("(a) Scale", fontweight="bold", fontsize=FONTSIZE)
+    ax0.set_xticklabels(xvalues)
+    ax0.legend(title="Number of Virtual Gates", frameon=True, ncol=3, loc="lower left")
+    ax0.set_xlabel("Number of Qubits")
+    ax0.set_ylabel("Estimated Success Probability")
+    ax0.grid(axis="y", linestyle="--")
+    ax0.axhline(1, color="red", linestyle="-", linewidth=2)
+    # ax0.set_yticks([0.5, .85, 1.0])
+    # ax0.axhline(, color="red", linestyle="--", linewidth=2)
+    # ax1.set_title("(b) Virtualization overhead for 85% ESP", fontweight="bold", fontsize=FONTSIZE)
+    # ax1.set_ylabel("Overhead")
+
+    # handles, labels = ax0.get_legend_handles_labels()
+    # fig.legend(
+    #     handles,
+    #     labels,
+    #     title="Virtual Gates",
+    #     loc="lower center",
+    #     bbox_to_anchor=(0.5, -0.15),
+    #     ncol=10,
+    #     # frameon=False,
+    # )
+    # ax0.grid(axis="x", linestyle="--")
+
+    return fig
 
 
 def _relative_plot(ax: plt.Axes):
@@ -428,20 +471,22 @@ def main():
     # fig = plot_dep_min_stats()
     # save_figure(fig, "dep_min_stats")
 
-    fig = plot_dep_min_fidelity()
-    save_figure(fig, "dep_min_fidelity")
+    # fig = plot_dep_min_fidelity()
+    # save_figure(fig, "dep_min_fidelity")
 
     # fig = plot_noisy_scale_stats()
     # save_figure(fig, "noisy_scale_stats")
 
-    fig = plot_noisy_scale_fidelity()
-    save_figure(fig, "noisy_scale_fidelity")
+    # fig = plot_noisy_scale_fidelity()
+    # save_figure(fig, "noisy_scale_fidelity")
 
     # fig = plot_dep_min_and_qubit_reuse()
     # save_figure(fig, "dep_min_and_qubit_reuse")
 
     # fig = plot_cut_vs_qubit_reuse()
     # save_figure(fig, "cut_vs_qubit_reuse")
+    fig = plot_large_scale()
+    save_figure(fig, "large_scale")
 
 
 if __name__ == "__main__":

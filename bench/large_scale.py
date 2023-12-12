@@ -25,6 +25,7 @@ class CustomOptimalDecompositionPass(VirtualizationPass):
             set(circuit.qubits[i * frag_size : (i + 1) * frag_size])
             for i in range(self._num_fragments)
         ]
+        print(max(len(qs) for qs in qubit_sets))
         dag = DAG(circuit)
         _decompose_qubit_sets(dag, qubit_sets)
         dag.fragment()
@@ -55,8 +56,28 @@ def generate_large_scale_bench(
     return bench
 
 
+from qiskit.providers.fake_provider import FakeSherbrooke
+
+
+def _run(budget: int):
+    layers = 1
+    circuits = get_circuits(f"vqe_{layers}", (600, 1001))
+    bench = generate_large_scale_bench(
+        f"bench/results/large_scale_{budget}.csv",
+        circuits,
+        FakeSherbrooke(),
+        num_fragments=budget // layers + 1,
+        compare_to_base=False,
+    )
+
+    run_benchmark(bench)
+
+
 def scale_virts():
-    from qiskit.providers.fake_provider import FakeSherbrooke
+    import multiprocessing as mp
+
+    with mp.Pool(8) as pool:
+        pool.map(_run, [0, 2, 4, 6, 8])
 
     # circuits = get_circuits("vqe_2", (20, 100)) * 3
     # for budget in [2, 4, 6, 8]:
@@ -70,17 +91,17 @@ def scale_virts():
     #     )
     #     run_benchmark(bench)
 
-    circuits = get_circuits("vqe_2", (100, 501)) * 3
-    for budget in [0, 2, 4, 6, 8]:
-        bench = generate_large_scale_bench(
-            f"bench/results/large_scale_{budget}.csv",
-            circuits,
-            FakeSherbrooke(),
-            num_fragments=budget//2 + 1,
-            compare_to_base=False,
-        )
+    # circuits = get_circuits("vqe_1", (100, 501))
+    # for budget in [0, 2, 4, 6, 8]:
+    #     bench = generate_large_scale_bench(
+    #         f"bench/results/large_scale_{budget}.csv",
+    #         circuits,
+    #         FakeSherbrooke(),
+    #         num_fragments=budget // 2 + 1,
+    #         compare_to_base=False,
+    #     )
 
-        run_benchmark(bench)
+    #     run_benchmark(bench)
 
 
 if __name__ == "__main__":
