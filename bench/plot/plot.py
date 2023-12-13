@@ -573,7 +573,7 @@ def custom_plot_dataframes(
 	#axis[2].set_xlim([10, 30])
 	axis[1].set_ylim([1, 50000])
 	#axis[2].set_yticks([0, 1, 10, 100, 1000], [0, 1, 10, 100, 1000])
-	axis[2].set_ylim([3*10**(-2), 10**3])
+	axis[2].set_ylim([10**(0), 10**4])
 	#axis[2].set_yscale("log")
 
 	for i, ax in enumerate(axis):
