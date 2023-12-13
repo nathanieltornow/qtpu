@@ -143,7 +143,7 @@ def _run_experiment(
 def _virtual_circuit_stats(
     virtual_circuit: qvm.VirtualCircuit,
 ) -> tuple[int, int, int, int]:
-    if True:
+    if virtual_circuit.circuit.num_qubits > 40:
         cm = CouplingMap.from_heavy_hex(21)
         frags = [
             transpile(
@@ -188,7 +188,6 @@ def _compute_fidelity(circuit: QuantumCircuit, noisy_result: qvm.QuasiDistr) -> 
         .get_counts()
     )
     return hellinger_fidelity(ideal_result, noisy_result)
-
 
 def _esp(circuit: QuantumCircuit) -> float:
     fid = 1.0
