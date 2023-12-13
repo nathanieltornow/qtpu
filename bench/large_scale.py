@@ -61,7 +61,7 @@ from qiskit.providers.fake_provider import FakeSherbrooke
 
 def _run(budget: int):
     layers = 1
-    circuits = get_circuits(f"vqe_{layers}", (600, 1001))
+    circuits = get_circuits(f"vqe_{layers}", (100, 1001))
     bench = generate_large_scale_bench(
         f"bench/results/large_scale_{budget}.csv",
         circuits,
@@ -77,7 +77,7 @@ def scale_virts():
     import multiprocessing as mp
 
     with mp.Pool(8) as pool:
-        pool.map(_run, [0, 2, 4, 6, 8])
+        pool.map(_run, [1])
 
     # circuits = get_circuits("vqe_2", (20, 100)) * 3
     # for budget in [2, 4, 6, 8]:

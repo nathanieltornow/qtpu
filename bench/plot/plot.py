@@ -411,12 +411,13 @@ def plot_cut_vs_qubit_reuse() -> plt.Figure:
 def plot_large_scale() -> plt.Figure:
     scale_data = [
         ("0", "bench/results/large_scale_0.csv"),
-        ("1", "bench/results/large_scale_2.csv"),
-        ("2", "bench/results/large_scale_4.csv"),
-        ("3", "bench/results/large_scale_6.csv"),
-        ("4", "bench/results/large_scale_8.csv"),
+        ("1", "bench/results/large_scale_1.csv"),
+        ("2", "bench/results/large_scale_2.csv"),
+        ("4", "bench/results/large_scale_4.csv"),
+        ("6", "bench/results/large_scale_6.csv"),
+        ("8", "bench/results/large_scale_8.csv"),
     ]
-    fig, ax0 = plt.subplots(ncols=1, figsize=COLUMN_FIGSIZE)
+    fig, ax0 = plt.subplots(ncols=1, figsize=(6.3, 4.2))
 
     xvalues = [20, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 

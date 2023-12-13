@@ -5,7 +5,7 @@ import seaborn as sns
 import matplotlib.ticker as ticker
 from matplotlib import gridspec
 
-FONTSIZE = 12
+FONTSIZE = 14
 ISBETTER_FONTSIZE = FONTSIZE + 2
 WIDE_FIGSIZE = (13, 2.8)
 COLUMN_FIGSIZE = (6.5, 3.4)
@@ -92,7 +92,6 @@ def line_plot(
     num_lines, _ = y.shape
     assert len(line_labels) == num_lines
 
-
     for i in range(num_lines):
         y_line = y[i]
         yerr_line = yerr[i]
@@ -105,6 +104,8 @@ def line_plot(
             yerr=yerr_line,
             label=line_labels[i],
             color=color,
+            markeredgewidth=1.5,
+            markeredgecolor="black",
             marker=marker,
             markersize=8,
             linewidth=2,
