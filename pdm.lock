@@ -5,7 +5,7 @@
 groups = ["default", "jupyter", "bench", "dev"]
 strategy = ["cross_platform"]
 lock_version = "4.4"
-content_hash = "sha256:5fabef314249456b58a057788f2f7f79b7d81285c3f7f316339f1d2ac55cb701"
+content_hash = "sha256:1ff1aba408b05d55e45d788b5ccc1466c6ccf125a5e15868dedd7fcc76471aa8"
 
 [[package]]
 name = "anyio"
@@ -254,6 +254,26 @@ files = [
     {file = "charset_normalizer-3.1.0-cp311-cp311-win32.whl", hash = "sha256:c36bcbc0d5174a80d6cccf43a0ecaca44e81d25be4b7f90f0ed7bcfbb5a00909"},
     {file = "charset_normalizer-3.1.0-cp311-cp311-win_amd64.whl", hash = "sha256:cca4def576f47a09a943666b8f829606bcb17e2bc2d5911a46c8f8da45f56755"},
     {file = "charset_normalizer-3.1.0-py3-none-any.whl", hash = "sha256:3d9098b479e78c85080c98e1e35ff40b4a31d8953102bb0fd7d1b6f8a2111a3d"},
+]
+
+[[package]]
+name = "circuit-knitting-toolbox"
+version = "0.5.0"
+requires_python = ">=3.8"
+summary = "A software prototype for a circuit knitting toolbox which connects user applications with runtime primitives"
+dependencies = [
+    "numpy>=1.23.0",
+    "qiskit-aer>=0.12.0",
+    "qiskit-algorithms>=0.2.1",
+    "qiskit-ibm-runtime>=0.9.2",
+    "qiskit-nature<0.7,>=0.6.0",
+    "qiskit>=0.43.0",
+    "rustworkx>=0.12.0",
+    "scipy>=1.5.2",
+]
+files = [
+    {file = "circuit_knitting_toolbox-0.5.0-py3-none-any.whl", hash = "sha256:1db54c723c923cc66d2dfa87090a28e863d86247cc6742a90effea0b57ba2904"},
+    {file = "circuit_knitting_toolbox-0.5.0.tar.gz", hash = "sha256:118c552ef52e2304ab0671fdbf1d5ba13f591d6a9a04c43e762525655a452eb5"},
 ]
 
 [[package]]
@@ -553,6 +573,31 @@ files = [
 ]
 
 [[package]]
+name = "ibm-cloud-sdk-core"
+version = "3.18.2"
+summary = "Core library used by SDKs for IBM Cloud Services"
+dependencies = [
+    "PyJWT<3.0.0,>=2.8.0",
+    "python-dateutil<3.0.0,>=2.8.2",
+    "requests<3.0.0,>=2.31.0",
+    "urllib3<3.0.0,>=2.1.0",
+]
+files = [
+    {file = "ibm-cloud-sdk-core-3.18.2.tar.gz", hash = "sha256:d208c84ab2842e8a52304b991cbf1fcbcabbaccb8cab301390ff9ce18f08fbd0"},
+]
+
+[[package]]
+name = "ibm-platform-services"
+version = "0.48.1"
+summary = "Python client library for IBM Cloud Platform Services"
+dependencies = [
+    "ibm-cloud-sdk-core<4.0.0,>=3.18.1",
+]
+files = [
+    {file = "ibm-platform-services-0.48.1.tar.gz", hash = "sha256:712188770868e5a8935a58341481274b04b868484446f87a13d859335b67ea0a"},
+]
+
+[[package]]
 name = "idna"
 version = "3.4"
 requires_python = ">=3.5"
@@ -694,6 +739,16 @@ dependencies = [
 files = [
     {file = "Jinja2-3.1.2-py3-none-any.whl", hash = "sha256:6088930bfe239f0e6710546ab9c19c9ef35e29792895fed6e6e31a023a182a61"},
     {file = "Jinja2-3.1.2.tar.gz", hash = "sha256:31351a702a408a9e7595a8fc6150fc3f43bb6bf7e319770cbc0db9df9437e852"},
+]
+
+[[package]]
+name = "joblib"
+version = "1.3.2"
+requires_python = ">=3.7"
+summary = "Lightweight pipelining with Python functions"
+files = [
+    {file = "joblib-1.3.2-py3-none-any.whl", hash = "sha256:ef4331c65f239985f3f2220ecc87db222f08fd22097a3dd5698f693875f8cbb9"},
+    {file = "joblib-1.3.2.tar.gz", hash = "sha256:92f865e621e17784e7955080b6d042489e3b8e294949cc44c6eac304f59772b1"},
 ]
 
 [[package]]
@@ -1548,6 +1603,16 @@ files = [
 ]
 
 [[package]]
+name = "pyjwt"
+version = "2.8.0"
+requires_python = ">=3.7"
+summary = "JSON Web Token implementation in Python"
+files = [
+    {file = "PyJWT-2.8.0-py3-none-any.whl", hash = "sha256:59127c392cc44c2da5bb3192169a91f429924e17aff6534d70fdc02ab3e04320"},
+    {file = "PyJWT-2.8.0.tar.gz", hash = "sha256:57e28d156e3d5c10088e0c68abb90bfac3df82b40a71bd0daa20c65ccd5c23de"},
+]
+
+[[package]]
 name = "pylatexenc"
 version = "2.10"
 summary = "Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion"
@@ -1780,6 +1845,63 @@ files = [
 ]
 
 [[package]]
+name = "qiskit-algorithms"
+version = "0.2.1"
+requires_python = ">=3.8"
+summary = "Qiskit Algorithms: A library of quantum computing algorithms"
+dependencies = [
+    "numpy>=1.17",
+    "qiskit-terra>=0.24",
+    "scipy>=1.4",
+]
+files = [
+    {file = "qiskit-algorithms-0.2.1.tar.gz", hash = "sha256:fa27babdcabb8613f261743d83d915dd624b1d94737b450d9d0427ed36bd187e"},
+    {file = "qiskit_algorithms-0.2.1-py3-none-any.whl", hash = "sha256:4d83b63921c47fe3d9ee2962c0afcfc6009d42f94f23a2e907e5338f98e3e3f7"},
+]
+
+[[package]]
+name = "qiskit-ibm-provider"
+version = "0.7.3"
+requires_python = ">=3.8"
+summary = "Qiskit IBM Quantum Provider for accessing the quantum devices and simulators at IBM"
+dependencies = [
+    "numpy>=1.13",
+    "python-dateutil>=2.8.0",
+    "qiskit>=0.44.1",
+    "requests-ntlm>=1.1.0",
+    "requests>=2.19",
+    "typing-extensions>=4.3",
+    "urllib3>=1.21.1",
+    "websocket-client>=1.5.1",
+    "websockets>=10.0",
+]
+files = [
+    {file = "qiskit-ibm-provider-0.7.3.tar.gz", hash = "sha256:a6a2e6a1acfd8406756daf027c6208fb2aba3c15b8e1d540dac12b0e2f0b7516"},
+    {file = "qiskit_ibm_provider-0.7.3-py3-none-any.whl", hash = "sha256:b0a79f1ae58bbc63adb02bb13c118c3ed2857fcf3f8b706ec6dbd46bd9d39a2d"},
+]
+
+[[package]]
+name = "qiskit-ibm-runtime"
+version = "0.17.0"
+requires_python = ">=3.8"
+summary = "IBM Quantum client for Qiskit Runtime."
+dependencies = [
+    "ibm-platform-services>=0.22.6",
+    "numpy>=1.13",
+    "python-dateutil>=2.8.0",
+    "qiskit-ibm-provider>=0.7.2",
+    "qiskit>=0.44.1",
+    "requests-ntlm>=1.1.0",
+    "requests>=2.19",
+    "urllib3>=1.21.1",
+    "websocket-client>=1.5.1",
+]
+files = [
+    {file = "qiskit-ibm-runtime-0.17.0.tar.gz", hash = "sha256:e7b82f6a2fbbbe8d3ee6cab84a05cb62cccab73b528a0b22d9d52688c9bac9a4"},
+    {file = "qiskit_ibm_runtime-0.17.0-py3-none-any.whl", hash = "sha256:2e429e178c900fb8a2f745e4d50b23ed06236087382c15cf40edc38218eddf80"},
+]
+
+[[package]]
 name = "qiskit-ibmq-provider"
 version = "0.20.2"
 requires_python = ">=3.7"
@@ -1797,6 +1919,27 @@ dependencies = [
 files = [
     {file = "qiskit-ibmq-provider-0.20.2.tar.gz", hash = "sha256:f343025ca1ddaa6aad071e53f5b4c60df798aff0f3681266a8de35e933e61a9c"},
     {file = "qiskit_ibmq_provider-0.20.2-py3-none-any.whl", hash = "sha256:4f669b93f7d3d1e7b9439399cb1fa391083ea4ae81331f69d8269a9d4539b76a"},
+]
+
+[[package]]
+name = "qiskit-nature"
+version = "0.6.2"
+requires_python = ">=3.7"
+summary = "Qiskit Nature: A library of quantum computing chemistry/physics experiments"
+dependencies = [
+    "h5py",
+    "numpy>=1.17",
+    "psutil>=5",
+    "qiskit-terra>=0.24",
+    "rustworkx",
+    "scikit-learn>=0.20.0",
+    "scipy>=1.4",
+    "setuptools>=40.1.0",
+    "typing-extensions",
+]
+files = [
+    {file = "qiskit-nature-0.6.2.tar.gz", hash = "sha256:a5accf6d26693ca9c92b17e33f4a812816f198c95d83cd5a1a3f07e864222669"},
+    {file = "qiskit_nature-0.6.2-py3-none-any.whl", hash = "sha256:760f055755f4b9ec7e70df8094c3aac9cece412e28bfde6fb2cb40f5c987910a"},
 ]
 
 [[package]]
@@ -1962,25 +2105,63 @@ files = [
 ]
 
 [[package]]
-name = "scipy"
-version = "1.9.3"
+name = "scikit-learn"
+version = "1.3.2"
 requires_python = ">=3.8"
-summary = "Fundamental algorithms for scientific computing in Python"
+summary = "A set of python modules for machine learning and data mining"
 dependencies = [
-    "numpy<1.26.0,>=1.18.5",
+    "joblib>=1.1.1",
+    "numpy<2.0,>=1.17.3",
+    "scipy>=1.5.0",
+    "threadpoolctl>=2.0.0",
 ]
 files = [
-    {file = "scipy-1.9.3-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:1884b66a54887e21addf9c16fb588720a8309a57b2e258ae1c7986d4444d3bc0"},
-    {file = "scipy-1.9.3-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:83b89e9586c62e787f5012e8475fbb12185bafb996a03257e9675cd73d3736dd"},
-    {file = "scipy-1.9.3-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1a72d885fa44247f92743fc20732ae55564ff2a519e8302fb7e18717c5355a8b"},
-    {file = "scipy-1.9.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d01e1dd7b15bd2449c8bfc6b7cc67d630700ed655654f0dfcf121600bad205c9"},
-    {file = "scipy-1.9.3-cp310-cp310-win_amd64.whl", hash = "sha256:68239b6aa6f9c593da8be1509a05cb7f9efe98b80f43a5861cd24c7557e98523"},
-    {file = "scipy-1.9.3-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:b41bc822679ad1c9a5f023bc93f6d0543129ca0f37c1ce294dd9d386f0a21096"},
-    {file = "scipy-1.9.3-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:90453d2b93ea82a9f434e4e1cba043e779ff67b92f7a0e85d05d286a3625df3c"},
-    {file = "scipy-1.9.3-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:83c06e62a390a9167da60bedd4575a14c1f58ca9dfde59830fc42e5197283dab"},
-    {file = "scipy-1.9.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:abaf921531b5aeaafced90157db505e10345e45038c39e5d9b6c7922d68085cb"},
-    {file = "scipy-1.9.3-cp311-cp311-win_amd64.whl", hash = "sha256:06d2e1b4c491dc7d8eacea139a1b0b295f74e1a1a0f704c375028f8320d16e31"},
-    {file = "scipy-1.9.3.tar.gz", hash = "sha256:fbc5c05c85c1a02be77b1ff591087c83bc44579c6d2bd9fb798bb64ea5e1a027"},
+    {file = "scikit-learn-1.3.2.tar.gz", hash = "sha256:a2f54c76accc15a34bfb9066e6c7a56c1e7235dda5762b990792330b52ccfb05"},
+    {file = "scikit_learn-1.3.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:e326c0eb5cf4d6ba40f93776a20e9a7a69524c4db0757e7ce24ba222471ee8a1"},
+    {file = "scikit_learn-1.3.2-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:535805c2a01ccb40ca4ab7d081d771aea67e535153e35a1fd99418fcedd1648a"},
+    {file = "scikit_learn-1.3.2-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1215e5e58e9880b554b01187b8c9390bf4dc4692eedeaf542d3273f4785e342c"},
+    {file = "scikit_learn-1.3.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0ee107923a623b9f517754ea2f69ea3b62fc898a3641766cb7deb2f2ce450161"},
+    {file = "scikit_learn-1.3.2-cp310-cp310-win_amd64.whl", hash = "sha256:35a22e8015048c628ad099da9df5ab3004cdbf81edc75b396fd0cff8699ac58c"},
+    {file = "scikit_learn-1.3.2-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:6fb6bc98f234fda43163ddbe36df8bcde1d13ee176c6dc9b92bb7d3fc842eb66"},
+    {file = "scikit_learn-1.3.2-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:18424efee518a1cde7b0b53a422cde2f6625197de6af36da0b57ec502f126157"},
+    {file = "scikit_learn-1.3.2-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3271552a5eb16f208a6f7f617b8cc6d1f137b52c8a1ef8edf547db0259b2c9fb"},
+    {file = "scikit_learn-1.3.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fc4144a5004a676d5022b798d9e573b05139e77f271253a4703eed295bde0433"},
+    {file = "scikit_learn-1.3.2-cp311-cp311-win_amd64.whl", hash = "sha256:67f37d708f042a9b8d59551cf94d30431e01374e00dc2645fa186059c6c5d78b"},
+    {file = "scikit_learn-1.3.2-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:8db94cd8a2e038b37a80a04df8783e09caac77cbe052146432e67800e430c028"},
+    {file = "scikit_learn-1.3.2-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:61a6efd384258789aa89415a410dcdb39a50e19d3d8410bd29be365bcdd512d5"},
+    {file = "scikit_learn-1.3.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:cb06f8dce3f5ddc5dee1715a9b9f19f20d295bed8e3cd4fa51e1d050347de525"},
+    {file = "scikit_learn-1.3.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5b2de18d86f630d68fe1f87af690d451388bb186480afc719e5f770590c2ef6c"},
+    {file = "scikit_learn-1.3.2-cp312-cp312-win_amd64.whl", hash = "sha256:0402638c9a7c219ee52c94cbebc8fcb5eb9fe9c773717965c1f4185588ad3107"},
+]
+
+[[package]]
+name = "scipy"
+version = "1.11.4"
+requires_python = ">=3.9"
+summary = "Fundamental algorithms for scientific computing in Python"
+dependencies = [
+    "numpy<1.28.0,>=1.21.6",
+]
+files = [
+    {file = "scipy-1.11.4-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:bc9a714581f561af0848e6b69947fda0614915f072dfd14142ed1bfe1b806710"},
+    {file = "scipy-1.11.4-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:cf00bd2b1b0211888d4dc75656c0412213a8b25e80d73898083f402b50f47e41"},
+    {file = "scipy-1.11.4-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b9999c008ccf00e8fbcce1236f85ade5c569d13144f77a1946bef8863e8f6eb4"},
+    {file = "scipy-1.11.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:933baf588daa8dc9a92c20a0be32f56d43faf3d1a60ab11b3f08c356430f6e56"},
+    {file = "scipy-1.11.4-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:8fce70f39076a5aa62e92e69a7f62349f9574d8405c0a5de6ed3ef72de07f446"},
+    {file = "scipy-1.11.4-cp310-cp310-win_amd64.whl", hash = "sha256:6550466fbeec7453d7465e74d4f4b19f905642c89a7525571ee91dd7adabb5a3"},
+    {file = "scipy-1.11.4-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:f313b39a7e94f296025e3cffc2c567618174c0b1dde173960cf23808f9fae4be"},
+    {file = "scipy-1.11.4-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:1b7c3dca977f30a739e0409fb001056484661cb2541a01aba0bb0029f7b68db8"},
+    {file = "scipy-1.11.4-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:00150c5eae7b610c32589dda259eacc7c4f1665aedf25d921907f4d08a951b1c"},
+    {file = "scipy-1.11.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:530f9ad26440e85766509dbf78edcfe13ffd0ab7fec2560ee5c36ff74d6269ff"},
+    {file = "scipy-1.11.4-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:5e347b14fe01003d3b78e196e84bd3f48ffe4c8a7b8a1afbcb8f5505cb710993"},
+    {file = "scipy-1.11.4-cp311-cp311-win_amd64.whl", hash = "sha256:acf8ed278cc03f5aff035e69cb511741e0418681d25fbbb86ca65429c4f4d9cd"},
+    {file = "scipy-1.11.4-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:028eccd22e654b3ea01ee63705681ee79933652b2d8f873e7949898dda6d11b6"},
+    {file = "scipy-1.11.4-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:2c6ff6ef9cc27f9b3db93a6f8b38f97387e6e0591600369a297a50a8e96e835d"},
+    {file = "scipy-1.11.4-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b030c6674b9230d37c5c60ab456e2cf12f6784596d15ce8da9365e70896effc4"},
+    {file = "scipy-1.11.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ad669df80528aeca5f557712102538f4f37e503f0c5b9541655016dd0932ca79"},
+    {file = "scipy-1.11.4-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:ce7fff2e23ab2cc81ff452a9444c215c28e6305f396b2ba88343a567feec9660"},
+    {file = "scipy-1.11.4-cp312-cp312-win_amd64.whl", hash = "sha256:36750b7733d960d7994888f0d148d31ea3017ac15eef664194b4ef68d36a4a97"},
+    {file = "scipy-1.11.4.tar.gz", hash = "sha256:90a2b78e7f5733b9de748f589f09225013685f9b218275257f8a8168ededaeaa"},
 ]
 
 [[package]]
@@ -2136,6 +2317,16 @@ files = [
 ]
 
 [[package]]
+name = "threadpoolctl"
+version = "3.2.0"
+requires_python = ">=3.8"
+summary = "threadpoolctl"
+files = [
+    {file = "threadpoolctl-3.2.0-py3-none-any.whl", hash = "sha256:2b7818516e423bdaebb97c723f86a7c6b0a83d3f3b0970328d66f4d9104dc032"},
+    {file = "threadpoolctl-3.2.0.tar.gz", hash = "sha256:c96a0ba3bdddeaca37dc4cc7344aafad41cdb8c313f74fdfe387a867bba93355"},
+]
+
+[[package]]
 name = "tinycss2"
 version = "1.2.1"
 requires_python = ">=3.7"
@@ -2219,12 +2410,12 @@ files = [
 
 [[package]]
 name = "urllib3"
-version = "1.26.15"
-requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
+version = "2.1.0"
+requires_python = ">=3.8"
 summary = "HTTP library with thread-safe connection pooling, file post, and more."
 files = [
-    {file = "urllib3-1.26.15-py2.py3-none-any.whl", hash = "sha256:aa751d169e23c7479ce47a0cb0da579e3ede798f994f5816a74e4f4500dcea42"},
-    {file = "urllib3-1.26.15.tar.gz", hash = "sha256:8a388717b9476f934a21484e8c8e61875ab60644d29b9b39e11e4b9dc1c6b305"},
+    {file = "urllib3-2.1.0-py3-none-any.whl", hash = "sha256:55901e917a5896a349ff771be919f8bd99aff50b79fe58fec595eb37bbc56bb3"},
+    {file = "urllib3-2.1.0.tar.gz", hash = "sha256:df7aa8afb0148fa78488e7899b2c59b5f4ffcfa82e6c54ccb9dd37c1d7b52d54"},
 ]
 
 [[package]]

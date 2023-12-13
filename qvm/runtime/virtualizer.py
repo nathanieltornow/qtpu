@@ -13,18 +13,18 @@ from qvm.virtual_gates import VirtualGateEndpoint
 InstanceLabelType = tuple[int, ...]
 
 
-class _CustomNumpyBackend(NumPyBackend):
-    def __init__(self):
-        super().__init__()
-        self.name = "custom_numpy"
+# class _CustomNumpyBackend(NumPyBackend):
+#     def __init__(self):
+#         super().__init__()
+#         self.name = "custom_numpy"
 
-    def tensordot(self, a, b, axes):
-        # we need to override this method because the default implementation
-        # does not support tensors with dtype=object
-        return np.tensordot(a, b, axes=axes)
+#     def tensordot(self, a, b, axes):
+#         # we need to override this method because the default implementation
+#         # does not support tensors with dtype=object
+#         return np.tensordot(a, b, axes=axes)
 
 
-tn.set_default_backend(_CustomNumpyBackend())
+# tn.set_default_backend(_CustomNumpyBackend())
 
 
 class Virtualizer:
@@ -40,35 +40,23 @@ class Virtualizer:
             for fragment in self._virtual_circuit.fragment_circuits.keys()
         }
 
-    def knit(self, results: dict[Fragment, list[QuasiDistr]]) -> QuasiDistr:
+    def knit(self, results: dict[Fragment, np.array]) -> np.array:
         tensor_network = self._build_tensor_network(results)
-        return (
-            tn.contractors.auto(tensor_network)
-            .tensor.item()
-            .nearest_probability_distribution()
-        )
+        return tn.contractors.auto(tensor_network).tensor
 
     def _build_tensor_network(
-        self, results: dict[Fragment, list[QuasiDistr]]
+        self, results: dict[Fragment, list[np.array]]
     ) -> list[tn.Node]:
-        num_clbits = self._virtual_circuit.circuit.num_clbits
-        prepared_results = {
-            fragment: np.array(
-                [prepare_quasidist(qd, num_clbits) for qd in qds], dtype=object
-            )
-            for fragment, qds in results.items()
-        }
         fragments = list(self._virtual_circuit.fragment_circuits.keys())
         for frag in fragments:
             shape = tuple(
                 inst.num_instantiations
                 for inst in self._virtual_circuit.virtual_gates_in_fragment(frag)
             )
-            prepared_results[frag] = prepared_results[frag].reshape(shape)
+            results[frag] = results[frag].reshape(shape)
 
         frag_nodes = {
-            frag: tn.Node(prepared_results[frag], name=f"frag_{frag.name}")
-            for frag in fragments
+            frag: tn.Node(results[frag], name=f"frag_{frag.name}") for frag in fragments
         }
 
         coeff_nodes = []

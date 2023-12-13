@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from time import perf_counter
 
+import numpy as np
 from qiskit.compiler import transpile
 
 from qvm.quasi_distr import QuasiDistr
 
-# from qvm.runtime.virtualizer import Virtualizer
-from qvm.runtime.standard_virtualizer import Virtualizer
+from qvm.runtime.virtualizer import Virtualizer
 from qvm.virtual_circuit import VirtualCircuit
 
 
@@ -20,7 +20,6 @@ def run(
     virtual_circuit: VirtualCircuit,
     shots: int = 20000,
     optimization_level: int = 0,
-    num_processes: int = 1,
 ) -> tuple[dict[int, float], RuntimeInfo]:
     """Run a virtual circuit.
 
@@ -60,12 +59,21 @@ def run(
     for frag, job in jobs.items():
         counts = job.result().get_counts()
         counts = counts if isinstance(counts, list) else [counts]
-        dists = [QuasiDistr.from_counts(c) for c in counts]
-        results[frag] = dists
+        res = np.array([z_expval(count) for count in counts], dtype=np.float64)
+        results[frag] = res
 
     runtime = perf_counter() - now
 
     print("Knitting results...")
-    res = virt.knit(results, num_processes=num_processes)
+    res = virt.knit(results)
     knit_time = perf_counter() - now - runtime
     return res, RuntimeInfo(runtime, knit_time)
+
+
+def z_expval(counts: dict[str, int]) -> float:
+    expval = 0.0
+    shots = sum(counts.values())
+    for bitstring, count in counts.items():
+        parity = 1 - 2 * int(bitstring.count("1") % 2)
+        expval += parity * (count / shots)
+    return expval
