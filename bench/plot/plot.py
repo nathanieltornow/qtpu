@@ -573,7 +573,7 @@ def custom_plot_dataframes(
 	#axis[2].set_xlim([10, 30])
 	axis[1].set_ylim([1, 50000])
 	#axis[2].set_yticks([0, 1, 10, 100, 1000], [0, 1, 10, 100, 1000])
-	axis[2].set_ylim([10**(0), 10**4])
+	axis[2].set_ylim([0.5*10**(0), 10**4])
 	#axis[2].set_yscale("log")
 
 	for i, ax in enumerate(axis):
@@ -587,7 +587,7 @@ def custom_plot_dataframes(
 
 	print(keys[2])
 	plot_lines(axis[2], keys[2], labels[2], [dataframes[2]])
-	axis[2].legend()		
+	axis[2].legend(ncols=2)		
 	axis[2].set_title(titles[2], fontsize=12, fontweight="bold")
 	
 	plot_lines(axis[3], keys[3], labels[3], [dataframes[3]])
