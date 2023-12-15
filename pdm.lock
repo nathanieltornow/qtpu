@@ -5,7 +5,7 @@
 groups = ["default", "jupyter", "bench", "dev"]
 strategy = ["cross_platform"]
 lock_version = "4.4"
-content_hash = "sha256:1ff1aba408b05d55e45d788b5ccc1466c6ccf125a5e15868dedd7fcc76471aa8"
+content_hash = "sha256:d4d7762d261e7cb71e59ea856f9336244d682b5a0fff4b2c7fe077a73f5076de"
 
 [[package]]
 name = "anyio"
@@ -998,6 +998,15 @@ files = [
 ]
 
 [[package]]
+name = "lark-parser"
+version = "0.12.0"
+summary = "a modern parsing library"
+files = [
+    {file = "lark-parser-0.12.0.tar.gz", hash = "sha256:15967db1f1214013dca65b1180745047b9be457d73da224fcda3d9dd4e96a138"},
+    {file = "lark_parser-0.12.0-py2.py3-none-any.whl", hash = "sha256:0eaf30cb5ba787fe404d73a7d6e61df97b21d5a63ac26c5008c78a494373c675"},
+]
+
+[[package]]
 name = "mapomatic"
 version = "0.8.0"
 summary = "Mapomatic"
@@ -1693,6 +1702,36 @@ files = [
 ]
 
 [[package]]
+name = "pytket"
+version = "1.22.0"
+requires_python = ">=3.9"
+summary = "Python module for interfacing with the CQC tket library of quantum software"
+dependencies = [
+    "graphviz~=0.14",
+    "jinja2~=3.0",
+    "lark-parser~=0.7",
+    "networkx>=2.8.8",
+    "numpy<2.0,>=1.21.4",
+    "qwasm~=1.0",
+    "scipy<2.0,>=1.7.2",
+    "sympy~=1.6",
+    "types-pkg-resources",
+    "typing-extensions~=4.2",
+]
+files = [
+    {file = "pytket-1.22.0-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:d498ada226067aaa06372794d7888d3568b29b36375eb14d690d11cf27575474"},
+    {file = "pytket-1.22.0-cp310-cp310-macosx_12_0_x86_64.whl", hash = "sha256:c8d2ae4ca61e98f05d8d8e9ee4e5c24ca2588348e82445e3fe145d940679d42d"},
+    {file = "pytket-1.22.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:89c58ed8985ba0974a6a2fcdf518b9497be150a39ea2e4b1ba1ccef7ebc20887"},
+    {file = "pytket-1.22.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:61e6847c57eb3c606de87f15dcc5d68c188f6ec4c5567a2e059be97f822f0a59"},
+    {file = "pytket-1.22.0-cp310-cp310-win_amd64.whl", hash = "sha256:4ff50e5f207767d0e3a98620e087a12dca3fad135183b50e925d4fd9af8f4a7d"},
+    {file = "pytket-1.22.0-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:a1eea150c63682fa1dac8ce2bf53fcdd680f748677d3df944ee18867f723c073"},
+    {file = "pytket-1.22.0-cp311-cp311-macosx_12_0_x86_64.whl", hash = "sha256:66235f562f1125bb44517b67eb6a06a2b5c44f72097a7ba11960d3e8736255f1"},
+    {file = "pytket-1.22.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3f1e43ba9b67dc493070a191e5a90c4b8c3bc8f3a1aeefdf6af4c0dbac213abf"},
+    {file = "pytket-1.22.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:029accf719f7430f36ba57df42775a8de8dabebe58cda1e96f9b4a57a0ea0591"},
+    {file = "pytket-1.22.0-cp311-cp311-win_amd64.whl", hash = "sha256:d93658ac66e633049caf34656f8bb236ba13adc18106643701321bf4524cfd01"},
+]
+
+[[package]]
 name = "pytz"
 version = "2023.3"
 summary = "World timezone definitions, modern and historical"
@@ -2006,6 +2045,18 @@ dependencies = [
 files = [
     {file = "QtPy-2.3.0-py3-none-any.whl", hash = "sha256:8d6d544fc20facd27360ea189592e6135c614785f0dec0b4f083289de6beb408"},
     {file = "QtPy-2.3.0.tar.gz", hash = "sha256:0603c9c83ccc035a4717a12908bf6bc6cb22509827ea2ec0e94c2da7c9ed57c5"},
+]
+
+[[package]]
+name = "qwasm"
+version = "1.0.1"
+summary = "WebAssembly decoder & disassembler"
+dependencies = [
+    "setuptools",
+]
+files = [
+    {file = "qwasm-1.0.1-py3-none-any.whl", hash = "sha256:c4c82a3f962d29314634868e06375f0cb4676c3d5266fbe137f6cd67321b0ef1"},
+    {file = "qwasm-1.0.1.tar.gz", hash = "sha256:01f5dfe27159b7fdd9d02cd299833225d528fa383d1278268e5e1526357950fb"},
 ]
 
 [[package]]
@@ -2376,6 +2427,15 @@ summary = "Traitlets Python configuration system"
 files = [
     {file = "traitlets-5.9.0-py3-none-any.whl", hash = "sha256:9e6ec080259b9a5940c797d58b613b5e31441c2257b87c2e795c5228ae80d2d8"},
     {file = "traitlets-5.9.0.tar.gz", hash = "sha256:f6cde21a9c68cf756af02035f72d5a723bf607e862e7be33ece505abf4a3bad9"},
+]
+
+[[package]]
+name = "types-pkg-resources"
+version = "0.1.3"
+summary = "Typing stubs for pkg_resources"
+files = [
+    {file = "types-pkg_resources-0.1.3.tar.gz", hash = "sha256:834a9b8d3dbea343562fd99d5d3359a726f6bf9d3733bccd2b4f3096fbab9dae"},
+    {file = "types_pkg_resources-0.1.3-py2.py3-none-any.whl", hash = "sha256:0cb9972cee992249f93fff1a491bf2dc3ce674e5a1926e27d4f0866f7d9b6d9c"},
 ]
 
 [[package]]

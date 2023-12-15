@@ -16,6 +16,7 @@ dependencies = [
     "tensornetwork>=0.4.6",
     "qiskit-aer>=0.13.1",
     "circuit-knitting-toolbox>=0.5.0",
+    "pytket>=1.22.0",
 ]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"
