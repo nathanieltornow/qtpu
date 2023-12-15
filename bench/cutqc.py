@@ -6,6 +6,7 @@ import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit.providers import BackendV2
 from qiskit.compiler import transpile
+from qiskit_ibm_provider import IBMProvider
 
 import qvm
 from qvm import QVMCompiler, QuasiDistr
@@ -100,8 +101,9 @@ def run_cutqc_benchmark(
 
         if run_on_hardware:
             # TODO cutqc run
-            res = qvm.run(vc, optimization_level=3, num_processes=8)
-            pass
+            res, _ = qvm.run(vc, optimization_level=3, num_processes=8)
+            fid = _compute_fidelity(res, vqe(circuit))
+            result.fid = fid
 
         result.append_dict_to_csv(result_file)
 
@@ -130,8 +132,30 @@ def _cutqc_stats(frags: list[QuantumCircuit], backend: BackendV2) -> tuple:
     )
 
 
+def run_bench(benchname: str):
+    circuits = get_circuits(benchname, (8, 25))
+
+    provider = IBMProvider(instance="ibm-q-unibw/reservations/reservations")
+
+    backend = provider.get_backend("ibmq_kolkata")
+
+    try:
+        run_cutqc_benchmark(
+            f"bench/results/cutqc/{benchname}.csv",
+            circuits,
+            backend,
+            size_to_reach=13,
+            budget=4,
+            run_on_hardware=True,
+        )
+    except Exception as e:
+        print(e)
+
+
+from multiprocessing.pool import ThreadPool
+
 if __name__ == "__main__":
-    for benchname in [
+    for bname in [
         "qsvm",
         "wstate",
         "vqe_1",
@@ -142,19 +166,4 @@ if __name__ == "__main__":
         "hamsim_1",
         "twolocal_1",
     ]:
-        circuits = get_circuits(benchname, (8, 25))
-
-        backend = FakeKolkataV2()
-
-        try:
-            run_cutqc_benchmark(
-                f"bench/results/cutqc/{benchname}.csv",
-                circuits,
-                backend,
-                size_to_reach=13,
-                budget=4,
-                run_on_hardware=False,
-            )
-        except Exception as e:
-            print(e)
-            continue
+        run_bench(bname)
