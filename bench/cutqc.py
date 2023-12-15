@@ -21,10 +21,6 @@ from circuit_knitting.cutting.cutqc import (
 )
 
 from bench_main import (
-    RunConfiguration,
-    Benchmark,
-    IdentityCompiler,
-    run_benchmark,
     _compute_fidelity,
     _esp,
     _virtual_circuit_stats,
@@ -90,7 +86,7 @@ def run_cutqc_benchmark(
             method="automatic",
             max_subcircuit_width=13,
             max_cuts=budget,
-            num_subcircuits=[2, 3, 4, 5],
+            num_subcircuits=[2],
         )
         (
             result.num_cnots_base,
@@ -135,16 +131,30 @@ def _cutqc_stats(frags: list[QuantumCircuit], backend: BackendV2) -> tuple:
 
 
 if __name__ == "__main__":
-    for benchname in ["hamsim_1", "hamsim_2", "hamsim_3", "twolocal_1"]:
+    for benchname in [
+        "qsvm",
+        "wstate",
+        "vqe_1",
+        "vqe_2",
+        "qaoa_b",
+        "qaoa_r2",
+        "hamsim_2",
+        "hamsim_1",
+        "twolocal_1",
+    ]:
         circuits = get_circuits(benchname, (8, 25))
 
         backend = FakeKolkataV2()
 
-        run_cutqc_benchmark(
-            f"bench/results/cutqc/{benchname}.csv",
-            circuits,
-            backend,
-            size_to_reach=13,
-            budget=4,
-            run_on_hardware=False,
-        )
+        try:
+            run_cutqc_benchmark(
+                f"bench/results/cutqc/{benchname}.csv",
+                circuits,
+                backend,
+                size_to_reach=13,
+                budget=4,
+                run_on_hardware=False,
+            )
+        except Exception as e:
+            print(e)
+            continue

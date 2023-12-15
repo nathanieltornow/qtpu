@@ -5,367 +5,225 @@
 Minimize
  obj: num_cuts
 Subject To
- cons_vertex_0: bin_sc_0_vx_0 + bin_sc_1_vx_0 + bin_sc_2_vx_0 + bin_sc_3_vx_0
-                + bin_sc_4_vx_0 = 1
- cons_vertex_1: bin_sc_0_vx_1 + bin_sc_1_vx_1 + bin_sc_2_vx_1 + bin_sc_3_vx_1
-                + bin_sc_4_vx_1 = 1
- cons_vertex_2: bin_sc_0_vx_2 + bin_sc_1_vx_2 + bin_sc_2_vx_2 + bin_sc_3_vx_2
-                + bin_sc_4_vx_2 = 1
- cons_vertex_3: bin_sc_0_vx_3 + bin_sc_1_vx_3 + bin_sc_2_vx_3 + bin_sc_3_vx_3
-                + bin_sc_4_vx_3 = 1
- cons_vertex_4: bin_sc_0_vx_4 + bin_sc_1_vx_4 + bin_sc_2_vx_4 + bin_sc_3_vx_4
-                + bin_sc_4_vx_4 = 1
- cons_vertex_5: bin_sc_0_vx_5 + bin_sc_1_vx_5 + bin_sc_2_vx_5 + bin_sc_3_vx_5
-                + bin_sc_4_vx_5 = 1
- cons_vertex_6: bin_sc_0_vx_6 + bin_sc_1_vx_6 + bin_sc_2_vx_6 + bin_sc_3_vx_6
-                + bin_sc_4_vx_6 = 1
- cons_vertex_7: bin_sc_0_vx_7 + bin_sc_1_vx_7 + bin_sc_2_vx_7 + bin_sc_3_vx_7
-                + bin_sc_4_vx_7 = 1
- cons_vertex_8: bin_sc_0_vx_8 + bin_sc_1_vx_8 + bin_sc_2_vx_8 + bin_sc_3_vx_8
-                + bin_sc_4_vx_8 = 1
- cons_vertex_9: bin_sc_0_vx_9 + bin_sc_1_vx_9 + bin_sc_2_vx_9 + bin_sc_3_vx_9
-                + bin_sc_4_vx_9 = 1
- cons_vertex_10: bin_sc_0_vx_10 + bin_sc_1_vx_10 + bin_sc_2_vx_10
-                 + bin_sc_3_vx_10 + bin_sc_4_vx_10 = 1
- cons_vertex_11: bin_sc_0_vx_11 + bin_sc_1_vx_11 + bin_sc_2_vx_11
-                 + bin_sc_3_vx_11 + bin_sc_4_vx_11 = 1
- cons_vertex_12: bin_sc_0_vx_12 + bin_sc_1_vx_12 + bin_sc_2_vx_12
-                 + bin_sc_3_vx_12 + bin_sc_4_vx_12 = 1
- cons_vertex_13: bin_sc_0_vx_13 + bin_sc_1_vx_13 + bin_sc_2_vx_13
-                 + bin_sc_3_vx_13 + bin_sc_4_vx_13 = 1
- cons_vertex_14: bin_sc_0_vx_14 + bin_sc_1_vx_14 + bin_sc_2_vx_14
-                 + bin_sc_3_vx_14 + bin_sc_4_vx_14 = 1
- cons_vertex_15: bin_sc_0_vx_15 + bin_sc_1_vx_15 + bin_sc_2_vx_15
-                 + bin_sc_3_vx_15 + bin_sc_4_vx_15 = 1
- cons_vertex_16: bin_sc_0_vx_16 + bin_sc_1_vx_16 + bin_sc_2_vx_16
-                 + bin_sc_3_vx_16 + bin_sc_4_vx_16 = 1
- cons_edge_0_1: - bin_sc_0_vx_0 - bin_sc_0_vx_1 + bin_sc_0_edg_0 <= 0
- cons_edge_0_2: - bin_sc_0_vx_0 + bin_sc_0_vx_1 + bin_sc_0_edg_0 >= 0
- cons_edge_0_3: bin_sc_0_vx_0 - bin_sc_0_vx_1 + bin_sc_0_edg_0 >= 0
- cons_edge_0_4: bin_sc_0_vx_0 + bin_sc_0_vx_1 + bin_sc_0_edg_0 <= 2
- cons_edge_1_1: - bin_sc_0_vx_1 - bin_sc_0_vx_2 + bin_sc_0_edg_1 <= 0
- cons_edge_1_2: - bin_sc_0_vx_1 + bin_sc_0_vx_2 + bin_sc_0_edg_1 >= 0
- cons_edge_1_3: bin_sc_0_vx_1 - bin_sc_0_vx_2 + bin_sc_0_edg_1 >= 0
- cons_edge_1_4: bin_sc_0_vx_1 + bin_sc_0_vx_2 + bin_sc_0_edg_1 <= 2
- cons_edge_2_1: - bin_sc_0_vx_2 - bin_sc_0_vx_3 + bin_sc_0_edg_2 <= 0
- cons_edge_2_2: - bin_sc_0_vx_2 + bin_sc_0_vx_3 + bin_sc_0_edg_2 >= 0
- cons_edge_2_3: bin_sc_0_vx_2 - bin_sc_0_vx_3 + bin_sc_0_edg_2 >= 0
- cons_edge_2_4: bin_sc_0_vx_2 + bin_sc_0_vx_3 + bin_sc_0_edg_2 <= 2
- cons_edge_3_1: - bin_sc_0_vx_3 - bin_sc_0_vx_4 + bin_sc_0_edg_3 <= 0
- cons_edge_3_2: - bin_sc_0_vx_3 + bin_sc_0_vx_4 + bin_sc_0_edg_3 >= 0
- cons_edge_3_3: bin_sc_0_vx_3 - bin_sc_0_vx_4 + bin_sc_0_edg_3 >= 0
- cons_edge_3_4: bin_sc_0_vx_3 + bin_sc_0_vx_4 + bin_sc_0_edg_3 <= 2
- cons_edge_4_1: - bin_sc_0_vx_4 - bin_sc_0_vx_5 + bin_sc_0_edg_4 <= 0
- cons_edge_4_2: - bin_sc_0_vx_4 + bin_sc_0_vx_5 + bin_sc_0_edg_4 >= 0
- cons_edge_4_3: bin_sc_0_vx_4 - bin_sc_0_vx_5 + bin_sc_0_edg_4 >= 0
- cons_edge_4_4: bin_sc_0_vx_4 + bin_sc_0_vx_5 + bin_sc_0_edg_4 <= 2
- cons_edge_5_1: - bin_sc_0_vx_5 - bin_sc_0_vx_6 + bin_sc_0_edg_5 <= 0
- cons_edge_5_2: - bin_sc_0_vx_5 + bin_sc_0_vx_6 + bin_sc_0_edg_5 >= 0
- cons_edge_5_3: bin_sc_0_vx_5 - bin_sc_0_vx_6 + bin_sc_0_edg_5 >= 0
- cons_edge_5_4: bin_sc_0_vx_5 + bin_sc_0_vx_6 + bin_sc_0_edg_5 <= 2
- cons_edge_6_1: - bin_sc_0_vx_6 - bin_sc_0_vx_7 + bin_sc_0_edg_6 <= 0
- cons_edge_6_2: - bin_sc_0_vx_6 + bin_sc_0_vx_7 + bin_sc_0_edg_6 >= 0
- cons_edge_6_3: bin_sc_0_vx_6 - bin_sc_0_vx_7 + bin_sc_0_edg_6 >= 0
- cons_edge_6_4: bin_sc_0_vx_6 + bin_sc_0_vx_7 + bin_sc_0_edg_6 <= 2
- cons_edge_7_1: - bin_sc_0_vx_7 - bin_sc_0_vx_8 + bin_sc_0_edg_7 <= 0
- cons_edge_7_2: - bin_sc_0_vx_7 + bin_sc_0_vx_8 + bin_sc_0_edg_7 >= 0
- cons_edge_7_3: bin_sc_0_vx_7 - bin_sc_0_vx_8 + bin_sc_0_edg_7 >= 0
- cons_edge_7_4: bin_sc_0_vx_7 + bin_sc_0_vx_8 + bin_sc_0_edg_7 <= 2
- cons_edge_8_1: - bin_sc_0_vx_8 - bin_sc_0_vx_9 + bin_sc_0_edg_8 <= 0
- cons_edge_8_2: - bin_sc_0_vx_8 + bin_sc_0_vx_9 + bin_sc_0_edg_8 >= 0
- cons_edge_8_3: bin_sc_0_vx_8 - bin_sc_0_vx_9 + bin_sc_0_edg_8 >= 0
- cons_edge_8_4: bin_sc_0_vx_8 + bin_sc_0_vx_9 + bin_sc_0_edg_8 <= 2
- cons_edge_9_1: - bin_sc_0_vx_9 - bin_sc_0_vx_10 + bin_sc_0_edg_9 <= 0
- cons_edge_9_2: - bin_sc_0_vx_9 + bin_sc_0_vx_10 + bin_sc_0_edg_9 >= 0
- cons_edge_9_3: bin_sc_0_vx_9 - bin_sc_0_vx_10 + bin_sc_0_edg_9 >= 0
- cons_edge_9_4: bin_sc_0_vx_9 + bin_sc_0_vx_10 + bin_sc_0_edg_9 <= 2
- cons_edge_10_1: - bin_sc_0_vx_10 - bin_sc_0_vx_11 + bin_sc_0_edg_10 <= 0
- cons_edge_10_2: - bin_sc_0_vx_10 + bin_sc_0_vx_11 + bin_sc_0_edg_10 >= 0
- cons_edge_10_3: bin_sc_0_vx_10 - bin_sc_0_vx_11 + bin_sc_0_edg_10 >= 0
- cons_edge_10_4: bin_sc_0_vx_10 + bin_sc_0_vx_11 + bin_sc_0_edg_10 <= 2
- cons_edge_11_1: - bin_sc_0_vx_11 - bin_sc_0_vx_12 + bin_sc_0_edg_11 <= 0
- cons_edge_11_2: - bin_sc_0_vx_11 + bin_sc_0_vx_12 + bin_sc_0_edg_11 >= 0
- cons_edge_11_3: bin_sc_0_vx_11 - bin_sc_0_vx_12 + bin_sc_0_edg_11 >= 0
- cons_edge_11_4: bin_sc_0_vx_11 + bin_sc_0_vx_12 + bin_sc_0_edg_11 <= 2
- cons_edge_12_1: - bin_sc_0_vx_12 - bin_sc_0_vx_13 + bin_sc_0_edg_12 <= 0
- cons_edge_12_2: - bin_sc_0_vx_12 + bin_sc_0_vx_13 + bin_sc_0_edg_12 >= 0
- cons_edge_12_3: bin_sc_0_vx_12 - bin_sc_0_vx_13 + bin_sc_0_edg_12 >= 0
- cons_edge_12_4: bin_sc_0_vx_12 + bin_sc_0_vx_13 + bin_sc_0_edg_12 <= 2
- cons_edge_13_1: - bin_sc_0_vx_13 - bin_sc_0_vx_14 + bin_sc_0_edg_13 <= 0
- cons_edge_13_2: - bin_sc_0_vx_13 + bin_sc_0_vx_14 + bin_sc_0_edg_13 >= 0
- cons_edge_13_3: bin_sc_0_vx_13 - bin_sc_0_vx_14 + bin_sc_0_edg_13 >= 0
- cons_edge_13_4: bin_sc_0_vx_13 + bin_sc_0_vx_14 + bin_sc_0_edg_13 <= 2
- cons_edge_14_1: - bin_sc_0_vx_14 - bin_sc_0_vx_15 + bin_sc_0_edg_14 <= 0
- cons_edge_14_2: - bin_sc_0_vx_14 + bin_sc_0_vx_15 + bin_sc_0_edg_14 >= 0
- cons_edge_14_3: bin_sc_0_vx_14 - bin_sc_0_vx_15 + bin_sc_0_edg_14 >= 0
- cons_edge_14_4: bin_sc_0_vx_14 + bin_sc_0_vx_15 + bin_sc_0_edg_14 <= 2
- cons_edge_15_1: - bin_sc_0_vx_15 - bin_sc_0_vx_16 + bin_sc_0_edg_15 <= 0
- cons_edge_15_2: - bin_sc_0_vx_15 + bin_sc_0_vx_16 + bin_sc_0_edg_15 >= 0
- cons_edge_15_3: bin_sc_0_vx_15 - bin_sc_0_vx_16 + bin_sc_0_edg_15 >= 0
- cons_edge_15_4: bin_sc_0_vx_15 + bin_sc_0_vx_16 + bin_sc_0_edg_15 <= 2
- cons_edge_0_1#81: - bin_sc_1_vx_0 - bin_sc_1_vx_1 + bin_sc_1_edg_0 <= 0
- cons_edge_0_2#82: - bin_sc_1_vx_0 + bin_sc_1_vx_1 + bin_sc_1_edg_0 >= 0
- cons_edge_0_3#83: bin_sc_1_vx_0 - bin_sc_1_vx_1 + bin_sc_1_edg_0 >= 0
- cons_edge_0_4#84: bin_sc_1_vx_0 + bin_sc_1_vx_1 + bin_sc_1_edg_0 <= 2
- cons_edge_1_1#85: - bin_sc_1_vx_1 - bin_sc_1_vx_2 + bin_sc_1_edg_1 <= 0
- cons_edge_1_2#86: - bin_sc_1_vx_1 + bin_sc_1_vx_2 + bin_sc_1_edg_1 >= 0
- cons_edge_1_3#87: bin_sc_1_vx_1 - bin_sc_1_vx_2 + bin_sc_1_edg_1 >= 0
- cons_edge_1_4#88: bin_sc_1_vx_1 + bin_sc_1_vx_2 + bin_sc_1_edg_1 <= 2
- cons_edge_2_1#89: - bin_sc_1_vx_2 - bin_sc_1_vx_3 + bin_sc_1_edg_2 <= 0
- cons_edge_2_2#90: - bin_sc_1_vx_2 + bin_sc_1_vx_3 + bin_sc_1_edg_2 >= 0
- cons_edge_2_3#91: bin_sc_1_vx_2 - bin_sc_1_vx_3 + bin_sc_1_edg_2 >= 0
- cons_edge_2_4#92: bin_sc_1_vx_2 + bin_sc_1_vx_3 + bin_sc_1_edg_2 <= 2
- cons_edge_3_1#93: - bin_sc_1_vx_3 - bin_sc_1_vx_4 + bin_sc_1_edg_3 <= 0
- cons_edge_3_2#94: - bin_sc_1_vx_3 + bin_sc_1_vx_4 + bin_sc_1_edg_3 >= 0
- cons_edge_3_3#95: bin_sc_1_vx_3 - bin_sc_1_vx_4 + bin_sc_1_edg_3 >= 0
- cons_edge_3_4#96: bin_sc_1_vx_3 + bin_sc_1_vx_4 + bin_sc_1_edg_3 <= 2
- cons_edge_4_1#97: - bin_sc_1_vx_4 - bin_sc_1_vx_5 + bin_sc_1_edg_4 <= 0
- cons_edge_4_2#98: - bin_sc_1_vx_4 + bin_sc_1_vx_5 + bin_sc_1_edg_4 >= 0
- cons_edge_4_3#99: bin_sc_1_vx_4 - bin_sc_1_vx_5 + bin_sc_1_edg_4 >= 0
- cons_edge_4_4#100: bin_sc_1_vx_4 + bin_sc_1_vx_5 + bin_sc_1_edg_4 <= 2
- cons_edge_5_1#101: - bin_sc_1_vx_5 - bin_sc_1_vx_6 + bin_sc_1_edg_5 <= 0
- cons_edge_5_2#102: - bin_sc_1_vx_5 + bin_sc_1_vx_6 + bin_sc_1_edg_5 >= 0
- cons_edge_5_3#103: bin_sc_1_vx_5 - bin_sc_1_vx_6 + bin_sc_1_edg_5 >= 0
- cons_edge_5_4#104: bin_sc_1_vx_5 + bin_sc_1_vx_6 + bin_sc_1_edg_5 <= 2
- cons_edge_6_1#105: - bin_sc_1_vx_6 - bin_sc_1_vx_7 + bin_sc_1_edg_6 <= 0
- cons_edge_6_2#106: - bin_sc_1_vx_6 + bin_sc_1_vx_7 + bin_sc_1_edg_6 >= 0
- cons_edge_6_3#107: bin_sc_1_vx_6 - bin_sc_1_vx_7 + bin_sc_1_edg_6 >= 0
- cons_edge_6_4#108: bin_sc_1_vx_6 + bin_sc_1_vx_7 + bin_sc_1_edg_6 <= 2
- cons_edge_7_1#109: - bin_sc_1_vx_7 - bin_sc_1_vx_8 + bin_sc_1_edg_7 <= 0
- cons_edge_7_2#110: - bin_sc_1_vx_7 + bin_sc_1_vx_8 + bin_sc_1_edg_7 >= 0
- cons_edge_7_3#111: bin_sc_1_vx_7 - bin_sc_1_vx_8 + bin_sc_1_edg_7 >= 0
- cons_edge_7_4#112: bin_sc_1_vx_7 + bin_sc_1_vx_8 + bin_sc_1_edg_7 <= 2
- cons_edge_8_1#113: - bin_sc_1_vx_8 - bin_sc_1_vx_9 + bin_sc_1_edg_8 <= 0
- cons_edge_8_2#114: - bin_sc_1_vx_8 + bin_sc_1_vx_9 + bin_sc_1_edg_8 >= 0
- cons_edge_8_3#115: bin_sc_1_vx_8 - bin_sc_1_vx_9 + bin_sc_1_edg_8 >= 0
- cons_edge_8_4#116: bin_sc_1_vx_8 + bin_sc_1_vx_9 + bin_sc_1_edg_8 <= 2
- cons_edge_9_1#117: - bin_sc_1_vx_9 - bin_sc_1_vx_10 + bin_sc_1_edg_9 <= 0
- cons_edge_9_2#118: - bin_sc_1_vx_9 + bin_sc_1_vx_10 + bin_sc_1_edg_9 >= 0
- cons_edge_9_3#119: bin_sc_1_vx_9 - bin_sc_1_vx_10 + bin_sc_1_edg_9 >= 0
- cons_edge_9_4#120: bin_sc_1_vx_9 + bin_sc_1_vx_10 + bin_sc_1_edg_9 <= 2
- cons_edge_10_1#121: - bin_sc_1_vx_10 - bin_sc_1_vx_11 + bin_sc_1_edg_10 <= 0
- cons_edge_10_2#122: - bin_sc_1_vx_10 + bin_sc_1_vx_11 + bin_sc_1_edg_10 >= 0
- cons_edge_10_3#123: bin_sc_1_vx_10 - bin_sc_1_vx_11 + bin_sc_1_edg_10 >= 0
- cons_edge_10_4#124: bin_sc_1_vx_10 + bin_sc_1_vx_11 + bin_sc_1_edg_10 <= 2
- cons_edge_11_1#125: - bin_sc_1_vx_11 - bin_sc_1_vx_12 + bin_sc_1_edg_11 <= 0
- cons_edge_11_2#126: - bin_sc_1_vx_11 + bin_sc_1_vx_12 + bin_sc_1_edg_11 >= 0
- cons_edge_11_3#127: bin_sc_1_vx_11 - bin_sc_1_vx_12 + bin_sc_1_edg_11 >= 0
- cons_edge_11_4#128: bin_sc_1_vx_11 + bin_sc_1_vx_12 + bin_sc_1_edg_11 <= 2
- cons_edge_12_1#129: - bin_sc_1_vx_12 - bin_sc_1_vx_13 + bin_sc_1_edg_12 <= 0
- cons_edge_12_2#130: - bin_sc_1_vx_12 + bin_sc_1_vx_13 + bin_sc_1_edg_12 >= 0
- cons_edge_12_3#131: bin_sc_1_vx_12 - bin_sc_1_vx_13 + bin_sc_1_edg_12 >= 0
- cons_edge_12_4#132: bin_sc_1_vx_12 + bin_sc_1_vx_13 + bin_sc_1_edg_12 <= 2
- cons_edge_13_1#133: - bin_sc_1_vx_13 - bin_sc_1_vx_14 + bin_sc_1_edg_13 <= 0
- cons_edge_13_2#134: - bin_sc_1_vx_13 + bin_sc_1_vx_14 + bin_sc_1_edg_13 >= 0
- cons_edge_13_3#135: bin_sc_1_vx_13 - bin_sc_1_vx_14 + bin_sc_1_edg_13 >= 0
- cons_edge_13_4#136: bin_sc_1_vx_13 + bin_sc_1_vx_14 + bin_sc_1_edg_13 <= 2
- cons_edge_14_1#137: - bin_sc_1_vx_14 - bin_sc_1_vx_15 + bin_sc_1_edg_14 <= 0
- cons_edge_14_2#138: - bin_sc_1_vx_14 + bin_sc_1_vx_15 + bin_sc_1_edg_14 >= 0
- cons_edge_14_3#139: bin_sc_1_vx_14 - bin_sc_1_vx_15 + bin_sc_1_edg_14 >= 0
- cons_edge_14_4#140: bin_sc_1_vx_14 + bin_sc_1_vx_15 + bin_sc_1_edg_14 <= 2
- cons_edge_15_1#141: - bin_sc_1_vx_15 - bin_sc_1_vx_16 + bin_sc_1_edg_15 <= 0
- cons_edge_15_2#142: - bin_sc_1_vx_15 + bin_sc_1_vx_16 + bin_sc_1_edg_15 >= 0
- cons_edge_15_3#143: bin_sc_1_vx_15 - bin_sc_1_vx_16 + bin_sc_1_edg_15 >= 0
- cons_edge_15_4#144: bin_sc_1_vx_15 + bin_sc_1_vx_16 + bin_sc_1_edg_15 <= 2
- cons_edge_0_1#145: - bin_sc_2_vx_0 - bin_sc_2_vx_1 + bin_sc_2_edg_0 <= 0
- cons_edge_0_2#146: - bin_sc_2_vx_0 + bin_sc_2_vx_1 + bin_sc_2_edg_0 >= 0
- cons_edge_0_3#147: bin_sc_2_vx_0 - bin_sc_2_vx_1 + bin_sc_2_edg_0 >= 0
- cons_edge_0_4#148: bin_sc_2_vx_0 + bin_sc_2_vx_1 + bin_sc_2_edg_0 <= 2
- cons_edge_1_1#149: - bin_sc_2_vx_1 - bin_sc_2_vx_2 + bin_sc_2_edg_1 <= 0
- cons_edge_1_2#150: - bin_sc_2_vx_1 + bin_sc_2_vx_2 + bin_sc_2_edg_1 >= 0
- cons_edge_1_3#151: bin_sc_2_vx_1 - bin_sc_2_vx_2 + bin_sc_2_edg_1 >= 0
- cons_edge_1_4#152: bin_sc_2_vx_1 + bin_sc_2_vx_2 + bin_sc_2_edg_1 <= 2
- cons_edge_2_1#153: - bin_sc_2_vx_2 - bin_sc_2_vx_3 + bin_sc_2_edg_2 <= 0
- cons_edge_2_2#154: - bin_sc_2_vx_2 + bin_sc_2_vx_3 + bin_sc_2_edg_2 >= 0
- cons_edge_2_3#155: bin_sc_2_vx_2 - bin_sc_2_vx_3 + bin_sc_2_edg_2 >= 0
- cons_edge_2_4#156: bin_sc_2_vx_2 + bin_sc_2_vx_3 + bin_sc_2_edg_2 <= 2
- cons_edge_3_1#157: - bin_sc_2_vx_3 - bin_sc_2_vx_4 + bin_sc_2_edg_3 <= 0
- cons_edge_3_2#158: - bin_sc_2_vx_3 + bin_sc_2_vx_4 + bin_sc_2_edg_3 >= 0
- cons_edge_3_3#159: bin_sc_2_vx_3 - bin_sc_2_vx_4 + bin_sc_2_edg_3 >= 0
- cons_edge_3_4#160: bin_sc_2_vx_3 + bin_sc_2_vx_4 + bin_sc_2_edg_3 <= 2
- cons_edge_4_1#161: - bin_sc_2_vx_4 - bin_sc_2_vx_5 + bin_sc_2_edg_4 <= 0
- cons_edge_4_2#162: - bin_sc_2_vx_4 + bin_sc_2_vx_5 + bin_sc_2_edg_4 >= 0
- cons_edge_4_3#163: bin_sc_2_vx_4 - bin_sc_2_vx_5 + bin_sc_2_edg_4 >= 0
- cons_edge_4_4#164: bin_sc_2_vx_4 + bin_sc_2_vx_5 + bin_sc_2_edg_4 <= 2
- cons_edge_5_1#165: - bin_sc_2_vx_5 - bin_sc_2_vx_6 + bin_sc_2_edg_5 <= 0
- cons_edge_5_2#166: - bin_sc_2_vx_5 + bin_sc_2_vx_6 + bin_sc_2_edg_5 >= 0
- cons_edge_5_3#167: bin_sc_2_vx_5 - bin_sc_2_vx_6 + bin_sc_2_edg_5 >= 0
- cons_edge_5_4#168: bin_sc_2_vx_5 + bin_sc_2_vx_6 + bin_sc_2_edg_5 <= 2
- cons_edge_6_1#169: - bin_sc_2_vx_6 - bin_sc_2_vx_7 + bin_sc_2_edg_6 <= 0
- cons_edge_6_2#170: - bin_sc_2_vx_6 + bin_sc_2_vx_7 + bin_sc_2_edg_6 >= 0
- cons_edge_6_3#171: bin_sc_2_vx_6 - bin_sc_2_vx_7 + bin_sc_2_edg_6 >= 0
- cons_edge_6_4#172: bin_sc_2_vx_6 + bin_sc_2_vx_7 + bin_sc_2_edg_6 <= 2
- cons_edge_7_1#173: - bin_sc_2_vx_7 - bin_sc_2_vx_8 + bin_sc_2_edg_7 <= 0
- cons_edge_7_2#174: - bin_sc_2_vx_7 + bin_sc_2_vx_8 + bin_sc_2_edg_7 >= 0
- cons_edge_7_3#175: bin_sc_2_vx_7 - bin_sc_2_vx_8 + bin_sc_2_edg_7 >= 0
- cons_edge_7_4#176: bin_sc_2_vx_7 + bin_sc_2_vx_8 + bin_sc_2_edg_7 <= 2
- cons_edge_8_1#177: - bin_sc_2_vx_8 - bin_sc_2_vx_9 + bin_sc_2_edg_8 <= 0
- cons_edge_8_2#178: - bin_sc_2_vx_8 + bin_sc_2_vx_9 + bin_sc_2_edg_8 >= 0
- cons_edge_8_3#179: bin_sc_2_vx_8 - bin_sc_2_vx_9 + bin_sc_2_edg_8 >= 0
- cons_edge_8_4#180: bin_sc_2_vx_8 + bin_sc_2_vx_9 + bin_sc_2_edg_8 <= 2
- cons_edge_9_1#181: - bin_sc_2_vx_9 - bin_sc_2_vx_10 + bin_sc_2_edg_9 <= 0
- cons_edge_9_2#182: - bin_sc_2_vx_9 + bin_sc_2_vx_10 + bin_sc_2_edg_9 >= 0
- cons_edge_9_3#183: bin_sc_2_vx_9 - bin_sc_2_vx_10 + bin_sc_2_edg_9 >= 0
- cons_edge_9_4#184: bin_sc_2_vx_9 + bin_sc_2_vx_10 + bin_sc_2_edg_9 <= 2
- cons_edge_10_1#185: - bin_sc_2_vx_10 - bin_sc_2_vx_11 + bin_sc_2_edg_10 <= 0
- cons_edge_10_2#186: - bin_sc_2_vx_10 + bin_sc_2_vx_11 + bin_sc_2_edg_10 >= 0
- cons_edge_10_3#187: bin_sc_2_vx_10 - bin_sc_2_vx_11 + bin_sc_2_edg_10 >= 0
- cons_edge_10_4#188: bin_sc_2_vx_10 + bin_sc_2_vx_11 + bin_sc_2_edg_10 <= 2
- cons_edge_11_1#189: - bin_sc_2_vx_11 - bin_sc_2_vx_12 + bin_sc_2_edg_11 <= 0
- cons_edge_11_2#190: - bin_sc_2_vx_11 + bin_sc_2_vx_12 + bin_sc_2_edg_11 >= 0
- cons_edge_11_3#191: bin_sc_2_vx_11 - bin_sc_2_vx_12 + bin_sc_2_edg_11 >= 0
- cons_edge_11_4#192: bin_sc_2_vx_11 + bin_sc_2_vx_12 + bin_sc_2_edg_11 <= 2
- cons_edge_12_1#193: - bin_sc_2_vx_12 - bin_sc_2_vx_13 + bin_sc_2_edg_12 <= 0
- cons_edge_12_2#194: - bin_sc_2_vx_12 + bin_sc_2_vx_13 + bin_sc_2_edg_12 >= 0
- cons_edge_12_3#195: bin_sc_2_vx_12 - bin_sc_2_vx_13 + bin_sc_2_edg_12 >= 0
- cons_edge_12_4#196: bin_sc_2_vx_12 + bin_sc_2_vx_13 + bin_sc_2_edg_12 <= 2
- cons_edge_13_1#197: - bin_sc_2_vx_13 - bin_sc_2_vx_14 + bin_sc_2_edg_13 <= 0
- cons_edge_13_2#198: - bin_sc_2_vx_13 + bin_sc_2_vx_14 + bin_sc_2_edg_13 >= 0
- cons_edge_13_3#199: bin_sc_2_vx_13 - bin_sc_2_vx_14 + bin_sc_2_edg_13 >= 0
- cons_edge_13_4#200: bin_sc_2_vx_13 + bin_sc_2_vx_14 + bin_sc_2_edg_13 <= 2
- cons_edge_14_1#201: - bin_sc_2_vx_14 - bin_sc_2_vx_15 + bin_sc_2_edg_14 <= 0
- cons_edge_14_2#202: - bin_sc_2_vx_14 + bin_sc_2_vx_15 + bin_sc_2_edg_14 >= 0
- cons_edge_14_3#203: bin_sc_2_vx_14 - bin_sc_2_vx_15 + bin_sc_2_edg_14 >= 0
- cons_edge_14_4#204: bin_sc_2_vx_14 + bin_sc_2_vx_15 + bin_sc_2_edg_14 <= 2
- cons_edge_15_1#205: - bin_sc_2_vx_15 - bin_sc_2_vx_16 + bin_sc_2_edg_15 <= 0
- cons_edge_15_2#206: - bin_sc_2_vx_15 + bin_sc_2_vx_16 + bin_sc_2_edg_15 >= 0
- cons_edge_15_3#207: bin_sc_2_vx_15 - bin_sc_2_vx_16 + bin_sc_2_edg_15 >= 0
- cons_edge_15_4#208: bin_sc_2_vx_15 + bin_sc_2_vx_16 + bin_sc_2_edg_15 <= 2
- cons_edge_0_1#209: - bin_sc_3_vx_0 - bin_sc_3_vx_1 + bin_sc_3_edg_0 <= 0
- cons_edge_0_2#210: - bin_sc_3_vx_0 + bin_sc_3_vx_1 + bin_sc_3_edg_0 >= 0
- cons_edge_0_3#211: bin_sc_3_vx_0 - bin_sc_3_vx_1 + bin_sc_3_edg_0 >= 0
- cons_edge_0_4#212: bin_sc_3_vx_0 + bin_sc_3_vx_1 + bin_sc_3_edg_0 <= 2
- cons_edge_1_1#213: - bin_sc_3_vx_1 - bin_sc_3_vx_2 + bin_sc_3_edg_1 <= 0
- cons_edge_1_2#214: - bin_sc_3_vx_1 + bin_sc_3_vx_2 + bin_sc_3_edg_1 >= 0
- cons_edge_1_3#215: bin_sc_3_vx_1 - bin_sc_3_vx_2 + bin_sc_3_edg_1 >= 0
- cons_edge_1_4#216: bin_sc_3_vx_1 + bin_sc_3_vx_2 + bin_sc_3_edg_1 <= 2
- cons_edge_2_1#217: - bin_sc_3_vx_2 - bin_sc_3_vx_3 + bin_sc_3_edg_2 <= 0
- cons_edge_2_2#218: - bin_sc_3_vx_2 + bin_sc_3_vx_3 + bin_sc_3_edg_2 >= 0
- cons_edge_2_3#219: bin_sc_3_vx_2 - bin_sc_3_vx_3 + bin_sc_3_edg_2 >= 0
- cons_edge_2_4#220: bin_sc_3_vx_2 + bin_sc_3_vx_3 + bin_sc_3_edg_2 <= 2
- cons_edge_3_1#221: - bin_sc_3_vx_3 - bin_sc_3_vx_4 + bin_sc_3_edg_3 <= 0
- cons_edge_3_2#222: - bin_sc_3_vx_3 + bin_sc_3_vx_4 + bin_sc_3_edg_3 >= 0
- cons_edge_3_3#223: bin_sc_3_vx_3 - bin_sc_3_vx_4 + bin_sc_3_edg_3 >= 0
- cons_edge_3_4#224: bin_sc_3_vx_3 + bin_sc_3_vx_4 + bin_sc_3_edg_3 <= 2
- cons_edge_4_1#225: - bin_sc_3_vx_4 - bin_sc_3_vx_5 + bin_sc_3_edg_4 <= 0
- cons_edge_4_2#226: - bin_sc_3_vx_4 + bin_sc_3_vx_5 + bin_sc_3_edg_4 >= 0
- cons_edge_4_3#227: bin_sc_3_vx_4 - bin_sc_3_vx_5 + bin_sc_3_edg_4 >= 0
- cons_edge_4_4#228: bin_sc_3_vx_4 + bin_sc_3_vx_5 + bin_sc_3_edg_4 <= 2
- cons_edge_5_1#229: - bin_sc_3_vx_5 - bin_sc_3_vx_6 + bin_sc_3_edg_5 <= 0
- cons_edge_5_2#230: - bin_sc_3_vx_5 + bin_sc_3_vx_6 + bin_sc_3_edg_5 >= 0
- cons_edge_5_3#231: bin_sc_3_vx_5 - bin_sc_3_vx_6 + bin_sc_3_edg_5 >= 0
- cons_edge_5_4#232: bin_sc_3_vx_5 + bin_sc_3_vx_6 + bin_sc_3_edg_5 <= 2
- cons_edge_6_1#233: - bin_sc_3_vx_6 - bin_sc_3_vx_7 + bin_sc_3_edg_6 <= 0
- cons_edge_6_2#234: - bin_sc_3_vx_6 + bin_sc_3_vx_7 + bin_sc_3_edg_6 >= 0
- cons_edge_6_3#235: bin_sc_3_vx_6 - bin_sc_3_vx_7 + bin_sc_3_edg_6 >= 0
- cons_edge_6_4#236: bin_sc_3_vx_6 + bin_sc_3_vx_7 + bin_sc_3_edg_6 <= 2
- cons_edge_7_1#237: - bin_sc_3_vx_7 - bin_sc_3_vx_8 + bin_sc_3_edg_7 <= 0
- cons_edge_7_2#238: - bin_sc_3_vx_7 + bin_sc_3_vx_8 + bin_sc_3_edg_7 >= 0
- cons_edge_7_3#239: bin_sc_3_vx_7 - bin_sc_3_vx_8 + bin_sc_3_edg_7 >= 0
- cons_edge_7_4#240: bin_sc_3_vx_7 + bin_sc_3_vx_8 + bin_sc_3_edg_7 <= 2
- cons_edge_8_1#241: - bin_sc_3_vx_8 - bin_sc_3_vx_9 + bin_sc_3_edg_8 <= 0
- cons_edge_8_2#242: - bin_sc_3_vx_8 + bin_sc_3_vx_9 + bin_sc_3_edg_8 >= 0
- cons_edge_8_3#243: bin_sc_3_vx_8 - bin_sc_3_vx_9 + bin_sc_3_edg_8 >= 0
- cons_edge_8_4#244: bin_sc_3_vx_8 + bin_sc_3_vx_9 + bin_sc_3_edg_8 <= 2
- cons_edge_9_1#245: - bin_sc_3_vx_9 - bin_sc_3_vx_10 + bin_sc_3_edg_9 <= 0
- cons_edge_9_2#246: - bin_sc_3_vx_9 + bin_sc_3_vx_10 + bin_sc_3_edg_9 >= 0
- cons_edge_9_3#247: bin_sc_3_vx_9 - bin_sc_3_vx_10 + bin_sc_3_edg_9 >= 0
- cons_edge_9_4#248: bin_sc_3_vx_9 + bin_sc_3_vx_10 + bin_sc_3_edg_9 <= 2
- cons_edge_10_1#249: - bin_sc_3_vx_10 - bin_sc_3_vx_11 + bin_sc_3_edg_10 <= 0
- cons_edge_10_2#250: - bin_sc_3_vx_10 + bin_sc_3_vx_11 + bin_sc_3_edg_10 >= 0
- cons_edge_10_3#251: bin_sc_3_vx_10 - bin_sc_3_vx_11 + bin_sc_3_edg_10 >= 0
- cons_edge_10_4#252: bin_sc_3_vx_10 + bin_sc_3_vx_11 + bin_sc_3_edg_10 <= 2
- cons_edge_11_1#253: - bin_sc_3_vx_11 - bin_sc_3_vx_12 + bin_sc_3_edg_11 <= 0
- cons_edge_11_2#254: - bin_sc_3_vx_11 + bin_sc_3_vx_12 + bin_sc_3_edg_11 >= 0
- cons_edge_11_3#255: bin_sc_3_vx_11 - bin_sc_3_vx_12 + bin_sc_3_edg_11 >= 0
- cons_edge_11_4#256: bin_sc_3_vx_11 + bin_sc_3_vx_12 + bin_sc_3_edg_11 <= 2
- cons_edge_12_1#257: - bin_sc_3_vx_12 - bin_sc_3_vx_13 + bin_sc_3_edg_12 <= 0
- cons_edge_12_2#258: - bin_sc_3_vx_12 + bin_sc_3_vx_13 + bin_sc_3_edg_12 >= 0
- cons_edge_12_3#259: bin_sc_3_vx_12 - bin_sc_3_vx_13 + bin_sc_3_edg_12 >= 0
- cons_edge_12_4#260: bin_sc_3_vx_12 + bin_sc_3_vx_13 + bin_sc_3_edg_12 <= 2
- cons_edge_13_1#261: - bin_sc_3_vx_13 - bin_sc_3_vx_14 + bin_sc_3_edg_13 <= 0
- cons_edge_13_2#262: - bin_sc_3_vx_13 + bin_sc_3_vx_14 + bin_sc_3_edg_13 >= 0
- cons_edge_13_3#263: bin_sc_3_vx_13 - bin_sc_3_vx_14 + bin_sc_3_edg_13 >= 0
- cons_edge_13_4#264: bin_sc_3_vx_13 + bin_sc_3_vx_14 + bin_sc_3_edg_13 <= 2
- cons_edge_14_1#265: - bin_sc_3_vx_14 - bin_sc_3_vx_15 + bin_sc_3_edg_14 <= 0
- cons_edge_14_2#266: - bin_sc_3_vx_14 + bin_sc_3_vx_15 + bin_sc_3_edg_14 >= 0
- cons_edge_14_3#267: bin_sc_3_vx_14 - bin_sc_3_vx_15 + bin_sc_3_edg_14 >= 0
- cons_edge_14_4#268: bin_sc_3_vx_14 + bin_sc_3_vx_15 + bin_sc_3_edg_14 <= 2
- cons_edge_15_1#269: - bin_sc_3_vx_15 - bin_sc_3_vx_16 + bin_sc_3_edg_15 <= 0
- cons_edge_15_2#270: - bin_sc_3_vx_15 + bin_sc_3_vx_16 + bin_sc_3_edg_15 >= 0
- cons_edge_15_3#271: bin_sc_3_vx_15 - bin_sc_3_vx_16 + bin_sc_3_edg_15 >= 0
- cons_edge_15_4#272: bin_sc_3_vx_15 + bin_sc_3_vx_16 + bin_sc_3_edg_15 <= 2
- cons_edge_0_1#273: - bin_sc_4_vx_0 - bin_sc_4_vx_1 + bin_sc_4_edg_0 <= 0
- cons_edge_0_2#274: - bin_sc_4_vx_0 + bin_sc_4_vx_1 + bin_sc_4_edg_0 >= 0
- cons_edge_0_3#275: bin_sc_4_vx_0 - bin_sc_4_vx_1 + bin_sc_4_edg_0 >= 0
- cons_edge_0_4#276: bin_sc_4_vx_0 + bin_sc_4_vx_1 + bin_sc_4_edg_0 <= 2
- cons_edge_1_1#277: - bin_sc_4_vx_1 - bin_sc_4_vx_2 + bin_sc_4_edg_1 <= 0
- cons_edge_1_2#278: - bin_sc_4_vx_1 + bin_sc_4_vx_2 + bin_sc_4_edg_1 >= 0
- cons_edge_1_3#279: bin_sc_4_vx_1 - bin_sc_4_vx_2 + bin_sc_4_edg_1 >= 0
- cons_edge_1_4#280: bin_sc_4_vx_1 + bin_sc_4_vx_2 + bin_sc_4_edg_1 <= 2
- cons_edge_2_1#281: - bin_sc_4_vx_2 - bin_sc_4_vx_3 + bin_sc_4_edg_2 <= 0
- cons_edge_2_2#282: - bin_sc_4_vx_2 + bin_sc_4_vx_3 + bin_sc_4_edg_2 >= 0
- cons_edge_2_3#283: bin_sc_4_vx_2 - bin_sc_4_vx_3 + bin_sc_4_edg_2 >= 0
- cons_edge_2_4#284: bin_sc_4_vx_2 + bin_sc_4_vx_3 + bin_sc_4_edg_2 <= 2
- cons_edge_3_1#285: - bin_sc_4_vx_3 - bin_sc_4_vx_4 + bin_sc_4_edg_3 <= 0
- cons_edge_3_2#286: - bin_sc_4_vx_3 + bin_sc_4_vx_4 + bin_sc_4_edg_3 >= 0
- cons_edge_3_3#287: bin_sc_4_vx_3 - bin_sc_4_vx_4 + bin_sc_4_edg_3 >= 0
- cons_edge_3_4#288: bin_sc_4_vx_3 + bin_sc_4_vx_4 + bin_sc_4_edg_3 <= 2
- cons_edge_4_1#289: - bin_sc_4_vx_4 - bin_sc_4_vx_5 + bin_sc_4_edg_4 <= 0
- cons_edge_4_2#290: - bin_sc_4_vx_4 + bin_sc_4_vx_5 + bin_sc_4_edg_4 >= 0
- cons_edge_4_3#291: bin_sc_4_vx_4 - bin_sc_4_vx_5 + bin_sc_4_edg_4 >= 0
- cons_edge_4_4#292: bin_sc_4_vx_4 + bin_sc_4_vx_5 + bin_sc_4_edg_4 <= 2
- cons_edge_5_1#293: - bin_sc_4_vx_5 - bin_sc_4_vx_6 + bin_sc_4_edg_5 <= 0
- cons_edge_5_2#294: - bin_sc_4_vx_5 + bin_sc_4_vx_6 + bin_sc_4_edg_5 >= 0
- cons_edge_5_3#295: bin_sc_4_vx_5 - bin_sc_4_vx_6 + bin_sc_4_edg_5 >= 0
- cons_edge_5_4#296: bin_sc_4_vx_5 + bin_sc_4_vx_6 + bin_sc_4_edg_5 <= 2
- cons_edge_6_1#297: - bin_sc_4_vx_6 - bin_sc_4_vx_7 + bin_sc_4_edg_6 <= 0
- cons_edge_6_2#298: - bin_sc_4_vx_6 + bin_sc_4_vx_7 + bin_sc_4_edg_6 >= 0
- cons_edge_6_3#299: bin_sc_4_vx_6 - bin_sc_4_vx_7 + bin_sc_4_edg_6 >= 0
- cons_edge_6_4#300: bin_sc_4_vx_6 + bin_sc_4_vx_7 + bin_sc_4_edg_6 <= 2
- cons_edge_7_1#301: - bin_sc_4_vx_7 - bin_sc_4_vx_8 + bin_sc_4_edg_7 <= 0
- cons_edge_7_2#302: - bin_sc_4_vx_7 + bin_sc_4_vx_8 + bin_sc_4_edg_7 >= 0
- cons_edge_7_3#303: bin_sc_4_vx_7 - bin_sc_4_vx_8 + bin_sc_4_edg_7 >= 0
- cons_edge_7_4#304: bin_sc_4_vx_7 + bin_sc_4_vx_8 + bin_sc_4_edg_7 <= 2
- cons_edge_8_1#305: - bin_sc_4_vx_8 - bin_sc_4_vx_9 + bin_sc_4_edg_8 <= 0
- cons_edge_8_2#306: - bin_sc_4_vx_8 + bin_sc_4_vx_9 + bin_sc_4_edg_8 >= 0
- cons_edge_8_3#307: bin_sc_4_vx_8 - bin_sc_4_vx_9 + bin_sc_4_edg_8 >= 0
- cons_edge_8_4#308: bin_sc_4_vx_8 + bin_sc_4_vx_9 + bin_sc_4_edg_8 <= 2
- cons_edge_9_1#309: - bin_sc_4_vx_9 - bin_sc_4_vx_10 + bin_sc_4_edg_9 <= 0
- cons_edge_9_2#310: - bin_sc_4_vx_9 + bin_sc_4_vx_10 + bin_sc_4_edg_9 >= 0
- cons_edge_9_3#311: bin_sc_4_vx_9 - bin_sc_4_vx_10 + bin_sc_4_edg_9 >= 0
- cons_edge_9_4#312: bin_sc_4_vx_9 + bin_sc_4_vx_10 + bin_sc_4_edg_9 <= 2
- cons_edge_10_1#313: - bin_sc_4_vx_10 - bin_sc_4_vx_11 + bin_sc_4_edg_10 <= 0
- cons_edge_10_2#314: - bin_sc_4_vx_10 + bin_sc_4_vx_11 + bin_sc_4_edg_10 >= 0
- cons_edge_10_3#315: bin_sc_4_vx_10 - bin_sc_4_vx_11 + bin_sc_4_edg_10 >= 0
- cons_edge_10_4#316: bin_sc_4_vx_10 + bin_sc_4_vx_11 + bin_sc_4_edg_10 <= 2
- cons_edge_11_1#317: - bin_sc_4_vx_11 - bin_sc_4_vx_12 + bin_sc_4_edg_11 <= 0
- cons_edge_11_2#318: - bin_sc_4_vx_11 + bin_sc_4_vx_12 + bin_sc_4_edg_11 >= 0
- cons_edge_11_3#319: bin_sc_4_vx_11 - bin_sc_4_vx_12 + bin_sc_4_edg_11 >= 0
- cons_edge_11_4#320: bin_sc_4_vx_11 + bin_sc_4_vx_12 + bin_sc_4_edg_11 <= 2
- cons_edge_12_1#321: - bin_sc_4_vx_12 - bin_sc_4_vx_13 + bin_sc_4_edg_12 <= 0
- cons_edge_12_2#322: - bin_sc_4_vx_12 + bin_sc_4_vx_13 + bin_sc_4_edg_12 >= 0
- cons_edge_12_3#323: bin_sc_4_vx_12 - bin_sc_4_vx_13 + bin_sc_4_edg_12 >= 0
- cons_edge_12_4#324: bin_sc_4_vx_12 + bin_sc_4_vx_13 + bin_sc_4_edg_12 <= 2
- cons_edge_13_1#325: - bin_sc_4_vx_13 - bin_sc_4_vx_14 + bin_sc_4_edg_13 <= 0
- cons_edge_13_2#326: - bin_sc_4_vx_13 + bin_sc_4_vx_14 + bin_sc_4_edg_13 >= 0
- cons_edge_13_3#327: bin_sc_4_vx_13 - bin_sc_4_vx_14 + bin_sc_4_edg_13 >= 0
- cons_edge_13_4#328: bin_sc_4_vx_13 + bin_sc_4_vx_14 + bin_sc_4_edg_13 <= 2
- cons_edge_14_1#329: - bin_sc_4_vx_14 - bin_sc_4_vx_15 + bin_sc_4_edg_14 <= 0
- cons_edge_14_2#330: - bin_sc_4_vx_14 + bin_sc_4_vx_15 + bin_sc_4_edg_14 >= 0
- cons_edge_14_3#331: bin_sc_4_vx_14 - bin_sc_4_vx_15 + bin_sc_4_edg_14 >= 0
- cons_edge_14_4#332: bin_sc_4_vx_14 + bin_sc_4_vx_15 + bin_sc_4_edg_14 <= 2
- cons_edge_15_1#333: - bin_sc_4_vx_15 - bin_sc_4_vx_16 + bin_sc_4_edg_15 <= 0
- cons_edge_15_2#334: - bin_sc_4_vx_15 + bin_sc_4_vx_16 + bin_sc_4_edg_15 >= 0
- cons_edge_15_3#335: bin_sc_4_vx_15 - bin_sc_4_vx_16 + bin_sc_4_edg_15 >= 0
- cons_edge_15_4#336: bin_sc_4_vx_15 + bin_sc_4_vx_16 + bin_sc_4_edg_15 <= 2
+ cons_vertex_0: bin_sc_0_vx_0 + bin_sc_1_vx_0 = 1
+ cons_vertex_1: bin_sc_0_vx_1 + bin_sc_1_vx_1 = 1
+ cons_vertex_2: bin_sc_0_vx_2 + bin_sc_1_vx_2 = 1
+ cons_vertex_3: bin_sc_0_vx_3 + bin_sc_1_vx_3 = 1
+ cons_vertex_4: bin_sc_0_vx_4 + bin_sc_1_vx_4 = 1
+ cons_vertex_5: bin_sc_0_vx_5 + bin_sc_1_vx_5 = 1
+ cons_vertex_6: bin_sc_0_vx_6 + bin_sc_1_vx_6 = 1
+ cons_vertex_7: bin_sc_0_vx_7 + bin_sc_1_vx_7 = 1
+ cons_vertex_8: bin_sc_0_vx_8 + bin_sc_1_vx_8 = 1
+ cons_vertex_9: bin_sc_0_vx_9 + bin_sc_1_vx_9 = 1
+ cons_vertex_10: bin_sc_0_vx_10 + bin_sc_1_vx_10 = 1
+ cons_vertex_11: bin_sc_0_vx_11 + bin_sc_1_vx_11 = 1
+ cons_vertex_12: bin_sc_0_vx_12 + bin_sc_1_vx_12 = 1
+ cons_vertex_13: bin_sc_0_vx_13 + bin_sc_1_vx_13 = 1
+ cons_vertex_14: bin_sc_0_vx_14 + bin_sc_1_vx_14 = 1
+ cons_vertex_15: bin_sc_0_vx_15 + bin_sc_1_vx_15 = 1
+ cons_vertex_16: bin_sc_0_vx_16 + bin_sc_1_vx_16 = 1
+ cons_vertex_17: bin_sc_0_vx_17 + bin_sc_1_vx_17 = 1
+ cons_vertex_18: bin_sc_0_vx_18 + bin_sc_1_vx_18 = 1
+ cons_vertex_19: bin_sc_0_vx_19 + bin_sc_1_vx_19 = 1
+ cons_vertex_20: bin_sc_0_vx_20 + bin_sc_1_vx_20 = 1
+ cons_vertex_21: bin_sc_0_vx_21 + bin_sc_1_vx_21 = 1
+ cons_vertex_22: bin_sc_0_vx_22 + bin_sc_1_vx_22 = 1
+ cons_vertex_23: bin_sc_0_vx_23 + bin_sc_1_vx_23 = 1
+ cons_edge_0_1: - bin_sc_0_vx_0 - bin_sc_0_vx_23 + bin_sc_0_edg_0 <= 0
+ cons_edge_0_2: - bin_sc_0_vx_0 + bin_sc_0_vx_23 + bin_sc_0_edg_0 >= 0
+ cons_edge_0_3: bin_sc_0_vx_0 - bin_sc_0_vx_23 + bin_sc_0_edg_0 >= 0
+ cons_edge_0_4: bin_sc_0_vx_0 + bin_sc_0_vx_23 + bin_sc_0_edg_0 <= 2
+ cons_edge_1_1: - bin_sc_0_vx_0 - bin_sc_0_vx_1 + bin_sc_0_edg_1 <= 0
+ cons_edge_1_2: - bin_sc_0_vx_0 + bin_sc_0_vx_1 + bin_sc_0_edg_1 >= 0
+ cons_edge_1_3: bin_sc_0_vx_0 - bin_sc_0_vx_1 + bin_sc_0_edg_1 >= 0
+ cons_edge_1_4: bin_sc_0_vx_0 + bin_sc_0_vx_1 + bin_sc_0_edg_1 <= 2
+ cons_edge_2_1: - bin_sc_0_vx_1 - bin_sc_0_vx_2 + bin_sc_0_edg_2 <= 0
+ cons_edge_2_2: - bin_sc_0_vx_1 + bin_sc_0_vx_2 + bin_sc_0_edg_2 >= 0
+ cons_edge_2_3: bin_sc_0_vx_1 - bin_sc_0_vx_2 + bin_sc_0_edg_2 >= 0
+ cons_edge_2_4: bin_sc_0_vx_1 + bin_sc_0_vx_2 + bin_sc_0_edg_2 <= 2
+ cons_edge_3_1: - bin_sc_0_vx_2 - bin_sc_0_vx_3 + bin_sc_0_edg_3 <= 0
+ cons_edge_3_2: - bin_sc_0_vx_2 + bin_sc_0_vx_3 + bin_sc_0_edg_3 >= 0
+ cons_edge_3_3: bin_sc_0_vx_2 - bin_sc_0_vx_3 + bin_sc_0_edg_3 >= 0
+ cons_edge_3_4: bin_sc_0_vx_2 + bin_sc_0_vx_3 + bin_sc_0_edg_3 <= 2
+ cons_edge_4_1: - bin_sc_0_vx_3 - bin_sc_0_vx_4 + bin_sc_0_edg_4 <= 0
+ cons_edge_4_2: - bin_sc_0_vx_3 + bin_sc_0_vx_4 + bin_sc_0_edg_4 >= 0
+ cons_edge_4_3: bin_sc_0_vx_3 - bin_sc_0_vx_4 + bin_sc_0_edg_4 >= 0
+ cons_edge_4_4: bin_sc_0_vx_3 + bin_sc_0_vx_4 + bin_sc_0_edg_4 <= 2
+ cons_edge_5_1: - bin_sc_0_vx_4 - bin_sc_0_vx_5 + bin_sc_0_edg_5 <= 0
+ cons_edge_5_2: - bin_sc_0_vx_4 + bin_sc_0_vx_5 + bin_sc_0_edg_5 >= 0
+ cons_edge_5_3: bin_sc_0_vx_4 - bin_sc_0_vx_5 + bin_sc_0_edg_5 >= 0
+ cons_edge_5_4: bin_sc_0_vx_4 + bin_sc_0_vx_5 + bin_sc_0_edg_5 <= 2
+ cons_edge_6_1: - bin_sc_0_vx_5 - bin_sc_0_vx_6 + bin_sc_0_edg_6 <= 0
+ cons_edge_6_2: - bin_sc_0_vx_5 + bin_sc_0_vx_6 + bin_sc_0_edg_6 >= 0
+ cons_edge_6_3: bin_sc_0_vx_5 - bin_sc_0_vx_6 + bin_sc_0_edg_6 >= 0
+ cons_edge_6_4: bin_sc_0_vx_5 + bin_sc_0_vx_6 + bin_sc_0_edg_6 <= 2
+ cons_edge_7_1: - bin_sc_0_vx_6 - bin_sc_0_vx_7 + bin_sc_0_edg_7 <= 0
+ cons_edge_7_2: - bin_sc_0_vx_6 + bin_sc_0_vx_7 + bin_sc_0_edg_7 >= 0
+ cons_edge_7_3: bin_sc_0_vx_6 - bin_sc_0_vx_7 + bin_sc_0_edg_7 >= 0
+ cons_edge_7_4: bin_sc_0_vx_6 + bin_sc_0_vx_7 + bin_sc_0_edg_7 <= 2
+ cons_edge_8_1: - bin_sc_0_vx_7 - bin_sc_0_vx_8 + bin_sc_0_edg_8 <= 0
+ cons_edge_8_2: - bin_sc_0_vx_7 + bin_sc_0_vx_8 + bin_sc_0_edg_8 >= 0
+ cons_edge_8_3: bin_sc_0_vx_7 - bin_sc_0_vx_8 + bin_sc_0_edg_8 >= 0
+ cons_edge_8_4: bin_sc_0_vx_7 + bin_sc_0_vx_8 + bin_sc_0_edg_8 <= 2
+ cons_edge_9_1: - bin_sc_0_vx_8 - bin_sc_0_vx_9 + bin_sc_0_edg_9 <= 0
+ cons_edge_9_2: - bin_sc_0_vx_8 + bin_sc_0_vx_9 + bin_sc_0_edg_9 >= 0
+ cons_edge_9_3: bin_sc_0_vx_8 - bin_sc_0_vx_9 + bin_sc_0_edg_9 >= 0
+ cons_edge_9_4: bin_sc_0_vx_8 + bin_sc_0_vx_9 + bin_sc_0_edg_9 <= 2
+ cons_edge_10_1: - bin_sc_0_vx_9 - bin_sc_0_vx_10 + bin_sc_0_edg_10 <= 0
+ cons_edge_10_2: - bin_sc_0_vx_9 + bin_sc_0_vx_10 + bin_sc_0_edg_10 >= 0
+ cons_edge_10_3: bin_sc_0_vx_9 - bin_sc_0_vx_10 + bin_sc_0_edg_10 >= 0
+ cons_edge_10_4: bin_sc_0_vx_9 + bin_sc_0_vx_10 + bin_sc_0_edg_10 <= 2
+ cons_edge_11_1: - bin_sc_0_vx_10 - bin_sc_0_vx_11 + bin_sc_0_edg_11 <= 0
+ cons_edge_11_2: - bin_sc_0_vx_10 + bin_sc_0_vx_11 + bin_sc_0_edg_11 >= 0
+ cons_edge_11_3: bin_sc_0_vx_10 - bin_sc_0_vx_11 + bin_sc_0_edg_11 >= 0
+ cons_edge_11_4: bin_sc_0_vx_10 + bin_sc_0_vx_11 + bin_sc_0_edg_11 <= 2
+ cons_edge_12_1: - bin_sc_0_vx_11 - bin_sc_0_vx_12 + bin_sc_0_edg_12 <= 0
+ cons_edge_12_2: - bin_sc_0_vx_11 + bin_sc_0_vx_12 + bin_sc_0_edg_12 >= 0
+ cons_edge_12_3: bin_sc_0_vx_11 - bin_sc_0_vx_12 + bin_sc_0_edg_12 >= 0
+ cons_edge_12_4: bin_sc_0_vx_11 + bin_sc_0_vx_12 + bin_sc_0_edg_12 <= 2
+ cons_edge_13_1: - bin_sc_0_vx_12 - bin_sc_0_vx_13 + bin_sc_0_edg_13 <= 0
+ cons_edge_13_2: - bin_sc_0_vx_12 + bin_sc_0_vx_13 + bin_sc_0_edg_13 >= 0
+ cons_edge_13_3: bin_sc_0_vx_12 - bin_sc_0_vx_13 + bin_sc_0_edg_13 >= 0
+ cons_edge_13_4: bin_sc_0_vx_12 + bin_sc_0_vx_13 + bin_sc_0_edg_13 <= 2
+ cons_edge_14_1: - bin_sc_0_vx_13 - bin_sc_0_vx_14 + bin_sc_0_edg_14 <= 0
+ cons_edge_14_2: - bin_sc_0_vx_13 + bin_sc_0_vx_14 + bin_sc_0_edg_14 >= 0
+ cons_edge_14_3: bin_sc_0_vx_13 - bin_sc_0_vx_14 + bin_sc_0_edg_14 >= 0
+ cons_edge_14_4: bin_sc_0_vx_13 + bin_sc_0_vx_14 + bin_sc_0_edg_14 <= 2
+ cons_edge_15_1: - bin_sc_0_vx_14 - bin_sc_0_vx_15 + bin_sc_0_edg_15 <= 0
+ cons_edge_15_2: - bin_sc_0_vx_14 + bin_sc_0_vx_15 + bin_sc_0_edg_15 >= 0
+ cons_edge_15_3: bin_sc_0_vx_14 - bin_sc_0_vx_15 + bin_sc_0_edg_15 >= 0
+ cons_edge_15_4: bin_sc_0_vx_14 + bin_sc_0_vx_15 + bin_sc_0_edg_15 <= 2
+ cons_edge_16_1: - bin_sc_0_vx_15 - bin_sc_0_vx_16 + bin_sc_0_edg_16 <= 0
+ cons_edge_16_2: - bin_sc_0_vx_15 + bin_sc_0_vx_16 + bin_sc_0_edg_16 >= 0
+ cons_edge_16_3: bin_sc_0_vx_15 - bin_sc_0_vx_16 + bin_sc_0_edg_16 >= 0
+ cons_edge_16_4: bin_sc_0_vx_15 + bin_sc_0_vx_16 + bin_sc_0_edg_16 <= 2
+ cons_edge_17_1: - bin_sc_0_vx_16 - bin_sc_0_vx_17 + bin_sc_0_edg_17 <= 0
+ cons_edge_17_2: - bin_sc_0_vx_16 + bin_sc_0_vx_17 + bin_sc_0_edg_17 >= 0
+ cons_edge_17_3: bin_sc_0_vx_16 - bin_sc_0_vx_17 + bin_sc_0_edg_17 >= 0
+ cons_edge_17_4: bin_sc_0_vx_16 + bin_sc_0_vx_17 + bin_sc_0_edg_17 <= 2
+ cons_edge_18_1: - bin_sc_0_vx_17 - bin_sc_0_vx_18 + bin_sc_0_edg_18 <= 0
+ cons_edge_18_2: - bin_sc_0_vx_17 + bin_sc_0_vx_18 + bin_sc_0_edg_18 >= 0
+ cons_edge_18_3: bin_sc_0_vx_17 - bin_sc_0_vx_18 + bin_sc_0_edg_18 >= 0
+ cons_edge_18_4: bin_sc_0_vx_17 + bin_sc_0_vx_18 + bin_sc_0_edg_18 <= 2
+ cons_edge_19_1: - bin_sc_0_vx_18 - bin_sc_0_vx_19 + bin_sc_0_edg_19 <= 0
+ cons_edge_19_2: - bin_sc_0_vx_18 + bin_sc_0_vx_19 + bin_sc_0_edg_19 >= 0
+ cons_edge_19_3: bin_sc_0_vx_18 - bin_sc_0_vx_19 + bin_sc_0_edg_19 >= 0
+ cons_edge_19_4: bin_sc_0_vx_18 + bin_sc_0_vx_19 + bin_sc_0_edg_19 <= 2
+ cons_edge_20_1: - bin_sc_0_vx_19 - bin_sc_0_vx_20 + bin_sc_0_edg_20 <= 0
+ cons_edge_20_2: - bin_sc_0_vx_19 + bin_sc_0_vx_20 + bin_sc_0_edg_20 >= 0
+ cons_edge_20_3: bin_sc_0_vx_19 - bin_sc_0_vx_20 + bin_sc_0_edg_20 >= 0
+ cons_edge_20_4: bin_sc_0_vx_19 + bin_sc_0_vx_20 + bin_sc_0_edg_20 <= 2
+ cons_edge_21_1: - bin_sc_0_vx_20 - bin_sc_0_vx_21 + bin_sc_0_edg_21 <= 0
+ cons_edge_21_2: - bin_sc_0_vx_20 + bin_sc_0_vx_21 + bin_sc_0_edg_21 >= 0
+ cons_edge_21_3: bin_sc_0_vx_20 - bin_sc_0_vx_21 + bin_sc_0_edg_21 >= 0
+ cons_edge_21_4: bin_sc_0_vx_20 + bin_sc_0_vx_21 + bin_sc_0_edg_21 <= 2
+ cons_edge_22_1: - bin_sc_0_vx_21 - bin_sc_0_vx_22 + bin_sc_0_edg_22 <= 0
+ cons_edge_22_2: - bin_sc_0_vx_21 + bin_sc_0_vx_22 + bin_sc_0_edg_22 >= 0
+ cons_edge_22_3: bin_sc_0_vx_21 - bin_sc_0_vx_22 + bin_sc_0_edg_22 >= 0
+ cons_edge_22_4: bin_sc_0_vx_21 + bin_sc_0_vx_22 + bin_sc_0_edg_22 <= 2
+ cons_edge_23_1: - bin_sc_0_vx_22 - bin_sc_0_vx_23 + bin_sc_0_edg_23 <= 0
+ cons_edge_23_2: - bin_sc_0_vx_22 + bin_sc_0_vx_23 + bin_sc_0_edg_23 >= 0
+ cons_edge_23_3: bin_sc_0_vx_22 - bin_sc_0_vx_23 + bin_sc_0_edg_23 >= 0
+ cons_edge_23_4: bin_sc_0_vx_22 + bin_sc_0_vx_23 + bin_sc_0_edg_23 <= 2
+ cons_edge_0_1#120: - bin_sc_1_vx_0 - bin_sc_1_vx_23 + bin_sc_1_edg_0 <= 0
+ cons_edge_0_2#121: - bin_sc_1_vx_0 + bin_sc_1_vx_23 + bin_sc_1_edg_0 >= 0
+ cons_edge_0_3#122: bin_sc_1_vx_0 - bin_sc_1_vx_23 + bin_sc_1_edg_0 >= 0
+ cons_edge_0_4#123: bin_sc_1_vx_0 + bin_sc_1_vx_23 + bin_sc_1_edg_0 <= 2
+ cons_edge_1_1#124: - bin_sc_1_vx_0 - bin_sc_1_vx_1 + bin_sc_1_edg_1 <= 0
+ cons_edge_1_2#125: - bin_sc_1_vx_0 + bin_sc_1_vx_1 + bin_sc_1_edg_1 >= 0
+ cons_edge_1_3#126: bin_sc_1_vx_0 - bin_sc_1_vx_1 + bin_sc_1_edg_1 >= 0
+ cons_edge_1_4#127: bin_sc_1_vx_0 + bin_sc_1_vx_1 + bin_sc_1_edg_1 <= 2
+ cons_edge_2_1#128: - bin_sc_1_vx_1 - bin_sc_1_vx_2 + bin_sc_1_edg_2 <= 0
+ cons_edge_2_2#129: - bin_sc_1_vx_1 + bin_sc_1_vx_2 + bin_sc_1_edg_2 >= 0
+ cons_edge_2_3#130: bin_sc_1_vx_1 - bin_sc_1_vx_2 + bin_sc_1_edg_2 >= 0
+ cons_edge_2_4#131: bin_sc_1_vx_1 + bin_sc_1_vx_2 + bin_sc_1_edg_2 <= 2
+ cons_edge_3_1#132: - bin_sc_1_vx_2 - bin_sc_1_vx_3 + bin_sc_1_edg_3 <= 0
+ cons_edge_3_2#133: - bin_sc_1_vx_2 + bin_sc_1_vx_3 + bin_sc_1_edg_3 >= 0
+ cons_edge_3_3#134: bin_sc_1_vx_2 - bin_sc_1_vx_3 + bin_sc_1_edg_3 >= 0
+ cons_edge_3_4#135: bin_sc_1_vx_2 + bin_sc_1_vx_3 + bin_sc_1_edg_3 <= 2
+ cons_edge_4_1#136: - bin_sc_1_vx_3 - bin_sc_1_vx_4 + bin_sc_1_edg_4 <= 0
+ cons_edge_4_2#137: - bin_sc_1_vx_3 + bin_sc_1_vx_4 + bin_sc_1_edg_4 >= 0
+ cons_edge_4_3#138: bin_sc_1_vx_3 - bin_sc_1_vx_4 + bin_sc_1_edg_4 >= 0
+ cons_edge_4_4#139: bin_sc_1_vx_3 + bin_sc_1_vx_4 + bin_sc_1_edg_4 <= 2
+ cons_edge_5_1#140: - bin_sc_1_vx_4 - bin_sc_1_vx_5 + bin_sc_1_edg_5 <= 0
+ cons_edge_5_2#141: - bin_sc_1_vx_4 + bin_sc_1_vx_5 + bin_sc_1_edg_5 >= 0
+ cons_edge_5_3#142: bin_sc_1_vx_4 - bin_sc_1_vx_5 + bin_sc_1_edg_5 >= 0
+ cons_edge_5_4#143: bin_sc_1_vx_4 + bin_sc_1_vx_5 + bin_sc_1_edg_5 <= 2
+ cons_edge_6_1#144: - bin_sc_1_vx_5 - bin_sc_1_vx_6 + bin_sc_1_edg_6 <= 0
+ cons_edge_6_2#145: - bin_sc_1_vx_5 + bin_sc_1_vx_6 + bin_sc_1_edg_6 >= 0
+ cons_edge_6_3#146: bin_sc_1_vx_5 - bin_sc_1_vx_6 + bin_sc_1_edg_6 >= 0
+ cons_edge_6_4#147: bin_sc_1_vx_5 + bin_sc_1_vx_6 + bin_sc_1_edg_6 <= 2
+ cons_edge_7_1#148: - bin_sc_1_vx_6 - bin_sc_1_vx_7 + bin_sc_1_edg_7 <= 0
+ cons_edge_7_2#149: - bin_sc_1_vx_6 + bin_sc_1_vx_7 + bin_sc_1_edg_7 >= 0
+ cons_edge_7_3#150: bin_sc_1_vx_6 - bin_sc_1_vx_7 + bin_sc_1_edg_7 >= 0
+ cons_edge_7_4#151: bin_sc_1_vx_6 + bin_sc_1_vx_7 + bin_sc_1_edg_7 <= 2
+ cons_edge_8_1#152: - bin_sc_1_vx_7 - bin_sc_1_vx_8 + bin_sc_1_edg_8 <= 0
+ cons_edge_8_2#153: - bin_sc_1_vx_7 + bin_sc_1_vx_8 + bin_sc_1_edg_8 >= 0
+ cons_edge_8_3#154: bin_sc_1_vx_7 - bin_sc_1_vx_8 + bin_sc_1_edg_8 >= 0
+ cons_edge_8_4#155: bin_sc_1_vx_7 + bin_sc_1_vx_8 + bin_sc_1_edg_8 <= 2
+ cons_edge_9_1#156: - bin_sc_1_vx_8 - bin_sc_1_vx_9 + bin_sc_1_edg_9 <= 0
+ cons_edge_9_2#157: - bin_sc_1_vx_8 + bin_sc_1_vx_9 + bin_sc_1_edg_9 >= 0
+ cons_edge_9_3#158: bin_sc_1_vx_8 - bin_sc_1_vx_9 + bin_sc_1_edg_9 >= 0
+ cons_edge_9_4#159: bin_sc_1_vx_8 + bin_sc_1_vx_9 + bin_sc_1_edg_9 <= 2
+ cons_edge_10_1#160: - bin_sc_1_vx_9 - bin_sc_1_vx_10 + bin_sc_1_edg_10 <= 0
+ cons_edge_10_2#161: - bin_sc_1_vx_9 + bin_sc_1_vx_10 + bin_sc_1_edg_10 >= 0
+ cons_edge_10_3#162: bin_sc_1_vx_9 - bin_sc_1_vx_10 + bin_sc_1_edg_10 >= 0
+ cons_edge_10_4#163: bin_sc_1_vx_9 + bin_sc_1_vx_10 + bin_sc_1_edg_10 <= 2
+ cons_edge_11_1#164: - bin_sc_1_vx_10 - bin_sc_1_vx_11 + bin_sc_1_edg_11 <= 0
+ cons_edge_11_2#165: - bin_sc_1_vx_10 + bin_sc_1_vx_11 + bin_sc_1_edg_11 >= 0
+ cons_edge_11_3#166: bin_sc_1_vx_10 - bin_sc_1_vx_11 + bin_sc_1_edg_11 >= 0
+ cons_edge_11_4#167: bin_sc_1_vx_10 + bin_sc_1_vx_11 + bin_sc_1_edg_11 <= 2
+ cons_edge_12_1#168: - bin_sc_1_vx_11 - bin_sc_1_vx_12 + bin_sc_1_edg_12 <= 0
+ cons_edge_12_2#169: - bin_sc_1_vx_11 + bin_sc_1_vx_12 + bin_sc_1_edg_12 >= 0
+ cons_edge_12_3#170: bin_sc_1_vx_11 - bin_sc_1_vx_12 + bin_sc_1_edg_12 >= 0
+ cons_edge_12_4#171: bin_sc_1_vx_11 + bin_sc_1_vx_12 + bin_sc_1_edg_12 <= 2
+ cons_edge_13_1#172: - bin_sc_1_vx_12 - bin_sc_1_vx_13 + bin_sc_1_edg_13 <= 0
+ cons_edge_13_2#173: - bin_sc_1_vx_12 + bin_sc_1_vx_13 + bin_sc_1_edg_13 >= 0
+ cons_edge_13_3#174: bin_sc_1_vx_12 - bin_sc_1_vx_13 + bin_sc_1_edg_13 >= 0
+ cons_edge_13_4#175: bin_sc_1_vx_12 + bin_sc_1_vx_13 + bin_sc_1_edg_13 <= 2
+ cons_edge_14_1#176: - bin_sc_1_vx_13 - bin_sc_1_vx_14 + bin_sc_1_edg_14 <= 0
+ cons_edge_14_2#177: - bin_sc_1_vx_13 + bin_sc_1_vx_14 + bin_sc_1_edg_14 >= 0
+ cons_edge_14_3#178: bin_sc_1_vx_13 - bin_sc_1_vx_14 + bin_sc_1_edg_14 >= 0
+ cons_edge_14_4#179: bin_sc_1_vx_13 + bin_sc_1_vx_14 + bin_sc_1_edg_14 <= 2
+ cons_edge_15_1#180: - bin_sc_1_vx_14 - bin_sc_1_vx_15 + bin_sc_1_edg_15 <= 0
+ cons_edge_15_2#181: - bin_sc_1_vx_14 + bin_sc_1_vx_15 + bin_sc_1_edg_15 >= 0
+ cons_edge_15_3#182: bin_sc_1_vx_14 - bin_sc_1_vx_15 + bin_sc_1_edg_15 >= 0
+ cons_edge_15_4#183: bin_sc_1_vx_14 + bin_sc_1_vx_15 + bin_sc_1_edg_15 <= 2
+ cons_edge_16_1#184: - bin_sc_1_vx_15 - bin_sc_1_vx_16 + bin_sc_1_edg_16 <= 0
+ cons_edge_16_2#185: - bin_sc_1_vx_15 + bin_sc_1_vx_16 + bin_sc_1_edg_16 >= 0
+ cons_edge_16_3#186: bin_sc_1_vx_15 - bin_sc_1_vx_16 + bin_sc_1_edg_16 >= 0
+ cons_edge_16_4#187: bin_sc_1_vx_15 + bin_sc_1_vx_16 + bin_sc_1_edg_16 <= 2
+ cons_edge_17_1#188: - bin_sc_1_vx_16 - bin_sc_1_vx_17 + bin_sc_1_edg_17 <= 0
+ cons_edge_17_2#189: - bin_sc_1_vx_16 + bin_sc_1_vx_17 + bin_sc_1_edg_17 >= 0
+ cons_edge_17_3#190: bin_sc_1_vx_16 - bin_sc_1_vx_17 + bin_sc_1_edg_17 >= 0
+ cons_edge_17_4#191: bin_sc_1_vx_16 + bin_sc_1_vx_17 + bin_sc_1_edg_17 <= 2
+ cons_edge_18_1#192: - bin_sc_1_vx_17 - bin_sc_1_vx_18 + bin_sc_1_edg_18 <= 0
+ cons_edge_18_2#193: - bin_sc_1_vx_17 + bin_sc_1_vx_18 + bin_sc_1_edg_18 >= 0
+ cons_edge_18_3#194: bin_sc_1_vx_17 - bin_sc_1_vx_18 + bin_sc_1_edg_18 >= 0
+ cons_edge_18_4#195: bin_sc_1_vx_17 + bin_sc_1_vx_18 + bin_sc_1_edg_18 <= 2
+ cons_edge_19_1#196: - bin_sc_1_vx_18 - bin_sc_1_vx_19 + bin_sc_1_edg_19 <= 0
+ cons_edge_19_2#197: - bin_sc_1_vx_18 + bin_sc_1_vx_19 + bin_sc_1_edg_19 >= 0
+ cons_edge_19_3#198: bin_sc_1_vx_18 - bin_sc_1_vx_19 + bin_sc_1_edg_19 >= 0
+ cons_edge_19_4#199: bin_sc_1_vx_18 + bin_sc_1_vx_19 + bin_sc_1_edg_19 <= 2
+ cons_edge_20_1#200: - bin_sc_1_vx_19 - bin_sc_1_vx_20 + bin_sc_1_edg_20 <= 0
+ cons_edge_20_2#201: - bin_sc_1_vx_19 + bin_sc_1_vx_20 + bin_sc_1_edg_20 >= 0
+ cons_edge_20_3#202: bin_sc_1_vx_19 - bin_sc_1_vx_20 + bin_sc_1_edg_20 >= 0
+ cons_edge_20_4#203: bin_sc_1_vx_19 + bin_sc_1_vx_20 + bin_sc_1_edg_20 <= 2
+ cons_edge_21_1#204: - bin_sc_1_vx_20 - bin_sc_1_vx_21 + bin_sc_1_edg_21 <= 0
+ cons_edge_21_2#205: - bin_sc_1_vx_20 + bin_sc_1_vx_21 + bin_sc_1_edg_21 >= 0
+ cons_edge_21_3#206: bin_sc_1_vx_20 - bin_sc_1_vx_21 + bin_sc_1_edg_21 >= 0
+ cons_edge_21_4#207: bin_sc_1_vx_20 + bin_sc_1_vx_21 + bin_sc_1_edg_21 <= 2
+ cons_edge_22_1#208: - bin_sc_1_vx_21 - bin_sc_1_vx_22 + bin_sc_1_edg_22 <= 0
+ cons_edge_22_2#209: - bin_sc_1_vx_21 + bin_sc_1_vx_22 + bin_sc_1_edg_22 >= 0
+ cons_edge_22_3#210: bin_sc_1_vx_21 - bin_sc_1_vx_22 + bin_sc_1_edg_22 >= 0
+ cons_edge_22_4#211: bin_sc_1_vx_21 + bin_sc_1_vx_22 + bin_sc_1_edg_22 <= 2
+ cons_edge_23_1#212: - bin_sc_1_vx_22 - bin_sc_1_vx_23 + bin_sc_1_edg_23 <= 0
+ cons_edge_23_2#213: - bin_sc_1_vx_22 + bin_sc_1_vx_23 + bin_sc_1_edg_23 >= 0
+ cons_edge_23_3#214: bin_sc_1_vx_22 - bin_sc_1_vx_23 + bin_sc_1_edg_23 >= 0
+ cons_edge_23_4#215: bin_sc_1_vx_22 + bin_sc_1_vx_23 + bin_sc_1_edg_23 <= 2
  cons_symm_0: bin_sc_0_vx_0 = 1
  cons_symm_1: bin_sc_0_vx_1 + bin_sc_1_vx_1 = 1
- cons_symm_2: bin_sc_0_vx_2 + bin_sc_1_vx_2 + bin_sc_2_vx_2 = 1
- cons_symm_3: bin_sc_0_vx_3 + bin_sc_1_vx_3 + bin_sc_2_vx_3 + bin_sc_3_vx_3 = 1
- cons_symm_4: bin_sc_0_vx_4 + bin_sc_1_vx_4 + bin_sc_2_vx_4 + bin_sc_3_vx_4
-              + bin_sc_4_vx_4 = 1
- c343: num_cuts - 0.500000000000 bin_sc_0_edg_0 - 0.500000000000 bin_sc_0_edg_1
+ c219: num_cuts - 0.500000000000 bin_sc_0_edg_0 - 0.500000000000 bin_sc_0_edg_1
        - 0.500000000000 bin_sc_0_edg_2 - 0.500000000000 bin_sc_0_edg_3
        - 0.500000000000 bin_sc_0_edg_4 - 0.500000000000 bin_sc_0_edg_5
        - 0.500000000000 bin_sc_0_edg_6 - 0.500000000000 bin_sc_0_edg_7
@@ -373,6 +231,10 @@ Subject To
        - 0.500000000000 bin_sc_0_edg_10 - 0.500000000000 bin_sc_0_edg_11
        - 0.500000000000 bin_sc_0_edg_12 - 0.500000000000 bin_sc_0_edg_13
        - 0.500000000000 bin_sc_0_edg_14 - 0.500000000000 bin_sc_0_edg_15
+       - 0.500000000000 bin_sc_0_edg_16 - 0.500000000000 bin_sc_0_edg_17
+       - 0.500000000000 bin_sc_0_edg_18 - 0.500000000000 bin_sc_0_edg_19
+       - 0.500000000000 bin_sc_0_edg_20 - 0.500000000000 bin_sc_0_edg_21
+       - 0.500000000000 bin_sc_0_edg_22 - 0.500000000000 bin_sc_0_edg_23
        - 0.500000000000 bin_sc_1_edg_0 - 0.500000000000 bin_sc_1_edg_1
        - 0.500000000000 bin_sc_1_edg_2 - 0.500000000000 bin_sc_1_edg_3
        - 0.500000000000 bin_sc_1_edg_4 - 0.500000000000 bin_sc_1_edg_5
@@ -381,133 +243,163 @@ Subject To
        - 0.500000000000 bin_sc_1_edg_10 - 0.500000000000 bin_sc_1_edg_11
        - 0.500000000000 bin_sc_1_edg_12 - 0.500000000000 bin_sc_1_edg_13
        - 0.500000000000 bin_sc_1_edg_14 - 0.500000000000 bin_sc_1_edg_15
-       - 0.500000000000 bin_sc_2_edg_0 - 0.500000000000 bin_sc_2_edg_1
-       - 0.500000000000 bin_sc_2_edg_2 - 0.500000000000 bin_sc_2_edg_3
-       - 0.500000000000 bin_sc_2_edg_4 - 0.500000000000 bin_sc_2_edg_5
-       - 0.500000000000 bin_sc_2_edg_6 - 0.500000000000 bin_sc_2_edg_7
-       - 0.500000000000 bin_sc_2_edg_8 - 0.500000000000 bin_sc_2_edg_9
-       - 0.500000000000 bin_sc_2_edg_10 - 0.500000000000 bin_sc_2_edg_11
-       - 0.500000000000 bin_sc_2_edg_12 - 0.500000000000 bin_sc_2_edg_13
-       - 0.500000000000 bin_sc_2_edg_14 - 0.500000000000 bin_sc_2_edg_15
-       - 0.500000000000 bin_sc_3_edg_0 - 0.500000000000 bin_sc_3_edg_1
-       - 0.500000000000 bin_sc_3_edg_2 - 0.500000000000 bin_sc_3_edg_3
-       - 0.500000000000 bin_sc_3_edg_4 - 0.500000000000 bin_sc_3_edg_5
-       - 0.500000000000 bin_sc_3_edg_6 - 0.500000000000 bin_sc_3_edg_7
-       - 0.500000000000 bin_sc_3_edg_8 - 0.500000000000 bin_sc_3_edg_9
-       - 0.500000000000 bin_sc_3_edg_10 - 0.500000000000 bin_sc_3_edg_11
-       - 0.500000000000 bin_sc_3_edg_12 - 0.500000000000 bin_sc_3_edg_13
-       - 0.500000000000 bin_sc_3_edg_14 - 0.500000000000 bin_sc_3_edg_15
-       - 0.500000000000 bin_sc_4_edg_0 - 0.500000000000 bin_sc_4_edg_1
-       - 0.500000000000 bin_sc_4_edg_2 - 0.500000000000 bin_sc_4_edg_3
-       - 0.500000000000 bin_sc_4_edg_4 - 0.500000000000 bin_sc_4_edg_5
-       - 0.500000000000 bin_sc_4_edg_6 - 0.500000000000 bin_sc_4_edg_7
-       - 0.500000000000 bin_sc_4_edg_8 - 0.500000000000 bin_sc_4_edg_9
-       - 0.500000000000 bin_sc_4_edg_10 - 0.500000000000 bin_sc_4_edg_11
-       - 0.500000000000 bin_sc_4_edg_12 - 0.500000000000 bin_sc_4_edg_13
-       - 0.500000000000 bin_sc_4_edg_14 - 0.500000000000 bin_sc_4_edg_15 = 0
+       - 0.500000000000 bin_sc_1_edg_16 - 0.500000000000 bin_sc_1_edg_17
+       - 0.500000000000 bin_sc_1_edg_18 - 0.500000000000 bin_sc_1_edg_19
+       - 0.500000000000 bin_sc_1_edg_20 - 0.500000000000 bin_sc_1_edg_21
+       - 0.500000000000 bin_sc_1_edg_22 - 0.500000000000 bin_sc_1_edg_23 = 0
  cons_subcircuit_input_0: - 2 bin_sc_0_vx_0 - bin_sc_0_vx_1 - bin_sc_0_vx_2
                           - bin_sc_0_vx_3 - bin_sc_0_vx_4 - bin_sc_0_vx_5
                           - bin_sc_0_vx_6 - bin_sc_0_vx_7 - bin_sc_0_vx_8
                           - bin_sc_0_vx_9 - bin_sc_0_vx_10 - bin_sc_0_vx_11
                           - bin_sc_0_vx_12 - bin_sc_0_vx_13 - bin_sc_0_vx_14
-                          - bin_sc_0_vx_15 - bin_sc_0_vx_16 + original_input_0
+                          - bin_sc_0_vx_15 - bin_sc_0_vx_16 - bin_sc_0_vx_17
+                          - bin_sc_0_vx_18 - bin_sc_0_vx_19 - bin_sc_0_vx_20
+                          - bin_sc_0_vx_21 - bin_sc_0_vx_22 + original_input_0
                            = 0
- c345: _and350 - bin_sc_0_edg_0 <= 0
- c346: _and350 - bin_sc_0_vx_1 <= 0
- c347: _and350 - bin_sc_0_vx_1 - bin_sc_0_edg_0 >= -1
+ c221: _and202 - bin_sc_0_edg_0 <= 0
+ c222: _and202 - bin_sc_0_vx_23 <= 0
+ c223: _and202 - bin_sc_0_vx_23 - bin_sc_0_edg_0 >= -1
  cons_edge_var_downstream_vertex_var_0_0:
                                           bin_edge_var_downstream_vertex_var_product_0_0
-                                          - _and350 = 0
- c349: _and351 - bin_sc_0_edg_1 <= 0
- c350: _and351 - bin_sc_0_vx_2 <= 0
- c351: _and351 - bin_sc_0_vx_2 - bin_sc_0_edg_1 >= -1
+                                          - _and202 = 0
+ c225: _and203 - bin_sc_0_edg_1 <= 0
+ c226: _and203 - bin_sc_0_vx_1 <= 0
+ c227: _and203 - bin_sc_0_vx_1 - bin_sc_0_edg_1 >= -1
  cons_edge_var_downstream_vertex_var_0_1:
                                           bin_edge_var_downstream_vertex_var_product_0_1
-                                          - _and351 = 0
- c353: _and352 - bin_sc_0_edg_2 <= 0
- c354: _and352 - bin_sc_0_vx_3 <= 0
- c355: _and352 - bin_sc_0_vx_3 - bin_sc_0_edg_2 >= -1
+                                          - _and203 = 0
+ c229: _and204 - bin_sc_0_edg_2 <= 0
+ c230: _and204 - bin_sc_0_vx_2 <= 0
+ c231: _and204 - bin_sc_0_vx_2 - bin_sc_0_edg_2 >= -1
  cons_edge_var_downstream_vertex_var_0_2:
                                           bin_edge_var_downstream_vertex_var_product_0_2
-                                          - _and352 = 0
- c357: _and353 - bin_sc_0_edg_3 <= 0
- c358: _and353 - bin_sc_0_vx_4 <= 0
- c359: _and353 - bin_sc_0_vx_4 - bin_sc_0_edg_3 >= -1
+                                          - _and204 = 0
+ c233: _and205 - bin_sc_0_edg_3 <= 0
+ c234: _and205 - bin_sc_0_vx_3 <= 0
+ c235: _and205 - bin_sc_0_vx_3 - bin_sc_0_edg_3 >= -1
  cons_edge_var_downstream_vertex_var_0_3:
                                           bin_edge_var_downstream_vertex_var_product_0_3
-                                          - _and353 = 0
- c361: _and354 - bin_sc_0_edg_4 <= 0
- c362: _and354 - bin_sc_0_vx_5 <= 0
- c363: _and354 - bin_sc_0_vx_5 - bin_sc_0_edg_4 >= -1
+                                          - _and205 = 0
+ c237: _and206 - bin_sc_0_edg_4 <= 0
+ c238: _and206 - bin_sc_0_vx_4 <= 0
+ c239: _and206 - bin_sc_0_vx_4 - bin_sc_0_edg_4 >= -1
  cons_edge_var_downstream_vertex_var_0_4:
                                           bin_edge_var_downstream_vertex_var_product_0_4
-                                          - _and354 = 0
- c365: _and355 - bin_sc_0_edg_5 <= 0
- c366: _and355 - bin_sc_0_vx_6 <= 0
- c367: _and355 - bin_sc_0_vx_6 - bin_sc_0_edg_5 >= -1
+                                          - _and206 = 0
+ c241: _and207 - bin_sc_0_edg_5 <= 0
+ c242: _and207 - bin_sc_0_vx_5 <= 0
+ c243: _and207 - bin_sc_0_vx_5 - bin_sc_0_edg_5 >= -1
  cons_edge_var_downstream_vertex_var_0_5:
                                           bin_edge_var_downstream_vertex_var_product_0_5
-                                          - _and355 = 0
- c369: _and356 - bin_sc_0_edg_6 <= 0
- c370: _and356 - bin_sc_0_vx_7 <= 0
- c371: _and356 - bin_sc_0_vx_7 - bin_sc_0_edg_6 >= -1
+                                          - _and207 = 0
+ c245: _and208 - bin_sc_0_edg_6 <= 0
+ c246: _and208 - bin_sc_0_vx_6 <= 0
+ c247: _and208 - bin_sc_0_vx_6 - bin_sc_0_edg_6 >= -1
  cons_edge_var_downstream_vertex_var_0_6:
                                           bin_edge_var_downstream_vertex_var_product_0_6
-                                          - _and356 = 0
- c373: _and357 - bin_sc_0_edg_7 <= 0
- c374: _and357 - bin_sc_0_vx_8 <= 0
- c375: _and357 - bin_sc_0_vx_8 - bin_sc_0_edg_7 >= -1
+                                          - _and208 = 0
+ c249: _and209 - bin_sc_0_edg_7 <= 0
+ c250: _and209 - bin_sc_0_vx_7 <= 0
+ c251: _and209 - bin_sc_0_vx_7 - bin_sc_0_edg_7 >= -1
  cons_edge_var_downstream_vertex_var_0_7:
                                           bin_edge_var_downstream_vertex_var_product_0_7
-                                          - _and357 = 0
- c377: _and358 - bin_sc_0_edg_8 <= 0
- c378: _and358 - bin_sc_0_vx_9 <= 0
- c379: _and358 - bin_sc_0_vx_9 - bin_sc_0_edg_8 >= -1
+                                          - _and209 = 0
+ c253: _and210 - bin_sc_0_edg_8 <= 0
+ c254: _and210 - bin_sc_0_vx_8 <= 0
+ c255: _and210 - bin_sc_0_vx_8 - bin_sc_0_edg_8 >= -1
  cons_edge_var_downstream_vertex_var_0_8:
                                           bin_edge_var_downstream_vertex_var_product_0_8
-                                          - _and358 = 0
- c381: _and359 - bin_sc_0_edg_9 <= 0
- c382: _and359 - bin_sc_0_vx_10 <= 0
- c383: _and359 - bin_sc_0_vx_10 - bin_sc_0_edg_9 >= -1
+                                          - _and210 = 0
+ c257: _and211 - bin_sc_0_edg_9 <= 0
+ c258: _and211 - bin_sc_0_vx_9 <= 0
+ c259: _and211 - bin_sc_0_vx_9 - bin_sc_0_edg_9 >= -1
  cons_edge_var_downstream_vertex_var_0_9:
                                           bin_edge_var_downstream_vertex_var_product_0_9
-                                          - _and359 = 0
- c385: _and360 - bin_sc_0_edg_10 <= 0
- c386: _and360 - bin_sc_0_vx_11 <= 0
- c387: _and360 - bin_sc_0_vx_11 - bin_sc_0_edg_10 >= -1
+                                          - _and211 = 0
+ c261: _and212 - bin_sc_0_edg_10 <= 0
+ c262: _and212 - bin_sc_0_vx_10 <= 0
+ c263: _and212 - bin_sc_0_vx_10 - bin_sc_0_edg_10 >= -1
  cons_edge_var_downstream_vertex_var_0_10:
                                            bin_edge_var_downstream_vertex_var_product_0_10
-                                           - _and360 = 0
- c389: _and361 - bin_sc_0_edg_11 <= 0
- c390: _and361 - bin_sc_0_vx_12 <= 0
- c391: _and361 - bin_sc_0_vx_12 - bin_sc_0_edg_11 >= -1
+                                           - _and212 = 0
+ c265: _and213 - bin_sc_0_edg_11 <= 0
+ c266: _and213 - bin_sc_0_vx_11 <= 0
+ c267: _and213 - bin_sc_0_vx_11 - bin_sc_0_edg_11 >= -1
  cons_edge_var_downstream_vertex_var_0_11:
                                            bin_edge_var_downstream_vertex_var_product_0_11
-                                           - _and361 = 0
- c393: _and362 - bin_sc_0_edg_12 <= 0
- c394: _and362 - bin_sc_0_vx_13 <= 0
- c395: _and362 - bin_sc_0_vx_13 - bin_sc_0_edg_12 >= -1
+                                           - _and213 = 0
+ c269: _and214 - bin_sc_0_edg_12 <= 0
+ c270: _and214 - bin_sc_0_vx_12 <= 0
+ c271: _and214 - bin_sc_0_vx_12 - bin_sc_0_edg_12 >= -1
  cons_edge_var_downstream_vertex_var_0_12:
                                            bin_edge_var_downstream_vertex_var_product_0_12
-                                           - _and362 = 0
- c397: _and363 - bin_sc_0_edg_13 <= 0
- c398: _and363 - bin_sc_0_vx_14 <= 0
- c399: _and363 - bin_sc_0_vx_14 - bin_sc_0_edg_13 >= -1
+                                           - _and214 = 0
+ c273: _and215 - bin_sc_0_edg_13 <= 0
+ c274: _and215 - bin_sc_0_vx_13 <= 0
+ c275: _and215 - bin_sc_0_vx_13 - bin_sc_0_edg_13 >= -1
  cons_edge_var_downstream_vertex_var_0_13:
                                            bin_edge_var_downstream_vertex_var_product_0_13
-                                           - _and363 = 0
- c401: _and364 - bin_sc_0_edg_14 <= 0
- c402: _and364 - bin_sc_0_vx_15 <= 0
- c403: _and364 - bin_sc_0_vx_15 - bin_sc_0_edg_14 >= -1
+                                           - _and215 = 0
+ c277: _and216 - bin_sc_0_edg_14 <= 0
+ c278: _and216 - bin_sc_0_vx_14 <= 0
+ c279: _and216 - bin_sc_0_vx_14 - bin_sc_0_edg_14 >= -1
  cons_edge_var_downstream_vertex_var_0_14:
                                            bin_edge_var_downstream_vertex_var_product_0_14
-                                           - _and364 = 0
- c405: _and365 - bin_sc_0_edg_15 <= 0
- c406: _and365 - bin_sc_0_vx_16 <= 0
- c407: _and365 - bin_sc_0_vx_16 - bin_sc_0_edg_15 >= -1
+                                           - _and216 = 0
+ c281: _and217 - bin_sc_0_edg_15 <= 0
+ c282: _and217 - bin_sc_0_vx_15 <= 0
+ c283: _and217 - bin_sc_0_vx_15 - bin_sc_0_edg_15 >= -1
  cons_edge_var_downstream_vertex_var_0_15:
                                            bin_edge_var_downstream_vertex_var_product_0_15
-                                           - _and365 = 0
+                                           - _and217 = 0
+ c285: _and218 - bin_sc_0_edg_16 <= 0
+ c286: _and218 - bin_sc_0_vx_16 <= 0
+ c287: _and218 - bin_sc_0_vx_16 - bin_sc_0_edg_16 >= -1
+ cons_edge_var_downstream_vertex_var_0_16:
+                                           bin_edge_var_downstream_vertex_var_product_0_16
+                                           - _and218 = 0
+ c289: _and219 - bin_sc_0_edg_17 <= 0
+ c290: _and219 - bin_sc_0_vx_17 <= 0
+ c291: _and219 - bin_sc_0_vx_17 - bin_sc_0_edg_17 >= -1
+ cons_edge_var_downstream_vertex_var_0_17:
+                                           bin_edge_var_downstream_vertex_var_product_0_17
+                                           - _and219 = 0
+ c293: _and220 - bin_sc_0_edg_18 <= 0
+ c294: _and220 - bin_sc_0_vx_18 <= 0
+ c295: _and220 - bin_sc_0_vx_18 - bin_sc_0_edg_18 >= -1
+ cons_edge_var_downstream_vertex_var_0_18:
+                                           bin_edge_var_downstream_vertex_var_product_0_18
+                                           - _and220 = 0
+ c297: _and221 - bin_sc_0_edg_19 <= 0
+ c298: _and221 - bin_sc_0_vx_19 <= 0
+ c299: _and221 - bin_sc_0_vx_19 - bin_sc_0_edg_19 >= -1
+ cons_edge_var_downstream_vertex_var_0_19:
+                                           bin_edge_var_downstream_vertex_var_product_0_19
+                                           - _and221 = 0
+ c301: _and222 - bin_sc_0_edg_20 <= 0
+ c302: _and222 - bin_sc_0_vx_20 <= 0
+ c303: _and222 - bin_sc_0_vx_20 - bin_sc_0_edg_20 >= -1
+ cons_edge_var_downstream_vertex_var_0_20:
+                                           bin_edge_var_downstream_vertex_var_product_0_20
+                                           - _and222 = 0
+ c305: _and223 - bin_sc_0_edg_21 <= 0
+ c306: _and223 - bin_sc_0_vx_21 <= 0
+ c307: _and223 - bin_sc_0_vx_21 - bin_sc_0_edg_21 >= -1
+ cons_edge_var_downstream_vertex_var_0_21:
+                                           bin_edge_var_downstream_vertex_var_product_0_21
+                                           - _and223 = 0
+ c309: _and224 - bin_sc_0_edg_22 <= 0
+ c310: _and224 - bin_sc_0_vx_22 <= 0
+ c311: _and224 - bin_sc_0_vx_22 - bin_sc_0_edg_22 >= -1
+ cons_edge_var_downstream_vertex_var_0_22:
+                                           bin_edge_var_downstream_vertex_var_product_0_22
+                                           - _and224 = 0
+ c313: _and225 - bin_sc_0_edg_23 <= 0
+ c314: _and225 - bin_sc_0_vx_23 <= 0
+ c315: _and225 - bin_sc_0_vx_23 - bin_sc_0_edg_23 >= -1
+ cons_edge_var_downstream_vertex_var_0_23:
+                                           bin_edge_var_downstream_vertex_var_product_0_23
+                                           - _and225 = 0
  cons_subcircuit_rho_qubits_0: rho_0
                                - bin_edge_var_downstream_vertex_var_product_0_0
                                - bin_edge_var_downstream_vertex_var_product_0_1
@@ -525,103 +417,159 @@ Subject To
                                - bin_edge_var_downstream_vertex_var_product_0_13
                                - bin_edge_var_downstream_vertex_var_product_0_14
                                - bin_edge_var_downstream_vertex_var_product_0_15
+                               - bin_edge_var_downstream_vertex_var_product_0_16
+                               - bin_edge_var_downstream_vertex_var_product_0_17
+                               - bin_edge_var_downstream_vertex_var_product_0_18
+                               - bin_edge_var_downstream_vertex_var_product_0_19
+                               - bin_edge_var_downstream_vertex_var_product_0_20
+                               - bin_edge_var_downstream_vertex_var_product_0_21
+                               - bin_edge_var_downstream_vertex_var_product_0_22
+                               - bin_edge_var_downstream_vertex_var_product_0_23
                                 = 0
- c410: _and366 - bin_sc_0_edg_0 <= 0
- c411: _and366 - bin_sc_0_vx_0 <= 0
- c412: _and366 - bin_sc_0_vx_0 - bin_sc_0_edg_0 >= -1
+ c318: _and226 - bin_sc_0_edg_0 <= 0
+ c319: _and226 - bin_sc_0_vx_0 <= 0
+ c320: _and226 - bin_sc_0_vx_0 - bin_sc_0_edg_0 >= -1
  cons_edge_var_upstream_vertex_var_0_0:
                                         bin_edge_var_upstream_vertex_var_product_0_0
-                                        - _and366 = 0
- c414: _and367 - bin_sc_0_edg_1 <= 0
- c415: _and367 - bin_sc_0_vx_1 <= 0
- c416: _and367 - bin_sc_0_vx_1 - bin_sc_0_edg_1 >= -1
+                                        - _and226 = 0
+ c322: _and227 - bin_sc_0_edg_1 <= 0
+ c323: _and227 - bin_sc_0_vx_0 <= 0
+ c324: _and227 - bin_sc_0_vx_0 - bin_sc_0_edg_1 >= -1
  cons_edge_var_upstream_vertex_var_0_1:
                                         bin_edge_var_upstream_vertex_var_product_0_1
-                                        - _and367 = 0
- c418: _and368 - bin_sc_0_edg_2 <= 0
- c419: _and368 - bin_sc_0_vx_2 <= 0
- c420: _and368 - bin_sc_0_vx_2 - bin_sc_0_edg_2 >= -1
+                                        - _and227 = 0
+ c326: _and228 - bin_sc_0_edg_2 <= 0
+ c327: _and228 - bin_sc_0_vx_1 <= 0
+ c328: _and228 - bin_sc_0_vx_1 - bin_sc_0_edg_2 >= -1
  cons_edge_var_upstream_vertex_var_0_2:
                                         bin_edge_var_upstream_vertex_var_product_0_2
-                                        - _and368 = 0
- c422: _and369 - bin_sc_0_edg_3 <= 0
- c423: _and369 - bin_sc_0_vx_3 <= 0
- c424: _and369 - bin_sc_0_vx_3 - bin_sc_0_edg_3 >= -1
+                                        - _and228 = 0
+ c330: _and229 - bin_sc_0_edg_3 <= 0
+ c331: _and229 - bin_sc_0_vx_2 <= 0
+ c332: _and229 - bin_sc_0_vx_2 - bin_sc_0_edg_3 >= -1
  cons_edge_var_upstream_vertex_var_0_3:
                                         bin_edge_var_upstream_vertex_var_product_0_3
-                                        - _and369 = 0
- c426: _and370 - bin_sc_0_edg_4 <= 0
- c427: _and370 - bin_sc_0_vx_4 <= 0
- c428: _and370 - bin_sc_0_vx_4 - bin_sc_0_edg_4 >= -1
+                                        - _and229 = 0
+ c334: _and230 - bin_sc_0_edg_4 <= 0
+ c335: _and230 - bin_sc_0_vx_3 <= 0
+ c336: _and230 - bin_sc_0_vx_3 - bin_sc_0_edg_4 >= -1
  cons_edge_var_upstream_vertex_var_0_4:
                                         bin_edge_var_upstream_vertex_var_product_0_4
-                                        - _and370 = 0
- c430: _and371 - bin_sc_0_edg_5 <= 0
- c431: _and371 - bin_sc_0_vx_5 <= 0
- c432: _and371 - bin_sc_0_vx_5 - bin_sc_0_edg_5 >= -1
+                                        - _and230 = 0
+ c338: _and231 - bin_sc_0_edg_5 <= 0
+ c339: _and231 - bin_sc_0_vx_4 <= 0
+ c340: _and231 - bin_sc_0_vx_4 - bin_sc_0_edg_5 >= -1
  cons_edge_var_upstream_vertex_var_0_5:
                                         bin_edge_var_upstream_vertex_var_product_0_5
-                                        - _and371 = 0
- c434: _and372 - bin_sc_0_edg_6 <= 0
- c435: _and372 - bin_sc_0_vx_6 <= 0
- c436: _and372 - bin_sc_0_vx_6 - bin_sc_0_edg_6 >= -1
+                                        - _and231 = 0
+ c342: _and232 - bin_sc_0_edg_6 <= 0
+ c343: _and232 - bin_sc_0_vx_5 <= 0
+ c344: _and232 - bin_sc_0_vx_5 - bin_sc_0_edg_6 >= -1
  cons_edge_var_upstream_vertex_var_0_6:
                                         bin_edge_var_upstream_vertex_var_product_0_6
-                                        - _and372 = 0
- c438: _and373 - bin_sc_0_edg_7 <= 0
- c439: _and373 - bin_sc_0_vx_7 <= 0
- c440: _and373 - bin_sc_0_vx_7 - bin_sc_0_edg_7 >= -1
+                                        - _and232 = 0
+ c346: _and233 - bin_sc_0_edg_7 <= 0
+ c347: _and233 - bin_sc_0_vx_6 <= 0
+ c348: _and233 - bin_sc_0_vx_6 - bin_sc_0_edg_7 >= -1
  cons_edge_var_upstream_vertex_var_0_7:
                                         bin_edge_var_upstream_vertex_var_product_0_7
-                                        - _and373 = 0
- c442: _and374 - bin_sc_0_edg_8 <= 0
- c443: _and374 - bin_sc_0_vx_8 <= 0
- c444: _and374 - bin_sc_0_vx_8 - bin_sc_0_edg_8 >= -1
+                                        - _and233 = 0
+ c350: _and234 - bin_sc_0_edg_8 <= 0
+ c351: _and234 - bin_sc_0_vx_7 <= 0
+ c352: _and234 - bin_sc_0_vx_7 - bin_sc_0_edg_8 >= -1
  cons_edge_var_upstream_vertex_var_0_8:
                                         bin_edge_var_upstream_vertex_var_product_0_8
-                                        - _and374 = 0
- c446: _and375 - bin_sc_0_edg_9 <= 0
- c447: _and375 - bin_sc_0_vx_9 <= 0
- c448: _and375 - bin_sc_0_vx_9 - bin_sc_0_edg_9 >= -1
+                                        - _and234 = 0
+ c354: _and235 - bin_sc_0_edg_9 <= 0
+ c355: _and235 - bin_sc_0_vx_8 <= 0
+ c356: _and235 - bin_sc_0_vx_8 - bin_sc_0_edg_9 >= -1
  cons_edge_var_upstream_vertex_var_0_9:
                                         bin_edge_var_upstream_vertex_var_product_0_9
-                                        - _and375 = 0
- c450: _and376 - bin_sc_0_edg_10 <= 0
- c451: _and376 - bin_sc_0_vx_10 <= 0
- c452: _and376 - bin_sc_0_vx_10 - bin_sc_0_edg_10 >= -1
+                                        - _and235 = 0
+ c358: _and236 - bin_sc_0_edg_10 <= 0
+ c359: _and236 - bin_sc_0_vx_9 <= 0
+ c360: _and236 - bin_sc_0_vx_9 - bin_sc_0_edg_10 >= -1
  cons_edge_var_upstream_vertex_var_0_10:
                                          bin_edge_var_upstream_vertex_var_product_0_10
-                                         - _and376 = 0
- c454: _and377 - bin_sc_0_edg_11 <= 0
- c455: _and377 - bin_sc_0_vx_11 <= 0
- c456: _and377 - bin_sc_0_vx_11 - bin_sc_0_edg_11 >= -1
+                                         - _and236 = 0
+ c362: _and237 - bin_sc_0_edg_11 <= 0
+ c363: _and237 - bin_sc_0_vx_10 <= 0
+ c364: _and237 - bin_sc_0_vx_10 - bin_sc_0_edg_11 >= -1
  cons_edge_var_upstream_vertex_var_0_11:
                                          bin_edge_var_upstream_vertex_var_product_0_11
-                                         - _and377 = 0
- c458: _and378 - bin_sc_0_edg_12 <= 0
- c459: _and378 - bin_sc_0_vx_12 <= 0
- c460: _and378 - bin_sc_0_vx_12 - bin_sc_0_edg_12 >= -1
+                                         - _and237 = 0
+ c366: _and238 - bin_sc_0_edg_12 <= 0
+ c367: _and238 - bin_sc_0_vx_11 <= 0
+ c368: _and238 - bin_sc_0_vx_11 - bin_sc_0_edg_12 >= -1
  cons_edge_var_upstream_vertex_var_0_12:
                                          bin_edge_var_upstream_vertex_var_product_0_12
-                                         - _and378 = 0
- c462: _and379 - bin_sc_0_edg_13 <= 0
- c463: _and379 - bin_sc_0_vx_13 <= 0
- c464: _and379 - bin_sc_0_vx_13 - bin_sc_0_edg_13 >= -1
+                                         - _and238 = 0
+ c370: _and239 - bin_sc_0_edg_13 <= 0
+ c371: _and239 - bin_sc_0_vx_12 <= 0
+ c372: _and239 - bin_sc_0_vx_12 - bin_sc_0_edg_13 >= -1
  cons_edge_var_upstream_vertex_var_0_13:
                                          bin_edge_var_upstream_vertex_var_product_0_13
-                                         - _and379 = 0
- c466: _and380 - bin_sc_0_edg_14 <= 0
- c467: _and380 - bin_sc_0_vx_14 <= 0
- c468: _and380 - bin_sc_0_vx_14 - bin_sc_0_edg_14 >= -1
+                                         - _and239 = 0
+ c374: _and240 - bin_sc_0_edg_14 <= 0
+ c375: _and240 - bin_sc_0_vx_13 <= 0
+ c376: _and240 - bin_sc_0_vx_13 - bin_sc_0_edg_14 >= -1
  cons_edge_var_upstream_vertex_var_0_14:
                                          bin_edge_var_upstream_vertex_var_product_0_14
-                                         - _and380 = 0
- c470: _and381 - bin_sc_0_edg_15 <= 0
- c471: _and381 - bin_sc_0_vx_15 <= 0
- c472: _and381 - bin_sc_0_vx_15 - bin_sc_0_edg_15 >= -1
+                                         - _and240 = 0
+ c378: _and241 - bin_sc_0_edg_15 <= 0
+ c379: _and241 - bin_sc_0_vx_14 <= 0
+ c380: _and241 - bin_sc_0_vx_14 - bin_sc_0_edg_15 >= -1
  cons_edge_var_upstream_vertex_var_0_15:
                                          bin_edge_var_upstream_vertex_var_product_0_15
-                                         - _and381 = 0
+                                         - _and241 = 0
+ c382: _and242 - bin_sc_0_edg_16 <= 0
+ c383: _and242 - bin_sc_0_vx_15 <= 0
+ c384: _and242 - bin_sc_0_vx_15 - bin_sc_0_edg_16 >= -1
+ cons_edge_var_upstream_vertex_var_0_16:
+                                         bin_edge_var_upstream_vertex_var_product_0_16
+                                         - _and242 = 0
+ c386: _and243 - bin_sc_0_edg_17 <= 0
+ c387: _and243 - bin_sc_0_vx_16 <= 0
+ c388: _and243 - bin_sc_0_vx_16 - bin_sc_0_edg_17 >= -1
+ cons_edge_var_upstream_vertex_var_0_17:
+                                         bin_edge_var_upstream_vertex_var_product_0_17
+                                         - _and243 = 0
+ c390: _and244 - bin_sc_0_edg_18 <= 0
+ c391: _and244 - bin_sc_0_vx_17 <= 0
+ c392: _and244 - bin_sc_0_vx_17 - bin_sc_0_edg_18 >= -1
+ cons_edge_var_upstream_vertex_var_0_18:
+                                         bin_edge_var_upstream_vertex_var_product_0_18
+                                         - _and244 = 0
+ c394: _and245 - bin_sc_0_edg_19 <= 0
+ c395: _and245 - bin_sc_0_vx_18 <= 0
+ c396: _and245 - bin_sc_0_vx_18 - bin_sc_0_edg_19 >= -1
+ cons_edge_var_upstream_vertex_var_0_19:
+                                         bin_edge_var_upstream_vertex_var_product_0_19
+                                         - _and245 = 0
+ c398: _and246 - bin_sc_0_edg_20 <= 0
+ c399: _and246 - bin_sc_0_vx_19 <= 0
+ c400: _and246 - bin_sc_0_vx_19 - bin_sc_0_edg_20 >= -1
+ cons_edge_var_upstream_vertex_var_0_20:
+                                         bin_edge_var_upstream_vertex_var_product_0_20
+                                         - _and246 = 0
+ c402: _and247 - bin_sc_0_edg_21 <= 0
+ c403: _and247 - bin_sc_0_vx_20 <= 0
+ c404: _and247 - bin_sc_0_vx_20 - bin_sc_0_edg_21 >= -1
+ cons_edge_var_upstream_vertex_var_0_21:
+                                         bin_edge_var_upstream_vertex_var_product_0_21
+                                         - _and247 = 0
+ c406: _and248 - bin_sc_0_edg_22 <= 0
+ c407: _and248 - bin_sc_0_vx_21 <= 0
+ c408: _and248 - bin_sc_0_vx_21 - bin_sc_0_edg_22 >= -1
+ cons_edge_var_upstream_vertex_var_0_22:
+                                         bin_edge_var_upstream_vertex_var_product_0_22
+                                         - _and248 = 0
+ c410: _and249 - bin_sc_0_edg_23 <= 0
+ c411: _and249 - bin_sc_0_vx_22 <= 0
+ c412: _and249 - bin_sc_0_vx_22 - bin_sc_0_edg_23 >= -1
+ cons_edge_var_upstream_vertex_var_0_23:
+                                         bin_edge_var_upstream_vertex_var_product_0_23
+                                         - _and249 = 0
  cons_subcircuit_O_qubits_0: O_0 - bin_edge_var_upstream_vertex_var_product_0_0
                              - bin_edge_var_upstream_vertex_var_product_0_1
                              - bin_edge_var_upstream_vertex_var_product_0_2
@@ -637,7 +585,15 @@ Subject To
                              - bin_edge_var_upstream_vertex_var_product_0_12
                              - bin_edge_var_upstream_vertex_var_product_0_13
                              - bin_edge_var_upstream_vertex_var_product_0_14
-                             - bin_edge_var_upstream_vertex_var_product_0_15 = 
+                             - bin_edge_var_upstream_vertex_var_product_0_15
+                             - bin_edge_var_upstream_vertex_var_product_0_16
+                             - bin_edge_var_upstream_vertex_var_product_0_17
+                             - bin_edge_var_upstream_vertex_var_product_0_18
+                             - bin_edge_var_upstream_vertex_var_product_0_19
+                             - bin_edge_var_upstream_vertex_var_product_0_20
+                             - bin_edge_var_upstream_vertex_var_product_0_21
+                             - bin_edge_var_upstream_vertex_var_product_0_22
+                             - bin_edge_var_upstream_vertex_var_product_0_23 = 
                              0
  cons_subcircuit_d_qubits_0: - original_input_0 - rho_0 + d_0 = 0
  cons_subcircuit_input_1: - 2 bin_sc_1_vx_0 - bin_sc_1_vx_1 - bin_sc_1_vx_2
@@ -645,104 +601,154 @@ Subject To
                           - bin_sc_1_vx_6 - bin_sc_1_vx_7 - bin_sc_1_vx_8
                           - bin_sc_1_vx_9 - bin_sc_1_vx_10 - bin_sc_1_vx_11
                           - bin_sc_1_vx_12 - bin_sc_1_vx_13 - bin_sc_1_vx_14
-                          - bin_sc_1_vx_15 - bin_sc_1_vx_16 + original_input_1
+                          - bin_sc_1_vx_15 - bin_sc_1_vx_16 - bin_sc_1_vx_17
+                          - bin_sc_1_vx_18 - bin_sc_1_vx_19 - bin_sc_1_vx_20
+                          - bin_sc_1_vx_21 - bin_sc_1_vx_22 + original_input_1
                            = 0
- c477: _and382 - bin_sc_1_edg_0 <= 0
- c478: _and382 - bin_sc_1_vx_1 <= 0
- c479: _and382 - bin_sc_1_vx_1 - bin_sc_1_edg_0 >= -1
+ c417: _and250 - bin_sc_1_edg_0 <= 0
+ c418: _and250 - bin_sc_1_vx_23 <= 0
+ c419: _and250 - bin_sc_1_vx_23 - bin_sc_1_edg_0 >= -1
  cons_edge_var_downstream_vertex_var_1_0:
                                           bin_edge_var_downstream_vertex_var_product_1_0
-                                          - _and382 = 0
- c481: _and383 - bin_sc_1_edg_1 <= 0
- c482: _and383 - bin_sc_1_vx_2 <= 0
- c483: _and383 - bin_sc_1_vx_2 - bin_sc_1_edg_1 >= -1
+                                          - _and250 = 0
+ c421: _and251 - bin_sc_1_edg_1 <= 0
+ c422: _and251 - bin_sc_1_vx_1 <= 0
+ c423: _and251 - bin_sc_1_vx_1 - bin_sc_1_edg_1 >= -1
  cons_edge_var_downstream_vertex_var_1_1:
                                           bin_edge_var_downstream_vertex_var_product_1_1
-                                          - _and383 = 0
- c485: _and384 - bin_sc_1_edg_2 <= 0
- c486: _and384 - bin_sc_1_vx_3 <= 0
- c487: _and384 - bin_sc_1_vx_3 - bin_sc_1_edg_2 >= -1
+                                          - _and251 = 0
+ c425: _and252 - bin_sc_1_edg_2 <= 0
+ c426: _and252 - bin_sc_1_vx_2 <= 0
+ c427: _and252 - bin_sc_1_vx_2 - bin_sc_1_edg_2 >= -1
  cons_edge_var_downstream_vertex_var_1_2:
                                           bin_edge_var_downstream_vertex_var_product_1_2
-                                          - _and384 = 0
- c489: _and385 - bin_sc_1_edg_3 <= 0
- c490: _and385 - bin_sc_1_vx_4 <= 0
- c491: _and385 - bin_sc_1_vx_4 - bin_sc_1_edg_3 >= -1
+                                          - _and252 = 0
+ c429: _and253 - bin_sc_1_edg_3 <= 0
+ c430: _and253 - bin_sc_1_vx_3 <= 0
+ c431: _and253 - bin_sc_1_vx_3 - bin_sc_1_edg_3 >= -1
  cons_edge_var_downstream_vertex_var_1_3:
                                           bin_edge_var_downstream_vertex_var_product_1_3
-                                          - _and385 = 0
- c493: _and386 - bin_sc_1_edg_4 <= 0
- c494: _and386 - bin_sc_1_vx_5 <= 0
- c495: _and386 - bin_sc_1_vx_5 - bin_sc_1_edg_4 >= -1
+                                          - _and253 = 0
+ c433: _and254 - bin_sc_1_edg_4 <= 0
+ c434: _and254 - bin_sc_1_vx_4 <= 0
+ c435: _and254 - bin_sc_1_vx_4 - bin_sc_1_edg_4 >= -1
  cons_edge_var_downstream_vertex_var_1_4:
                                           bin_edge_var_downstream_vertex_var_product_1_4
-                                          - _and386 = 0
- c497: _and387 - bin_sc_1_edg_5 <= 0
- c498: _and387 - bin_sc_1_vx_6 <= 0
- c499: _and387 - bin_sc_1_vx_6 - bin_sc_1_edg_5 >= -1
+                                          - _and254 = 0
+ c437: _and255 - bin_sc_1_edg_5 <= 0
+ c438: _and255 - bin_sc_1_vx_5 <= 0
+ c439: _and255 - bin_sc_1_vx_5 - bin_sc_1_edg_5 >= -1
  cons_edge_var_downstream_vertex_var_1_5:
                                           bin_edge_var_downstream_vertex_var_product_1_5
-                                          - _and387 = 0
- c501: _and388 - bin_sc_1_edg_6 <= 0
- c502: _and388 - bin_sc_1_vx_7 <= 0
- c503: _and388 - bin_sc_1_vx_7 - bin_sc_1_edg_6 >= -1
+                                          - _and255 = 0
+ c441: _and256 - bin_sc_1_edg_6 <= 0
+ c442: _and256 - bin_sc_1_vx_6 <= 0
+ c443: _and256 - bin_sc_1_vx_6 - bin_sc_1_edg_6 >= -1
  cons_edge_var_downstream_vertex_var_1_6:
                                           bin_edge_var_downstream_vertex_var_product_1_6
-                                          - _and388 = 0
- c505: _and389 - bin_sc_1_edg_7 <= 0
- c506: _and389 - bin_sc_1_vx_8 <= 0
- c507: _and389 - bin_sc_1_vx_8 - bin_sc_1_edg_7 >= -1
+                                          - _and256 = 0
+ c445: _and257 - bin_sc_1_edg_7 <= 0
+ c446: _and257 - bin_sc_1_vx_7 <= 0
+ c447: _and257 - bin_sc_1_vx_7 - bin_sc_1_edg_7 >= -1
  cons_edge_var_downstream_vertex_var_1_7:
                                           bin_edge_var_downstream_vertex_var_product_1_7
-                                          - _and389 = 0
- c509: _and390 - bin_sc_1_edg_8 <= 0
- c510: _and390 - bin_sc_1_vx_9 <= 0
- c511: _and390 - bin_sc_1_vx_9 - bin_sc_1_edg_8 >= -1
+                                          - _and257 = 0
+ c449: _and258 - bin_sc_1_edg_8 <= 0
+ c450: _and258 - bin_sc_1_vx_8 <= 0
+ c451: _and258 - bin_sc_1_vx_8 - bin_sc_1_edg_8 >= -1
  cons_edge_var_downstream_vertex_var_1_8:
                                           bin_edge_var_downstream_vertex_var_product_1_8
-                                          - _and390 = 0
- c513: _and391 - bin_sc_1_edg_9 <= 0
- c514: _and391 - bin_sc_1_vx_10 <= 0
- c515: _and391 - bin_sc_1_vx_10 - bin_sc_1_edg_9 >= -1
+                                          - _and258 = 0
+ c453: _and259 - bin_sc_1_edg_9 <= 0
+ c454: _and259 - bin_sc_1_vx_9 <= 0
+ c455: _and259 - bin_sc_1_vx_9 - bin_sc_1_edg_9 >= -1
  cons_edge_var_downstream_vertex_var_1_9:
                                           bin_edge_var_downstream_vertex_var_product_1_9
-                                          - _and391 = 0
- c517: _and392 - bin_sc_1_edg_10 <= 0
- c518: _and392 - bin_sc_1_vx_11 <= 0
- c519: _and392 - bin_sc_1_vx_11 - bin_sc_1_edg_10 >= -1
+                                          - _and259 = 0
+ c457: _and260 - bin_sc_1_edg_10 <= 0
+ c458: _and260 - bin_sc_1_vx_10 <= 0
+ c459: _and260 - bin_sc_1_vx_10 - bin_sc_1_edg_10 >= -1
  cons_edge_var_downstream_vertex_var_1_10:
                                            bin_edge_var_downstream_vertex_var_product_1_10
-                                           - _and392 = 0
- c521: _and393 - bin_sc_1_edg_11 <= 0
- c522: _and393 - bin_sc_1_vx_12 <= 0
- c523: _and393 - bin_sc_1_vx_12 - bin_sc_1_edg_11 >= -1
+                                           - _and260 = 0
+ c461: _and261 - bin_sc_1_edg_11 <= 0
+ c462: _and261 - bin_sc_1_vx_11 <= 0
+ c463: _and261 - bin_sc_1_vx_11 - bin_sc_1_edg_11 >= -1
  cons_edge_var_downstream_vertex_var_1_11:
                                            bin_edge_var_downstream_vertex_var_product_1_11
-                                           - _and393 = 0
- c525: _and394 - bin_sc_1_edg_12 <= 0
- c526: _and394 - bin_sc_1_vx_13 <= 0
- c527: _and394 - bin_sc_1_vx_13 - bin_sc_1_edg_12 >= -1
+                                           - _and261 = 0
+ c465: _and262 - bin_sc_1_edg_12 <= 0
+ c466: _and262 - bin_sc_1_vx_12 <= 0
+ c467: _and262 - bin_sc_1_vx_12 - bin_sc_1_edg_12 >= -1
  cons_edge_var_downstream_vertex_var_1_12:
                                            bin_edge_var_downstream_vertex_var_product_1_12
-                                           - _and394 = 0
- c529: _and395 - bin_sc_1_edg_13 <= 0
- c530: _and395 - bin_sc_1_vx_14 <= 0
- c531: _and395 - bin_sc_1_vx_14 - bin_sc_1_edg_13 >= -1
+                                           - _and262 = 0
+ c469: _and263 - bin_sc_1_edg_13 <= 0
+ c470: _and263 - bin_sc_1_vx_13 <= 0
+ c471: _and263 - bin_sc_1_vx_13 - bin_sc_1_edg_13 >= -1
  cons_edge_var_downstream_vertex_var_1_13:
                                            bin_edge_var_downstream_vertex_var_product_1_13
-                                           - _and395 = 0
- c533: _and396 - bin_sc_1_edg_14 <= 0
- c534: _and396 - bin_sc_1_vx_15 <= 0
- c535: _and396 - bin_sc_1_vx_15 - bin_sc_1_edg_14 >= -1
+                                           - _and263 = 0
+ c473: _and264 - bin_sc_1_edg_14 <= 0
+ c474: _and264 - bin_sc_1_vx_14 <= 0
+ c475: _and264 - bin_sc_1_vx_14 - bin_sc_1_edg_14 >= -1
  cons_edge_var_downstream_vertex_var_1_14:
                                            bin_edge_var_downstream_vertex_var_product_1_14
-                                           - _and396 = 0
- c537: _and397 - bin_sc_1_edg_15 <= 0
- c538: _and397 - bin_sc_1_vx_16 <= 0
- c539: _and397 - bin_sc_1_vx_16 - bin_sc_1_edg_15 >= -1
+                                           - _and264 = 0
+ c477: _and265 - bin_sc_1_edg_15 <= 0
+ c478: _and265 - bin_sc_1_vx_15 <= 0
+ c479: _and265 - bin_sc_1_vx_15 - bin_sc_1_edg_15 >= -1
  cons_edge_var_downstream_vertex_var_1_15:
                                            bin_edge_var_downstream_vertex_var_product_1_15
-                                           - _and397 = 0
+                                           - _and265 = 0
+ c481: _and266 - bin_sc_1_edg_16 <= 0
+ c482: _and266 - bin_sc_1_vx_16 <= 0
+ c483: _and266 - bin_sc_1_vx_16 - bin_sc_1_edg_16 >= -1
+ cons_edge_var_downstream_vertex_var_1_16:
+                                           bin_edge_var_downstream_vertex_var_product_1_16
+                                           - _and266 = 0
+ c485: _and267 - bin_sc_1_edg_17 <= 0
+ c486: _and267 - bin_sc_1_vx_17 <= 0
+ c487: _and267 - bin_sc_1_vx_17 - bin_sc_1_edg_17 >= -1
+ cons_edge_var_downstream_vertex_var_1_17:
+                                           bin_edge_var_downstream_vertex_var_product_1_17
+                                           - _and267 = 0
+ c489: _and268 - bin_sc_1_edg_18 <= 0
+ c490: _and268 - bin_sc_1_vx_18 <= 0
+ c491: _and268 - bin_sc_1_vx_18 - bin_sc_1_edg_18 >= -1
+ cons_edge_var_downstream_vertex_var_1_18:
+                                           bin_edge_var_downstream_vertex_var_product_1_18
+                                           - _and268 = 0
+ c493: _and269 - bin_sc_1_edg_19 <= 0
+ c494: _and269 - bin_sc_1_vx_19 <= 0
+ c495: _and269 - bin_sc_1_vx_19 - bin_sc_1_edg_19 >= -1
+ cons_edge_var_downstream_vertex_var_1_19:
+                                           bin_edge_var_downstream_vertex_var_product_1_19
+                                           - _and269 = 0
+ c497: _and270 - bin_sc_1_edg_20 <= 0
+ c498: _and270 - bin_sc_1_vx_20 <= 0
+ c499: _and270 - bin_sc_1_vx_20 - bin_sc_1_edg_20 >= -1
+ cons_edge_var_downstream_vertex_var_1_20:
+                                           bin_edge_var_downstream_vertex_var_product_1_20
+                                           - _and270 = 0
+ c501: _and271 - bin_sc_1_edg_21 <= 0
+ c502: _and271 - bin_sc_1_vx_21 <= 0
+ c503: _and271 - bin_sc_1_vx_21 - bin_sc_1_edg_21 >= -1
+ cons_edge_var_downstream_vertex_var_1_21:
+                                           bin_edge_var_downstream_vertex_var_product_1_21
+                                           - _and271 = 0
+ c505: _and272 - bin_sc_1_edg_22 <= 0
+ c506: _and272 - bin_sc_1_vx_22 <= 0
+ c507: _and272 - bin_sc_1_vx_22 - bin_sc_1_edg_22 >= -1
+ cons_edge_var_downstream_vertex_var_1_22:
+                                           bin_edge_var_downstream_vertex_var_product_1_22
+                                           - _and272 = 0
+ c509: _and273 - bin_sc_1_edg_23 <= 0
+ c510: _and273 - bin_sc_1_vx_23 <= 0
+ c511: _and273 - bin_sc_1_vx_23 - bin_sc_1_edg_23 >= -1
+ cons_edge_var_downstream_vertex_var_1_23:
+                                           bin_edge_var_downstream_vertex_var_product_1_23
+                                           - _and273 = 0
  cons_subcircuit_rho_qubits_1: rho_1
                                - bin_edge_var_downstream_vertex_var_product_1_0
                                - bin_edge_var_downstream_vertex_var_product_1_1
@@ -760,103 +766,159 @@ Subject To
                                - bin_edge_var_downstream_vertex_var_product_1_13
                                - bin_edge_var_downstream_vertex_var_product_1_14
                                - bin_edge_var_downstream_vertex_var_product_1_15
+                               - bin_edge_var_downstream_vertex_var_product_1_16
+                               - bin_edge_var_downstream_vertex_var_product_1_17
+                               - bin_edge_var_downstream_vertex_var_product_1_18
+                               - bin_edge_var_downstream_vertex_var_product_1_19
+                               - bin_edge_var_downstream_vertex_var_product_1_20
+                               - bin_edge_var_downstream_vertex_var_product_1_21
+                               - bin_edge_var_downstream_vertex_var_product_1_22
+                               - bin_edge_var_downstream_vertex_var_product_1_23
                                 = 0
- c542: _and398 - bin_sc_1_edg_0 <= 0
- c543: _and398 - bin_sc_1_vx_0 <= 0
- c544: _and398 - bin_sc_1_vx_0 - bin_sc_1_edg_0 >= -1
+ c514: _and274 - bin_sc_1_edg_0 <= 0
+ c515: _and274 - bin_sc_1_vx_0 <= 0
+ c516: _and274 - bin_sc_1_vx_0 - bin_sc_1_edg_0 >= -1
  cons_edge_var_upstream_vertex_var_1_0:
                                         bin_edge_var_upstream_vertex_var_product_1_0
-                                        - _and398 = 0
- c546: _and399 - bin_sc_1_edg_1 <= 0
- c547: _and399 - bin_sc_1_vx_1 <= 0
- c548: _and399 - bin_sc_1_vx_1 - bin_sc_1_edg_1 >= -1
+                                        - _and274 = 0
+ c518: _and275 - bin_sc_1_edg_1 <= 0
+ c519: _and275 - bin_sc_1_vx_0 <= 0
+ c520: _and275 - bin_sc_1_vx_0 - bin_sc_1_edg_1 >= -1
  cons_edge_var_upstream_vertex_var_1_1:
                                         bin_edge_var_upstream_vertex_var_product_1_1
-                                        - _and399 = 0
- c550: _and400 - bin_sc_1_edg_2 <= 0
- c551: _and400 - bin_sc_1_vx_2 <= 0
- c552: _and400 - bin_sc_1_vx_2 - bin_sc_1_edg_2 >= -1
+                                        - _and275 = 0
+ c522: _and276 - bin_sc_1_edg_2 <= 0
+ c523: _and276 - bin_sc_1_vx_1 <= 0
+ c524: _and276 - bin_sc_1_vx_1 - bin_sc_1_edg_2 >= -1
  cons_edge_var_upstream_vertex_var_1_2:
                                         bin_edge_var_upstream_vertex_var_product_1_2
-                                        - _and400 = 0
- c554: _and401 - bin_sc_1_edg_3 <= 0
- c555: _and401 - bin_sc_1_vx_3 <= 0
- c556: _and401 - bin_sc_1_vx_3 - bin_sc_1_edg_3 >= -1
+                                        - _and276 = 0
+ c526: _and277 - bin_sc_1_edg_3 <= 0
+ c527: _and277 - bin_sc_1_vx_2 <= 0
+ c528: _and277 - bin_sc_1_vx_2 - bin_sc_1_edg_3 >= -1
  cons_edge_var_upstream_vertex_var_1_3:
                                         bin_edge_var_upstream_vertex_var_product_1_3
-                                        - _and401 = 0
- c558: _and402 - bin_sc_1_edg_4 <= 0
- c559: _and402 - bin_sc_1_vx_4 <= 0
- c560: _and402 - bin_sc_1_vx_4 - bin_sc_1_edg_4 >= -1
+                                        - _and277 = 0
+ c530: _and278 - bin_sc_1_edg_4 <= 0
+ c531: _and278 - bin_sc_1_vx_3 <= 0
+ c532: _and278 - bin_sc_1_vx_3 - bin_sc_1_edg_4 >= -1
  cons_edge_var_upstream_vertex_var_1_4:
                                         bin_edge_var_upstream_vertex_var_product_1_4
-                                        - _and402 = 0
- c562: _and403 - bin_sc_1_edg_5 <= 0
- c563: _and403 - bin_sc_1_vx_5 <= 0
- c564: _and403 - bin_sc_1_vx_5 - bin_sc_1_edg_5 >= -1
+                                        - _and278 = 0
+ c534: _and279 - bin_sc_1_edg_5 <= 0
+ c535: _and279 - bin_sc_1_vx_4 <= 0
+ c536: _and279 - bin_sc_1_vx_4 - bin_sc_1_edg_5 >= -1
  cons_edge_var_upstream_vertex_var_1_5:
                                         bin_edge_var_upstream_vertex_var_product_1_5
-                                        - _and403 = 0
- c566: _and404 - bin_sc_1_edg_6 <= 0
- c567: _and404 - bin_sc_1_vx_6 <= 0
- c568: _and404 - bin_sc_1_vx_6 - bin_sc_1_edg_6 >= -1
+                                        - _and279 = 0
+ c538: _and280 - bin_sc_1_edg_6 <= 0
+ c539: _and280 - bin_sc_1_vx_5 <= 0
+ c540: _and280 - bin_sc_1_vx_5 - bin_sc_1_edg_6 >= -1
  cons_edge_var_upstream_vertex_var_1_6:
                                         bin_edge_var_upstream_vertex_var_product_1_6
-                                        - _and404 = 0
- c570: _and405 - bin_sc_1_edg_7 <= 0
- c571: _and405 - bin_sc_1_vx_7 <= 0
- c572: _and405 - bin_sc_1_vx_7 - bin_sc_1_edg_7 >= -1
+                                        - _and280 = 0
+ c542: _and281 - bin_sc_1_edg_7 <= 0
+ c543: _and281 - bin_sc_1_vx_6 <= 0
+ c544: _and281 - bin_sc_1_vx_6 - bin_sc_1_edg_7 >= -1
  cons_edge_var_upstream_vertex_var_1_7:
                                         bin_edge_var_upstream_vertex_var_product_1_7
-                                        - _and405 = 0
- c574: _and406 - bin_sc_1_edg_8 <= 0
- c575: _and406 - bin_sc_1_vx_8 <= 0
- c576: _and406 - bin_sc_1_vx_8 - bin_sc_1_edg_8 >= -1
+                                        - _and281 = 0
+ c546: _and282 - bin_sc_1_edg_8 <= 0
+ c547: _and282 - bin_sc_1_vx_7 <= 0
+ c548: _and282 - bin_sc_1_vx_7 - bin_sc_1_edg_8 >= -1
  cons_edge_var_upstream_vertex_var_1_8:
                                         bin_edge_var_upstream_vertex_var_product_1_8
-                                        - _and406 = 0
- c578: _and407 - bin_sc_1_edg_9 <= 0
- c579: _and407 - bin_sc_1_vx_9 <= 0
- c580: _and407 - bin_sc_1_vx_9 - bin_sc_1_edg_9 >= -1
+                                        - _and282 = 0
+ c550: _and283 - bin_sc_1_edg_9 <= 0
+ c551: _and283 - bin_sc_1_vx_8 <= 0
+ c552: _and283 - bin_sc_1_vx_8 - bin_sc_1_edg_9 >= -1
  cons_edge_var_upstream_vertex_var_1_9:
                                         bin_edge_var_upstream_vertex_var_product_1_9
-                                        - _and407 = 0
- c582: _and408 - bin_sc_1_edg_10 <= 0
- c583: _and408 - bin_sc_1_vx_10 <= 0
- c584: _and408 - bin_sc_1_vx_10 - bin_sc_1_edg_10 >= -1
+                                        - _and283 = 0
+ c554: _and284 - bin_sc_1_edg_10 <= 0
+ c555: _and284 - bin_sc_1_vx_9 <= 0
+ c556: _and284 - bin_sc_1_vx_9 - bin_sc_1_edg_10 >= -1
  cons_edge_var_upstream_vertex_var_1_10:
                                          bin_edge_var_upstream_vertex_var_product_1_10
-                                         - _and408 = 0
- c586: _and409 - bin_sc_1_edg_11 <= 0
- c587: _and409 - bin_sc_1_vx_11 <= 0
- c588: _and409 - bin_sc_1_vx_11 - bin_sc_1_edg_11 >= -1
+                                         - _and284 = 0
+ c558: _and285 - bin_sc_1_edg_11 <= 0
+ c559: _and285 - bin_sc_1_vx_10 <= 0
+ c560: _and285 - bin_sc_1_vx_10 - bin_sc_1_edg_11 >= -1
  cons_edge_var_upstream_vertex_var_1_11:
                                          bin_edge_var_upstream_vertex_var_product_1_11
-                                         - _and409 = 0
- c590: _and410 - bin_sc_1_edg_12 <= 0
- c591: _and410 - bin_sc_1_vx_12 <= 0
- c592: _and410 - bin_sc_1_vx_12 - bin_sc_1_edg_12 >= -1
+                                         - _and285 = 0
+ c562: _and286 - bin_sc_1_edg_12 <= 0
+ c563: _and286 - bin_sc_1_vx_11 <= 0
+ c564: _and286 - bin_sc_1_vx_11 - bin_sc_1_edg_12 >= -1
  cons_edge_var_upstream_vertex_var_1_12:
                                          bin_edge_var_upstream_vertex_var_product_1_12
-                                         - _and410 = 0
- c594: _and411 - bin_sc_1_edg_13 <= 0
- c595: _and411 - bin_sc_1_vx_13 <= 0
- c596: _and411 - bin_sc_1_vx_13 - bin_sc_1_edg_13 >= -1
+                                         - _and286 = 0
+ c566: _and287 - bin_sc_1_edg_13 <= 0
+ c567: _and287 - bin_sc_1_vx_12 <= 0
+ c568: _and287 - bin_sc_1_vx_12 - bin_sc_1_edg_13 >= -1
  cons_edge_var_upstream_vertex_var_1_13:
                                          bin_edge_var_upstream_vertex_var_product_1_13
-                                         - _and411 = 0
- c598: _and412 - bin_sc_1_edg_14 <= 0
- c599: _and412 - bin_sc_1_vx_14 <= 0
- c600: _and412 - bin_sc_1_vx_14 - bin_sc_1_edg_14 >= -1
+                                         - _and287 = 0
+ c570: _and288 - bin_sc_1_edg_14 <= 0
+ c571: _and288 - bin_sc_1_vx_13 <= 0
+ c572: _and288 - bin_sc_1_vx_13 - bin_sc_1_edg_14 >= -1
  cons_edge_var_upstream_vertex_var_1_14:
                                          bin_edge_var_upstream_vertex_var_product_1_14
-                                         - _and412 = 0
- c602: _and413 - bin_sc_1_edg_15 <= 0
- c603: _and413 - bin_sc_1_vx_15 <= 0
- c604: _and413 - bin_sc_1_vx_15 - bin_sc_1_edg_15 >= -1
+                                         - _and288 = 0
+ c574: _and289 - bin_sc_1_edg_15 <= 0
+ c575: _and289 - bin_sc_1_vx_14 <= 0
+ c576: _and289 - bin_sc_1_vx_14 - bin_sc_1_edg_15 >= -1
  cons_edge_var_upstream_vertex_var_1_15:
                                          bin_edge_var_upstream_vertex_var_product_1_15
-                                         - _and413 = 0
+                                         - _and289 = 0
+ c578: _and290 - bin_sc_1_edg_16 <= 0
+ c579: _and290 - bin_sc_1_vx_15 <= 0
+ c580: _and290 - bin_sc_1_vx_15 - bin_sc_1_edg_16 >= -1
+ cons_edge_var_upstream_vertex_var_1_16:
+                                         bin_edge_var_upstream_vertex_var_product_1_16
+                                         - _and290 = 0
+ c582: _and291 - bin_sc_1_edg_17 <= 0
+ c583: _and291 - bin_sc_1_vx_16 <= 0
+ c584: _and291 - bin_sc_1_vx_16 - bin_sc_1_edg_17 >= -1
+ cons_edge_var_upstream_vertex_var_1_17:
+                                         bin_edge_var_upstream_vertex_var_product_1_17
+                                         - _and291 = 0
+ c586: _and292 - bin_sc_1_edg_18 <= 0
+ c587: _and292 - bin_sc_1_vx_17 <= 0
+ c588: _and292 - bin_sc_1_vx_17 - bin_sc_1_edg_18 >= -1
+ cons_edge_var_upstream_vertex_var_1_18:
+                                         bin_edge_var_upstream_vertex_var_product_1_18
+                                         - _and292 = 0
+ c590: _and293 - bin_sc_1_edg_19 <= 0
+ c591: _and293 - bin_sc_1_vx_18 <= 0
+ c592: _and293 - bin_sc_1_vx_18 - bin_sc_1_edg_19 >= -1
+ cons_edge_var_upstream_vertex_var_1_19:
+                                         bin_edge_var_upstream_vertex_var_product_1_19
+                                         - _and293 = 0
+ c594: _and294 - bin_sc_1_edg_20 <= 0
+ c595: _and294 - bin_sc_1_vx_19 <= 0
+ c596: _and294 - bin_sc_1_vx_19 - bin_sc_1_edg_20 >= -1
+ cons_edge_var_upstream_vertex_var_1_20:
+                                         bin_edge_var_upstream_vertex_var_product_1_20
+                                         - _and294 = 0
+ c598: _and295 - bin_sc_1_edg_21 <= 0
+ c599: _and295 - bin_sc_1_vx_20 <= 0
+ c600: _and295 - bin_sc_1_vx_20 - bin_sc_1_edg_21 >= -1
+ cons_edge_var_upstream_vertex_var_1_21:
+                                         bin_edge_var_upstream_vertex_var_product_1_21
+                                         - _and295 = 0
+ c602: _and296 - bin_sc_1_edg_22 <= 0
+ c603: _and296 - bin_sc_1_vx_21 <= 0
+ c604: _and296 - bin_sc_1_vx_21 - bin_sc_1_edg_22 >= -1
+ cons_edge_var_upstream_vertex_var_1_22:
+                                         bin_edge_var_upstream_vertex_var_product_1_22
+                                         - _and296 = 0
+ c606: _and297 - bin_sc_1_edg_23 <= 0
+ c607: _and297 - bin_sc_1_vx_22 <= 0
+ c608: _and297 - bin_sc_1_vx_22 - bin_sc_1_edg_23 >= -1
+ cons_edge_var_upstream_vertex_var_1_23:
+                                         bin_edge_var_upstream_vertex_var_product_1_23
+                                         - _and297 = 0
  cons_subcircuit_O_qubits_1: O_1 - bin_edge_var_upstream_vertex_var_product_1_0
                              - bin_edge_var_upstream_vertex_var_product_1_1
                              - bin_edge_var_upstream_vertex_var_product_1_2
@@ -872,723 +934,19 @@ Subject To
                              - bin_edge_var_upstream_vertex_var_product_1_12
                              - bin_edge_var_upstream_vertex_var_product_1_13
                              - bin_edge_var_upstream_vertex_var_product_1_14
-                             - bin_edge_var_upstream_vertex_var_product_1_15 = 
+                             - bin_edge_var_upstream_vertex_var_product_1_15
+                             - bin_edge_var_upstream_vertex_var_product_1_16
+                             - bin_edge_var_upstream_vertex_var_product_1_17
+                             - bin_edge_var_upstream_vertex_var_product_1_18
+                             - bin_edge_var_upstream_vertex_var_product_1_19
+                             - bin_edge_var_upstream_vertex_var_product_1_20
+                             - bin_edge_var_upstream_vertex_var_product_1_21
+                             - bin_edge_var_upstream_vertex_var_product_1_22
+                             - bin_edge_var_upstream_vertex_var_product_1_23 = 
                              0
  cons_subcircuit_d_qubits_1: - original_input_1 - rho_1 + d_1 = 0
  cons_build_cost_exponent_1: - 2 num_cuts + O_0 - d_0 + O_1 - d_1
                              + build_cost_exponent_1 = 0
- cons_subcircuit_input_2: - 2 bin_sc_2_vx_0 - bin_sc_2_vx_1 - bin_sc_2_vx_2
-                          - bin_sc_2_vx_3 - bin_sc_2_vx_4 - bin_sc_2_vx_5
-                          - bin_sc_2_vx_6 - bin_sc_2_vx_7 - bin_sc_2_vx_8
-                          - bin_sc_2_vx_9 - bin_sc_2_vx_10 - bin_sc_2_vx_11
-                          - bin_sc_2_vx_12 - bin_sc_2_vx_13 - bin_sc_2_vx_14
-                          - bin_sc_2_vx_15 - bin_sc_2_vx_16 + original_input_2
-                           = 0
- c610: _and414 - bin_sc_2_edg_0 <= 0
- c611: _and414 - bin_sc_2_vx_1 <= 0
- c612: _and414 - bin_sc_2_vx_1 - bin_sc_2_edg_0 >= -1
- cons_edge_var_downstream_vertex_var_2_0:
-                                          bin_edge_var_downstream_vertex_var_product_2_0
-                                          - _and414 = 0
- c614: _and415 - bin_sc_2_edg_1 <= 0
- c615: _and415 - bin_sc_2_vx_2 <= 0
- c616: _and415 - bin_sc_2_vx_2 - bin_sc_2_edg_1 >= -1
- cons_edge_var_downstream_vertex_var_2_1:
-                                          bin_edge_var_downstream_vertex_var_product_2_1
-                                          - _and415 = 0
- c618: _and416 - bin_sc_2_edg_2 <= 0
- c619: _and416 - bin_sc_2_vx_3 <= 0
- c620: _and416 - bin_sc_2_vx_3 - bin_sc_2_edg_2 >= -1
- cons_edge_var_downstream_vertex_var_2_2:
-                                          bin_edge_var_downstream_vertex_var_product_2_2
-                                          - _and416 = 0
- c622: _and417 - bin_sc_2_edg_3 <= 0
- c623: _and417 - bin_sc_2_vx_4 <= 0
- c624: _and417 - bin_sc_2_vx_4 - bin_sc_2_edg_3 >= -1
- cons_edge_var_downstream_vertex_var_2_3:
-                                          bin_edge_var_downstream_vertex_var_product_2_3
-                                          - _and417 = 0
- c626: _and418 - bin_sc_2_edg_4 <= 0
- c627: _and418 - bin_sc_2_vx_5 <= 0
- c628: _and418 - bin_sc_2_vx_5 - bin_sc_2_edg_4 >= -1
- cons_edge_var_downstream_vertex_var_2_4:
-                                          bin_edge_var_downstream_vertex_var_product_2_4
-                                          - _and418 = 0
- c630: _and419 - bin_sc_2_edg_5 <= 0
- c631: _and419 - bin_sc_2_vx_6 <= 0
- c632: _and419 - bin_sc_2_vx_6 - bin_sc_2_edg_5 >= -1
- cons_edge_var_downstream_vertex_var_2_5:
-                                          bin_edge_var_downstream_vertex_var_product_2_5
-                                          - _and419 = 0
- c634: _and420 - bin_sc_2_edg_6 <= 0
- c635: _and420 - bin_sc_2_vx_7 <= 0
- c636: _and420 - bin_sc_2_vx_7 - bin_sc_2_edg_6 >= -1
- cons_edge_var_downstream_vertex_var_2_6:
-                                          bin_edge_var_downstream_vertex_var_product_2_6
-                                          - _and420 = 0
- c638: _and421 - bin_sc_2_edg_7 <= 0
- c639: _and421 - bin_sc_2_vx_8 <= 0
- c640: _and421 - bin_sc_2_vx_8 - bin_sc_2_edg_7 >= -1
- cons_edge_var_downstream_vertex_var_2_7:
-                                          bin_edge_var_downstream_vertex_var_product_2_7
-                                          - _and421 = 0
- c642: _and422 - bin_sc_2_edg_8 <= 0
- c643: _and422 - bin_sc_2_vx_9 <= 0
- c644: _and422 - bin_sc_2_vx_9 - bin_sc_2_edg_8 >= -1
- cons_edge_var_downstream_vertex_var_2_8:
-                                          bin_edge_var_downstream_vertex_var_product_2_8
-                                          - _and422 = 0
- c646: _and423 - bin_sc_2_edg_9 <= 0
- c647: _and423 - bin_sc_2_vx_10 <= 0
- c648: _and423 - bin_sc_2_vx_10 - bin_sc_2_edg_9 >= -1
- cons_edge_var_downstream_vertex_var_2_9:
-                                          bin_edge_var_downstream_vertex_var_product_2_9
-                                          - _and423 = 0
- c650: _and424 - bin_sc_2_edg_10 <= 0
- c651: _and424 - bin_sc_2_vx_11 <= 0
- c652: _and424 - bin_sc_2_vx_11 - bin_sc_2_edg_10 >= -1
- cons_edge_var_downstream_vertex_var_2_10:
-                                           bin_edge_var_downstream_vertex_var_product_2_10
-                                           - _and424 = 0
- c654: _and425 - bin_sc_2_edg_11 <= 0
- c655: _and425 - bin_sc_2_vx_12 <= 0
- c656: _and425 - bin_sc_2_vx_12 - bin_sc_2_edg_11 >= -1
- cons_edge_var_downstream_vertex_var_2_11:
-                                           bin_edge_var_downstream_vertex_var_product_2_11
-                                           - _and425 = 0
- c658: _and426 - bin_sc_2_edg_12 <= 0
- c659: _and426 - bin_sc_2_vx_13 <= 0
- c660: _and426 - bin_sc_2_vx_13 - bin_sc_2_edg_12 >= -1
- cons_edge_var_downstream_vertex_var_2_12:
-                                           bin_edge_var_downstream_vertex_var_product_2_12
-                                           - _and426 = 0
- c662: _and427 - bin_sc_2_edg_13 <= 0
- c663: _and427 - bin_sc_2_vx_14 <= 0
- c664: _and427 - bin_sc_2_vx_14 - bin_sc_2_edg_13 >= -1
- cons_edge_var_downstream_vertex_var_2_13:
-                                           bin_edge_var_downstream_vertex_var_product_2_13
-                                           - _and427 = 0
- c666: _and428 - bin_sc_2_edg_14 <= 0
- c667: _and428 - bin_sc_2_vx_15 <= 0
- c668: _and428 - bin_sc_2_vx_15 - bin_sc_2_edg_14 >= -1
- cons_edge_var_downstream_vertex_var_2_14:
-                                           bin_edge_var_downstream_vertex_var_product_2_14
-                                           - _and428 = 0
- c670: _and429 - bin_sc_2_edg_15 <= 0
- c671: _and429 - bin_sc_2_vx_16 <= 0
- c672: _and429 - bin_sc_2_vx_16 - bin_sc_2_edg_15 >= -1
- cons_edge_var_downstream_vertex_var_2_15:
-                                           bin_edge_var_downstream_vertex_var_product_2_15
-                                           - _and429 = 0
- cons_subcircuit_rho_qubits_2: rho_2
-                               - bin_edge_var_downstream_vertex_var_product_2_0
-                               - bin_edge_var_downstream_vertex_var_product_2_1
-                               - bin_edge_var_downstream_vertex_var_product_2_2
-                               - bin_edge_var_downstream_vertex_var_product_2_3
-                               - bin_edge_var_downstream_vertex_var_product_2_4
-                               - bin_edge_var_downstream_vertex_var_product_2_5
-                               - bin_edge_var_downstream_vertex_var_product_2_6
-                               - bin_edge_var_downstream_vertex_var_product_2_7
-                               - bin_edge_var_downstream_vertex_var_product_2_8
-                               - bin_edge_var_downstream_vertex_var_product_2_9
-                               - bin_edge_var_downstream_vertex_var_product_2_10
-                               - bin_edge_var_downstream_vertex_var_product_2_11
-                               - bin_edge_var_downstream_vertex_var_product_2_12
-                               - bin_edge_var_downstream_vertex_var_product_2_13
-                               - bin_edge_var_downstream_vertex_var_product_2_14
-                               - bin_edge_var_downstream_vertex_var_product_2_15
-                                = 0
- c675: _and430 - bin_sc_2_edg_0 <= 0
- c676: _and430 - bin_sc_2_vx_0 <= 0
- c677: _and430 - bin_sc_2_vx_0 - bin_sc_2_edg_0 >= -1
- cons_edge_var_upstream_vertex_var_2_0:
-                                        bin_edge_var_upstream_vertex_var_product_2_0
-                                        - _and430 = 0
- c679: _and431 - bin_sc_2_edg_1 <= 0
- c680: _and431 - bin_sc_2_vx_1 <= 0
- c681: _and431 - bin_sc_2_vx_1 - bin_sc_2_edg_1 >= -1
- cons_edge_var_upstream_vertex_var_2_1:
-                                        bin_edge_var_upstream_vertex_var_product_2_1
-                                        - _and431 = 0
- c683: _and432 - bin_sc_2_edg_2 <= 0
- c684: _and432 - bin_sc_2_vx_2 <= 0
- c685: _and432 - bin_sc_2_vx_2 - bin_sc_2_edg_2 >= -1
- cons_edge_var_upstream_vertex_var_2_2:
-                                        bin_edge_var_upstream_vertex_var_product_2_2
-                                        - _and432 = 0
- c687: _and433 - bin_sc_2_edg_3 <= 0
- c688: _and433 - bin_sc_2_vx_3 <= 0
- c689: _and433 - bin_sc_2_vx_3 - bin_sc_2_edg_3 >= -1
- cons_edge_var_upstream_vertex_var_2_3:
-                                        bin_edge_var_upstream_vertex_var_product_2_3
-                                        - _and433 = 0
- c691: _and434 - bin_sc_2_edg_4 <= 0
- c692: _and434 - bin_sc_2_vx_4 <= 0
- c693: _and434 - bin_sc_2_vx_4 - bin_sc_2_edg_4 >= -1
- cons_edge_var_upstream_vertex_var_2_4:
-                                        bin_edge_var_upstream_vertex_var_product_2_4
-                                        - _and434 = 0
- c695: _and435 - bin_sc_2_edg_5 <= 0
- c696: _and435 - bin_sc_2_vx_5 <= 0
- c697: _and435 - bin_sc_2_vx_5 - bin_sc_2_edg_5 >= -1
- cons_edge_var_upstream_vertex_var_2_5:
-                                        bin_edge_var_upstream_vertex_var_product_2_5
-                                        - _and435 = 0
- c699: _and436 - bin_sc_2_edg_6 <= 0
- c700: _and436 - bin_sc_2_vx_6 <= 0
- c701: _and436 - bin_sc_2_vx_6 - bin_sc_2_edg_6 >= -1
- cons_edge_var_upstream_vertex_var_2_6:
-                                        bin_edge_var_upstream_vertex_var_product_2_6
-                                        - _and436 = 0
- c703: _and437 - bin_sc_2_edg_7 <= 0
- c704: _and437 - bin_sc_2_vx_7 <= 0
- c705: _and437 - bin_sc_2_vx_7 - bin_sc_2_edg_7 >= -1
- cons_edge_var_upstream_vertex_var_2_7:
-                                        bin_edge_var_upstream_vertex_var_product_2_7
-                                        - _and437 = 0
- c707: _and438 - bin_sc_2_edg_8 <= 0
- c708: _and438 - bin_sc_2_vx_8 <= 0
- c709: _and438 - bin_sc_2_vx_8 - bin_sc_2_edg_8 >= -1
- cons_edge_var_upstream_vertex_var_2_8:
-                                        bin_edge_var_upstream_vertex_var_product_2_8
-                                        - _and438 = 0
- c711: _and439 - bin_sc_2_edg_9 <= 0
- c712: _and439 - bin_sc_2_vx_9 <= 0
- c713: _and439 - bin_sc_2_vx_9 - bin_sc_2_edg_9 >= -1
- cons_edge_var_upstream_vertex_var_2_9:
-                                        bin_edge_var_upstream_vertex_var_product_2_9
-                                        - _and439 = 0
- c715: _and440 - bin_sc_2_edg_10 <= 0
- c716: _and440 - bin_sc_2_vx_10 <= 0
- c717: _and440 - bin_sc_2_vx_10 - bin_sc_2_edg_10 >= -1
- cons_edge_var_upstream_vertex_var_2_10:
-                                         bin_edge_var_upstream_vertex_var_product_2_10
-                                         - _and440 = 0
- c719: _and441 - bin_sc_2_edg_11 <= 0
- c720: _and441 - bin_sc_2_vx_11 <= 0
- c721: _and441 - bin_sc_2_vx_11 - bin_sc_2_edg_11 >= -1
- cons_edge_var_upstream_vertex_var_2_11:
-                                         bin_edge_var_upstream_vertex_var_product_2_11
-                                         - _and441 = 0
- c723: _and442 - bin_sc_2_edg_12 <= 0
- c724: _and442 - bin_sc_2_vx_12 <= 0
- c725: _and442 - bin_sc_2_vx_12 - bin_sc_2_edg_12 >= -1
- cons_edge_var_upstream_vertex_var_2_12:
-                                         bin_edge_var_upstream_vertex_var_product_2_12
-                                         - _and442 = 0
- c727: _and443 - bin_sc_2_edg_13 <= 0
- c728: _and443 - bin_sc_2_vx_13 <= 0
- c729: _and443 - bin_sc_2_vx_13 - bin_sc_2_edg_13 >= -1
- cons_edge_var_upstream_vertex_var_2_13:
-                                         bin_edge_var_upstream_vertex_var_product_2_13
-                                         - _and443 = 0
- c731: _and444 - bin_sc_2_edg_14 <= 0
- c732: _and444 - bin_sc_2_vx_14 <= 0
- c733: _and444 - bin_sc_2_vx_14 - bin_sc_2_edg_14 >= -1
- cons_edge_var_upstream_vertex_var_2_14:
-                                         bin_edge_var_upstream_vertex_var_product_2_14
-                                         - _and444 = 0
- c735: _and445 - bin_sc_2_edg_15 <= 0
- c736: _and445 - bin_sc_2_vx_15 <= 0
- c737: _and445 - bin_sc_2_vx_15 - bin_sc_2_edg_15 >= -1
- cons_edge_var_upstream_vertex_var_2_15:
-                                         bin_edge_var_upstream_vertex_var_product_2_15
-                                         - _and445 = 0
- cons_subcircuit_O_qubits_2: O_2 - bin_edge_var_upstream_vertex_var_product_2_0
-                             - bin_edge_var_upstream_vertex_var_product_2_1
-                             - bin_edge_var_upstream_vertex_var_product_2_2
-                             - bin_edge_var_upstream_vertex_var_product_2_3
-                             - bin_edge_var_upstream_vertex_var_product_2_4
-                             - bin_edge_var_upstream_vertex_var_product_2_5
-                             - bin_edge_var_upstream_vertex_var_product_2_6
-                             - bin_edge_var_upstream_vertex_var_product_2_7
-                             - bin_edge_var_upstream_vertex_var_product_2_8
-                             - bin_edge_var_upstream_vertex_var_product_2_9
-                             - bin_edge_var_upstream_vertex_var_product_2_10
-                             - bin_edge_var_upstream_vertex_var_product_2_11
-                             - bin_edge_var_upstream_vertex_var_product_2_12
-                             - bin_edge_var_upstream_vertex_var_product_2_13
-                             - bin_edge_var_upstream_vertex_var_product_2_14
-                             - bin_edge_var_upstream_vertex_var_product_2_15 = 
-                             0
- cons_subcircuit_d_qubits_2: - original_input_2 - rho_2 + d_2 = 0
- cons_build_cost_exponent_2: - 2 num_cuts + O_0 - d_0 + O_1 - d_1 + O_2 - d_2
-                             + build_cost_exponent_2 = 0
- cons_subcircuit_input_3: - 2 bin_sc_3_vx_0 - bin_sc_3_vx_1 - bin_sc_3_vx_2
-                          - bin_sc_3_vx_3 - bin_sc_3_vx_4 - bin_sc_3_vx_5
-                          - bin_sc_3_vx_6 - bin_sc_3_vx_7 - bin_sc_3_vx_8
-                          - bin_sc_3_vx_9 - bin_sc_3_vx_10 - bin_sc_3_vx_11
-                          - bin_sc_3_vx_12 - bin_sc_3_vx_13 - bin_sc_3_vx_14
-                          - bin_sc_3_vx_15 - bin_sc_3_vx_16 + original_input_3
-                           = 0
- c743: _and446 - bin_sc_3_edg_0 <= 0
- c744: _and446 - bin_sc_3_vx_1 <= 0
- c745: _and446 - bin_sc_3_vx_1 - bin_sc_3_edg_0 >= -1
- cons_edge_var_downstream_vertex_var_3_0:
-                                          bin_edge_var_downstream_vertex_var_product_3_0
-                                          - _and446 = 0
- c747: _and447 - bin_sc_3_edg_1 <= 0
- c748: _and447 - bin_sc_3_vx_2 <= 0
- c749: _and447 - bin_sc_3_vx_2 - bin_sc_3_edg_1 >= -1
- cons_edge_var_downstream_vertex_var_3_1:
-                                          bin_edge_var_downstream_vertex_var_product_3_1
-                                          - _and447 = 0
- c751: _and448 - bin_sc_3_edg_2 <= 0
- c752: _and448 - bin_sc_3_vx_3 <= 0
- c753: _and448 - bin_sc_3_vx_3 - bin_sc_3_edg_2 >= -1
- cons_edge_var_downstream_vertex_var_3_2:
-                                          bin_edge_var_downstream_vertex_var_product_3_2
-                                          - _and448 = 0
- c755: _and449 - bin_sc_3_edg_3 <= 0
- c756: _and449 - bin_sc_3_vx_4 <= 0
- c757: _and449 - bin_sc_3_vx_4 - bin_sc_3_edg_3 >= -1
- cons_edge_var_downstream_vertex_var_3_3:
-                                          bin_edge_var_downstream_vertex_var_product_3_3
-                                          - _and449 = 0
- c759: _and450 - bin_sc_3_edg_4 <= 0
- c760: _and450 - bin_sc_3_vx_5 <= 0
- c761: _and450 - bin_sc_3_vx_5 - bin_sc_3_edg_4 >= -1
- cons_edge_var_downstream_vertex_var_3_4:
-                                          bin_edge_var_downstream_vertex_var_product_3_4
-                                          - _and450 = 0
- c763: _and451 - bin_sc_3_edg_5 <= 0
- c764: _and451 - bin_sc_3_vx_6 <= 0
- c765: _and451 - bin_sc_3_vx_6 - bin_sc_3_edg_5 >= -1
- cons_edge_var_downstream_vertex_var_3_5:
-                                          bin_edge_var_downstream_vertex_var_product_3_5
-                                          - _and451 = 0
- c767: _and452 - bin_sc_3_edg_6 <= 0
- c768: _and452 - bin_sc_3_vx_7 <= 0
- c769: _and452 - bin_sc_3_vx_7 - bin_sc_3_edg_6 >= -1
- cons_edge_var_downstream_vertex_var_3_6:
-                                          bin_edge_var_downstream_vertex_var_product_3_6
-                                          - _and452 = 0
- c771: _and453 - bin_sc_3_edg_7 <= 0
- c772: _and453 - bin_sc_3_vx_8 <= 0
- c773: _and453 - bin_sc_3_vx_8 - bin_sc_3_edg_7 >= -1
- cons_edge_var_downstream_vertex_var_3_7:
-                                          bin_edge_var_downstream_vertex_var_product_3_7
-                                          - _and453 = 0
- c775: _and454 - bin_sc_3_edg_8 <= 0
- c776: _and454 - bin_sc_3_vx_9 <= 0
- c777: _and454 - bin_sc_3_vx_9 - bin_sc_3_edg_8 >= -1
- cons_edge_var_downstream_vertex_var_3_8:
-                                          bin_edge_var_downstream_vertex_var_product_3_8
-                                          - _and454 = 0
- c779: _and455 - bin_sc_3_edg_9 <= 0
- c780: _and455 - bin_sc_3_vx_10 <= 0
- c781: _and455 - bin_sc_3_vx_10 - bin_sc_3_edg_9 >= -1
- cons_edge_var_downstream_vertex_var_3_9:
-                                          bin_edge_var_downstream_vertex_var_product_3_9
-                                          - _and455 = 0
- c783: _and456 - bin_sc_3_edg_10 <= 0
- c784: _and456 - bin_sc_3_vx_11 <= 0
- c785: _and456 - bin_sc_3_vx_11 - bin_sc_3_edg_10 >= -1
- cons_edge_var_downstream_vertex_var_3_10:
-                                           bin_edge_var_downstream_vertex_var_product_3_10
-                                           - _and456 = 0
- c787: _and457 - bin_sc_3_edg_11 <= 0
- c788: _and457 - bin_sc_3_vx_12 <= 0
- c789: _and457 - bin_sc_3_vx_12 - bin_sc_3_edg_11 >= -1
- cons_edge_var_downstream_vertex_var_3_11:
-                                           bin_edge_var_downstream_vertex_var_product_3_11
-                                           - _and457 = 0
- c791: _and458 - bin_sc_3_edg_12 <= 0
- c792: _and458 - bin_sc_3_vx_13 <= 0
- c793: _and458 - bin_sc_3_vx_13 - bin_sc_3_edg_12 >= -1
- cons_edge_var_downstream_vertex_var_3_12:
-                                           bin_edge_var_downstream_vertex_var_product_3_12
-                                           - _and458 = 0
- c795: _and459 - bin_sc_3_edg_13 <= 0
- c796: _and459 - bin_sc_3_vx_14 <= 0
- c797: _and459 - bin_sc_3_vx_14 - bin_sc_3_edg_13 >= -1
- cons_edge_var_downstream_vertex_var_3_13:
-                                           bin_edge_var_downstream_vertex_var_product_3_13
-                                           - _and459 = 0
- c799: _and460 - bin_sc_3_edg_14 <= 0
- c800: _and460 - bin_sc_3_vx_15 <= 0
- c801: _and460 - bin_sc_3_vx_15 - bin_sc_3_edg_14 >= -1
- cons_edge_var_downstream_vertex_var_3_14:
-                                           bin_edge_var_downstream_vertex_var_product_3_14
-                                           - _and460 = 0
- c803: _and461 - bin_sc_3_edg_15 <= 0
- c804: _and461 - bin_sc_3_vx_16 <= 0
- c805: _and461 - bin_sc_3_vx_16 - bin_sc_3_edg_15 >= -1
- cons_edge_var_downstream_vertex_var_3_15:
-                                           bin_edge_var_downstream_vertex_var_product_3_15
-                                           - _and461 = 0
- cons_subcircuit_rho_qubits_3: rho_3
-                               - bin_edge_var_downstream_vertex_var_product_3_0
-                               - bin_edge_var_downstream_vertex_var_product_3_1
-                               - bin_edge_var_downstream_vertex_var_product_3_2
-                               - bin_edge_var_downstream_vertex_var_product_3_3
-                               - bin_edge_var_downstream_vertex_var_product_3_4
-                               - bin_edge_var_downstream_vertex_var_product_3_5
-                               - bin_edge_var_downstream_vertex_var_product_3_6
-                               - bin_edge_var_downstream_vertex_var_product_3_7
-                               - bin_edge_var_downstream_vertex_var_product_3_8
-                               - bin_edge_var_downstream_vertex_var_product_3_9
-                               - bin_edge_var_downstream_vertex_var_product_3_10
-                               - bin_edge_var_downstream_vertex_var_product_3_11
-                               - bin_edge_var_downstream_vertex_var_product_3_12
-                               - bin_edge_var_downstream_vertex_var_product_3_13
-                               - bin_edge_var_downstream_vertex_var_product_3_14
-                               - bin_edge_var_downstream_vertex_var_product_3_15
-                                = 0
- c808: _and462 - bin_sc_3_edg_0 <= 0
- c809: _and462 - bin_sc_3_vx_0 <= 0
- c810: _and462 - bin_sc_3_vx_0 - bin_sc_3_edg_0 >= -1
- cons_edge_var_upstream_vertex_var_3_0:
-                                        bin_edge_var_upstream_vertex_var_product_3_0
-                                        - _and462 = 0
- c812: _and463 - bin_sc_3_edg_1 <= 0
- c813: _and463 - bin_sc_3_vx_1 <= 0
- c814: _and463 - bin_sc_3_vx_1 - bin_sc_3_edg_1 >= -1
- cons_edge_var_upstream_vertex_var_3_1:
-                                        bin_edge_var_upstream_vertex_var_product_3_1
-                                        - _and463 = 0
- c816: _and464 - bin_sc_3_edg_2 <= 0
- c817: _and464 - bin_sc_3_vx_2 <= 0
- c818: _and464 - bin_sc_3_vx_2 - bin_sc_3_edg_2 >= -1
- cons_edge_var_upstream_vertex_var_3_2:
-                                        bin_edge_var_upstream_vertex_var_product_3_2
-                                        - _and464 = 0
- c820: _and465 - bin_sc_3_edg_3 <= 0
- c821: _and465 - bin_sc_3_vx_3 <= 0
- c822: _and465 - bin_sc_3_vx_3 - bin_sc_3_edg_3 >= -1
- cons_edge_var_upstream_vertex_var_3_3:
-                                        bin_edge_var_upstream_vertex_var_product_3_3
-                                        - _and465 = 0
- c824: _and466 - bin_sc_3_edg_4 <= 0
- c825: _and466 - bin_sc_3_vx_4 <= 0
- c826: _and466 - bin_sc_3_vx_4 - bin_sc_3_edg_4 >= -1
- cons_edge_var_upstream_vertex_var_3_4:
-                                        bin_edge_var_upstream_vertex_var_product_3_4
-                                        - _and466 = 0
- c828: _and467 - bin_sc_3_edg_5 <= 0
- c829: _and467 - bin_sc_3_vx_5 <= 0
- c830: _and467 - bin_sc_3_vx_5 - bin_sc_3_edg_5 >= -1
- cons_edge_var_upstream_vertex_var_3_5:
-                                        bin_edge_var_upstream_vertex_var_product_3_5
-                                        - _and467 = 0
- c832: _and468 - bin_sc_3_edg_6 <= 0
- c833: _and468 - bin_sc_3_vx_6 <= 0
- c834: _and468 - bin_sc_3_vx_6 - bin_sc_3_edg_6 >= -1
- cons_edge_var_upstream_vertex_var_3_6:
-                                        bin_edge_var_upstream_vertex_var_product_3_6
-                                        - _and468 = 0
- c836: _and469 - bin_sc_3_edg_7 <= 0
- c837: _and469 - bin_sc_3_vx_7 <= 0
- c838: _and469 - bin_sc_3_vx_7 - bin_sc_3_edg_7 >= -1
- cons_edge_var_upstream_vertex_var_3_7:
-                                        bin_edge_var_upstream_vertex_var_product_3_7
-                                        - _and469 = 0
- c840: _and470 - bin_sc_3_edg_8 <= 0
- c841: _and470 - bin_sc_3_vx_8 <= 0
- c842: _and470 - bin_sc_3_vx_8 - bin_sc_3_edg_8 >= -1
- cons_edge_var_upstream_vertex_var_3_8:
-                                        bin_edge_var_upstream_vertex_var_product_3_8
-                                        - _and470 = 0
- c844: _and471 - bin_sc_3_edg_9 <= 0
- c845: _and471 - bin_sc_3_vx_9 <= 0
- c846: _and471 - bin_sc_3_vx_9 - bin_sc_3_edg_9 >= -1
- cons_edge_var_upstream_vertex_var_3_9:
-                                        bin_edge_var_upstream_vertex_var_product_3_9
-                                        - _and471 = 0
- c848: _and472 - bin_sc_3_edg_10 <= 0
- c849: _and472 - bin_sc_3_vx_10 <= 0
- c850: _and472 - bin_sc_3_vx_10 - bin_sc_3_edg_10 >= -1
- cons_edge_var_upstream_vertex_var_3_10:
-                                         bin_edge_var_upstream_vertex_var_product_3_10
-                                         - _and472 = 0
- c852: _and473 - bin_sc_3_edg_11 <= 0
- c853: _and473 - bin_sc_3_vx_11 <= 0
- c854: _and473 - bin_sc_3_vx_11 - bin_sc_3_edg_11 >= -1
- cons_edge_var_upstream_vertex_var_3_11:
-                                         bin_edge_var_upstream_vertex_var_product_3_11
-                                         - _and473 = 0
- c856: _and474 - bin_sc_3_edg_12 <= 0
- c857: _and474 - bin_sc_3_vx_12 <= 0
- c858: _and474 - bin_sc_3_vx_12 - bin_sc_3_edg_12 >= -1
- cons_edge_var_upstream_vertex_var_3_12:
-                                         bin_edge_var_upstream_vertex_var_product_3_12
-                                         - _and474 = 0
- c860: _and475 - bin_sc_3_edg_13 <= 0
- c861: _and475 - bin_sc_3_vx_13 <= 0
- c862: _and475 - bin_sc_3_vx_13 - bin_sc_3_edg_13 >= -1
- cons_edge_var_upstream_vertex_var_3_13:
-                                         bin_edge_var_upstream_vertex_var_product_3_13
-                                         - _and475 = 0
- c864: _and476 - bin_sc_3_edg_14 <= 0
- c865: _and476 - bin_sc_3_vx_14 <= 0
- c866: _and476 - bin_sc_3_vx_14 - bin_sc_3_edg_14 >= -1
- cons_edge_var_upstream_vertex_var_3_14:
-                                         bin_edge_var_upstream_vertex_var_product_3_14
-                                         - _and476 = 0
- c868: _and477 - bin_sc_3_edg_15 <= 0
- c869: _and477 - bin_sc_3_vx_15 <= 0
- c870: _and477 - bin_sc_3_vx_15 - bin_sc_3_edg_15 >= -1
- cons_edge_var_upstream_vertex_var_3_15:
-                                         bin_edge_var_upstream_vertex_var_product_3_15
-                                         - _and477 = 0
- cons_subcircuit_O_qubits_3: O_3 - bin_edge_var_upstream_vertex_var_product_3_0
-                             - bin_edge_var_upstream_vertex_var_product_3_1
-                             - bin_edge_var_upstream_vertex_var_product_3_2
-                             - bin_edge_var_upstream_vertex_var_product_3_3
-                             - bin_edge_var_upstream_vertex_var_product_3_4
-                             - bin_edge_var_upstream_vertex_var_product_3_5
-                             - bin_edge_var_upstream_vertex_var_product_3_6
-                             - bin_edge_var_upstream_vertex_var_product_3_7
-                             - bin_edge_var_upstream_vertex_var_product_3_8
-                             - bin_edge_var_upstream_vertex_var_product_3_9
-                             - bin_edge_var_upstream_vertex_var_product_3_10
-                             - bin_edge_var_upstream_vertex_var_product_3_11
-                             - bin_edge_var_upstream_vertex_var_product_3_12
-                             - bin_edge_var_upstream_vertex_var_product_3_13
-                             - bin_edge_var_upstream_vertex_var_product_3_14
-                             - bin_edge_var_upstream_vertex_var_product_3_15 = 
-                             0
- cons_subcircuit_d_qubits_3: - original_input_3 - rho_3 + d_3 = 0
- cons_build_cost_exponent_3: - 2 num_cuts + O_0 - d_0 + O_1 - d_1 + O_2 - d_2
-                             + O_3 - d_3 + build_cost_exponent_3 = 0
- cons_subcircuit_input_4: - 2 bin_sc_4_vx_0 - bin_sc_4_vx_1 - bin_sc_4_vx_2
-                          - bin_sc_4_vx_3 - bin_sc_4_vx_4 - bin_sc_4_vx_5
-                          - bin_sc_4_vx_6 - bin_sc_4_vx_7 - bin_sc_4_vx_8
-                          - bin_sc_4_vx_9 - bin_sc_4_vx_10 - bin_sc_4_vx_11
-                          - bin_sc_4_vx_12 - bin_sc_4_vx_13 - bin_sc_4_vx_14
-                          - bin_sc_4_vx_15 - bin_sc_4_vx_16 + original_input_4
-                           = 0
- c876: _and478 - bin_sc_4_edg_0 <= 0
- c877: _and478 - bin_sc_4_vx_1 <= 0
- c878: _and478 - bin_sc_4_vx_1 - bin_sc_4_edg_0 >= -1
- cons_edge_var_downstream_vertex_var_4_0:
-                                          bin_edge_var_downstream_vertex_var_product_4_0
-                                          - _and478 = 0
- c880: _and479 - bin_sc_4_edg_1 <= 0
- c881: _and479 - bin_sc_4_vx_2 <= 0
- c882: _and479 - bin_sc_4_vx_2 - bin_sc_4_edg_1 >= -1
- cons_edge_var_downstream_vertex_var_4_1:
-                                          bin_edge_var_downstream_vertex_var_product_4_1
-                                          - _and479 = 0
- c884: _and480 - bin_sc_4_edg_2 <= 0
- c885: _and480 - bin_sc_4_vx_3 <= 0
- c886: _and480 - bin_sc_4_vx_3 - bin_sc_4_edg_2 >= -1
- cons_edge_var_downstream_vertex_var_4_2:
-                                          bin_edge_var_downstream_vertex_var_product_4_2
-                                          - _and480 = 0
- c888: _and481 - bin_sc_4_edg_3 <= 0
- c889: _and481 - bin_sc_4_vx_4 <= 0
- c890: _and481 - bin_sc_4_vx_4 - bin_sc_4_edg_3 >= -1
- cons_edge_var_downstream_vertex_var_4_3:
-                                          bin_edge_var_downstream_vertex_var_product_4_3
-                                          - _and481 = 0
- c892: _and482 - bin_sc_4_edg_4 <= 0
- c893: _and482 - bin_sc_4_vx_5 <= 0
- c894: _and482 - bin_sc_4_vx_5 - bin_sc_4_edg_4 >= -1
- cons_edge_var_downstream_vertex_var_4_4:
-                                          bin_edge_var_downstream_vertex_var_product_4_4
-                                          - _and482 = 0
- c896: _and483 - bin_sc_4_edg_5 <= 0
- c897: _and483 - bin_sc_4_vx_6 <= 0
- c898: _and483 - bin_sc_4_vx_6 - bin_sc_4_edg_5 >= -1
- cons_edge_var_downstream_vertex_var_4_5:
-                                          bin_edge_var_downstream_vertex_var_product_4_5
-                                          - _and483 = 0
- c900: _and484 - bin_sc_4_edg_6 <= 0
- c901: _and484 - bin_sc_4_vx_7 <= 0
- c902: _and484 - bin_sc_4_vx_7 - bin_sc_4_edg_6 >= -1
- cons_edge_var_downstream_vertex_var_4_6:
-                                          bin_edge_var_downstream_vertex_var_product_4_6
-                                          - _and484 = 0
- c904: _and485 - bin_sc_4_edg_7 <= 0
- c905: _and485 - bin_sc_4_vx_8 <= 0
- c906: _and485 - bin_sc_4_vx_8 - bin_sc_4_edg_7 >= -1
- cons_edge_var_downstream_vertex_var_4_7:
-                                          bin_edge_var_downstream_vertex_var_product_4_7
-                                          - _and485 = 0
- c908: _and486 - bin_sc_4_edg_8 <= 0
- c909: _and486 - bin_sc_4_vx_9 <= 0
- c910: _and486 - bin_sc_4_vx_9 - bin_sc_4_edg_8 >= -1
- cons_edge_var_downstream_vertex_var_4_8:
-                                          bin_edge_var_downstream_vertex_var_product_4_8
-                                          - _and486 = 0
- c912: _and487 - bin_sc_4_edg_9 <= 0
- c913: _and487 - bin_sc_4_vx_10 <= 0
- c914: _and487 - bin_sc_4_vx_10 - bin_sc_4_edg_9 >= -1
- cons_edge_var_downstream_vertex_var_4_9:
-                                          bin_edge_var_downstream_vertex_var_product_4_9
-                                          - _and487 = 0
- c916: _and488 - bin_sc_4_edg_10 <= 0
- c917: _and488 - bin_sc_4_vx_11 <= 0
- c918: _and488 - bin_sc_4_vx_11 - bin_sc_4_edg_10 >= -1
- cons_edge_var_downstream_vertex_var_4_10:
-                                           bin_edge_var_downstream_vertex_var_product_4_10
-                                           - _and488 = 0
- c920: _and489 - bin_sc_4_edg_11 <= 0
- c921: _and489 - bin_sc_4_vx_12 <= 0
- c922: _and489 - bin_sc_4_vx_12 - bin_sc_4_edg_11 >= -1
- cons_edge_var_downstream_vertex_var_4_11:
-                                           bin_edge_var_downstream_vertex_var_product_4_11
-                                           - _and489 = 0
- c924: _and490 - bin_sc_4_edg_12 <= 0
- c925: _and490 - bin_sc_4_vx_13 <= 0
- c926: _and490 - bin_sc_4_vx_13 - bin_sc_4_edg_12 >= -1
- cons_edge_var_downstream_vertex_var_4_12:
-                                           bin_edge_var_downstream_vertex_var_product_4_12
-                                           - _and490 = 0
- c928: _and491 - bin_sc_4_edg_13 <= 0
- c929: _and491 - bin_sc_4_vx_14 <= 0
- c930: _and491 - bin_sc_4_vx_14 - bin_sc_4_edg_13 >= -1
- cons_edge_var_downstream_vertex_var_4_13:
-                                           bin_edge_var_downstream_vertex_var_product_4_13
-                                           - _and491 = 0
- c932: _and492 - bin_sc_4_edg_14 <= 0
- c933: _and492 - bin_sc_4_vx_15 <= 0
- c934: _and492 - bin_sc_4_vx_15 - bin_sc_4_edg_14 >= -1
- cons_edge_var_downstream_vertex_var_4_14:
-                                           bin_edge_var_downstream_vertex_var_product_4_14
-                                           - _and492 = 0
- c936: _and493 - bin_sc_4_edg_15 <= 0
- c937: _and493 - bin_sc_4_vx_16 <= 0
- c938: _and493 - bin_sc_4_vx_16 - bin_sc_4_edg_15 >= -1
- cons_edge_var_downstream_vertex_var_4_15:
-                                           bin_edge_var_downstream_vertex_var_product_4_15
-                                           - _and493 = 0
- cons_subcircuit_rho_qubits_4: rho_4
-                               - bin_edge_var_downstream_vertex_var_product_4_0
-                               - bin_edge_var_downstream_vertex_var_product_4_1
-                               - bin_edge_var_downstream_vertex_var_product_4_2
-                               - bin_edge_var_downstream_vertex_var_product_4_3
-                               - bin_edge_var_downstream_vertex_var_product_4_4
-                               - bin_edge_var_downstream_vertex_var_product_4_5
-                               - bin_edge_var_downstream_vertex_var_product_4_6
-                               - bin_edge_var_downstream_vertex_var_product_4_7
-                               - bin_edge_var_downstream_vertex_var_product_4_8
-                               - bin_edge_var_downstream_vertex_var_product_4_9
-                               - bin_edge_var_downstream_vertex_var_product_4_10
-                               - bin_edge_var_downstream_vertex_var_product_4_11
-                               - bin_edge_var_downstream_vertex_var_product_4_12
-                               - bin_edge_var_downstream_vertex_var_product_4_13
-                               - bin_edge_var_downstream_vertex_var_product_4_14
-                               - bin_edge_var_downstream_vertex_var_product_4_15
-                                = 0
- c941: _and494 - bin_sc_4_edg_0 <= 0
- c942: _and494 - bin_sc_4_vx_0 <= 0
- c943: _and494 - bin_sc_4_vx_0 - bin_sc_4_edg_0 >= -1
- cons_edge_var_upstream_vertex_var_4_0:
-                                        bin_edge_var_upstream_vertex_var_product_4_0
-                                        - _and494 = 0
- c945: _and495 - bin_sc_4_edg_1 <= 0
- c946: _and495 - bin_sc_4_vx_1 <= 0
- c947: _and495 - bin_sc_4_vx_1 - bin_sc_4_edg_1 >= -1
- cons_edge_var_upstream_vertex_var_4_1:
-                                        bin_edge_var_upstream_vertex_var_product_4_1
-                                        - _and495 = 0
- c949: _and496 - bin_sc_4_edg_2 <= 0
- c950: _and496 - bin_sc_4_vx_2 <= 0
- c951: _and496 - bin_sc_4_vx_2 - bin_sc_4_edg_2 >= -1
- cons_edge_var_upstream_vertex_var_4_2:
-                                        bin_edge_var_upstream_vertex_var_product_4_2
-                                        - _and496 = 0
- c953: _and497 - bin_sc_4_edg_3 <= 0
- c954: _and497 - bin_sc_4_vx_3 <= 0
- c955: _and497 - bin_sc_4_vx_3 - bin_sc_4_edg_3 >= -1
- cons_edge_var_upstream_vertex_var_4_3:
-                                        bin_edge_var_upstream_vertex_var_product_4_3
-                                        - _and497 = 0
- c957: _and498 - bin_sc_4_edg_4 <= 0
- c958: _and498 - bin_sc_4_vx_4 <= 0
- c959: _and498 - bin_sc_4_vx_4 - bin_sc_4_edg_4 >= -1
- cons_edge_var_upstream_vertex_var_4_4:
-                                        bin_edge_var_upstream_vertex_var_product_4_4
-                                        - _and498 = 0
- c961: _and499 - bin_sc_4_edg_5 <= 0
- c962: _and499 - bin_sc_4_vx_5 <= 0
- c963: _and499 - bin_sc_4_vx_5 - bin_sc_4_edg_5 >= -1
- cons_edge_var_upstream_vertex_var_4_5:
-                                        bin_edge_var_upstream_vertex_var_product_4_5
-                                        - _and499 = 0
- c965: _and500 - bin_sc_4_edg_6 <= 0
- c966: _and500 - bin_sc_4_vx_6 <= 0
- c967: _and500 - bin_sc_4_vx_6 - bin_sc_4_edg_6 >= -1
- cons_edge_var_upstream_vertex_var_4_6:
-                                        bin_edge_var_upstream_vertex_var_product_4_6
-                                        - _and500 = 0
- c969: _and501 - bin_sc_4_edg_7 <= 0
- c970: _and501 - bin_sc_4_vx_7 <= 0
- c971: _and501 - bin_sc_4_vx_7 - bin_sc_4_edg_7 >= -1
- cons_edge_var_upstream_vertex_var_4_7:
-                                        bin_edge_var_upstream_vertex_var_product_4_7
-                                        - _and501 = 0
- c973: _and502 - bin_sc_4_edg_8 <= 0
- c974: _and502 - bin_sc_4_vx_8 <= 0
- c975: _and502 - bin_sc_4_vx_8 - bin_sc_4_edg_8 >= -1
- cons_edge_var_upstream_vertex_var_4_8:
-                                        bin_edge_var_upstream_vertex_var_product_4_8
-                                        - _and502 = 0
- c977: _and503 - bin_sc_4_edg_9 <= 0
- c978: _and503 - bin_sc_4_vx_9 <= 0
- c979: _and503 - bin_sc_4_vx_9 - bin_sc_4_edg_9 >= -1
- cons_edge_var_upstream_vertex_var_4_9:
-                                        bin_edge_var_upstream_vertex_var_product_4_9
-                                        - _and503 = 0
- c981: _and504 - bin_sc_4_edg_10 <= 0
- c982: _and504 - bin_sc_4_vx_10 <= 0
- c983: _and504 - bin_sc_4_vx_10 - bin_sc_4_edg_10 >= -1
- cons_edge_var_upstream_vertex_var_4_10:
-                                         bin_edge_var_upstream_vertex_var_product_4_10
-                                         - _and504 = 0
- c985: _and505 - bin_sc_4_edg_11 <= 0
- c986: _and505 - bin_sc_4_vx_11 <= 0
- c987: _and505 - bin_sc_4_vx_11 - bin_sc_4_edg_11 >= -1
- cons_edge_var_upstream_vertex_var_4_11:
-                                         bin_edge_var_upstream_vertex_var_product_4_11
-                                         - _and505 = 0
- c989: _and506 - bin_sc_4_edg_12 <= 0
- c990: _and506 - bin_sc_4_vx_12 <= 0
- c991: _and506 - bin_sc_4_vx_12 - bin_sc_4_edg_12 >= -1
- cons_edge_var_upstream_vertex_var_4_12:
-                                         bin_edge_var_upstream_vertex_var_product_4_12
-                                         - _and506 = 0
- c993: _and507 - bin_sc_4_edg_13 <= 0
- c994: _and507 - bin_sc_4_vx_13 <= 0
- c995: _and507 - bin_sc_4_vx_13 - bin_sc_4_edg_13 >= -1
- cons_edge_var_upstream_vertex_var_4_13:
-                                         bin_edge_var_upstream_vertex_var_product_4_13
-                                         - _and507 = 0
- c997: _and508 - bin_sc_4_edg_14 <= 0
- c998: _and508 - bin_sc_4_vx_14 <= 0
- c999: _and508 - bin_sc_4_vx_14 - bin_sc_4_edg_14 >= -1
- cons_edge_var_upstream_vertex_var_4_14:
-                                         bin_edge_var_upstream_vertex_var_product_4_14
-                                         - _and508 = 0
- c1001: _and509 - bin_sc_4_edg_15 <= 0
- c1002: _and509 - bin_sc_4_vx_15 <= 0
- c1003: _and509 - bin_sc_4_vx_15 - bin_sc_4_edg_15 >= -1
- cons_edge_var_upstream_vertex_var_4_15:
-                                         bin_edge_var_upstream_vertex_var_product_4_15
-                                         - _and509 = 0
- cons_subcircuit_O_qubits_4: O_4 - bin_edge_var_upstream_vertex_var_product_4_0
-                             - bin_edge_var_upstream_vertex_var_product_4_1
-                             - bin_edge_var_upstream_vertex_var_product_4_2
-                             - bin_edge_var_upstream_vertex_var_product_4_3
-                             - bin_edge_var_upstream_vertex_var_product_4_4
-                             - bin_edge_var_upstream_vertex_var_product_4_5
-                             - bin_edge_var_upstream_vertex_var_product_4_6
-                             - bin_edge_var_upstream_vertex_var_product_4_7
-                             - bin_edge_var_upstream_vertex_var_product_4_8
-                             - bin_edge_var_upstream_vertex_var_product_4_9
-                             - bin_edge_var_upstream_vertex_var_product_4_10
-                             - bin_edge_var_upstream_vertex_var_product_4_11
-                             - bin_edge_var_upstream_vertex_var_product_4_12
-                             - bin_edge_var_upstream_vertex_var_product_4_13
-                             - bin_edge_var_upstream_vertex_var_product_4_14
-                             - bin_edge_var_upstream_vertex_var_product_4_15 = 
-                             0
- cons_subcircuit_d_qubits_4: - original_input_4 - rho_4 + d_4 = 0
- cons_build_cost_exponent_4: - 2 num_cuts + O_0 - d_0 + O_1 - d_1 + O_2 - d_2
-                             + O_3 - d_3 + O_4 - d_4 + build_cost_exponent_4 = 
-                             0
 
 Bounds
  0 <= bin_sc_0_vx_0 <= 1
@@ -1608,6 +966,13 @@ Bounds
  0 <= bin_sc_0_vx_14 <= 1
  0 <= bin_sc_0_vx_15 <= 1
  0 <= bin_sc_0_vx_16 <= 1
+ 0 <= bin_sc_0_vx_17 <= 1
+ 0 <= bin_sc_0_vx_18 <= 1
+ 0 <= bin_sc_0_vx_19 <= 1
+ 0 <= bin_sc_0_vx_20 <= 1
+ 0 <= bin_sc_0_vx_21 <= 1
+ 0 <= bin_sc_0_vx_22 <= 1
+ 0 <= bin_sc_0_vx_23 <= 1
  0 <= bin_sc_1_vx_0 <= 1
  0 <= bin_sc_1_vx_1 <= 1
  0 <= bin_sc_1_vx_2 <= 1
@@ -1625,57 +990,13 @@ Bounds
  0 <= bin_sc_1_vx_14 <= 1
  0 <= bin_sc_1_vx_15 <= 1
  0 <= bin_sc_1_vx_16 <= 1
- 0 <= bin_sc_2_vx_0 <= 1
- 0 <= bin_sc_2_vx_1 <= 1
- 0 <= bin_sc_2_vx_2 <= 1
- 0 <= bin_sc_2_vx_3 <= 1
- 0 <= bin_sc_2_vx_4 <= 1
- 0 <= bin_sc_2_vx_5 <= 1
- 0 <= bin_sc_2_vx_6 <= 1
- 0 <= bin_sc_2_vx_7 <= 1
- 0 <= bin_sc_2_vx_8 <= 1
- 0 <= bin_sc_2_vx_9 <= 1
- 0 <= bin_sc_2_vx_10 <= 1
- 0 <= bin_sc_2_vx_11 <= 1
- 0 <= bin_sc_2_vx_12 <= 1
- 0 <= bin_sc_2_vx_13 <= 1
- 0 <= bin_sc_2_vx_14 <= 1
- 0 <= bin_sc_2_vx_15 <= 1
- 0 <= bin_sc_2_vx_16 <= 1
- 0 <= bin_sc_3_vx_0 <= 1
- 0 <= bin_sc_3_vx_1 <= 1
- 0 <= bin_sc_3_vx_2 <= 1
- 0 <= bin_sc_3_vx_3 <= 1
- 0 <= bin_sc_3_vx_4 <= 1
- 0 <= bin_sc_3_vx_5 <= 1
- 0 <= bin_sc_3_vx_6 <= 1
- 0 <= bin_sc_3_vx_7 <= 1
- 0 <= bin_sc_3_vx_8 <= 1
- 0 <= bin_sc_3_vx_9 <= 1
- 0 <= bin_sc_3_vx_10 <= 1
- 0 <= bin_sc_3_vx_11 <= 1
- 0 <= bin_sc_3_vx_12 <= 1
- 0 <= bin_sc_3_vx_13 <= 1
- 0 <= bin_sc_3_vx_14 <= 1
- 0 <= bin_sc_3_vx_15 <= 1
- 0 <= bin_sc_3_vx_16 <= 1
- 0 <= bin_sc_4_vx_0 <= 1
- 0 <= bin_sc_4_vx_1 <= 1
- 0 <= bin_sc_4_vx_2 <= 1
- 0 <= bin_sc_4_vx_3 <= 1
- 0 <= bin_sc_4_vx_4 <= 1
- 0 <= bin_sc_4_vx_5 <= 1
- 0 <= bin_sc_4_vx_6 <= 1
- 0 <= bin_sc_4_vx_7 <= 1
- 0 <= bin_sc_4_vx_8 <= 1
- 0 <= bin_sc_4_vx_9 <= 1
- 0 <= bin_sc_4_vx_10 <= 1
- 0 <= bin_sc_4_vx_11 <= 1
- 0 <= bin_sc_4_vx_12 <= 1
- 0 <= bin_sc_4_vx_13 <= 1
- 0 <= bin_sc_4_vx_14 <= 1
- 0 <= bin_sc_4_vx_15 <= 1
- 0 <= bin_sc_4_vx_16 <= 1
+ 0 <= bin_sc_1_vx_17 <= 1
+ 0 <= bin_sc_1_vx_18 <= 1
+ 0 <= bin_sc_1_vx_19 <= 1
+ 0 <= bin_sc_1_vx_20 <= 1
+ 0 <= bin_sc_1_vx_21 <= 1
+ 0 <= bin_sc_1_vx_22 <= 1
+ 0 <= bin_sc_1_vx_23 <= 1
  0 <= bin_sc_0_edg_0 <= 1
  0 <= bin_sc_0_edg_1 <= 1
  0 <= bin_sc_0_edg_2 <= 1
@@ -1692,6 +1013,14 @@ Bounds
  0 <= bin_sc_0_edg_13 <= 1
  0 <= bin_sc_0_edg_14 <= 1
  0 <= bin_sc_0_edg_15 <= 1
+ 0 <= bin_sc_0_edg_16 <= 1
+ 0 <= bin_sc_0_edg_17 <= 1
+ 0 <= bin_sc_0_edg_18 <= 1
+ 0 <= bin_sc_0_edg_19 <= 1
+ 0 <= bin_sc_0_edg_20 <= 1
+ 0 <= bin_sc_0_edg_21 <= 1
+ 0 <= bin_sc_0_edg_22 <= 1
+ 0 <= bin_sc_0_edg_23 <= 1
  0 <= bin_sc_1_edg_0 <= 1
  0 <= bin_sc_1_edg_1 <= 1
  0 <= bin_sc_1_edg_2 <= 1
@@ -1708,54 +1037,14 @@ Bounds
  0 <= bin_sc_1_edg_13 <= 1
  0 <= bin_sc_1_edg_14 <= 1
  0 <= bin_sc_1_edg_15 <= 1
- 0 <= bin_sc_2_edg_0 <= 1
- 0 <= bin_sc_2_edg_1 <= 1
- 0 <= bin_sc_2_edg_2 <= 1
- 0 <= bin_sc_2_edg_3 <= 1
- 0 <= bin_sc_2_edg_4 <= 1
- 0 <= bin_sc_2_edg_5 <= 1
- 0 <= bin_sc_2_edg_6 <= 1
- 0 <= bin_sc_2_edg_7 <= 1
- 0 <= bin_sc_2_edg_8 <= 1
- 0 <= bin_sc_2_edg_9 <= 1
- 0 <= bin_sc_2_edg_10 <= 1
- 0 <= bin_sc_2_edg_11 <= 1
- 0 <= bin_sc_2_edg_12 <= 1
- 0 <= bin_sc_2_edg_13 <= 1
- 0 <= bin_sc_2_edg_14 <= 1
- 0 <= bin_sc_2_edg_15 <= 1
- 0 <= bin_sc_3_edg_0 <= 1
- 0 <= bin_sc_3_edg_1 <= 1
- 0 <= bin_sc_3_edg_2 <= 1
- 0 <= bin_sc_3_edg_3 <= 1
- 0 <= bin_sc_3_edg_4 <= 1
- 0 <= bin_sc_3_edg_5 <= 1
- 0 <= bin_sc_3_edg_6 <= 1
- 0 <= bin_sc_3_edg_7 <= 1
- 0 <= bin_sc_3_edg_8 <= 1
- 0 <= bin_sc_3_edg_9 <= 1
- 0 <= bin_sc_3_edg_10 <= 1
- 0 <= bin_sc_3_edg_11 <= 1
- 0 <= bin_sc_3_edg_12 <= 1
- 0 <= bin_sc_3_edg_13 <= 1
- 0 <= bin_sc_3_edg_14 <= 1
- 0 <= bin_sc_3_edg_15 <= 1
- 0 <= bin_sc_4_edg_0 <= 1
- 0 <= bin_sc_4_edg_1 <= 1
- 0 <= bin_sc_4_edg_2 <= 1
- 0 <= bin_sc_4_edg_3 <= 1
- 0 <= bin_sc_4_edg_4 <= 1
- 0 <= bin_sc_4_edg_5 <= 1
- 0 <= bin_sc_4_edg_6 <= 1
- 0 <= bin_sc_4_edg_7 <= 1
- 0 <= bin_sc_4_edg_8 <= 1
- 0 <= bin_sc_4_edg_9 <= 1
- 0 <= bin_sc_4_edg_10 <= 1
- 0 <= bin_sc_4_edg_11 <= 1
- 0 <= bin_sc_4_edg_12 <= 1
- 0 <= bin_sc_4_edg_13 <= 1
- 0 <= bin_sc_4_edg_14 <= 1
- 0 <= bin_sc_4_edg_15 <= 1
+ 0 <= bin_sc_1_edg_16 <= 1
+ 0 <= bin_sc_1_edg_17 <= 1
+ 0 <= bin_sc_1_edg_18 <= 1
+ 0 <= bin_sc_1_edg_19 <= 1
+ 0 <= bin_sc_1_edg_20 <= 1
+ 0 <= bin_sc_1_edg_21 <= 1
+ 0 <= bin_sc_1_edg_22 <= 1
+ 0 <= bin_sc_1_edg_23 <= 1
        num_cuts <= 4.100000000000
        original_input_0 <= 13
        rho_0 <= 13
@@ -1793,6 +1082,22 @@ Bounds
  0 <= bin_edge_var_upstream_vertex_var_product_0_14 <= 1
  0 <= bin_edge_var_downstream_vertex_var_product_0_15 <= 1
  0 <= bin_edge_var_upstream_vertex_var_product_0_15 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_0_16 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_0_16 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_0_17 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_0_17 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_0_18 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_0_18 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_0_19 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_0_19 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_0_20 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_0_20 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_0_21 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_0_21 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_0_22 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_0_22 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_0_23 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_0_23 <= 1
        original_input_1 <= 13
        rho_1 <= 13
        O_1 <= 13
@@ -1829,314 +1134,141 @@ Bounds
  0 <= bin_edge_var_upstream_vertex_var_product_1_14 <= 1
  0 <= bin_edge_var_downstream_vertex_var_product_1_15 <= 1
  0 <= bin_edge_var_upstream_vertex_var_product_1_15 <= 1
-       build_cost_exponent_1 <= 27
-       original_input_2 <= 13
-       rho_2 <= 13
-       O_2 <= 13
- 0.100000000000 <= d_2 <= 13
- 0 <= bin_edge_var_downstream_vertex_var_product_2_0 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_0 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_1 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_1 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_2 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_2 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_3 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_3 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_4 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_4 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_5 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_5 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_6 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_6 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_7 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_7 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_8 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_8 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_9 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_9 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_10 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_10 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_11 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_11 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_12 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_12 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_13 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_13 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_14 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_14 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_2_15 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_2_15 <= 1
-       build_cost_exponent_2 <= 27
-       original_input_3 <= 13
-       rho_3 <= 13
-       O_3 <= 13
- 0.100000000000 <= d_3 <= 13
- 0 <= bin_edge_var_downstream_vertex_var_product_3_0 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_0 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_1 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_1 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_2 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_2 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_3 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_3 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_4 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_4 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_5 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_5 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_6 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_6 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_7 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_7 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_8 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_8 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_9 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_9 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_10 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_10 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_11 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_11 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_12 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_12 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_13 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_13 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_14 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_14 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_3_15 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_3_15 <= 1
-       build_cost_exponent_3 <= 27
-       original_input_4 <= 13
-       rho_4 <= 13
-       O_4 <= 13
- 0.100000000000 <= d_4 <= 13
- 0 <= bin_edge_var_downstream_vertex_var_product_4_0 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_0 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_1 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_1 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_2 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_2 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_3 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_3 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_4 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_4 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_5 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_5 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_6 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_6 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_7 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_7 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_8 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_8 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_9 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_9 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_10 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_10 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_11 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_11 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_12 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_12 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_13 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_13 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_14 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_14 <= 1
- 0 <= bin_edge_var_downstream_vertex_var_product_4_15 <= 1
- 0 <= bin_edge_var_upstream_vertex_var_product_4_15 <= 1
-       build_cost_exponent_4 <= 27
- 0 <= _and350 <= 1
- 0 <= _and351 <= 1
- 0 <= _and352 <= 1
- 0 <= _and353 <= 1
- 0 <= _and354 <= 1
- 0 <= _and355 <= 1
- 0 <= _and356 <= 1
- 0 <= _and357 <= 1
- 0 <= _and358 <= 1
- 0 <= _and359 <= 1
- 0 <= _and360 <= 1
- 0 <= _and361 <= 1
- 0 <= _and362 <= 1
- 0 <= _and363 <= 1
- 0 <= _and364 <= 1
- 0 <= _and365 <= 1
- 0 <= _and366 <= 1
- 0 <= _and367 <= 1
- 0 <= _and368 <= 1
- 0 <= _and369 <= 1
- 0 <= _and370 <= 1
- 0 <= _and371 <= 1
- 0 <= _and372 <= 1
- 0 <= _and373 <= 1
- 0 <= _and374 <= 1
- 0 <= _and375 <= 1
- 0 <= _and376 <= 1
- 0 <= _and377 <= 1
- 0 <= _and378 <= 1
- 0 <= _and379 <= 1
- 0 <= _and380 <= 1
- 0 <= _and381 <= 1
- 0 <= _and382 <= 1
- 0 <= _and383 <= 1
- 0 <= _and384 <= 1
- 0 <= _and385 <= 1
- 0 <= _and386 <= 1
- 0 <= _and387 <= 1
- 0 <= _and388 <= 1
- 0 <= _and389 <= 1
- 0 <= _and390 <= 1
- 0 <= _and391 <= 1
- 0 <= _and392 <= 1
- 0 <= _and393 <= 1
- 0 <= _and394 <= 1
- 0 <= _and395 <= 1
- 0 <= _and396 <= 1
- 0 <= _and397 <= 1
- 0 <= _and398 <= 1
- 0 <= _and399 <= 1
- 0 <= _and400 <= 1
- 0 <= _and401 <= 1
- 0 <= _and402 <= 1
- 0 <= _and403 <= 1
- 0 <= _and404 <= 1
- 0 <= _and405 <= 1
- 0 <= _and406 <= 1
- 0 <= _and407 <= 1
- 0 <= _and408 <= 1
- 0 <= _and409 <= 1
- 0 <= _and410 <= 1
- 0 <= _and411 <= 1
- 0 <= _and412 <= 1
- 0 <= _and413 <= 1
- 0 <= _and414 <= 1
- 0 <= _and415 <= 1
- 0 <= _and416 <= 1
- 0 <= _and417 <= 1
- 0 <= _and418 <= 1
- 0 <= _and419 <= 1
- 0 <= _and420 <= 1
- 0 <= _and421 <= 1
- 0 <= _and422 <= 1
- 0 <= _and423 <= 1
- 0 <= _and424 <= 1
- 0 <= _and425 <= 1
- 0 <= _and426 <= 1
- 0 <= _and427 <= 1
- 0 <= _and428 <= 1
- 0 <= _and429 <= 1
- 0 <= _and430 <= 1
- 0 <= _and431 <= 1
- 0 <= _and432 <= 1
- 0 <= _and433 <= 1
- 0 <= _and434 <= 1
- 0 <= _and435 <= 1
- 0 <= _and436 <= 1
- 0 <= _and437 <= 1
- 0 <= _and438 <= 1
- 0 <= _and439 <= 1
- 0 <= _and440 <= 1
- 0 <= _and441 <= 1
- 0 <= _and442 <= 1
- 0 <= _and443 <= 1
- 0 <= _and444 <= 1
- 0 <= _and445 <= 1
- 0 <= _and446 <= 1
- 0 <= _and447 <= 1
- 0 <= _and448 <= 1
- 0 <= _and449 <= 1
- 0 <= _and450 <= 1
- 0 <= _and451 <= 1
- 0 <= _and452 <= 1
- 0 <= _and453 <= 1
- 0 <= _and454 <= 1
- 0 <= _and455 <= 1
- 0 <= _and456 <= 1
- 0 <= _and457 <= 1
- 0 <= _and458 <= 1
- 0 <= _and459 <= 1
- 0 <= _and460 <= 1
- 0 <= _and461 <= 1
- 0 <= _and462 <= 1
- 0 <= _and463 <= 1
- 0 <= _and464 <= 1
- 0 <= _and465 <= 1
- 0 <= _and466 <= 1
- 0 <= _and467 <= 1
- 0 <= _and468 <= 1
- 0 <= _and469 <= 1
- 0 <= _and470 <= 1
- 0 <= _and471 <= 1
- 0 <= _and472 <= 1
- 0 <= _and473 <= 1
- 0 <= _and474 <= 1
- 0 <= _and475 <= 1
- 0 <= _and476 <= 1
- 0 <= _and477 <= 1
- 0 <= _and478 <= 1
- 0 <= _and479 <= 1
- 0 <= _and480 <= 1
- 0 <= _and481 <= 1
- 0 <= _and482 <= 1
- 0 <= _and483 <= 1
- 0 <= _and484 <= 1
- 0 <= _and485 <= 1
- 0 <= _and486 <= 1
- 0 <= _and487 <= 1
- 0 <= _and488 <= 1
- 0 <= _and489 <= 1
- 0 <= _and490 <= 1
- 0 <= _and491 <= 1
- 0 <= _and492 <= 1
- 0 <= _and493 <= 1
- 0 <= _and494 <= 1
- 0 <= _and495 <= 1
- 0 <= _and496 <= 1
- 0 <= _and497 <= 1
- 0 <= _and498 <= 1
- 0 <= _and499 <= 1
- 0 <= _and500 <= 1
- 0 <= _and501 <= 1
- 0 <= _and502 <= 1
- 0 <= _and503 <= 1
- 0 <= _and504 <= 1
- 0 <= _and505 <= 1
- 0 <= _and506 <= 1
- 0 <= _and507 <= 1
- 0 <= _and508 <= 1
- 0 <= _and509 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_1_16 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_1_16 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_1_17 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_1_17 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_1_18 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_1_18 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_1_19 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_1_19 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_1_20 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_1_20 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_1_21 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_1_21 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_1_22 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_1_22 <= 1
+ 0 <= bin_edge_var_downstream_vertex_var_product_1_23 <= 1
+ 0 <= bin_edge_var_upstream_vertex_var_product_1_23 <= 1
+       build_cost_exponent_1 <= 33
+ 0 <= _and202 <= 1
+ 0 <= _and203 <= 1
+ 0 <= _and204 <= 1
+ 0 <= _and205 <= 1
+ 0 <= _and206 <= 1
+ 0 <= _and207 <= 1
+ 0 <= _and208 <= 1
+ 0 <= _and209 <= 1
+ 0 <= _and210 <= 1
+ 0 <= _and211 <= 1
+ 0 <= _and212 <= 1
+ 0 <= _and213 <= 1
+ 0 <= _and214 <= 1
+ 0 <= _and215 <= 1
+ 0 <= _and216 <= 1
+ 0 <= _and217 <= 1
+ 0 <= _and218 <= 1
+ 0 <= _and219 <= 1
+ 0 <= _and220 <= 1
+ 0 <= _and221 <= 1
+ 0 <= _and222 <= 1
+ 0 <= _and223 <= 1
+ 0 <= _and224 <= 1
+ 0 <= _and225 <= 1
+ 0 <= _and226 <= 1
+ 0 <= _and227 <= 1
+ 0 <= _and228 <= 1
+ 0 <= _and229 <= 1
+ 0 <= _and230 <= 1
+ 0 <= _and231 <= 1
+ 0 <= _and232 <= 1
+ 0 <= _and233 <= 1
+ 0 <= _and234 <= 1
+ 0 <= _and235 <= 1
+ 0 <= _and236 <= 1
+ 0 <= _and237 <= 1
+ 0 <= _and238 <= 1
+ 0 <= _and239 <= 1
+ 0 <= _and240 <= 1
+ 0 <= _and241 <= 1
+ 0 <= _and242 <= 1
+ 0 <= _and243 <= 1
+ 0 <= _and244 <= 1
+ 0 <= _and245 <= 1
+ 0 <= _and246 <= 1
+ 0 <= _and247 <= 1
+ 0 <= _and248 <= 1
+ 0 <= _and249 <= 1
+ 0 <= _and250 <= 1
+ 0 <= _and251 <= 1
+ 0 <= _and252 <= 1
+ 0 <= _and253 <= 1
+ 0 <= _and254 <= 1
+ 0 <= _and255 <= 1
+ 0 <= _and256 <= 1
+ 0 <= _and257 <= 1
+ 0 <= _and258 <= 1
+ 0 <= _and259 <= 1
+ 0 <= _and260 <= 1
+ 0 <= _and261 <= 1
+ 0 <= _and262 <= 1
+ 0 <= _and263 <= 1
+ 0 <= _and264 <= 1
+ 0 <= _and265 <= 1
+ 0 <= _and266 <= 1
+ 0 <= _and267 <= 1
+ 0 <= _and268 <= 1
+ 0 <= _and269 <= 1
+ 0 <= _and270 <= 1
+ 0 <= _and271 <= 1
+ 0 <= _and272 <= 1
+ 0 <= _and273 <= 1
+ 0 <= _and274 <= 1
+ 0 <= _and275 <= 1
+ 0 <= _and276 <= 1
+ 0 <= _and277 <= 1
+ 0 <= _and278 <= 1
+ 0 <= _and279 <= 1
+ 0 <= _and280 <= 1
+ 0 <= _and281 <= 1
+ 0 <= _and282 <= 1
+ 0 <= _and283 <= 1
+ 0 <= _and284 <= 1
+ 0 <= _and285 <= 1
+ 0 <= _and286 <= 1
+ 0 <= _and287 <= 1
+ 0 <= _and288 <= 1
+ 0 <= _and289 <= 1
+ 0 <= _and290 <= 1
+ 0 <= _and291 <= 1
+ 0 <= _and292 <= 1
+ 0 <= _and293 <= 1
+ 0 <= _and294 <= 1
+ 0 <= _and295 <= 1
+ 0 <= _and296 <= 1
+ 0 <= _and297 <= 1
 
 Binaries
  bin_sc_0_vx_0 bin_sc_0_vx_1 bin_sc_0_vx_2 bin_sc_0_vx_3 bin_sc_0_vx_4
  bin_sc_0_vx_5 bin_sc_0_vx_6 bin_sc_0_vx_7 bin_sc_0_vx_8 bin_sc_0_vx_9
  bin_sc_0_vx_10 bin_sc_0_vx_11 bin_sc_0_vx_12 bin_sc_0_vx_13 bin_sc_0_vx_14
- bin_sc_0_vx_15 bin_sc_0_vx_16 bin_sc_1_vx_0 bin_sc_1_vx_1 bin_sc_1_vx_2
- bin_sc_1_vx_3 bin_sc_1_vx_4 bin_sc_1_vx_5 bin_sc_1_vx_6 bin_sc_1_vx_7
- bin_sc_1_vx_8 bin_sc_1_vx_9 bin_sc_1_vx_10 bin_sc_1_vx_11 bin_sc_1_vx_12
- bin_sc_1_vx_13 bin_sc_1_vx_14 bin_sc_1_vx_15 bin_sc_1_vx_16 bin_sc_2_vx_0
- bin_sc_2_vx_1 bin_sc_2_vx_2 bin_sc_2_vx_3 bin_sc_2_vx_4 bin_sc_2_vx_5
- bin_sc_2_vx_6 bin_sc_2_vx_7 bin_sc_2_vx_8 bin_sc_2_vx_9 bin_sc_2_vx_10
- bin_sc_2_vx_11 bin_sc_2_vx_12 bin_sc_2_vx_13 bin_sc_2_vx_14 bin_sc_2_vx_15
- bin_sc_2_vx_16 bin_sc_3_vx_0 bin_sc_3_vx_1 bin_sc_3_vx_2 bin_sc_3_vx_3
- bin_sc_3_vx_4 bin_sc_3_vx_5 bin_sc_3_vx_6 bin_sc_3_vx_7 bin_sc_3_vx_8
- bin_sc_3_vx_9 bin_sc_3_vx_10 bin_sc_3_vx_11 bin_sc_3_vx_12 bin_sc_3_vx_13
- bin_sc_3_vx_14 bin_sc_3_vx_15 bin_sc_3_vx_16 bin_sc_4_vx_0 bin_sc_4_vx_1
- bin_sc_4_vx_2 bin_sc_4_vx_3 bin_sc_4_vx_4 bin_sc_4_vx_5 bin_sc_4_vx_6
- bin_sc_4_vx_7 bin_sc_4_vx_8 bin_sc_4_vx_9 bin_sc_4_vx_10 bin_sc_4_vx_11
- bin_sc_4_vx_12 bin_sc_4_vx_13 bin_sc_4_vx_14 bin_sc_4_vx_15 bin_sc_4_vx_16
- bin_sc_0_edg_0 bin_sc_0_edg_1 bin_sc_0_edg_2 bin_sc_0_edg_3 bin_sc_0_edg_4
- bin_sc_0_edg_5 bin_sc_0_edg_6 bin_sc_0_edg_7 bin_sc_0_edg_8 bin_sc_0_edg_9
- bin_sc_0_edg_10 bin_sc_0_edg_11 bin_sc_0_edg_12 bin_sc_0_edg_13 bin_sc_0_edg_14
- bin_sc_0_edg_15 bin_sc_1_edg_0 bin_sc_1_edg_1 bin_sc_1_edg_2 bin_sc_1_edg_3
- bin_sc_1_edg_4 bin_sc_1_edg_5 bin_sc_1_edg_6 bin_sc_1_edg_7 bin_sc_1_edg_8
- bin_sc_1_edg_9 bin_sc_1_edg_10 bin_sc_1_edg_11 bin_sc_1_edg_12 bin_sc_1_edg_13
- bin_sc_1_edg_14 bin_sc_1_edg_15 bin_sc_2_edg_0 bin_sc_2_edg_1 bin_sc_2_edg_2
- bin_sc_2_edg_3 bin_sc_2_edg_4 bin_sc_2_edg_5 bin_sc_2_edg_6 bin_sc_2_edg_7
- bin_sc_2_edg_8 bin_sc_2_edg_9 bin_sc_2_edg_10 bin_sc_2_edg_11 bin_sc_2_edg_12
- bin_sc_2_edg_13 bin_sc_2_edg_14 bin_sc_2_edg_15 bin_sc_3_edg_0 bin_sc_3_edg_1
- bin_sc_3_edg_2 bin_sc_3_edg_3 bin_sc_3_edg_4 bin_sc_3_edg_5 bin_sc_3_edg_6
- bin_sc_3_edg_7 bin_sc_3_edg_8 bin_sc_3_edg_9 bin_sc_3_edg_10 bin_sc_3_edg_11
- bin_sc_3_edg_12 bin_sc_3_edg_13 bin_sc_3_edg_14 bin_sc_3_edg_15 bin_sc_4_edg_0
- bin_sc_4_edg_1 bin_sc_4_edg_2 bin_sc_4_edg_3 bin_sc_4_edg_4 bin_sc_4_edg_5
- bin_sc_4_edg_6 bin_sc_4_edg_7 bin_sc_4_edg_8 bin_sc_4_edg_9 bin_sc_4_edg_10
- bin_sc_4_edg_11 bin_sc_4_edg_12 bin_sc_4_edg_13 bin_sc_4_edg_14 bin_sc_4_edg_15
- bin_edge_var_downstream_vertex_var_product_0_0
+ bin_sc_0_vx_15 bin_sc_0_vx_16 bin_sc_0_vx_17 bin_sc_0_vx_18 bin_sc_0_vx_19
+ bin_sc_0_vx_20 bin_sc_0_vx_21 bin_sc_0_vx_22 bin_sc_0_vx_23 bin_sc_1_vx_0
+ bin_sc_1_vx_1 bin_sc_1_vx_2 bin_sc_1_vx_3 bin_sc_1_vx_4 bin_sc_1_vx_5
+ bin_sc_1_vx_6 bin_sc_1_vx_7 bin_sc_1_vx_8 bin_sc_1_vx_9 bin_sc_1_vx_10
+ bin_sc_1_vx_11 bin_sc_1_vx_12 bin_sc_1_vx_13 bin_sc_1_vx_14 bin_sc_1_vx_15
+ bin_sc_1_vx_16 bin_sc_1_vx_17 bin_sc_1_vx_18 bin_sc_1_vx_19 bin_sc_1_vx_20
+ bin_sc_1_vx_21 bin_sc_1_vx_22 bin_sc_1_vx_23 bin_sc_0_edg_0 bin_sc_0_edg_1
+ bin_sc_0_edg_2 bin_sc_0_edg_3 bin_sc_0_edg_4 bin_sc_0_edg_5 bin_sc_0_edg_6
+ bin_sc_0_edg_7 bin_sc_0_edg_8 bin_sc_0_edg_9 bin_sc_0_edg_10 bin_sc_0_edg_11
+ bin_sc_0_edg_12 bin_sc_0_edg_13 bin_sc_0_edg_14 bin_sc_0_edg_15 bin_sc_0_edg_16
+ bin_sc_0_edg_17 bin_sc_0_edg_18 bin_sc_0_edg_19 bin_sc_0_edg_20 bin_sc_0_edg_21
+ bin_sc_0_edg_22 bin_sc_0_edg_23 bin_sc_1_edg_0 bin_sc_1_edg_1 bin_sc_1_edg_2
+ bin_sc_1_edg_3 bin_sc_1_edg_4 bin_sc_1_edg_5 bin_sc_1_edg_6 bin_sc_1_edg_7
+ bin_sc_1_edg_8 bin_sc_1_edg_9 bin_sc_1_edg_10 bin_sc_1_edg_11 bin_sc_1_edg_12
+ bin_sc_1_edg_13 bin_sc_1_edg_14 bin_sc_1_edg_15 bin_sc_1_edg_16 bin_sc_1_edg_17
+ bin_sc_1_edg_18 bin_sc_1_edg_19 bin_sc_1_edg_20 bin_sc_1_edg_21 bin_sc_1_edg_22
+ bin_sc_1_edg_23 bin_edge_var_downstream_vertex_var_product_0_0
  bin_edge_var_upstream_vertex_var_product_0_0
  bin_edge_var_downstream_vertex_var_product_0_1
  bin_edge_var_upstream_vertex_var_product_0_1
@@ -2168,6 +1300,22 @@ Binaries
  bin_edge_var_upstream_vertex_var_product_0_14
  bin_edge_var_downstream_vertex_var_product_0_15
  bin_edge_var_upstream_vertex_var_product_0_15
+ bin_edge_var_downstream_vertex_var_product_0_16
+ bin_edge_var_upstream_vertex_var_product_0_16
+ bin_edge_var_downstream_vertex_var_product_0_17
+ bin_edge_var_upstream_vertex_var_product_0_17
+ bin_edge_var_downstream_vertex_var_product_0_18
+ bin_edge_var_upstream_vertex_var_product_0_18
+ bin_edge_var_downstream_vertex_var_product_0_19
+ bin_edge_var_upstream_vertex_var_product_0_19
+ bin_edge_var_downstream_vertex_var_product_0_20
+ bin_edge_var_upstream_vertex_var_product_0_20
+ bin_edge_var_downstream_vertex_var_product_0_21
+ bin_edge_var_upstream_vertex_var_product_0_21
+ bin_edge_var_downstream_vertex_var_product_0_22
+ bin_edge_var_upstream_vertex_var_product_0_22
+ bin_edge_var_downstream_vertex_var_product_0_23
+ bin_edge_var_upstream_vertex_var_product_0_23
  bin_edge_var_downstream_vertex_var_product_1_0
  bin_edge_var_upstream_vertex_var_product_1_0
  bin_edge_var_downstream_vertex_var_product_1_1
@@ -2200,122 +1348,34 @@ Binaries
  bin_edge_var_upstream_vertex_var_product_1_14
  bin_edge_var_downstream_vertex_var_product_1_15
  bin_edge_var_upstream_vertex_var_product_1_15
- bin_edge_var_downstream_vertex_var_product_2_0
- bin_edge_var_upstream_vertex_var_product_2_0
- bin_edge_var_downstream_vertex_var_product_2_1
- bin_edge_var_upstream_vertex_var_product_2_1
- bin_edge_var_downstream_vertex_var_product_2_2
- bin_edge_var_upstream_vertex_var_product_2_2
- bin_edge_var_downstream_vertex_var_product_2_3
- bin_edge_var_upstream_vertex_var_product_2_3
- bin_edge_var_downstream_vertex_var_product_2_4
- bin_edge_var_upstream_vertex_var_product_2_4
- bin_edge_var_downstream_vertex_var_product_2_5
- bin_edge_var_upstream_vertex_var_product_2_5
- bin_edge_var_downstream_vertex_var_product_2_6
- bin_edge_var_upstream_vertex_var_product_2_6
- bin_edge_var_downstream_vertex_var_product_2_7
- bin_edge_var_upstream_vertex_var_product_2_7
- bin_edge_var_downstream_vertex_var_product_2_8
- bin_edge_var_upstream_vertex_var_product_2_8
- bin_edge_var_downstream_vertex_var_product_2_9
- bin_edge_var_upstream_vertex_var_product_2_9
- bin_edge_var_downstream_vertex_var_product_2_10
- bin_edge_var_upstream_vertex_var_product_2_10
- bin_edge_var_downstream_vertex_var_product_2_11
- bin_edge_var_upstream_vertex_var_product_2_11
- bin_edge_var_downstream_vertex_var_product_2_12
- bin_edge_var_upstream_vertex_var_product_2_12
- bin_edge_var_downstream_vertex_var_product_2_13
- bin_edge_var_upstream_vertex_var_product_2_13
- bin_edge_var_downstream_vertex_var_product_2_14
- bin_edge_var_upstream_vertex_var_product_2_14
- bin_edge_var_downstream_vertex_var_product_2_15
- bin_edge_var_upstream_vertex_var_product_2_15
- bin_edge_var_downstream_vertex_var_product_3_0
- bin_edge_var_upstream_vertex_var_product_3_0
- bin_edge_var_downstream_vertex_var_product_3_1
- bin_edge_var_upstream_vertex_var_product_3_1
- bin_edge_var_downstream_vertex_var_product_3_2
- bin_edge_var_upstream_vertex_var_product_3_2
- bin_edge_var_downstream_vertex_var_product_3_3
- bin_edge_var_upstream_vertex_var_product_3_3
- bin_edge_var_downstream_vertex_var_product_3_4
- bin_edge_var_upstream_vertex_var_product_3_4
- bin_edge_var_downstream_vertex_var_product_3_5
- bin_edge_var_upstream_vertex_var_product_3_5
- bin_edge_var_downstream_vertex_var_product_3_6
- bin_edge_var_upstream_vertex_var_product_3_6
- bin_edge_var_downstream_vertex_var_product_3_7
- bin_edge_var_upstream_vertex_var_product_3_7
- bin_edge_var_downstream_vertex_var_product_3_8
- bin_edge_var_upstream_vertex_var_product_3_8
- bin_edge_var_downstream_vertex_var_product_3_9
- bin_edge_var_upstream_vertex_var_product_3_9
- bin_edge_var_downstream_vertex_var_product_3_10
- bin_edge_var_upstream_vertex_var_product_3_10
- bin_edge_var_downstream_vertex_var_product_3_11
- bin_edge_var_upstream_vertex_var_product_3_11
- bin_edge_var_downstream_vertex_var_product_3_12
- bin_edge_var_upstream_vertex_var_product_3_12
- bin_edge_var_downstream_vertex_var_product_3_13
- bin_edge_var_upstream_vertex_var_product_3_13
- bin_edge_var_downstream_vertex_var_product_3_14
- bin_edge_var_upstream_vertex_var_product_3_14
- bin_edge_var_downstream_vertex_var_product_3_15
- bin_edge_var_upstream_vertex_var_product_3_15
- bin_edge_var_downstream_vertex_var_product_4_0
- bin_edge_var_upstream_vertex_var_product_4_0
- bin_edge_var_downstream_vertex_var_product_4_1
- bin_edge_var_upstream_vertex_var_product_4_1
- bin_edge_var_downstream_vertex_var_product_4_2
- bin_edge_var_upstream_vertex_var_product_4_2
- bin_edge_var_downstream_vertex_var_product_4_3
- bin_edge_var_upstream_vertex_var_product_4_3
- bin_edge_var_downstream_vertex_var_product_4_4
- bin_edge_var_upstream_vertex_var_product_4_4
- bin_edge_var_downstream_vertex_var_product_4_5
- bin_edge_var_upstream_vertex_var_product_4_5
- bin_edge_var_downstream_vertex_var_product_4_6
- bin_edge_var_upstream_vertex_var_product_4_6
- bin_edge_var_downstream_vertex_var_product_4_7
- bin_edge_var_upstream_vertex_var_product_4_7
- bin_edge_var_downstream_vertex_var_product_4_8
- bin_edge_var_upstream_vertex_var_product_4_8
- bin_edge_var_downstream_vertex_var_product_4_9
- bin_edge_var_upstream_vertex_var_product_4_9
- bin_edge_var_downstream_vertex_var_product_4_10
- bin_edge_var_upstream_vertex_var_product_4_10
- bin_edge_var_downstream_vertex_var_product_4_11
- bin_edge_var_upstream_vertex_var_product_4_11
- bin_edge_var_downstream_vertex_var_product_4_12
- bin_edge_var_upstream_vertex_var_product_4_12
- bin_edge_var_downstream_vertex_var_product_4_13
- bin_edge_var_upstream_vertex_var_product_4_13
- bin_edge_var_downstream_vertex_var_product_4_14
- bin_edge_var_upstream_vertex_var_product_4_14
- bin_edge_var_downstream_vertex_var_product_4_15
- bin_edge_var_upstream_vertex_var_product_4_15 _and350 _and351 _and352 _and353
- _and354 _and355 _and356 _and357 _and358 _and359 _and360 _and361 _and362 _and363
- _and364 _and365 _and366 _and367 _and368 _and369 _and370 _and371 _and372 _and373
- _and374 _and375 _and376 _and377 _and378 _and379 _and380 _and381 _and382 _and383
- _and384 _and385 _and386 _and387 _and388 _and389 _and390 _and391 _and392 _and393
- _and394 _and395 _and396 _and397 _and398 _and399 _and400 _and401 _and402 _and403
- _and404 _and405 _and406 _and407 _and408 _and409 _and410 _and411 _and412 _and413
- _and414 _and415 _and416 _and417 _and418 _and419 _and420 _and421 _and422 _and423
- _and424 _and425 _and426 _and427 _and428 _and429 _and430 _and431 _and432 _and433
- _and434 _and435 _and436 _and437 _and438 _and439 _and440 _and441 _and442 _and443
- _and444 _and445 _and446 _and447 _and448 _and449 _and450 _and451 _and452 _and453
- _and454 _and455 _and456 _and457 _and458 _and459 _and460 _and461 _and462 _and463
- _and464 _and465 _and466 _and467 _and468 _and469 _and470 _and471 _and472 _and473
- _and474 _and475 _and476 _and477 _and478 _and479 _and480 _and481 _and482 _and483
- _and484 _and485 _and486 _and487 _and488 _and489 _and490 _and491 _and492 _and493
- _and494 _and495 _and496 _and497 _and498 _and499 _and500 _and501 _and502 _and503
- _and504 _and505 _and506 _and507 _and508 _and509
+ bin_edge_var_downstream_vertex_var_product_1_16
+ bin_edge_var_upstream_vertex_var_product_1_16
+ bin_edge_var_downstream_vertex_var_product_1_17
+ bin_edge_var_upstream_vertex_var_product_1_17
+ bin_edge_var_downstream_vertex_var_product_1_18
+ bin_edge_var_upstream_vertex_var_product_1_18
+ bin_edge_var_downstream_vertex_var_product_1_19
+ bin_edge_var_upstream_vertex_var_product_1_19
+ bin_edge_var_downstream_vertex_var_product_1_20
+ bin_edge_var_upstream_vertex_var_product_1_20
+ bin_edge_var_downstream_vertex_var_product_1_21
+ bin_edge_var_upstream_vertex_var_product_1_21
+ bin_edge_var_downstream_vertex_var_product_1_22
+ bin_edge_var_upstream_vertex_var_product_1_22
+ bin_edge_var_downstream_vertex_var_product_1_23
+ bin_edge_var_upstream_vertex_var_product_1_23 _and202 _and203 _and204 _and205
+ _and206 _and207 _and208 _and209 _and210 _and211 _and212 _and213 _and214 _and215
+ _and216 _and217 _and218 _and219 _and220 _and221 _and222 _and223 _and224 _and225
+ _and226 _and227 _and228 _and229 _and230 _and231 _and232 _and233 _and234 _and235
+ _and236 _and237 _and238 _and239 _and240 _and241 _and242 _and243 _and244 _and245
+ _and246 _and247 _and248 _and249 _and250 _and251 _and252 _and253 _and254 _and255
+ _and256 _and257 _and258 _and259 _and260 _and261 _and262 _and263 _and264 _and265
+ _and266 _and267 _and268 _and269 _and270 _and271 _and272 _and273 _and274 _and275
+ _and276 _and277 _and278 _and279 _and280 _and281 _and282 _and283 _and284 _and285
+ _and286 _and287 _and288 _and289 _and290 _and291 _and292 _and293 _and294 _and295
+ _and296 _and297
 
 Generals
  num_cuts original_input_0 rho_0 O_0 d_0 original_input_1 rho_1 O_1 d_1
- build_cost_exponent_1 original_input_2 rho_2 O_2 d_2 build_cost_exponent_2
- original_input_3 rho_3 O_3 d_3 build_cost_exponent_3 original_input_4 rho_4 O_4
- d_4 build_cost_exponent_4
+ build_cost_exponent_1
 End
