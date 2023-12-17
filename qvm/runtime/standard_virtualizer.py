@@ -70,7 +70,9 @@ class Virtualizer:
 
         full_frag_results[-1] = all_coeffiecients
 
-        chunks = np.array_split(full_frag_results, num_processes, axis=1)
+        chunks = np.array_split(
+            full_frag_results, min(num_processes, total_dim), axis=1
+        )
         with mp.Pool(num_processes) as pool:
             knit_results = pool.map(_merge_and_knit, chunks)
 
@@ -133,4 +135,4 @@ class Virtualizer:
 
 def _merge_and_knit(results: np.ndarray) -> QuasiDistr:
     merged_results = np.prod(results, axis=0)
-    return np.sum(merged_results)
+    return np.sum(merged_results, axis=0)

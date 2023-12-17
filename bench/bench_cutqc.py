@@ -1,6 +1,7 @@
 import os
 import csv
 from dataclasses import dataclass, asdict
+from time import perf_counter
 
 import numpy as np
 from qiskit.circuit import QuantumCircuit
@@ -19,6 +20,9 @@ from circuit_knitting.cutting.cutqc import (
     cut_circuit_wires,
     evaluate_subcircuits,
     reconstruct_full_distribution,
+    verify,
+    create_dd_bin,
+    reconstruct_dd_full_distribution,
 )
 
 from bench_main import (
@@ -56,6 +60,49 @@ class BenchmarkResult:
 
         with open(filepath, "a") as csv_file:
             csv.DictWriter(csv_file, fieldnames=data.keys()).writerow(data)
+
+
+def cut_1layer(circuit: QuantumCircuit, num_cuts: int):
+    num_cuts = num_cuts + 1
+    num_binary_gates = sum(1 for instr in circuit if len(instr.qubits) == 2)
+    fragment_size = int(np.ceil(num_binary_gates / num_cuts))
+    print(fragment_size)
+    subcircuit_vertices = [
+        list(range(fragment_size * i, fragment_size * (i + 1)))
+        for i in range(num_cuts - 1)
+    ]
+    subcircuit_vertices.append(
+        list(range(fragment_size * (num_cuts - 1), num_binary_gates))
+    )
+    print(subcircuit_vertices)
+    return cut_circuit_wires(
+        circuit, method="manual", subcircuit_vertices=subcircuit_vertices
+    )
+
+
+def time_benchmark():
+    circuit = get_circuits("hamsim_1", (20, 27))[0]
+    remove_mesurements(circuit)
+    num_cuts = 1
+    cuts = cut_1layer(circuit, num_cuts)
+
+    now = perf_counter()
+
+    results = evaluate_subcircuits(cuts)
+    run_time = perf_counter() - now
+    now = perf_counter()
+    _ = reconstruct_full_distribution(circuit, results, cuts, num_threads=8)
+    knit_time = perf_counter() - now
+
+    circuit.measure_all()
+    comp = QVMCompiler([OptimalDecompositionPass(size_to_reach=13)])
+    vc = comp.run(circuit, budget=3)
+    res, y = qvm.run(vc, num_processes=8)
+
+    print(run_time, knit_time)
+
+    print(y)
+    # print(probs)
 
 
 def run_cutqc_benchmark(
@@ -144,9 +191,9 @@ def run_bench(benchname: str):
             f"bench/results/cutqc/{benchname}.csv",
             circuits,
             backend,
-            size_to_reach=13,
+            size_to_reach=10,
             budget=4,
-            run_on_hardware=True,
+            run_on_hardware=False,
         )
     except Exception as e:
         print(e)
@@ -155,15 +202,16 @@ def run_bench(benchname: str):
 from multiprocessing.pool import ThreadPool
 
 if __name__ == "__main__":
-    for bname in [
-        "qsvm",
-        "wstate",
-        "vqe_1",
-        "vqe_2",
-        "qaoa_b",
-        "qaoa_r2",
-        "hamsim_2",
-        "hamsim_1",
-        "twolocal_1",
-    ]:
-        run_bench(bname)
+    # for bname in [
+    #     "qsvm",
+    #     "wstate",
+    #     "vqe_1",
+    #     "vqe_2",
+    #     "qaoa_b",
+    #     "qaoa_r2",
+    #     "hamsim_2",
+    #     "hamsim_1",
+    #     "twolocal_1",
+    # ]:
+    #     run_bench(bname)
+    time_benchmark()
