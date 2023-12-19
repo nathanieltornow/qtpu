@@ -131,6 +131,8 @@ class VirtualCircuit:
                 continue
             elif isinstance(op, Barrier):
                 continue
+                # qubits = [qubit for qubit in qubits if qubit in fragment]
+                # new_circuit.barrier(qubits)
             elif set(qubits) & set(fragment):
                 raise ValueError(
                     f"Circuit contains gates that act on multiple fragments. {op}"

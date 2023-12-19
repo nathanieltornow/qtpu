@@ -48,12 +48,12 @@ def run(
 
     jobs = {}
     for frag, insts in virt.instantiations().items():
-        # insts = [
-        #     transpile(
-        #         inst, backend=meta[frag].backend, optimization_level=optimization_level
-        #     )
-        #     for inst in insts
-        # ]
+        insts = [
+            transpile(
+                inst, backend=meta[frag].backend, optimization_level=optimization_level
+            )
+            for inst in insts
+        ]
         job = meta[frag].backend.run(insts, shots=shots)
         jobs[frag] = job
 
