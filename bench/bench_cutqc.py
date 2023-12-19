@@ -1,13 +1,11 @@
 import os
 import csv
 from dataclasses import dataclass, asdict
-from time import perf_counter
 
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit.providers import BackendV2
 from qiskit.compiler import transpile
-from qiskit_ibm_provider import IBMProvider
 
 import qvm
 from qvm import QVMCompiler, QuasiDistr
@@ -16,38 +14,41 @@ from qvm.compiler.distr_transpiler.backend_mapper import BasicBackendMapper
 from qvm.compiler.dag import DAG
 from qiskit.providers.fake_provider import FakeKolkataV2
 
-from circuit_knitting.cutting.cutqc import (
+from cutqc import (
     cut_circuit_wires,
     evaluate_subcircuits,
     reconstruct_full_distribution,
-    verify,
-    create_dd_bin,
-    reconstruct_dd_full_distribution,
 )
 
 from bench_main import (
-    _compute_fidelity,
+    calculate_fidelity,
     _esp,
     _virtual_circuit_stats,
 )
-from circuits.circuits import get_circuits, vqe
+from cutqc.wire_cutting_evaluation import set_backend_config
+from circuits.circuits import get_circuits
 
 
 @dataclass
 class BenchmarkResult:
     num_qubits: int
     fid: float = np.nan
+    fid_cutqc: float = np.nan
     fid_base: float = np.nan
     esp: float = np.nan
+    esp_cutqc: float = np.nan
     esp_base: float = np.nan
     num_cnots: int = np.nan
+    num_cnots_cutqc: int = np.nan
     num_cnots_base: int = np.nan
     depth: int = np.nan
+    depth_cutqc: int = np.nan
     depth_base: int = np.nan
     num_deps: int = np.nan
+    num_deps_cutqc: int = np.nan
     num_deps_base: int = np.nan
     num_vgates: int = np.nan
-    num_cuts_base: int = np.nan
+    num_cuts_cutqc: int = np.nan
 
     def append_dict_to_csv(self, filepath: str) -> None:
         data = asdict(self)
@@ -62,49 +63,6 @@ class BenchmarkResult:
             csv.DictWriter(csv_file, fieldnames=data.keys()).writerow(data)
 
 
-def cut_1layer(circuit: QuantumCircuit, num_cuts: int):
-    num_cuts = num_cuts + 1
-    num_binary_gates = sum(1 for instr in circuit if len(instr.qubits) == 2)
-    fragment_size = int(np.ceil(num_binary_gates / num_cuts))
-    print(fragment_size)
-    subcircuit_vertices = [
-        list(range(fragment_size * i, fragment_size * (i + 1)))
-        for i in range(num_cuts - 1)
-    ]
-    subcircuit_vertices.append(
-        list(range(fragment_size * (num_cuts - 1), num_binary_gates))
-    )
-    print(subcircuit_vertices)
-    return cut_circuit_wires(
-        circuit, method="manual", subcircuit_vertices=subcircuit_vertices
-    )
-
-
-def time_benchmark():
-    circuit = get_circuits("hamsim_1", (20, 27))[0]
-    remove_mesurements(circuit)
-    num_cuts = 1
-    cuts = cut_1layer(circuit, num_cuts)
-
-    now = perf_counter()
-
-    results = evaluate_subcircuits(cuts)
-    run_time = perf_counter() - now
-    now = perf_counter()
-    _ = reconstruct_full_distribution(circuit, results, cuts, num_threads=8)
-    knit_time = perf_counter() - now
-
-    circuit.measure_all()
-    comp = QVMCompiler([OptimalDecompositionPass(size_to_reach=13)])
-    vc = comp.run(circuit, budget=3)
-    res, y = qvm.run(vc, num_processes=8)
-
-    print(run_time, knit_time)
-
-    print(y)
-    # print(probs)
-
-
 def run_cutqc_benchmark(
     result_file: str,
     circuits: list[QuantumCircuit],
@@ -113,6 +71,8 @@ def run_cutqc_benchmark(
     budget: int = 4,
     run_on_hardware: bool = False,
 ) -> None:
+    set_backend_config(backend, 3)
+
     comp = QVMCompiler(
         virt_passes=[OptimalDecompositionPass(size_to_reach=size_to_reach)],
         dt_passes=[BasicBackendMapper(backend)],
@@ -132,25 +92,53 @@ def run_cutqc_benchmark(
         cuts = cut_circuit_wires(
             circuit=circuit,
             method="automatic",
-            max_subcircuit_width=13,
-            max_cuts=budget,
+            max_subcircuit_width=7,
+            max_cuts=3,
             num_subcircuits=[2],
+            verbose=False,
         )
         (
-            result.num_cnots_base,
-            result.depth_base,
-            result.num_deps_base,
-            result.esp_base,
+            result.num_cnots_cutqc,
+            result.depth_cutqc,
+            result.num_deps_cutqc,
+            result.esp_cutqc,
         ) = _cutqc_stats(cuts["subcircuits"], backend)
 
-        result.num_cuts_base = cuts["num_cuts"]
+        result.num_cuts_cutqc = cuts["num_cuts"]
         result.num_vgates = len(vc.virtual_gates)
 
+        circ_cp = circuit.copy()
+        circ_cp.measure_all()
+
+        t_circ = transpile(circ_cp, backend, optimization_level=3)
+        result.num_cnots_base = sum(
+            1 for instr in t_circ if instr.operation.name == "cx"
+        )
+        result.depth_base = t_circ.depth()
+        result.num_deps_base = DAG(circ_cp).num_dependencies()
+        result.esp_base = _esp(t_circ)
+
         if run_on_hardware:
-            # TODO cutqc run
-            res, _ = qvm.run(vc, optimization_level=3, num_processes=8)
-            fid = _compute_fidelity(res, vqe(circuit))
+            probs = evaluate_subcircuits(cuts)
+            cutqc_res = prob_array_to_quasi_dist(
+                reconstruct_full_distribution(circuit, probs, cuts, num_threads=8)
+            ).nearest_probability_distribution()
+
+            circuit.measure_all()
+
+            qvm_res, _ = qvm.run(vc, optimization_level=3, num_processes=8)
+
+            fid = calculate_fidelity(circuit, qvm_res)
+            fid_cutqc = calculate_fidelity(circuit, cutqc_res)
             result.fid = fid
+            result.fid_cutqc = fid_cutqc
+
+            base_res = backend.run(t_circ, shots=20000).result().get_counts()
+            base_probs = QuasiDistr.from_counts(
+                base_res
+            ).nearest_probability_distribution()
+            fid_base = calculate_fidelity(circuit, base_probs)
+            result.fid_base = fid_base
 
         result.append_dict_to_csv(result_file)
 
@@ -171,6 +159,7 @@ def prob_array_to_quasi_dist(prob_array: np.array) -> QuasiDistr:
 
 def _cutqc_stats(frags: list[QuantumCircuit], backend: BackendV2) -> tuple:
     frags = [transpile(frag, backend, optimization_level=3) for frag in frags]
+
     return (
         max(sum(1 for instr in frag if instr.operation.name == "cx") for frag in frags),
         max(frag.depth() for frag in frags),
@@ -180,38 +169,33 @@ def _cutqc_stats(frags: list[QuantumCircuit], backend: BackendV2) -> tuple:
 
 
 def run_bench(benchname: str):
-    circuits = get_circuits(benchname, (8, 25))
+    circuits = get_circuits(benchname, (8, 13))
 
-    provider = IBMProvider(instance="ibm-q-unibw/reservations/reservations")
+    backend = FakeKolkataV2()
 
-    backend = provider.get_backend("ibmq_kolkata")
+    run_cutqc_benchmark(
+        f"bench/results/cutqc_fake/{benchname}.csv",
+        circuits,
+        backend,
+        size_to_reach=7,
+        budget=2,
+        run_on_hardware=True,
+    )
 
-    try:
-        run_cutqc_benchmark(
-            f"bench/results/cutqc/{benchname}.csv",
-            circuits,
-            backend,
-            size_to_reach=10,
-            budget=4,
-            run_on_hardware=False,
-        )
-    except Exception as e:
-        print(e)
-
-
-from multiprocessing.pool import ThreadPool
 
 if __name__ == "__main__":
-    # for bname in [
-    #     "qsvm",
-    #     "wstate",
-    #     "vqe_1",
-    #     "vqe_2",
-    #     "qaoa_b",
-    #     "qaoa_r2",
-    #     "hamsim_2",
-    #     "hamsim_1",
-    #     "twolocal_1",
-    # ]:
-    #     run_bench(bname)
-    time_benchmark()
+    for bname in [
+        # "qaoa_b",
+        # "hamsim_1",
+        # "vqe_1",
+        # "vqe_2",
+        # "hamsim_2",
+        # "wstate",
+        "twolocal_1",
+        "qaoa_r2",
+        "qsvm",
+    ]:
+        print(
+            f"-----------------------------------\n{bname}\n-----------------------------------"
+        )
+        run_bench(bname)

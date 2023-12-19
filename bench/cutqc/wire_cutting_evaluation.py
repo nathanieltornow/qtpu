@@ -209,6 +209,25 @@ def modify_subcircuit_instance(
     return subcircuit_instance_circuit
 
 
+from qiskit_aer import StatevectorSimulator
+from qiskit.providers import BackendV2
+
+from qiskit.result.distributions import QuasiDistribution
+from qiskit.compiler import transpile
+
+
+backend = StatevectorSimulator()
+optimization_level = 0
+
+
+def set_backend_config(new_backend: BackendV2, new_optimization_level: int) -> None:
+    global backend
+    global optimization_level
+
+    backend = new_backend
+    optimization_level = new_optimization_level
+
+
 def run_subcircuits_using_sampler(
     subcircuits: Sequence[QuantumCircuit],
     sampler: BaseSampler,
@@ -223,11 +242,30 @@ def run_subcircuits_using_sampler(
     Returns:
         The probability distributions
     """
+
+    global backend
+    global optimization_level
+
     for subcircuit in subcircuits:
         if subcircuit.num_clbits == 0:
             subcircuit.measure_all()
 
-    quasi_dists = sampler.run(circuits=subcircuits).result().quasi_dists
+    t_subs = [
+        transpile(circ, backend=backend, optimization_level=optimization_level)
+        for circ in subcircuits
+    ]
+
+    counts = backend.run(t_subs, shots=20000).result().get_counts()
+
+    quasi_dists = [
+        QuasiDistribution(
+            {
+                int("".join(key.split()), 2): value / 20000
+                for key, value in count.items()
+            }
+        )
+        for count in counts
+    ]
 
     all_probabilities_out = []
     for i, qd in enumerate(quasi_dists):
@@ -237,7 +275,6 @@ def run_subcircuits_using_sampler(
         for state in probabilities:
             probabilities_out[state] = probabilities[state]
         all_probabilities_out.append(probabilities_out)
-
     return all_probabilities_out
 
 
@@ -372,7 +409,6 @@ def _run_subcircuit_batch(
         backend_name=backend_name,
         options=options,
     )
-
     # Calculate the measured probabilities
     unique_subcircuit_check = {}
     i = 0

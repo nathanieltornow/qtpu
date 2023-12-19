@@ -67,6 +67,36 @@ def grouped_bar_plot(
             ax.text(x_pos, average_text_position, text, ha="center")
 
 
+def plot_df(
+    ax: plt.Axes,
+    df: pd.DataFrame,
+    index: str,
+    x_values: np.array,
+    bottom: np.ndarray | None = None,
+):
+
+    num_cols = len(df.columns) - 1
+
+    df = df.groupby(index).agg(["mean", "sem"]).sort_values(by=[index]).reset_index()
+    df = df.set_index(index)
+    df = df.reindex(sorted(x_values))
+    for col in df.columns:
+        df[col].fillna(0.0, inplace=True)
+
+    for i, col in enumerate(df.columns):    
+        pass
+
+
+
+
+# if __name__ == "__main__":
+#     data = "bench/results/cutqc_runtime/20.csv"
+#     df = pd.read_csv(data)
+#     fig, ax = plt.subplots(figsize=WIDE_FIGSIZE)
+#     plot_df(ax, df, "qpu_size", np.array([8, 10, 12]))
+#     plt.show()
+
+
 MARKER_STYLES = ["v", "o", "p", "^", "s", "D"]
 LINE_STYLES = ["-", "--", "-.", ":", "-", "--", "-.", ":"]
 COLORS = sns.color_palette("pastel")

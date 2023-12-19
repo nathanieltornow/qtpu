@@ -1,14 +1,16 @@
 from dataclasses import asdict, dataclass
 import os
+import copy
+import psutil
 import csv
 
 from tqdm import tqdm
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit.compiler import transpile
-from qiskit_aer import AerSimulator
+from qiskit_aer import Aer
 from qiskit.providers import BackendV2
-from qiskit.quantum_info import hellinger_fidelity
+from qiskit.quantum_info import Statevector
 from qiskit.circuit import Barrier, Measure
 from qiskit.transpiler import CouplingMap
 
@@ -111,7 +113,7 @@ def _run_experiment(
         qvm_result, run_info = qvm.run(
             vc, shots=run_config.shots, optimization_level=run_config.optimization_level
         )
-        br.fid = _compute_fidelity(circuit, qvm_result)
+        br.fid = calculate_fidelity(circuit, qvm_result)
         br.run_time = run_info.qpu_time
         br.knit_time = run_info.knit_time
 
@@ -134,7 +136,7 @@ def _run_experiment(
             optimization_level=base_run_config.optimization_level,
             num_processes=base_run_config.num_processes,
         )
-        br.fid_base = _compute_fidelity(circuit, qvm_result_base)
+        br.fid_base = calculate_fidelity(circuit, qvm_result_base)
         br.run_time_base = run_info_base.qpu_time
 
     return br
@@ -143,6 +145,7 @@ def _run_experiment(
 def _virtual_circuit_stats(
     virtual_circuit: qvm.VirtualCircuit,
 ) -> tuple[int, int, int, int]:
+    print("transpiling...")
     if virtual_circuit.circuit.num_qubits > 40:
         cm = CouplingMap.from_heavy_hex(21)
         frags = [
@@ -154,6 +157,7 @@ def _virtual_circuit_stats(
             )
             for frag_circ in virtual_circuit.fragment_circuits.values()
         ]
+
         num_cnots = max(
             sum(1 for instr in frag if instr.operation.name == "cx") for frag in frags
         )
@@ -180,14 +184,48 @@ def _virtual_circuit_stats(
     return num_cnots, depth, num_deps, esp
 
 
-def _compute_fidelity(circuit: QuantumCircuit, noisy_result: qvm.QuasiDistr) -> float:
-    ideal_result = qvm.QuasiDistr.from_counts(
-        AerSimulator()
-        .run(transpile(circuit, AerSimulator(), optimization_level=0), shots=20000)
-        .result()
-        .get_counts()
+def _evaluate_circuit(circuit: QuantumCircuit) -> np.ndarray:
+    circuit.remove_final_measurements(inplace=True)
+    max_memory_mb = psutil.virtual_memory().total >> 20
+    max_memory_mb = int(max_memory_mb / 4 * 3)
+    simulator = Aer.get_backend(
+        "aer_simulator_statevector", max_memory_mb=max_memory_mb
     )
-    return hellinger_fidelity(ideal_result, noisy_result)
+    circuit = copy.deepcopy(circuit)
+    circuit.save_state()
+    result = simulator.run(circuit).result()
+    statevector = result.get_statevector(circuit)
+    return Statevector(statevector).probabilities()
+
+
+def hellinger_fidelity(a: np.ndarray, b: np.ndarray) -> float:
+    assert a.shape == b.shape
+    assert len(a.shape) == 1
+    return np.sum(np.sqrt(a * b)) ** 2
+
+
+def mse(a: np.ndarray, b: np.ndarray) -> float:
+    assert a.shape == b.shape
+    assert len(a.shape) == 1
+    return ((a - b) ** 2).mean()
+
+
+def quasi_distr_to_array(distr: dict[int, float], num_bits: int) -> np.ndarray:
+    array = np.zeros(2**num_bits)
+    for key, val in distr.items():
+        array[key] = val
+    return array
+
+
+def calculate_fidelity(
+    circuit: QuantumCircuit, noisy_result: dict[int, float]
+) -> float:
+    ideal_result = _evaluate_circuit(circuit)
+    # return mse(ideal_result, quasi_distr_to_array(noisy_result, circuit.num_qubits))
+    return hellinger_fidelity(
+        ideal_result, quasi_distr_to_array(noisy_result, circuit.num_qubits)
+    )
+
 
 def _esp(circuit: QuantumCircuit) -> float:
     fid = 1.0

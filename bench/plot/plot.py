@@ -462,39 +462,39 @@ def plot_large_scale() -> plt.Figure:
     return fig
 
 
-def plot_cutqc() -> plt.Figure:
+def plot_cutqc_stats() -> plt.Figure:
     cutqc_data = [
-        ("W-State", "bench/results/cutqc/wstate.csv"),
-        ("QSVM", "bench/results/cutqc/qsvm.csv"),
-        ("TL-1", "bench/results/cutqc/twolocal_1.csv"),
-        ("HS-1", "bench/results/cutqc/hamsim_1.csv"),
-        ("HS-2", "bench/results/cutqc/hamsim_2.csv"),
-        ("VQE-1", "bench/results/cutqc/vqe_1.csv"),
-        ("VQE-2", "bench/results/cutqc/vqe_2.csv"),
+        ("W-State", "bench/results/cutqc_fake/wstate.csv"),
+        ("QSVM", "bench/results/cutqc_fake/qsvm.csv"),
+        ("TL-1", "bench/results/cutqc_fake/twolocal_1.csv"),
+        ("HS-1", "bench/results/cutqc_fake/hamsim_1.csv"),
+        ("HS-2", "bench/results/cutqc_fake/hamsim_2.csv"),
+        ("VQE-1", "bench/results/cutqc_fake/vqe_1.csv"),
+        ("VQE-2", "bench/results/cutqc_fake/vqe_2.csv"),
         # ("QAOA-B", "bench/results/cutqc/qaoa_b.csv"),
-        ("QAOA-2", "bench/results/cutqc/qaoa_r2.csv"),
+        ("QAOA-2", "bench/results/cutqc_fake/qaoa_r2.csv"),
     ]
 
-    fig, (ax0, ax1, ax2) = plt.subplots(ncols=3, figsize=WIDE_FIGSIZE)
+    fig, (ax0, ax1) = plt.subplots(ncols=2, figsize=(13, 2.8))
 
-    ax0.sharey(ax1)
-
-    xvalues = [10, 14]
+    xvalues = [8, 10, 12]
 
     labels = [label for label, _ in cutqc_data]
     dfs = [pd.read_csv(file) for _, file in cutqc_data]
+
+    ax0.sharey(ax1)
 
     y, yerr = data_frames_to_y_yerr(
         dfs,
         "num_qubits",
         np.array(xvalues),
         "num_cnots",
-        "num_cnots_base",
+        "num_cnots_cutqc",
     )
     grouped_bar_plot(
-        ax0, y.T, yerr.T, labels, average_text_position=1.05, show_average_text=True
+        ax0, y.T, yerr.T, labels, average_text_position=1.1, show_average_text=True
     )
-    ax0.set_ylim(0, 1.2)
+
     ax0.set_title("(a) CNOTs (vs. CutQC)", fontweight="bold", fontsize=FONTSIZE)
     ax0.set_xticklabels(xvalues)
     ax0.set_ylabel("Rel. Number of CNOTs")
@@ -505,32 +505,20 @@ def plot_cutqc() -> plt.Figure:
         "num_qubits",
         np.array(xvalues),
         "depth",
-        "depth_base",
+        "depth_cutqc",
+        # "num_deps",
+        # "num_deps_cutqc",
     )
     grouped_bar_plot(
-        ax1, y.T, yerr.T, labels, average_text_position=1.05, show_average_text=True
+        ax1, y.T, yerr.T, labels, average_text_position=1.1, show_average_text=True
     )
     ax1.set_title("(b) Depth (vs. CutQC)", fontweight="bold", fontsize=FONTSIZE)
     ax1.set_xticklabels(xvalues)
     ax1.set_ylabel("Rel. Depth")
+    ax1.set_ylim(0, 1.3)
     _relative_plot(ax1)
 
-
-    y, yerr = data_frames_to_y_yerr(
-        dfs,
-        "num_qubits",
-        np.array(xvalues),
-        "fid",
-        "fid_base",
-    )
-    grouped_bar_plot(
-        ax2, y.T, yerr.T, labels, average_text_position=1.05, show_average_text=True
-    )
-    ax2.set_xticklabels(xvalues)
-    ax2.set_title("(c) Fidelity (vs. CutQC)", fontweight="bold", fontsize=FONTSIZE)
-    ax2.set_ylabel("Rel. Fidelity")
-
-    handles, _ = ax0.get_legend_handles_labels()
+    handles, _ = ax1.get_legend_handles_labels()
     fig.legend(
         handles,
         labels,
@@ -541,8 +529,8 @@ def plot_cutqc() -> plt.Figure:
     )
     fig.text(0.51, 0.0, "Number of Qubits", ha="center")
     fig.text(
-        0.37,
-        0.95,
+        0.51,
+        0.9,
         LOWERISBETTER,
         ha="center",
         fontsize=ISBETTER_FONTSIZE,
@@ -550,17 +538,80 @@ def plot_cutqc() -> plt.Figure:
         color="midnightblue",
     )
 
+    return fig
+
+
+def plot_cutqc_fidelity() -> plt.Figure:
+    cutqc_data = [
+        ("W-State", "bench/results/cutqc_fake/wstate.csv"),
+        ("QSVM", "bench/results/cutqc_fake/qsvm.csv"),
+        ("TL-1", "bench/results/cutqc_fake/twolocal_1.csv"),
+        ("HS-1", "bench/results/cutqc_fake/hamsim_1.csv"),
+        ("HS-2", "bench/results/cutqc_fake/hamsim_2.csv"),
+        ("VQE-1", "bench/results/cutqc_fake/vqe_1.csv"),
+        ("VQE-2", "bench/results/cutqc_fake/vqe_2.csv"),
+        # ("QAOA-B", "bench/results/cutqc/qaoa_b.csv"),
+        ("QAOA-2", "bench/results/cutqc_fake/qaoa_r2.csv"),
+    ]
+
+    xvalues = [8, 12]
+
+    titles = [title for title, _ in cutqc_data]
+
+    dfs = [pd.read_csv(file) for _, file in cutqc_data]
+
+    fig, axes = plt.subplots(1, len(titles), figsize=WIDE_FIGSIZE, sharey=True)
+    fig.subplots_adjust(wspace=0.00)
+
+    for title, df, ax in zip(titles, dfs, axes):
+        df_qvm = df.copy()[["num_qubits", "fid"]]
+        df_cutqc = df.copy()[["num_qubits", "fid_cutqc"]]
+        df_base = df.copy()[["num_qubits", "fid_base"]]
+
+        df_cutqc.rename(columns={"fid_cutqc": "fid"}, inplace=True)
+        df_base.rename(columns={"fid_base": "fid"}, inplace=True)
+        y, yerr = data_frames_to_y_yerr(
+            [df_qvm, df_cutqc, df_base],
+            "num_qubits",
+            np.array(xvalues),
+            "fid",
+        )
+        grouped_bar_plot(ax, y.T, yerr.T, ["QVM", "CutQC", "Baseline"])
+        ax.set_title(title, fontweight="bold", fontsize=FONTSIZE)
+        ax.set_xticklabels(xvalues)
+        _relative_plot(ax)
+
+    axes[0].set_ylabel("Fidelity")
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="lower left",
+        bbox_to_anchor=(0.05, -0.09),
+        ncol=100,
+        frameon=False,
+    )
+
     fig.text(
-        0.835,
-        0.95,
+        0.51,
+        0.98,
         HIGHERISBETTER,
         ha="center",
         fontsize=ISBETTER_FONTSIZE,
         fontweight="bold",
         color="midnightblue",
     )
+    fig.text(0.5, -0.01, "Number of Qubits", ha="center")
 
     return fig
+
+
+def plot_cutqc_runtime() -> plt.Figure:
+    data = [
+        ("20", "bench/results/cutqc_runtime/20.csv"),
+    ]
+    # ("24", "bench/results/cutqc_runtime/24.csv"),
+    # ("28", "bench/results/cutqc_runtime/28.csv"),
 
 
 def _relative_plot(ax: plt.Axes):
@@ -576,8 +627,8 @@ def main():
     # fig = plot_dep_min_fidelity()
     # save_figure(fig, "dep_min_fidelity")
 
-    fig = plot_noisy_scale_stats()
-    save_figure(fig, "noisy_scale_stats")
+    # fig = plot_noisy_scale_stats()
+    # save_figure(fig, "noisy_scale_stats")
 
     # fig = plot_noisy_scale_fidelity()
     # save_figure(fig, "noisy_scale_fidelity")
@@ -588,10 +639,12 @@ def main():
     # fig = plot_cut_vs_qubit_reuse()
     # save_figure(fig, "cut_vs_qubit_reuse")
     # fig = plot_large_scale()
-    fig = plot_cutqc()
+    fig = plot_cutqc_stats()
+    save_figure(fig, "cutqc_stats")
+    fig = plot_cutqc_fidelity()
     # fig.tight_layout()
     # plt.show()
-    save_figure(fig, "cutqc")
+    save_figure(fig, "cutqc_fid")
 
 
 if __name__ == "__main__":

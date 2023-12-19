@@ -36,10 +36,11 @@ bench = [
     "matplotlib>=3.8.2",
     "seaborn>=0.13.0",
     "tqdm>=4.66.1",
-    "circuit-knitting-toolbox>=0.5.0",
     "qiskit-optimization>=0.6.0",
     # "cplex>=22.1.1.1",
     "pip>=23.3.1",
+    "qiskit-ibm-provider>=0.7.3",
+    "qiskit-ibm-runtime>=0.17.0",
 ]
 
 [build-system]
