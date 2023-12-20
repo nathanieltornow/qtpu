@@ -105,13 +105,12 @@ def _merge_and_knit(results: np.ndarray) -> QuasiDistr:
 
 if __name__ == "__main__":
     for num_fragments, num_vgates in [(2, 1), (3, 2), (4, 3), (5, 4)]:
-        for procs in [1, 2, 4, 8, 16, 32, 64]:
+        for procs in [1, 2, 4, 8, 16]:
             bench = Benchmark(
-                    f"bench/results/knit_hs1.csv",
+                f"bench/results/knit_mac.csv",
                 num_qubits=70,
                 num_fragments=num_fragments,
                 num_vgates=num_vgates,
                 num_threads=procs,
-                num_shots=5000,
             )
             run_bench(bench)
