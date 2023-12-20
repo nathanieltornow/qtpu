@@ -21,7 +21,7 @@ from cutqc import (
 from circuits.circuits import get_circuits
 
 
-NUM_THREADS = 8
+NUM_THREADS = 16
 
 
 @dataclass
@@ -122,7 +122,7 @@ def _remove_mesurements(circuit: QuantumCircuit) -> None:
 
 
 if __name__ == "__main__":
-    workload = [(20, 8), (20, 12), (20, 10)]
+    workload = [(28, 8), (28, 12), (28, 10)]
     for circuit_size, qpu_size in workload:
         result = time_benchmark(circuit_size, qpu_size)
         result.append_dict_to_csv(f"bench/results/cutqc_runtime/{circuit_size}.csv")
