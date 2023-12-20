@@ -179,18 +179,17 @@ def run_bench(benchname: str):
         backend,
         size_to_reach=7,
         budget=2,
-        run_on_hardware=True,
+        run_on_hardware=False,
     )
 
 
 if __name__ == "__main__":
     for bname in [
-        # "qaoa_b",
-        # "hamsim_1",
-        # "vqe_1",
-        # "vqe_2",
-        # "hamsim_2",
-        # "wstate",
+        "hamsim_1",
+        "vqe_1",
+        "vqe_2",
+        "hamsim_2",
+        "wstate",
         "twolocal_1",
         "qaoa_r2",
         "qsvm",

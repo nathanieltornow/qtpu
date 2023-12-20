@@ -475,7 +475,7 @@ def plot_cutqc_stats() -> plt.Figure:
         ("QAOA-2", "bench/results/cutqc_fake/qaoa_r2.csv"),
     ]
 
-    fig, (ax0, ax1) = plt.subplots(ncols=2, figsize=(13, 2.8))
+    fig, (ax0, ax1) = plt.subplots(ncols=2, figsize=WIDE_FIGSIZE)
 
     xvalues = [8, 10, 12]
 
@@ -506,8 +506,6 @@ def plot_cutqc_stats() -> plt.Figure:
         np.array(xvalues),
         "depth",
         "depth_cutqc",
-        # "num_deps",
-        # "num_deps_cutqc",
     )
     grouped_bar_plot(
         ax1, y.T, yerr.T, labels, average_text_position=1.1, show_average_text=True
@@ -523,11 +521,11 @@ def plot_cutqc_stats() -> plt.Figure:
         handles,
         labels,
         loc="lower center",
-        bbox_to_anchor=(0.5, -0.19),
+        bbox_to_anchor=(0.5, -0.12),
         ncol=10,
         frameon=False,
     )
-    fig.text(0.51, 0.0, "Number of Qubits", ha="center")
+    fig.text(0.51, 0.05, "Number of Qubits", ha="center")
     fig.text(
         0.51,
         0.9,
@@ -550,7 +548,6 @@ def plot_cutqc_fidelity() -> plt.Figure:
         ("HS-2", "bench/results/cutqc_fake/hamsim_2.csv"),
         ("VQE-1", "bench/results/cutqc_fake/vqe_1.csv"),
         ("VQE-2", "bench/results/cutqc_fake/vqe_2.csv"),
-        # ("QAOA-B", "bench/results/cutqc/qaoa_b.csv"),
         ("QAOA-2", "bench/results/cutqc_fake/qaoa_r2.csv"),
     ]
 
@@ -639,11 +636,11 @@ def main():
     # fig = plot_cut_vs_qubit_reuse()
     # save_figure(fig, "cut_vs_qubit_reuse")
     # fig = plot_large_scale()
-    fig = plot_cutqc_stats()
-    save_figure(fig, "cutqc_stats")
+    # fig = plot_cutqc_stats()
+    # save_figure(fig, "cutqc_stats")
     fig = plot_cutqc_fidelity()
-    # fig.tight_layout()
-    # plt.show()
+    # # fig.tight_layout()
+    # # plt.show()
     save_figure(fig, "cutqc_fid")
 
 

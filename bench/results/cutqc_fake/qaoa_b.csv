@@ -1,0 +1,3 @@
+num_qubits,fid,fid_cutqc,fid_base,esp,esp_cutqc,esp_base,num_cnots,num_cnots_cutqc,num_cnots_base,depth,depth_cutqc,depth_base,num_deps,num_deps_cutqc,num_deps_base,num_vgates,num_cuts_cutqc
+8,nan,nan,nan,0.9745190640210706,0.9761781175935311,0.9477894078337739,18,20,37,43,44,67,12,17,41,1,1
+10,nan,nan,nan,0.9626976720342064,0.9612537701571237,0.9115218113578152,26,33,68,56,57,98,20,26,66,1,1

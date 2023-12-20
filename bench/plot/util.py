@@ -67,34 +67,65 @@ def grouped_bar_plot(
             ax.text(x_pos, average_text_position, text, ha="center")
 
 
-def plot_df(
+def bar_plot_dataframe(
     ax: plt.Axes,
     df: pd.DataFrame,
-    index: str,
-    x_values: np.array,
-    bottom: np.ndarray | None = None,
+    bottom_df: pd.DataFrame | None = None,
+    colors: list[str] | None = None,
+    hatches: list[str] | None = None,
+    spacing: float = 0.95,
+    zorder: int = 2000,
 ):
+    if colors is None:
+        colors = sns.color_palette("pastel")
+    if hatches is None:
+        hatches = ["/", "\\", "//", "\\\\", "x", ".", ",", "*"]
 
-    num_cols = len(df.columns) - 1
+    bar_labels = df.columns.values
+    df = df.groupby(df.index).agg(["mean", "sem"]).sort_values(by=df.index.name)
 
-    df = df.groupby(index).agg(["mean", "sem"]).sort_values(by=[index]).reset_index()
-    df = df.set_index(index)
-    df = df.reindex(sorted(x_values))
-    for col in df.columns:
-        df[col].fillna(0.0, inplace=True)
+    y = df.iloc[:, 0::2].values.T
+    yerr = df.iloc[:, 1::2].values.T
+    num_bars = y.shape[1]
+    bar_width = spacing / (num_bars + 1)
+    x = np.arange(num_bars)
 
-    for i, col in enumerate(df.columns):    
-        pass
+    bottom = np.zeros(y.shape)
 
+    if bottom_df is not None:
+        # same index
+        bottom_df = (
+            bottom_df.groupby(bottom_df.index)
+            .agg(["mean"])
+            .sort_values(by=bottom_df.index.name)
+        )
+        assert bottom_df.index.equals(df.index)
+        assert len(bottom_df.columns) == len(df.columns) / 2
 
+        bottom = bottom_df.values.T
 
+    for i in range(num_bars):
+        y_bars = y[i]
+        yerr_bars = yerr[i]
 
-# if __name__ == "__main__":
-#     data = "bench/results/cutqc_runtime/20.csv"
-#     df = pd.read_csv(data)
-#     fig, ax = plt.subplots(figsize=WIDE_FIGSIZE)
-#     plot_df(ax, df, "qpu_size", np.array([8, 10, 12]))
-#     plt.show()
+        color, hatch = colors[i % len(colors)], hatches[i % len(hatches)]
+
+        ax.bar(
+            x + (i * bar_width),
+            y_bars,
+            bar_width,
+            hatch=hatch,
+            bottom=bottom[i],
+            label=bar_labels[i],
+            yerr=yerr_bars,
+            color=color,
+            edgecolor="black",
+            linewidth=1.5,
+            error_kw=dict(lw=2, capsize=3),
+            zorder=zorder,
+        )
+
+    ax.set_xticks(x + ((num_bars - 1) / 2) * bar_width)
 
 
 MARKER_STYLES = ["v", "o", "p", "^", "s", "D"]
