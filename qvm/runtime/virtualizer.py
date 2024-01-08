@@ -1,115 +1,99 @@
+import abc
+from typing import Iterable
 import itertools
 
 import numpy as np
-import tensornetwork as tn
-from qiskit.circuit import ClassicalRegister, QuantumCircuit
-from qiskit.circuit import QuantumRegister as Fragment
-from tensornetwork.backends.numpy.numpy_backend import NumPyBackend
+from numpy.typing import NDArray
 
-from qvm.quasi_distr import QuasiDistr, prepare_quasidist
+import quimb.tensor as qtn
+
+from qiskit.circuit import Parameter, QuantumRegister as Fragment
+
 from qvm.virtual_circuit import VirtualCircuit
-from qvm.virtual_gates import VirtualGateEndpoint
-
-InstanceLabelType = tuple[int, ...]
 
 
-# class _CustomNumpyBackend(NumPyBackend):
-#     def __init__(self):
-#         super().__init__()
-#         self.name = "custom_numpy"
-
-#     def tensordot(self, a, b, axes):
-#         # we need to override this method because the default implementation
-#         # does not support tensors with dtype=object
-#         return np.tensordot(a, b, axes=axes)
+def knit(
+    virtual_circuit: VirtualCircuit, results: dict[Fragment, NDArray[np.float32]]
+) -> NDArray[np.float32]:
+    tensor_network = build_tensornetwork(virtual_circuit, results)
+    return tensor_network.contract(all)
 
 
-# tn.set_default_backend(_CustomNumpyBackend())
+def generate_instance_parameters(
+    virtual_circuit: VirtualCircuit,
+) -> dict[Fragment, Iterable[dict[Parameter, float]]]:
+    return {
+        frag: _gen_inst_parameters_for_fragment(virtual_circuit, frag)
+        for frag in virtual_circuit.fragments
+    }
 
 
-class Virtualizer:
-    def __init__(self, virtual_circuit: VirtualCircuit) -> None:
-        self._virtual_circuit = virtual_circuit
+def _gen_inst_parameters_for_fragment(
+    virtual_circuit: VirtualCircuit, fragment: Fragment
+) -> Iterable[dict[Parameter, float]]:
+    inst_ops = virtual_circuit.instance_operations(fragment)
+    params = [op.param for op in inst_ops]
+    n_insts = [op.num_instantiations for op in inst_ops]
 
-    def instantiations(self) -> dict[Fragment, list[QuantumCircuit]]:
-        return {
-            fragment: [
-                self._instantiate_fragment(fragment, inst_label)
-                for inst_label in self._instance_labels(fragment)
-            ]
-            for fragment in self._virtual_circuit.fragment_circuits.keys()
-        }
+    for inst_label in itertools.product(*[range(n) for n in n_insts]):
+        yield {param: inst_label[i] for i, param in enumerate(params)}
 
-    def knit(self, results: dict[Fragment, np.array]) -> np.array:
-        tensor_network = self._build_tensor_network(results)
-        return tn.contractors.auto(tensor_network).tensor
 
-    def _build_tensor_network(
-        self, results: dict[Fragment, list[np.array]]
-    ) -> list[tn.Node]:
-        fragments = list(self._virtual_circuit.fragment_circuits.keys())
-        for frag in fragments:
-            shape = tuple(
-                inst.num_instantiations
-                for inst in self._virtual_circuit.virtual_gates_in_fragment(frag)
+def build_tensornetwork(
+    virtual_circuit: VirtualCircuit, results: dict[Fragment, NDArray[np.float32]]
+) -> qtn.TensorNetwork:
+    all_tensors = []
+    fragment_tensors = {}
+
+    for fragment in virtual_circuit.fragments:
+        shape = tuple(
+            op.num_instantiations
+            for op in virtual_circuit.instance_operations(fragment)
+        )
+        tens = qtn.Tensor(
+            results[fragment].reshape(shape),
+            inds=list(range(len(shape))),
+            tags=[fragment.name, "frag_result"],
+        )
+        fragment_tensors[fragment] = tens
+        all_tensors.append(fragment_tensors[fragment])
+
+    for vgate_info in virtual_circuit.virtual_gate_infos:
+        if vgate_info.frag1 == vgate_info.frag2:
+            assert vgate_info.frag1_index == vgate_info.frag2_index
+
+            coeff_tensor = qtn.Tensor(
+                vgate_info.vgate.coefficients_1d(),
+                inds=[0],
+                tags=[f"coeff_{vgate_info.vgate.original_gate.name}", "coeff"],
             )
-            results[frag] = results[frag].reshape(shape)
+            all_tensors.append(coeff_tensor)
+            qtn.connect(
+                coeff_tensor,
+                fragment_tensors[vgate_info.frag1][vgate_info.frag1_index],
+                0,
+                vgate_info.frag1_index,
+            )
+            continue
 
-        frag_nodes = {
-            frag: tn.Node(results[frag], name=f"frag_{frag.name}") for frag in fragments
-        }
-
-        coeff_nodes = []
-        for vgate_info in self._virtual_circuit.virtual_gate_information:
-            if vgate_info.frag1 == vgate_info.frag2:
-                assert vgate_info.frag1_vgate_idx == vgate_info.frag2_vgate_idx
-                coeff_node = tn.Node(vgate_info.vgate.coefficients())
-                coeff_node[0] ^ frag_nodes[vgate_info.frag1][vgate_info.frag1_vgate_idx]
-                coeff_nodes.append(coeff_node)
-                continue
-
-            coeff_node = tn.Node(np.diag(vgate_info.vgate.coefficients()))
-            coeff_node[0] ^ frag_nodes[vgate_info.frag1][vgate_info.frag1_vgate_idx]
-            coeff_node[1] ^ frag_nodes[vgate_info.frag2][vgate_info.frag2_vgate_idx]
-            coeff_nodes.append(coeff_node)
-
-        return coeff_nodes + list(frag_nodes.values())
-
-    def _instantiate_fragment(
-        self, fragment: Fragment, inst_label: InstanceLabelType
-    ) -> QuantumCircuit:
-        frag_circuit = self._virtual_circuit.fragment_circuits[fragment]
-        if len(inst_label) == 0:
-            return frag_circuit.copy()
-
-        config_register = ClassicalRegister(len(inst_label), "vgate_c")
-        new_circuit = QuantumCircuit(
-            *frag_circuit.qregs, *(frag_circuit.cregs + [config_register])
+        # frag1 != frag2
+        coeff_tensor = qtn.Tensor(
+            vgate_info.vgate.coefficients_2d(),
+            inds=[0, 1],
+            tags=[f"coeff_{vgate_info.vgate.original_gate.name}", "coeff"],
+        )
+        all_tensors.append(coeff_tensor)
+        qtn.connect(
+            coeff_tensor,
+            fragment_tensors[vgate_info.frag1],
+            0,
+            vgate_info.frag1_index,
+        )
+        qtn.connect(
+            coeff_tensor,
+            fragment_tensors[vgate_info.frag2],
+            1,
+            vgate_info.frag2_index,
         )
 
-        # vgate_idx -> clbit_idx
-        applied_vgates: dict[int, int] = {}
-
-        vgate_ctr = 0
-        for instr in frag_circuit:
-            op, qubits, clbits = instr.operation, instr.qubits, instr.clbits
-            if isinstance(op, VirtualGateEndpoint):
-                vgate_idx = op.vgate_idx
-                if vgate_idx not in applied_vgates:
-                    applied_vgates[vgate_idx] = vgate_ctr
-                    vgate_ctr += 1
-
-                clbit_idx = applied_vgates[vgate_idx]
-
-                inst_id = inst_label[clbit_idx]
-                op = op.instantiate(inst_id).to_instruction()
-                clbits = [config_register[clbit_idx]]
-
-            new_circuit.append(op, qubits, clbits)
-        return new_circuit.decompose()
-        pass
-
-    def _instance_labels(self, fragment: Fragment) -> list[InstanceLabelType]:
-        frag_vgates = self._virtual_circuit.virtual_gates_in_fragment(fragment)
-        inst_list = [tuple(range(vgate.num_instantiations)) for vgate in frag_vgates]
-        return list(itertools.product(*inst_list))
+    return qtn.TensorNetwork(all_tensors)

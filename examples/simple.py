@@ -2,35 +2,44 @@ import numpy as np
 from fid import calculate_fidelity
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import TwoLocal
+from qiskit_aer import AerSimulator
 
 import qvm
+
+from qvm.runtime.runners import SimRunner
+from qvm.runtime.runner import sample_fragments, expval_from_counts
+from qvm.runtime.virtualizer import build_tensornetwork
 
 
 def main():
     circuit = QuantumCircuit(8)
-    circuit.h(0)
-    circuit.cx(range(7), range(1, 8))
-    # circuit = TwoLocal(
-    #     8,
-    #     rotation_blocks=["rz", "ry"],
-    #     entanglement_blocks="cz",
-    #     entanglement="linear",
-    #     reps=2,
-    # ).decompose()
+    # circuit.h(range(8))
+    # circuit.rzz(3* np.pi/2, range(7), range(1, 8))
+    # circuit.cx(range(7), range(1, 8))
+    circuit = TwoLocal(
+        8,
+        rotation_blocks=["rz", "ry"],
+        entanglement_blocks="cx",
+        entanglement="linear",
+        reps=1,
+    ).decompose()
     circuit.measure_all()
-    circuit = circuit.bind_parameters(
+    circuit = circuit.assign_parameters(
         {param: np.random.randn() / 2 for param in circuit.parameters}
     )
 
-    print(circuit)
-    comp = qvm.CutterCompiler(size_to_reach=4)
+    comp = qvm.CutterCompiler(size_to_reach=3)
     virtual_circuit = comp.run(circuit, budget=2)
-    for frag in virtual_circuit.fragment_circuits.values():
-        print(frag)
-    result, times = qvm.run(virtual_circuit, shots=10000)
-    print(result)
-    print(calculate_fidelity(circuit, result))
-    print(times)
+
+    virtual_circuit._orig_circuit.draw(output="mpl").savefig("circuit.png")
+
+    results = sample_fragments(virtual_circuit, SimRunner(), shots=100000)
+
+    tn = build_tensornetwork(virtual_circuit, results)
+    tn.draw(color=["frag_result", "coeff"])
+
+    counts = AerSimulator().run(circuit, shots=100000).result().get_counts()
+    print(abs(tn.contract() - expval_from_counts(counts)))
 
 
 if __name__ == "__main__":

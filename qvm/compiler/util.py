@@ -1,6 +1,6 @@
 from qiskit.circuit import QuantumCircuit
 
-from qvm.virtual_gates import VirtualBinaryGate
+from qvm.instructions import VirtualBinaryGate
 
 
 def num_virtual_gates(circuit: QuantumCircuit) -> int:
