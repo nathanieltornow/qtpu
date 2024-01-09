@@ -1,5 +1,5 @@
 import numpy as np
-from numpy import ndarray
+from numpy.typing import NDArray
 from qiskit.circuit import QuantumCircuit
 
 from qvm.instructions import VirtualBinaryGate
@@ -30,10 +30,12 @@ class VirtualRZZ(VirtualBinaryGate):
             (sdg, meas),
         ]
 
-    def coefficients_1d(self) -> np.ndarray:
+    def coefficients_1d(self) -> NDArray[np.float32]:
         theta = -self.original_gate.params[0] / 2
         cs = np.cos(theta) * np.sin(theta)
-        return np.array([np.cos(theta) ** 2, np.sin(theta) ** 2, -cs, cs, -cs, cs])
+        return np.array(
+            [np.cos(theta) ** 2, np.sin(theta) ** 2, -cs, cs, -cs, cs], dtype=np.float32
+        )
 
     def instantiations_qubit0(self) -> list[QuantumCircuit]:
         z = QuantumCircuit(1, 1)
@@ -55,7 +57,7 @@ class VirtualRZZ(VirtualBinaryGate):
     def instantiations_qubit1(self) -> list[QuantumCircuit]:
         return self.instantiations_qubit0()
 
-    def coefficients_2d(self) -> ndarray:
+    def coefficients_2d(self) -> NDArray[np.float32]:
         c = self.coefficients_1d()
         return np.array(
             [
@@ -65,5 +67,5 @@ class VirtualRZZ(VirtualBinaryGate):
                 [0, 0, c[4], 0, 0],
                 [0, 0, c[5], 0, 0],
             ],
-            dtype=np.float64,
+            dtype=np.float32,
         )

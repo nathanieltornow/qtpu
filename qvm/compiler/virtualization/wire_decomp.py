@@ -6,7 +6,8 @@ from qvm.compiler.asp import dag_to_asp, get_optimal_symbols
 from qvm.compiler.dag import DAG
 from qvm.compiler.types import VirtualizationPass
 from qvm.compiler.util import num_virtual_gates
-from qvm.virtual_gates import VirtualMove, WireCut
+from qvm.virtual_gates import VirtualMove
+from qvm.instructions import WireCut
 
 
 class OptimalWireCutter(VirtualizationPass):

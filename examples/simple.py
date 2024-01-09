@@ -28,15 +28,13 @@ def main():
         {param: np.random.randn() / 2 for param in circuit.parameters}
     )
 
-    comp = qvm.CutterCompiler(size_to_reach=3)
+    comp = qvm.CutterCompiler(size_to_reach=4)
     virtual_circuit = comp.run(circuit, budget=2)
-
-    virtual_circuit._orig_circuit.draw(output="mpl").savefig("circuit.png")
 
     results = sample_fragments(virtual_circuit, SimRunner(), shots=100000)
 
     tn = build_tensornetwork(virtual_circuit, results)
-    tn.draw(color=["frag_result", "coeff"])
+    # tn.draw(color=["frag_result", "coeff"])
 
     counts = AerSimulator().run(circuit, shots=100000).result().get_counts()
     print(abs(tn.contract() - expval_from_counts(counts)))

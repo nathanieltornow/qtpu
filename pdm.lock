@@ -5,7 +5,7 @@
 groups = ["default", "jupyter", "bench", "dev"]
 strategy = ["cross_platform"]
 lock_version = "4.4"
-content_hash = "sha256:a94dac5e110e7331993b3ffd9298c49a0fa7f10e4dd2ae706a1929349eb61f84"
+content_hash = "sha256:4e6c038b76babe0d62da58c22dd0690fcd936b167c5ff7b820ee6c73588b01a2"
 
 [[package]]
 name = "anyio"
@@ -1176,6 +1176,14 @@ dependencies = [
 files = [
     {file = "matplotlib-inline-0.1.6.tar.gz", hash = "sha256:f887e5f10ba98e8d2b150ddcf4702c1e5f8b3a20005eb0f74bfdbd360ee6f304"},
     {file = "matplotlib_inline-0.1.6-py3-none-any.whl", hash = "sha256:f1f41aab5328aa5aaea9b16d083b128102f8712542f819fe7e6a420ff581b311"},
+]
+
+[[package]]
+name = "metis"
+version = "0.2a5"
+summary = "METIS wrapper using ctypes"
+files = [
+    {file = "metis-0.2a5.tar.gz", hash = "sha256:c98f4aa129141554bea8d9e62daea5fea8351439f723e8e27fe593c2b7c53903"},
 ]
 
 [[package]]

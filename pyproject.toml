@@ -17,6 +17,7 @@ dependencies = [
     "circuit-knitting-toolbox>=0.5.0",
     "pip>=23.3.2",
     "quimb>=1.7.0",
+    "metis>=0.2a5",
 ]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"

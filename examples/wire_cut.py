@@ -2,9 +2,14 @@ import numpy as np
 from fid import calculate_fidelity
 from qiskit.circuit import ClassicalRegister, QuantumCircuit
 from qiskit.circuit.library import EfficientSU2
+from qiskit_aer import AerSimulator
 
-from qvm import VirtualCircuit, run
+from qvm.virtual_circuit import VirtualCircuit
 from qvm.compiler.virtualization.wire_decomp import OptimalWireCutter
+
+from qvm.runtime.runners import SimRunner
+from qvm.runtime.runner import sample_fragments, expval_from_counts
+from qvm.runtime.virtualizer import build_tensornetwork
 
 
 def main():
@@ -24,8 +29,13 @@ def main():
 
     virt_circ = VirtualCircuit(cut_circuit)
 
-    result, _ = run(virt_circ, shots=10000)
-    print(calculate_fidelity(cp, result))
+    results = sample_fragments(virt_circ, SimRunner(), shots=100000)
+
+    tn = build_tensornetwork(virt_circ, results)
+    # tn.draw(color=["frag_result", "coeff"])
+
+    counts = AerSimulator().run(circuit, shots=100000).result().get_counts()
+    print(abs(tn.contract() - expval_from_counts(counts)))
 
 
 if __name__ == "__main__":

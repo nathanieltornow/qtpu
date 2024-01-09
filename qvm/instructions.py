@@ -1,7 +1,16 @@
 import abc
 
 import numpy as np
-from qiskit.circuit import Gate, Instruction, QuantumCircuit, Barrier, Parameter, Qubit
+from numpy.typing import NDArray
+from qiskit.circuit import (
+    Gate,
+    Instruction,
+    QuantumCircuit,
+    Barrier,
+    Parameter,
+    Qubit,
+    QuantumRegister,
+)
 
 
 class VirtualBinaryGate(Barrier, abc.ABC):
@@ -25,17 +34,32 @@ class VirtualBinaryGate(Barrier, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def coefficients_1d(self) -> np.ndarray:
+    def coefficients_1d(self) -> NDArray[np.float32]:
         pass
 
     def instantiations_qubit0(self) -> list[QuantumCircuit]:
-        return [inst[0] for inst in self.instantiations()]
+        return [self._circ_on_qubit(inst, 0) for inst in self.instantiations()]
 
     def instantiations_qubit1(self) -> list[QuantumCircuit]:
-        return [inst[1] for inst in self.instantiations()]
+        return [self._circ_on_qubit(inst, 1) for inst in self.instantiations()]
 
-    def coefficients_2d(self) -> np.ndarray:
+    def coefficients_2d(self) -> NDArray[np.float32]:
         return np.diag(self.coefficients_1d())
+
+    @staticmethod
+    def _circ_on_qubit(circ: QuantumCircuit, qubit_index: int) -> QuantumCircuit:
+        qreg = QuantumRegister(1)
+        new_circ = QuantumCircuit(qreg, *circ.cregs)
+        qubit = circ.qubits[qubit_index]
+        for instr in circ:
+            if tuple(instr.qubits) == (qubit,):
+                new_circ.append(instr.operation, [qreg[0]], instr.clbits)
+        return new_circ
+
+
+class WireCut(Barrier):
+    def __init__(self):
+        super().__init__(num_qubits=1, label="wire_cut")
 
 
 class InstantiableInstruction(Instruction):
