@@ -14,7 +14,7 @@ from qiskit.circuit import (
     Qubit,
 )
 
-from qvm.virtual_gates import VIRTUAL_GATE_TYPES
+from qvm.virtual_gates import VIRTUAL_GATE_GENERATORS
 
 
 class DAG(nx.DiGraph):

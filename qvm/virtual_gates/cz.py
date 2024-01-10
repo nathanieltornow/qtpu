@@ -6,6 +6,9 @@ from qvm.instructions import VirtualBinaryGate
 
 
 class VirtualCZ(VirtualBinaryGate):
+    def __init__(self, label: str | None = None) -> None:
+        super().__init__(name="v_cz", params=[], label=label)
+
     def instantiations(self) -> list[QuantumCircuit]:
         c1 = QuantumCircuit(2, 1)
         c1.sdg(0)

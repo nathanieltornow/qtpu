@@ -4,6 +4,10 @@ from .cz import VirtualCZ
 
 
 class VirtualCX(VirtualCZ):
+    def __init__(self, label: str | None = None) -> None:
+        super().__init__(label)
+        self._name = "v_cx"
+
     def instantiations(self) -> list[QuantumCircuit]:
         h = QuantumCircuit(1)
         h.h(0)

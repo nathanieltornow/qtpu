@@ -6,6 +6,9 @@ from qvm.instructions import VirtualBinaryGate
 
 
 class VirtualRZZ(VirtualBinaryGate):
+    def __init__(self, params: list, label: str | None = None) -> None:
+        super().__init__("v_rzz", params, label)
+
     def instantiations(self) -> list[tuple[QuantumCircuit, QuantumCircuit]]:
         z = QuantumCircuit(1, 1)
         z.z(0)
@@ -31,7 +34,7 @@ class VirtualRZZ(VirtualBinaryGate):
         ]
 
     def coefficients_1d(self) -> NDArray[np.float32]:
-        theta = -self.original_gate.params[0] / 2
+        theta = -self.params[0] / 2
         cs = np.cos(theta) * np.sin(theta)
         return np.array(
             [np.cos(theta) ** 2, np.sin(theta) ** 2, -cs, cs, -cs, cs], dtype=np.float32

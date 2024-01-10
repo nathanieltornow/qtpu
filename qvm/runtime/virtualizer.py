@@ -65,7 +65,7 @@ def build_tensornetwork(
             coeff_tensor = qtn.Tensor(
                 vgate_info.vgate.coefficients_1d(),
                 inds=[0],
-                tags=[f"coeff_{vgate_info.vgate.original_gate.name}", "coeff"],
+                tags=[f"coeff_{vgate_info.vgate.name}", "coeff"],
             )
             all_tensors.append(coeff_tensor)
             qtn.connect(
@@ -80,7 +80,7 @@ def build_tensornetwork(
         coeff_tensor = qtn.Tensor(
             vgate_info.vgate.coefficients_2d(),
             inds=[0, 1],
-            tags=[f"coeff_{vgate_info.vgate.original_gate.name}", "coeff"],
+            tags=[f"coeff_{vgate_info.vgate.name}", "coeff"],
         )
         all_tensors.append(coeff_tensor)
         qtn.connect(

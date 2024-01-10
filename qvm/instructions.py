@@ -6,24 +6,20 @@ from qiskit.circuit import (
     Gate,
     Instruction,
     QuantumCircuit,
-    Barrier,
+    # Barrier,
     Parameter,
-    Qubit,
     QuantumRegister,
 )
 
 
-class VirtualBinaryGate(Barrier, abc.ABC):
-    def __init__(self, original_gate: Gate):
-        self._original_gate = original_gate
-        super().__init__(
-            num_qubits=2,
-            label=f"v_{original_gate.name}",
-        )
-
-    @property
-    def original_gate(self) -> Gate:
-        return self._original_gate
+class VirtualBinaryGate(Gate, abc.ABC):
+    def __init__(
+        self,
+        name: str,
+        params: list,
+        label: str | None = None,
+    ) -> None:
+        super().__init__(name=name, num_qubits=2, params=params, label=label)
 
     @property
     def num_instantiations(self) -> int:
@@ -57,9 +53,12 @@ class VirtualBinaryGate(Barrier, abc.ABC):
         return new_circ
 
 
-class WireCut(Barrier):
-    def __init__(self):
-        super().__init__(num_qubits=1, label="wire_cut")
+class WireCut(Gate):
+    def __init__(
+        self,
+        label: str | None = None,
+    ) -> None:
+        super().__init__(name="wire_cut", num_qubits=1, params=[], label=label)
 
 
 class InstantiableInstruction(Instruction):

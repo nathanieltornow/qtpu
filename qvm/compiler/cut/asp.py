@@ -5,17 +5,18 @@ import networkx as nx
 from .cutter import TNCutter
 
 
+# TODO
 class ASPCutter(TNCutter):
     def __init__(self, max_cost: int) -> None:
         self._max_cost = max_cost
         super().__init__()
 
-    def _cut_tn(self, cut_graph: nx.Graph) -> list[tuple[int, int]]:
-        asp = self._cut_graph_to_asp(cut_graph)
-        with open(str(str(Path(__file__).parent / "opt_cut.ll")), "r") as f:
-            asp += f.read()
-        symbols = self.get_optimal_symbols(asp)
-        print(symbols)
+    # def _cut_tn(self, cut_graph: nx.Graph) -> list[tuple[int, int]]:
+    #     asp = self._cut_graph_to_asp(cut_graph)
+    #     with open(str(str(Path(__file__).parent / "opt_cut.ll")), "r") as f:
+    #         asp += f.read()
+    #     symbols = self.get_optimal_symbols(asp)
+    #     print(symbols)
 
     @staticmethod
     def _cut_graph_to_asp(cut_graph: nx.Graph) -> str:
