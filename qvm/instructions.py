@@ -2,12 +2,11 @@ import abc
 
 import numpy as np
 from numpy.typing import NDArray
-from qiskit.circuit import (
+from qiskit.circuit import (  # Barrier,
     Gate,
     Instruction,
-    QuantumCircuit,
-    # Barrier,
     Parameter,
+    QuantumCircuit,
     QuantumRegister,
 )
 

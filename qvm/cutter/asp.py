@@ -2,7 +2,7 @@ from pathlib import Path
 
 import networkx as nx
 
-from .cutter import TNCutter
+from ._cutter import TNCutter
 
 
 # TODO
@@ -28,7 +28,7 @@ class ASPCutter(TNCutter):
         return asp
 
     @staticmethod
-    def get_optimal_symbols(asp: str) -> list["clingo.Symbol"]:
+    def get_optimal_symbols(asp: str) -> list:
         try:
             from clingo.control import Control
         except ImportError as e:

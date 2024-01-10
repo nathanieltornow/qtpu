@@ -1,9 +1,9 @@
-from qvm.compiler.cut.metis import *
-from qvm.compiler.cut.asp import ASPCutter
-from qvm.compiler.cut.cutter import *
-
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import TwoLocal
+
+from qvm.cutter.cut.asp import ASPCutter
+from qvm.cutter.cut.cutter import *
+from qvm.cutter.cut.metis import *
 
 circuit = TwoLocal(
     8,

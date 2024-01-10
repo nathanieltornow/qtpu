@@ -1,18 +1,18 @@
 import itertools
-from typing import Iterable
 from dataclasses import dataclass
+from typing import Iterable
 
 import numpy as np
 from qiskit.circuit import (
     Barrier,
-    QuantumCircuit,
-    Parameter,
-    QuantumRegister as Fragment,
-    Instruction,
     ClassicalRegister,
+    Instruction,
+    Parameter,
+    QuantumCircuit,
 )
+from qiskit.circuit import QuantumRegister as Fragment
 
-from qvm.instructions import VirtualBinaryGate, InstantiableInstruction
+from qvm.instructions import InstantiableInstruction, VirtualBinaryGate
 
 
 @dataclass

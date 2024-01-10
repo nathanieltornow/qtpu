@@ -3,12 +3,13 @@ from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
-from qiskit.circuit import QuantumCircuit, Parameter, QuantumRegister as Fragment
-
+from qiskit.circuit import Parameter, QuantumCircuit
+from qiskit.circuit import QuantumRegister as Fragment
 
 from qvm.virtual_circuit import VirtualCircuit
-from .virtualizer import generate_instance_parameters
+
 from ._types import Counts
+from .virtualizer import generate_instance_parameters
 
 
 @dataclass

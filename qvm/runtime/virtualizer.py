@@ -1,13 +1,12 @@
 import abc
-from typing import Iterable
 import itertools
+from typing import Iterable
 
 import numpy as np
-from numpy.typing import NDArray
-
 import quimb.tensor as qtn
-
-from qiskit.circuit import Parameter, QuantumRegister as Fragment
+from numpy.typing import NDArray
+from qiskit.circuit import Parameter
+from qiskit.circuit import QuantumRegister as Fragment
 
 from qvm.virtual_circuit import VirtualCircuit
 
@@ -70,7 +69,7 @@ def build_tensornetwork(
             all_tensors.append(coeff_tensor)
             qtn.connect(
                 coeff_tensor,
-                fragment_tensors[vgate_info.frag1][vgate_info.frag1_index],
+                fragment_tensors[vgate_info.frag1],
                 0,
                 vgate_info.frag1_index,
             )

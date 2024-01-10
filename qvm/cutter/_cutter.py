@@ -1,16 +1,22 @@
 import abc
 
 import networkx as nx
-from qiskit.circuit import QuantumCircuit, Qubit, QuantumRegister, Barrier
+from qiskit.circuit import Barrier, QuantumCircuit, QuantumRegister, Qubit
 
-from qvm.instructions import WireCut, VirtualBinaryGate
-from qvm.virtual_gates import VirtualMove, VIRTUAL_GATE_GENERATORS
+from qvm.instructions import VirtualBinaryGate, WireCut
+from qvm.virtual_gates import VIRTUAL_GATE_GENERATORS, VirtualMove
 
 
 class Cutter(abc.ABC):
     @abc.abstractmethod
-    def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
+    def _run(self, circuit: QuantumCircuit) -> QuantumCircuit:
         pass
+
+    def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
+        circuit = self._run(circuit)
+        circuit = wire_cuts_to_moves(circuit)
+        circuit = decompose_circuit(circuit)
+        return circuit
 
 
 def wire_cuts_to_moves(circuit: QuantumCircuit) -> QuantumCircuit:
@@ -69,7 +75,7 @@ class TNCutter(Cutter, abc.ABC):
     def _cut_tn(self, tn_graph: nx.Graph) -> list[tuple[int, int]]:
         pass
 
-    def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
+    def _run(self, circuit: QuantumCircuit) -> QuantumCircuit:
         circuit = circuit.copy()
         cut_graph = circuit_to_tn_graph(circuit)
         cut_edges = self._cut_tn(cut_graph)
@@ -120,7 +126,7 @@ class QubitGraphCutter(Cutter, abc.ABC):
     def _cut_qubit_graph(self, qubit_graph: nx.Graph) -> list[tuple[int, int]]:
         pass
 
-    def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
+    def _run(self, circuit: QuantumCircuit) -> QuantumCircuit:
         qubit_graph = circuit_to_qubit_graph(circuit)
         cut_edges = self._cut_qubit_graph(qubit_graph)
 
@@ -140,10 +146,10 @@ class QubitGraphCutter(Cutter, abc.ABC):
 
 class PortGraphCutter(Cutter, abc.ABC):
     @abc.abstractmethod
-    def _cut_portgraph(self, dag: nx.DiGraph) -> list[tuple[int, int]]:
+    def _cut_portgraph(self, port_graph: nx.DiGraph) -> list[tuple[int, int]]:
         ...
 
-    def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
+    def _run(self, circuit: QuantumCircuit) -> QuantumCircuit:
         port_graph = circuit_to_portgraph(circuit)
         cut_edges = self._cut_portgraph(port_graph)
 

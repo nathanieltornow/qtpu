@@ -1,8 +1,8 @@
 from qiskit.circuit import Parameter, QuantumCircuit
+from qiskit_aer import AerSimulator
+
 from qvm.runtime._types import Counts
 from qvm.runtime.runner import Runner
-
-from qiskit_aer import AerSimulator
 
 
 class SimRunner(Runner):

@@ -1,6 +1,6 @@
 import networkx as nx
 
-from .cutter import TNCutter, QubitGraphCutter, PortGraphCutter
+from ._cutter import PortGraphCutter, QubitGraphCutter, TNCutter
 
 
 class MetisTNCutter(TNCutter):

@@ -1,10 +1,11 @@
 from typing import Callable
 
 from qvm.instructions import VirtualBinaryGate
-from .cz import VirtualCZ
+
 from .cx import VirtualCX
-from .rzz import VirtualRZZ
+from .cz import VirtualCZ
 from .move import VirtualMove
+from .rzz import VirtualRZZ
 
 
 def generate_virtual_cz(_: list) -> VirtualCZ:
