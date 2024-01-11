@@ -26,6 +26,7 @@ class BisectionQubitGraphCutter(QubitGraphCutter):
 
 class BisectionPortGraphCutter(PortGraphCutter):
     def _cut_portgraph(self, port_graph: nx.DiGraph) -> list[tuple[int, int]]:
+        port_graph = port_graph.to_undirected()
         A, B = kernighan_lin_bisection(port_graph)
         cut_edges = []
         for node1, node2 in port_graph.edges:

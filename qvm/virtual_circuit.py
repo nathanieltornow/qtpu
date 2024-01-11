@@ -46,14 +46,6 @@ class VirtualCircuit:
     @property
     def virtual_gates(self) -> list[VirtualBinaryGate]:
         return [info.vgate for info in self._vgate_infos]
-    
-    @property
-    def num_clbits(self) -> int:
-        return self._orig_circuit.num_clbits
-
-    # @property
-    # def circuit(self) -> QuantumCircuit:
-    #     return self._orig_circuit
 
     @property
     def fragment_circuits(self) -> dict[Fragment, QuantumCircuit]:
@@ -68,7 +60,7 @@ class VirtualCircuit:
             frag: np.prod(
                 [op.num_instantiations for op in self._inst_ops_per_frag[frag]]
             )
-            for frag in self._orig_circuit.qregs
+            for frag in self.fragments
         }
         return sum(list(inst_per_fragment.values()))
 

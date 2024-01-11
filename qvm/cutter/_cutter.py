@@ -96,6 +96,8 @@ class TNCutter(Cutter, abc.ABC):
 
             if instr1 == instr2:
                 old_op = circuit[instr1].operation
+                if isinstance(old_op, VirtualBinaryGate) or isinstance(old_op, Barrier):
+                    continue
                 vgate = VIRTUAL_GATE_GENERATORS[old_op.name](old_op.params)
                 vgates[instr1] = vgate
 
@@ -136,7 +138,7 @@ class QubitGraphCutter(Cutter, abc.ABC):
 
             if len(qubits) == 2:
                 q1_idx, q2_idx = [circuit.qubits.index(qubit) for qubit in qubits]
-                if (q1_idx, q2_idx) in cut_edges:
+                if (q1_idx, q2_idx) in cut_edges or (q2_idx, q1_idx) in cut_edges:
                     op = VIRTUAL_GATE_GENERATORS[op.name](op.params)
 
             new_circuit.append(op, qubits, clbits)
@@ -247,7 +249,7 @@ def circuit_to_tn_graph(
 
             nodeidx += 1
 
-        if isinstance(instr.operation, VirtualBinaryGate):
+        if isinstance(instr.operation, VirtualBinaryGate | Barrier):
             continue
 
         for i in range(len(added_nodes) - 1):

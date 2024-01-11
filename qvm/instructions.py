@@ -2,7 +2,7 @@ import abc
 
 import numpy as np
 from numpy.typing import NDArray
-from qiskit.circuit import (  # Barrier,
+from qiskit.circuit import (
     Gate,
     Instruction,
     Parameter,

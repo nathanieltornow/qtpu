@@ -96,3 +96,17 @@ def build_tensornetwork(
         )
 
     return qtn.TensorNetwork(all_tensors)
+
+
+def build_dummy_tensornetwork(virtual_circuit: VirtualCircuit) -> qtn.TensorNetwork:
+    inst_per_fragment = {
+        frag: np.prod(
+            [op.num_instantiations for op in virtual_circuit.instance_operations(frag)]
+        )
+        for frag in virtual_circuit.fragments
+    }
+    dummy_results = {
+        frag: np.random.random((inst_per_fragment[frag],))
+        for frag in virtual_circuit.fragments
+    }
+    return build_tensornetwork(virtual_circuit, dummy_results)
