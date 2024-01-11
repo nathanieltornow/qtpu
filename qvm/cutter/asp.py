@@ -5,11 +5,24 @@ import networkx as nx
 from ._cutter import TNCutter
 
 
-# TODO
 class ASPCutter(TNCutter):
     def __init__(self, max_cost: int) -> None:
         self._max_cost = max_cost
         super().__init__()
+
+    def _cut_tn(self, tn_graph: nx.Graph) -> list[tuple[int, int]]:
+        asp = self._cut_graph_to_asp(tn_graph)
+        with open(str(str(Path(__file__).parent / "opt_cut.ll")), "r") as f:
+            asp += f.read()
+
+        num_partitions = 2
+        asp += f"#const num_partitions = {num_partitions}.\n"
+
+        print(asp)
+
+        symbols = self.get_result_symbols(asp)
+        print(symbols)
+
 
     # def _cut_tn(self, cut_graph: nx.Graph) -> list[tuple[int, int]]:
     #     asp = self._cut_graph_to_asp(cut_graph)
@@ -28,14 +41,14 @@ class ASPCutter(TNCutter):
         return asp
 
     @staticmethod
-    def get_optimal_symbols(asp: str) -> list:
+    def get_result_symbols(asp: str, num_answers: int = 0) -> list:
         try:
             from clingo.control import Control
         except ImportError as e:
             raise ImportError("ASPCutter requires clingo") from e
 
         control = Control()
-        control.configuration.solve.models = 0  # type: ignore
+        control.configuration.solve.models = num_answers  # type: ignore
         control.add("base", [], asp)
         control.ground([("base", [])])
         solve_result = control.solve(yield_=True)  # type: ignore

@@ -1,4 +1,4 @@
-partition(P) :- P = 0..2 - 1.
+partition(P) :- P = 0..num_partitions - 1.
 
 { node_in_partition(Node, P) : partition(P) } == 1 :- node(Node, _).
 
@@ -12,6 +12,9 @@ cut_edge(Node1, Node2) :-
     node_in_partition(Node2, P2), 
     P1 != P2.
 
+
+
 #minimize { Sum : partition_size_sum(Sum) }.
+
 
 #show cut_edge/2.
