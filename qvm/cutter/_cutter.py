@@ -5,7 +5,7 @@ from qiskit.circuit import Barrier, QuantumCircuit, QuantumRegister, Qubit
 
 from qvm.instructions import VirtualBinaryGate, WireCut
 from qvm.virtual_gates import VIRTUAL_GATE_GENERATORS, VirtualMove
-from ._graphs import TNGraph
+from ._graphs import TNGraph, QubitGraph
 
 
 class Cutter(abc.ABC):
@@ -129,7 +129,7 @@ def wire_cuts_to_moves(circuit: QuantumCircuit) -> QuantumCircuit:
 
 
 def decompose_circuit(circuit: QuantumCircuit) -> QuantumCircuit:
-    qubit_graph = circuit_to_qubit_graph(circuit)
+    qubit_graph = QubitGraph(circuit)
     qubit_mapping: dict[Qubit, Qubit] = {}
     new_qregs = []
     frag_ctr = 0
@@ -148,25 +148,3 @@ def decompose_circuit(circuit: QuantumCircuit) -> QuantumCircuit:
         new_circuit.append(op, qubits, clbits)
 
     return new_circuit
-
-
-def circuit_to_qubit_graph(circuit: QuantumCircuit) -> nx.Graph:
-    graph = nx.Graph()
-    graph.add_nodes_from(range(len(circuit.qubits)))
-
-    for instr in circuit:
-        if (
-            len(instr.qubits) == 1
-            or isinstance(instr.operation, Barrier)
-            or isinstance(instr.operation, VirtualBinaryGate)
-        ):
-            continue
-        for qubit1, qubit2 in zip(instr.qubits, instr.qubits[1:]):
-            q1_idx, q2_idx = circuit.qubits.index(qubit1), circuit.qubits.index(qubit2)
-            if graph.has_edge(q1_idx, q2_idx):
-                graph[q1_idx][q2_idx]["weight"] += 1
-            graph.add_edge(
-                circuit.qubits.index(qubit1), circuit.qubits.index(qubit2), weight=1
-            )
-
-    return graph

@@ -1,13 +1,9 @@
-import itertools
 from dataclasses import dataclass
-from typing import Iterable
 
 import numpy as np
 from qiskit.circuit import (
     Barrier,
     ClassicalRegister,
-    Instruction,
-    Parameter,
     QuantumCircuit,
 )
 from qiskit.circuit import QuantumRegister as Fragment
