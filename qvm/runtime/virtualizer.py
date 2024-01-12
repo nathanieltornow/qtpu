@@ -9,6 +9,7 @@ from qiskit.circuit import Parameter
 from qiskit.circuit import QuantumRegister as Fragment
 
 from qvm.virtual_circuit import VirtualCircuit
+from qvm.virtual_gates import VirtualMove
 
 
 def knit(
@@ -74,6 +75,26 @@ def build_tensornetwork(
                 vgate_info.frag1_index,
             )
             continue
+
+        if isinstance(vgate_info.vgate, VirtualMove):
+            # see CutQC paper for details
+            t1_arr = fragment_tensors[vgate_info.frag1].data
+            t2_arr = fragment_tensors[vgate_info.frag2].data
+
+            ax_1 = vgate_info.frag1_index
+            ax_2 = vgate_info.frag2_index
+
+            t1_arr = np.moveaxis(t1_arr, ax_1, 0)
+            t2_arr = np.moveaxis(t2_arr, ax_2, 0)
+
+            t1_arr[0], t1_arr[1] = t1_arr[0] + t1_arr[1], t1_arr[0] - t1_arr[1]
+            t01 = t2_arr[0] + t2_arr[1]
+            t2_arr[2] *= 2
+            t2_arr[2] -= t01
+            t2_arr[3] *= 2
+            t2_arr[3] -= t01
+
+            t1_arr = np.moveaxis(t1_arr, 0, ax_1)
 
         # frag1 != frag2
         coeff_tensor = qtn.Tensor(

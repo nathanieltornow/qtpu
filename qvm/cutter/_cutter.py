@@ -15,7 +15,6 @@ class Cutter(abc.ABC):
 
     def _cut_cost(self, tn_graph: TNGraph, cut_edges: set[tuple[int, int]]) -> int:
         g = tn_graph.copy()
-        print(type(g))
         g.remove_edges_from(cut_edges)
         ccs = list(nx.connected_components(g))
 

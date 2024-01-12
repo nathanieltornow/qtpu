@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import float32
 from numpy.typing import NDArray
 from qiskit.circuit import QuantumCircuit
 
@@ -48,3 +49,36 @@ class VirtualMove(VirtualBinaryGate):
 
     def coefficients_1d(self) -> NDArray[np.float32]:
         return 0.5 * np.array([1, 1, 1, -1, 1, -1, 1, -1], dtype=np.float32)
+
+    def instantiations_qubit0(self) -> list[QuantumCircuit]:
+        i = QuantumCircuit(1, 1)
+
+        z = QuantumCircuit(1, 1)
+        z.measure(0, 0)
+
+        x = QuantumCircuit(1, 1)
+        x.h(0)
+        x.measure(0, 0)
+
+        y = QuantumCircuit(1, 1)
+        y.sx(0)
+        y.measure(0, 0)
+
+        return [i, z, x, y]
+
+    def instantiations_qubit1(self) -> list[QuantumCircuit]:
+        zero = QuantumCircuit(1, 1)
+
+        one = QuantumCircuit(1, 1)
+        one.x(0)
+
+        plus = QuantumCircuit(1, 1)
+        plus.h(0)
+
+        iplus = QuantumCircuit(1, 1)
+        iplus.sxdg(0)
+
+        return [zero, one, plus, iplus]
+
+    def coefficients_2d(self) -> NDArray[float32]:
+        return 0.5 * np.diag(np.array([1, 1, 1, 1]))
