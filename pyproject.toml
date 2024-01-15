@@ -8,14 +8,10 @@ authors = [
 dependencies = [
     "qiskit>=0.41.1",
     "networkx>=3.0",
-    "qiskit-ibmq-provider>=0.20.1",
     "setuptools>=67.6.0",
     "clingo>=5.6.2",
-    "mapomatic>=0.8.0",
     "numpy>=1.23.5",
     "qiskit-aer>=0.13.1",
-    "circuit-knitting-toolbox>=0.5.0",
-    "pip>=23.3.2",
     "quimb>=1.7.0",
     "metis>=0.2a5",
 ]
@@ -25,7 +21,6 @@ license = {text = "MIT"}
 [project.optional-dependencies]
 jupyter = [
     "jupyter>=1.0.0",
-    "matplotlib>=3.7.0",
     "pylatexenc>=2.10",
 ]
 dev = [
@@ -38,6 +33,7 @@ dev = [
 bench = [
     "pandas>=2.0.1",
     "mqt-bench>=1.0.7",
+    "matplotlib>=3.8.2",
 ]
 
 [build-system]
