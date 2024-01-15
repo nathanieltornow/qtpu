@@ -17,6 +17,9 @@ class TNGraph(nx.Graph):
         for instr_idx, instr in enumerate(circuit):
             added_nodes: list[int] = []
 
+            if len(instr.qubits) == 1:
+                continue
+
             for qubit in instr.qubits:
                 qubit_idx = circuit.qubits.index(qubit)
 
@@ -37,13 +40,18 @@ class TNGraph(nx.Graph):
 
     def copy(self, as_view=False) -> Graph:
         return TNGraph(self._circuit)
-        
 
     def is_wire_edge(self, u: int, v: int) -> bool:
-        return self.has_edge(u, v) and self.nodes[u]["qubit_idx"] == self.nodes[v]["qubit_idx"]
-    
+        return (
+            self.has_edge(u, v)
+            and self.nodes[u]["qubit_idx"] == self.nodes[v]["qubit_idx"]
+        )
+
     def is_gate_edge(self, u: int, v: int) -> bool:
-        return self.has_edge(u, v) and self.nodes[u]["instr_idx"] == self.nodes[v]["instr_idx"]
+        return (
+            self.has_edge(u, v)
+            and self.nodes[u]["instr_idx"] == self.nodes[v]["instr_idx"]
+        )
 
 
 class QubitGraph(nx.Graph):
@@ -59,7 +67,10 @@ class QubitGraph(nx.Graph):
             ):
                 continue
             for qubit1, qubit2 in zip(instr.qubits, instr.qubits[1:]):
-                q1_idx, q2_idx = circuit.qubits.index(qubit1), circuit.qubits.index(qubit2)
+                q1_idx, q2_idx = (
+                    circuit.qubits.index(qubit1),
+                    circuit.qubits.index(qubit2),
+                )
                 if self.has_edge(q1_idx, q2_idx):
                     self[q1_idx][q2_idx]["weight"] += 1
                 self.add_edge(
