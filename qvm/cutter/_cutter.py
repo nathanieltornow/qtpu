@@ -34,6 +34,7 @@ class Cutter(abc.ABC):
         for u, v in cut_edges:
             u_cc, v_cc = _find_components(u, v)
             if u_cc == v_cc:
+                print("Warning: cut edge between same component")
                 cut_edges.remove((u, v))
                 continue
 
