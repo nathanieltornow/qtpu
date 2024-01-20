@@ -33,10 +33,10 @@ class Cutter(abc.ABC):
 
         for u, v in cut_edges:
             u_cc, v_cc = _find_components(u, v)
-            if u_cc == v_cc:
-                print("Warning: cut edge between same component")
-                cut_edges.remove((u, v))
-                continue
+            # if u_cc == v_cc:
+            #     print("Warning: cut edge between same component")
+            #     cut_edges.remove((u, v))
+            #     continue
 
             # u_cc != v_cc
             if tn_graph.is_wire_edge(u, v):
@@ -48,14 +48,14 @@ class Cutter(abc.ABC):
             else:
                 raise ValueError("Invalid edge")
 
-        return sum(costs)
+        return max(costs)
 
     def run(self, circuit: QuantumCircuit) -> QuantumCircuit:
         tn_graph = TNGraph(circuit)
         cut_edges = self._cut(tn_graph)
 
         vgates: dict[int, VirtualBinaryGate] = {}
-        wire_cuts: dict[int, int] = {}
+        wire_cuts: dict[int, set[int]] = {}
         for node1, node2 in cut_edges:
             assert tn_graph.has_edge(node1, node2)
 
@@ -77,7 +77,9 @@ class Cutter(abc.ABC):
 
             elif qubit1 == qubit2:
                 first_instr = min(instr1, instr2)
-                wire_cuts[first_instr] = tn_graph.nodes[node1]["qubit_idx"]
+                if first_instr not in wire_cuts:
+                    wire_cuts[first_instr] = set()
+                wire_cuts[first_instr].add(tn_graph.nodes[node1]["qubit_idx"])
 
             else:
                 raise ValueError("Invalid cut")
@@ -92,7 +94,8 @@ class Cutter(abc.ABC):
             res_circuit.append(op, qubits, clbits)
 
             if i in wire_cuts:
-                res_circuit.append(WireCut(), [wire_cuts[i]], [])
+                for qubit_idx in wire_cuts[i]:
+                    res_circuit.append(WireCut(), [qubit_idx], [])
 
         res_circuit = wire_cuts_to_moves(res_circuit)
         res_circuit = decompose_circuit(res_circuit)

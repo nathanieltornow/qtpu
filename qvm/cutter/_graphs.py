@@ -17,7 +17,9 @@ class TNGraph(nx.Graph):
         for instr_idx, instr in enumerate(circuit):
             added_nodes: list[int] = []
 
-            if len(instr.qubits) == 1:
+            if len(instr.qubits) == 1 or isinstance(
+                instr.operation, VirtualBinaryGate | Barrier
+            ):
                 continue
 
             for qubit in instr.qubits:
@@ -31,9 +33,6 @@ class TNGraph(nx.Graph):
                 current_nodes[qubit_idx] = nodeidx
 
                 nodeidx += 1
-
-            if isinstance(instr.operation, VirtualBinaryGate | Barrier):
-                continue
 
             for i in range(len(added_nodes) - 1):
                 self.add_edge(added_nodes[i], added_nodes[i + 1], weight=gate_cost)
