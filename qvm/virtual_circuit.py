@@ -53,12 +53,12 @@ class VirtualCircuit:
 
     def num_instantiations(self) -> int:
         inst_per_fragment = {
-            frag: np.prod(
+            frag.name: np.prod(
                 [op.num_instantiations for op in self._inst_ops_per_frag[frag]]
             )
             for frag in self.fragments
         }
-        return sum(list(inst_per_fragment.values()))
+        return inst_per_fragment
 
     @staticmethod
     def _circuit_on_fragment(

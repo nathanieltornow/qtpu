@@ -10,28 +10,29 @@ class VirtualRZZ(VirtualBinaryGate):
         super().__init__("v_rzz", params, label)
 
     def instantiations(self) -> list[tuple[QuantumCircuit, QuantumCircuit]]:
-        z = QuantumCircuit(1, 1)
-        z.z(0)
+        c1 = QuantumCircuit(2, 1)
 
-        s = QuantumCircuit(1, 1)
-        s.s(0)
+        c2 = QuantumCircuit(2, 1)
+        c2.z(0)
+        c2.z(1)
 
-        sdg = QuantumCircuit(1, 1)
-        sdg.sdg(0)
+        c3 = QuantumCircuit(2, 1)
+        c3.measure(0, 0)
+        c3.s(1)
 
-        meas = QuantumCircuit(1, 1)
-        meas.measure(0, 0)
+        c4 = QuantumCircuit(2, 1)
+        c4.measure(0, 0)
+        c4.sdg(1)
 
-        i = QuantumCircuit(1, 1)
+        c5 = QuantumCircuit(2, 1)
+        c5.s(0)
+        c5.measure(1, 0)
 
-        return [
-            (i, i),
-            (z, z),
-            (meas, s),
-            (meas, sdg),
-            (s, meas),
-            (sdg, meas),
-        ]
+        c6 = QuantumCircuit(2, 1)
+        c6.sdg(0)
+        c6.measure(1, 0)
+
+        return [c1, c2, c3, c4, c5, c6]
 
     def coefficients_1d(self) -> NDArray[np.float32]:
         theta = -self.params[0] / 2
