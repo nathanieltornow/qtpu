@@ -1,10 +1,13 @@
+from typing import Iterable
 from dataclasses import dataclass
+import itertools
 
 import numpy as np
 from qiskit.circuit import (
     Barrier,
     ClassicalRegister,
     QuantumCircuit,
+    Parameter,
 )
 from qiskit.circuit import QuantumRegister as Fragment
 
@@ -59,6 +62,24 @@ class VirtualCircuit:
             for frag in self.fragments
         }
         return inst_per_fragment
+
+    def generate_instance_parameters(
+        self,
+    ) -> dict[Fragment, Iterable[dict[Parameter, float]]]:
+        return {
+            frag: self._gen_inst_parameters_for_fragment(frag)
+            for frag in self.fragments
+        }
+
+    def _gen_inst_parameters_for_fragment(
+        self, fragment: Fragment
+    ) -> Iterable[dict[Parameter, float]]:
+        inst_ops = self.instance_operations(fragment)
+        params = [op.param for op in inst_ops]
+        n_insts = [op.num_instantiations for op in inst_ops]
+
+        for inst_label in itertools.product(*[range(n) for n in n_insts]):
+            yield {param: inst_label[i] for i, param in enumerate(params)}
 
     @staticmethod
     def _circuit_on_fragment(

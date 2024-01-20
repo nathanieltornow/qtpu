@@ -9,7 +9,7 @@ from qiskit_aer import StatevectorSimulator
 
 from qvm.virtual_circuit import VirtualCircuit
 from qvm.virtual_gates import VirtualMove
-from qvm.runtime.virtualizer import build_dummy_tensornetwork
+from qvm import build_dummy_tensornetwork
 
 
 def get_perfect_z_expval(circuit: QuantumCircuit) -> float:
