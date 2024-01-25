@@ -1,50 +1,52 @@
+# from dataclasses import dataclass
+
 # import numpy as np
-# import quimb.tensor as qtn
+# import cotengra as ctg
+# import networkx as nx
+
+# from qvm.cut.contraction_tree import ContractionTree
+# from qiskit.circuit.library import EfficientSU2
+# from qvm.cut.success_estimator import QPUSizeEstimator
+# from qvm.cut.compiler import cut
+# from qvm.cut.bisectors.girvan_newman import GirvanNewmanBisector
 
 
-# def simple_example():
-#     A = qtn.rand_tensor((2, 2), inds=["i", "j"])
-#     C1 = qtn.rand_tensor((2), inds=["i"])
-#     C2 = qtn.rand_tensor((2), inds=["j"])
+# cricuit = EfficientSU2(6, reps=3).decompose()
 
-#     tn1 = A & C1 & C2
+# circuit = cut(
+#     cricuit,
+#     QPUSizeEstimator(3),
+#     bisector=GirvanNewmanBisector(),
+#     max_contraction_cost=300,
+#     alpha=0.5,
+# )
 
-#     sol1 = tn1.contract(all, optimize="auto-hq")
-
-#     C = qtn.Tensor(np.tensordot(C1.data, C2.data, axes=0), inds=["i", "j"])
-
-#     tn2 = A & C
-#     sol2 = tn2.contract(all, optimize="auto-hq")
-
-#     assert np.allclose(sol1, sol2)
-
-
-# def complex_example():
-#     A = qtn.rand_tensor((2, 2), inds=["i", "j"])
-#     B = qtn.rand_tensor((2, 2), inds=["k", "l"])
-#     C1 = qtn.rand_tensor((2, 2), inds=["i", "k"])
-#     C2 = qtn.rand_tensor((2, 2), inds=["j", "l"])
-
-#     tn1 = qtn.TensorNetwork([A, B, C1, C2])
-
-#     sol1 = tn1.contract(all, optimize="auto-hq")
-#     print(sol1)
-#     C = qtn.Tensor(np.tensordot(C1.data, C2.data, axes=0), inds=["i", "k", "j", "l"])
-
-#     tn2 = A & C & B
-#     sol2 = tn2.contract(all, optimize="auto-hq")
-#     print(sol2)
-#     assert np.allclose(sol1, sol2)
-
-
-# # simple_example()
-# complex_example()
+# print(circuit)
 
 from qiskit.circuit import QuantumCircuit
-from qiskit_aer import AerSimulator
+from qiskit.circuit.library import EfficientSU2
+from qvm.cut.girvan_newman import girvan_newman_cut_circuit
+from qvm.cut.metis import metis_cut_circuit
+from qvm.cut.contraction_tree import contraction_tree_cut
+from qvm.cut.estimators.qpu_size import QPUSizeEstimator
 
-circ = QuantumCircuit(2, 2)
-circ.h(0)
+circuit = EfficientSU2(6, reps=1).decompose()
 
-counts = AerSimulator().run(circ, shots=1000).result().get_counts()
-print(counts)
+
+# print(girvan_newman_cut_circuit(circuit=circuit, num_fragments=2))
+# print(metis_cut_circuit(circuit=circuit, num_fragments=2))
+
+
+print(contraction_tree_cut(circuit=circuit, success_estimator=QPUSizeEstimator(3)))
+
+# tree = CircuitContractionTree(cricuit)
+
+# print(tree.circuit)
+
+# tree.bisect()
+# tree.bisect()
+
+# print(tree.circuit)
+# print(tree.contraction_cost())
+# print(tree.left.circuit)
+# print(tree.right.circuit)

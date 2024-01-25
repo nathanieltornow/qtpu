@@ -6,15 +6,16 @@ from qiskit_aer import AerSimulator
 # from qvm.runtime.runner import expval_from_counts, sample_fragments
 # from qvm.runtime.runners import SimRunner
 # from qvm.tn import build_tensornetwork, build_dummy_tensornetwork
-from qvm.cutters import GirvanNewmanCutter
-from qvm.cutters import MetisCutter
+# from qvm.cutters.greedy import cut_greedily
+# from qvm.cutters.success_estimator import QPUSizeEstimator, InstanceCostEstimator
+from qvm.cut.cut import cut_central_edges
 
 # from qvm.virtual_circuit import VirtualCircuit
 import qvm
 
 
 circuit = TwoLocal(
-    4,
+    5,
     rotation_blocks=["rz", "ry"],
     entanglement_blocks="rzz",
     entanglement="linear",
@@ -26,9 +27,14 @@ circuit.measure_all()
 params = {param: np.random.randn() / 2 for param in circuit.parameters}
 
 # cut_circuit = GirvanNewmanCutter(100).run(circuit)
-cut_circuit = MetisCutter(3).run(circuit)
+# cut_circuit = MetisCutter(3).run(circuit)
+
+
+cut_circuit = cut_central_edges(circuit, 2)
 
 print(cut_circuit)
+
+exit()
 
 cut_circuit = cut_circuit.assign_parameters(params)
 
