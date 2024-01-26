@@ -8,7 +8,7 @@ from qvm.virtual_gates import VirtualMove
 
 
 def build_tensornetwork(
-    virtual_circuit: VirtualCircuit, results: dict[Fragment, NDArray[np.float32]]
+    virtual_circuit: VirtualCircuit, results: dict[Fragment, NDArray]
 ) -> qtn.TensorNetwork:
     fragment_tensors = _fragment_tensors(virtual_circuit, results)
     all_tensors = list(fragment_tensors.values())
@@ -68,7 +68,7 @@ def build_dummy_tensornetwork(virtual_circuit: VirtualCircuit) -> qtn.TensorNetw
     return build_tensornetwork(virtual_circuit, dummy_results)
 
 
-def _fragment_tensors(vc: VirtualCircuit, results: dict[Fragment, NDArray[np.float32]]):
+def _fragment_tensors(vc: VirtualCircuit, results: dict[Fragment, NDArray]):
     frag_shapes = {
         frag: tuple(op.num_instantiations for op in vc.instance_operations(frag))
         for frag in vc.fragments
