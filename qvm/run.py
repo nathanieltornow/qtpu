@@ -2,7 +2,7 @@ from typing import Callable, Any, Iterable
 
 import numpy as np
 from numpy.typing import NDArray
-from qiskit.circuit import QuantumCircuit, Parameter, ClassicalRegister, Measure
+from qiskit.circuit import QuantumCircuit, Parameter, QuantumRegister as Fragment
 from qiskit_aer import AerSimulator
 
 from qvm.virtual_circuit import VirtualCircuit
@@ -20,6 +20,18 @@ def run_virtual_circuit(
     shots: int = 100000,
     **kwargs: Any,
 ) -> float:
+    results = sample_virtual_circuit(virtual_circuit, run_circ_func, shots, **kwargs)
+    tn = build_tensornetwork(virtual_circuit, results)
+    result = tn.contract(all, optimize="auto")
+    return result
+
+
+def sample_virtual_circuit(
+    virtual_circuit: VirtualCircuit,
+    run_circ_func: RunCircFuncType | None = None,
+    shots: int = 100000,
+    **kwargs: Any,
+) -> dict[Fragment, NDArray[np.float32]]:
     if run_circ_func is None:
         run_circ_func = simulate_circuit
 
@@ -27,10 +39,7 @@ def run_virtual_circuit(
     for frag, param_batch in virtual_circuit.generate_instance_parameters().items():
         circuit = virtual_circuit.fragment_circuits[frag]
         results[frag] = run_circ_func(circuit, param_batch, shots, **kwargs)
-
-    tn = build_tensornetwork(virtual_circuit, results)
-    result = tn.contract(all, optimize="auto")
-    return result
+    return results
 
 
 def expval_from_counts(counts: dict[str, int]) -> float:

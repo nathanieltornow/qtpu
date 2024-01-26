@@ -87,7 +87,7 @@ def _default_bisect(graph: nx.Graph) -> tuple[set[int], set[int]]:
     return con[0], con[1]
 
 
-def contraction_tree_cut(
+def contraction_tree_cut_circuit(
     circuit: QuantumCircuit,
     success_estimator: SuccessEstimator,
     max_contraction_cost: int = 1000,
