@@ -1,1 +1,1 @@
-from .qpu_size import QPUSizeEstimator
+from .qpu_size import QPUSizeEstimator, SimpleQPUEstimator

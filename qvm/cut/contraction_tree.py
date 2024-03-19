@@ -40,14 +40,14 @@ class ContractionTree:
         if self.is_leaf():
             return 0
 
-        return (
+        this_contract_cost = int(
+            np.prod([self._graph[u][v].get("weight", 1) for u, v in self._cut_edges])
+        )
+
+        return this_contract_cost + (
             self._left.contraction_cost()
-            + int(
-                np.prod(
-                    [self._graph[u][v].get("weight", 1) for u, v in self._cut_edges]
-                )
-            )
-            + self._right.contraction_cost()
+            * self._right.contraction_cost()
+            * self._right.contraction_cost()
         )
 
     def leafs(self) -> list["ContractionTree"]:
