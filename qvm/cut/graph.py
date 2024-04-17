@@ -149,6 +149,11 @@ def circuit_to_qubit_graph(circuit: QuantumCircuit) -> nx.Graph:
     return qubit_graph
 
 
+class MyGraph(nx.Graph):
+    def __init__(self, incoming_graph_data=None, **attr):
+        super().__init__(incoming_graph_data, **attr)
+
+
 def wire_cuts_to_moves(circuit: QuantumCircuit) -> QuantumCircuit:
     qubit_mapping: dict[Qubit, Qubit] = {}
 
