@@ -2,7 +2,7 @@ from qiskit.circuit import QuantumCircuit, Barrier, Measure
 
 from qvm.virtual_circuit import VirtualCircuit
 from qvm.instructions import InstantiableInstruction
-from qvm.cut._estimator import SuccessEstimator
+from qvm.compiler._estimator import SuccessEstimator
 
 
 class QPUSizeEstimator(SuccessEstimator):

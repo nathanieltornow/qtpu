@@ -1,5 +1,5 @@
 
-from qvm.cut import MetisCutter
+from qvm.compiler import MetisCutter
 
 from circuits import get_circuits
 from bench.util import get_virtual_circuit_info, append_to_csv

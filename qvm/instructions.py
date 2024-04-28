@@ -20,10 +20,6 @@ class VirtualBinaryGate(Gate, abc.ABC):
     ) -> None:
         super().__init__(name=name, num_qubits=2, params=params, label=label)
 
-    @property
-    def num_instantiations(self) -> int:
-        return len(self.instantiations())
-
     @abc.abstractmethod
     def instantiations(self) -> list[QuantumCircuit]:
         ...

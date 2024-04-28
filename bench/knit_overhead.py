@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from qiskit.circuit import QuantumCircuit
 
 import qvm
-from qvm.cut import MetisCutter
+from qvm.compiler import MetisCutter
 
 from circuits import get_circuits
 from bench.util import get_virtual_circuit_info, append_to_csv

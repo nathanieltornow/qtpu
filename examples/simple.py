@@ -3,7 +3,7 @@ from qiskit.circuit.library import TwoLocal
 from qiskit_aer import AerSimulator
 
 import qvm
-from qvm.cut import girvan_newman_cut_circuit
+from qvm.compiler import girvan_newman_cut_circuit
 
 
 circuit = TwoLocal(

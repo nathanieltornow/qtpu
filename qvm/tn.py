@@ -104,3 +104,16 @@ def _preprocess_wire_cut(
 
     t1 = np.moveaxis(t1, 0, axis1)
     t2 = np.moveaxis(t2, 0, axis2)
+
+
+if __name__ == "__main__":
+
+    A = 1/2 * np.array([[1, 1, 0, 0], [1, -1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    B = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [-1, -1, 2, 0], [-1, -1, 0, 2]])
+
+    tensA = qtn.Tensor(A, inds=['x', 'o1'], tags=['A'])
+    tensB = qtn.Tensor(B, inds=['x', 'o2'], tags=['B'])
+
+    res = tensA & tensB
+
+    print(res.contract(all, optimize='auto-hq').data)
