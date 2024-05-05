@@ -1,6 +1,6 @@
 from typing import Iterator, Optional
 
-from .circuit_graph import CircuitGraph, CircuitGraphNode
+from ..circuit_graph import CircuitGraph, CircuitGraphNode
 
 
 class KnitTree:

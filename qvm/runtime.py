@@ -1,29 +1,19 @@
-from quimb.tensor import Tensor
-from cotengra import ContractionTree
+import quimb.tensor as qtn
 
-from qvm.tensor import QuantumTensor, QuantumTensorNetwork
-
-
-def evaluate_quantum_tensor(quantum_tensor, qpu_manager_client) -> Tensor:
-    # 1. evaluate the circuits to a tensor
-    # 2. do post-processing on the tensor for every FIRST gate, special case for wires
-
-    pass
+from qvm.qpu_manager import QPUManager
+from qvm.tensor import QuantumTensor, HybridTensorNetwork
 
 
-def evaluate_tensor_network(
-    qtn: QuantumTensorNetwork, contraction_tree: ContractionTree, qpu_manager_client
+def contract_hybrid_tn(
+    hybrid_tn: HybridTensorNetwork, qpu_manager: QPUManager
 ) -> float:
-    pass
 
+    classical_tensors = hybrid_tn._classical_tensors.copy()
+    quantum_tensors = hybrid_tn._quantum_tensors
 
-def create_dummy_tensor_network(qtn: QuantumTensorNetwork) -> Tensor:
-    pass
+    for quantum_tensor in quantum_tensors:
+        tensor = qpu_manager.run_quantum_tensor(quantum_tensor)
+        classical_tensors.append(tensor)
 
-
-
-class CircuitKnitter:
-    def __init__(self, virtual_gates) -> None:
-        pass
-
-
+    tn = qtn.TensorNetwork(classical_tensors)
+    return tn.contract(all, optimize="auto")

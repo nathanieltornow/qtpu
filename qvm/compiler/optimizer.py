@@ -4,7 +4,7 @@ from itertools import chain
 
 import networkx as nx
 
-from qvm.compiler.circuit_graph import CircuitGraph, CircuitGraphNode
+from qvm.circuit_graph import CircuitGraph, CircuitGraphNode
 from qvm.compiler.knit_tree import KnitTree
 
 

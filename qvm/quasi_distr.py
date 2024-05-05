@@ -17,9 +17,6 @@ class QuasiDistr(dict[int, float]):
             }
         )
 
-    def whats_up() -> ACCURACY:
-        pass
-
     def to_counts(self, num_clbits: int, shots: int) -> dict[str, int]:
         return {
             bin(key)[2:].zfill(num_clbits): int(abs(value * shots))

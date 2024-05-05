@@ -1,25 +1,19 @@
-with import <nixpkgs> { };
-let
-  pythonEnv = python310.withPackages (ps: [
-      ps.pip
-      ps.numpy
-      ps.pandas
-      ps.matplotlib
-    ]);
-in
-mkShell {
+with import <nixpkgs> {};
+mkShell rec {
   buildInputs = [
-    git
-    gcc
-    zlib
     pdm
-    texlive.combined.scheme-full
+    python312
+    python312Packages.virtualenv
   ];
   
+  NIX_LD_LIBRARY_PATH = lib.makeLibraryPath [
+    stdenv.cc.cc
+    zlib
+    pdm
+  ];
+  LD_LIBRARY_PATH = NIX_LD_LIBRARY_PATH;
+  NIX_LD = lib.fileContents "${stdenv.cc}/nix-support/dynamic-linker";
   shellHook = ''
-    export PATH=${pythonEnv}/bin:$PATH
-    export PYTHONPATH=${gcc}/lib:${zlib}/lib:$PYTHONPATH
-    export PYTHONPATH=$PYTHONPATH:$(pwd)
-    export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
-  ''; 
+  source .venv/bin/activate
+  '';
 }

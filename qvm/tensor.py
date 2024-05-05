@@ -61,7 +61,7 @@ class QuantumTensor:
 
         for instr in self._circuit:
             op, qubits, clbits = instr.operation, instr.qubits, instr.clbits
-            if isinstance(instr, InstanceGate):
+            if isinstance(op, InstanceGate):
                 inst_cnt = instance_label[op.label]
                 inst_circuit = op.instances[inst_cnt]
 
@@ -80,7 +80,7 @@ class QuantumTensor:
 
             res_circuit.append(op, qubits, clbits)
 
-        return res_circuit
+        return res_circuit.decompose()
 
 
 class HybridTensorNetwork:
@@ -88,5 +88,5 @@ class HybridTensorNetwork:
     def __init__(
         self, quantum_tensors: list[QuantumTensor], classical_tensors: list[qtn.Tensor]
     ):
-        self._quantum_tensors = quantum_tensors
-        self._classical_tensors = classical_tensors
+        self._quantum_tensors = list(quantum_tensors)
+        self._classical_tensors = list(classical_tensors)

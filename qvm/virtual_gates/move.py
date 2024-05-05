@@ -52,33 +52,53 @@ class VirtualMove(VirtualBinaryGate):
 
     def instantiations_qubit0(self) -> list[QuantumCircuit]:
         i = QuantumCircuit(1, 1)
+        i.reset(0)
 
         z = QuantumCircuit(1, 1)
         z.measure(0, 0)
+        z.reset(0)
 
         x = QuantumCircuit(1, 1)
         x.h(0)
         x.measure(0, 0)
+        x.reset(0)
 
         y = QuantumCircuit(1, 1)
         y.sx(0)
         y.measure(0, 0)
+        y.reset(0)
 
         return [i, z, x, y]
 
     def instantiations_qubit1(self) -> list[QuantumCircuit]:
         zero = QuantumCircuit(1, 1)
+        zero.reset(0)
 
         one = QuantumCircuit(1, 1)
+        one.reset(0)
         one.x(0)
 
         plus = QuantumCircuit(1, 1)
+        plus.reset(0)
         plus.h(0)
 
         iplus = QuantumCircuit(1, 1)
+        iplus.reset(0)
         iplus.sxdg(0)
 
         return [zero, one, plus, iplus]
 
     def coefficients_2d(self) -> NDArray[float32]:
-        return 0.5 * np.diag(np.array([1, 1, 1, 1]))
+        A = np.array(
+            [[1, 1, 0, 0], [1, -1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], dtype=np.float32
+        )
+        B = np.array(
+            [[1, 0, 0, 0], [0, 1, 0, 0], [-1, -1, 2, 0], [-1, -1, 0, 2]],
+            dtype=np.float32,
+        )
+        return 0.5 * A @ B
+
+
+
+if __name__ == "__main__":
+    print(VirtualMove().coefficients_2d())
