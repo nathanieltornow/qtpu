@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import quimb.tensor as qtn
@@ -38,13 +38,6 @@ def contract_hybrid_tn(
 
         tensors = [fut.result() for fut in futures]
         contr_tree = contr_future.result()
-
-
-
-    import matplotlib.pyplot as plt
-
-    fig, _ = ctg.plot_tree(contr_tree)
-    fig.savefig("contr_tree.png")
 
     tn = qtn.TensorNetwork(tensors + classical_tensors)
     return tn.contract(all, optimize=contr_tree)
