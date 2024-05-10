@@ -30,7 +30,7 @@ class QuantumTensor:
             for instr in circuit
             if isinstance(instr.operation, InstanceGate)
         ]
-        self._indices = [gate.index for gate in self._instance_gates]
+        self._indices = tuple(gate.index for gate in self._instance_gates)
         self._shape = tuple(len(gate.instances) for gate in self._instance_gates)
 
     @property
@@ -38,7 +38,7 @@ class QuantumTensor:
         return self._circuit
 
     @property
-    def indices(self) -> list[str]:
+    def inds(self) -> tuple[str]:
         return self._indices
 
     @property
@@ -84,9 +84,65 @@ class QuantumTensor:
 
 
 class HybridTensorNetwork:
-
     def __init__(
         self, quantum_tensors: list[QuantumTensor], classical_tensors: list[qtn.Tensor]
-    ):
-        self._quantum_tensors = list(quantum_tensors)
-        self._classical_tensors = list(classical_tensors)
+    ) -> None:
+        self._quantum_tensors = quantum_tensors
+        self._classical_tensors = classical_tensors
+
+        self._index_map: dict[str, tuple[set[QuantumTensor | qtn.Tensor], int]] = {}
+
+        self._index_to_chr = {
+            index: chr(65 + i)
+            for i, index in enumerate(
+                itertools.chain.from_iterable(
+                    tens.inds for tens in quantum_tensors + classical_tensors
+                )
+            )
+        }
+        assert len(self._index_to_chr) < 0x11000
+
+        for tensor in quantum_tensors + classical_tensors:
+            for index, index_size in zip(tensor.inds, tensor.shape):
+                if index not in self._index_map:
+                    self._index_map[index] = (set(), index_size)
+
+                if len(self._index_map[index][0]) > 1:
+                    raise ValueError(
+                        f"Index {index} is already used by more than one tensor"
+                    )
+                if index_size != self._index_map[index][1]:
+                    raise ValueError(
+                        f"Index {index} has different size than other tensors"
+                    )
+
+                self._index_map[index][0].add(tensor)
+
+    @property
+    def quantum_tensors(self) -> list[QuantumTensor]:
+        return self._quantum_tensors.copy()
+
+    @property
+    def classical_tensors(self) -> list[qtn.Tensor]:
+        return self._classical_tensors.copy()
+
+    def inputs(self) -> list[tuple[str, ...]]:
+        return [
+            tuple(self._index_to_chr[ind] for ind in tens.inds)
+            for tens in self._quantum_tensors + self._classical_tensors
+        ]
+
+    def output(self) -> tuple[str, ...]:
+        return tuple(
+            [
+                self._index_to_chr[index]
+                for index, tensors in self._index_map.items()
+                if len(tensors[0]) == 1
+            ]
+        )
+
+    def size_dict(self) -> dict[str, int]:
+        return {
+            self._index_to_chr[index]: size
+            for index, (_, size) in self._index_map.items()
+        }

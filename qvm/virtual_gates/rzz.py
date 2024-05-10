@@ -41,7 +41,7 @@ class VirtualRZZ(VirtualBinaryGate):
             [np.cos(theta) ** 2, np.sin(theta) ** 2, -cs, cs, -cs, cs], dtype=np.float32
         )
 
-    def instantiations_qubit0(self) -> list[QuantumCircuit]:
+    def instances_q0(self) -> list[QuantumCircuit]:
         z = QuantumCircuit(1, 1)
         z.z(0)
 
@@ -58,8 +58,8 @@ class VirtualRZZ(VirtualBinaryGate):
 
         return [i, z, meas, s, sdg]
 
-    def instantiations_qubit1(self) -> list[QuantumCircuit]:
-        return self.instantiations_qubit0()
+    def instances_q1(self) -> list[QuantumCircuit]:
+        return self.instances_q0()
 
     def coefficients_2d(self) -> NDArray[np.float32]:
         c = self.coefficients_1d()

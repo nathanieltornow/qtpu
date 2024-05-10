@@ -20,12 +20,12 @@ class VirtualCX(VirtualCZ):
             cx_insts.append(cx_inst)
         return cx_insts
 
-    def instantiations_qubit1(self) -> list[QuantumCircuit]:
+    def instances_q1(self) -> list[QuantumCircuit]:
         h = QuantumCircuit(1, 1)
         h.h(0)
 
         cx_insts = []
-        for inst in super().instantiations_qubit1():
+        for inst in super().instances_q1():
             new_inst = inst.copy()
             new_inst.compose(h, inplace=True, front=True)
             new_inst.compose(h, inplace=True, front=False)

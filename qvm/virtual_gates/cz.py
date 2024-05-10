@@ -41,7 +41,7 @@ class VirtualCZ(VirtualBinaryGate):
     def coefficients_1d(self) -> NDArray[np.float32]:
         return 0.5 * np.array([1, 1, 1, -1, 1, -1], dtype=np.float32)
 
-    def instantiations_qubit0(self) -> list[QuantumCircuit]:
+    def instances_q0(self) -> list[QuantumCircuit]:
         sdg = QuantumCircuit(1, 1)
         sdg.sdg(0)
 
@@ -59,8 +59,8 @@ class VirtualCZ(VirtualBinaryGate):
 
         return [sdg, s, sdg_meas, i, z]
 
-    def instantiations_qubit1(self) -> list[QuantumCircuit]:
-        return self.instantiations_qubit0()
+    def instances_q1(self) -> list[QuantumCircuit]:
+        return self.instances_q0()
 
     def coefficients_2d(self) -> NDArray[np.float32]:
         return 0.5 * np.array(

@@ -1,125 +1,62 @@
-from typing import Optional, Callable
+from typing import Optional
 
 import numpy as np
 import networkx as nx
-from qiskit.circuit import QuantumCircuit
-
-from qvm.instructions import VirtualBinaryGate
-
-from .graph import CircuitGraph
-from .girvan_newman import girvan_newman_cut_graph
-from ._estimator import SuccessEstimator
 
 
-class ContractionTree:
-    def __init__(self, graph: nx.Graph) -> None:
+class GraphContractionTree:
+    def __init__(self, graph: nx.Graph | nx.DiGraph) -> None:
         self._graph = graph
-        self._left: Optional["ContractionTree"] = None
-        self._right: Optional["ContractionTree"] = None
-        self._cut_edges: set[tuple[int, int]] = set()
+        self._left: Optional["GraphContractionTree"] = None
+        self._right: Optional["GraphContractionTree"] = None
+        self._between_edges: set[tuple[int, int, int]] = set()
 
     def is_leaf(self) -> bool:
         return self._left is None and self._right is None
 
     @property
-    def left(self) -> Optional["ContractionTree"]:
+    def graph(self) -> nx.Graph:
+        return self._graph
+
+    @property
+    def left(self) -> Optional["GraphContractionTree"]:
         return self._left
 
     @property
-    def right(self) -> Optional["ContractionTree"]:
+    def right(self) -> Optional["GraphContractionTree"]:
         return self._right
 
-    def removed_edges(self) -> set[tuple[int, int]]:
-        if self.is_leaf():
-            return self._cut_edges
-        return (
-            self._cut_edges | self._left.removed_edges() | self._right.removed_edges()
-        )
+    @property
+    def between_edges(self) -> set[tuple[int, int, int]]:
+        return self._between_edges.copy()
 
-    def contraction_cost(self) -> int:
-        if self.is_leaf():
-            return 0
-
-        this_contract_cost = int(
-            np.prod([self._graph[u][v].get("weight", 1) for u, v in self._cut_edges])
-        )
-
-        return this_contract_cost + (
-            self._left.contraction_cost()
-            * self._right.contraction_cost()
-            * self._right.contraction_cost()
-        )
-
-    def leafs(self) -> list["ContractionTree"]:
+    def leafs(self) -> list["GraphContractionTree"]:
         if self.is_leaf():
             return [self]
         return self._left.leafs() + self._right.leafs()
 
-    def bisect(
-        self, bisect_func: Callable[[nx.Graph], tuple[set[int], set[int]]] | None = None
-    ) -> None:
-        if bisect_func is None:
-            bisect_func = _default_bisect
-
+    def divide(self, left_nodes: set) -> None:
         if not self.is_leaf():
-            largest_leaf = max(
-                self.leafs(), key=lambda leaf: leaf._graph.number_of_nodes()
-            )
-            return largest_leaf.bisect(bisect_func=bisect_func)
+            raise ValueError("Cannot divide a non-leaf node (at the moment)")
 
-        left, right = bisect_func(self._graph)
+        assert left_nodes.issubset(self._graph.nodes)
 
-        for u, v in self._graph.edges():
-            if u in left and v in right or u in right and v in left:
-                self._cut_edges.add((u, v))
+        left = left_nodes
+        right = set(self._graph.nodes) - left
 
-        self._left, self._right = (
-            ContractionTree(nx.subgraph(self._graph, left)),
-            ContractionTree(nx.subgraph(self._graph, right)),
+        for u, v, weight in self._graph.edges(data="weight"):
+            if (u in left and v in right) or (u in right and v in left):
+                self._between_edges.add((u, v, weight))
+
+        self._left = GraphContractionTree(self._graph.subgraph(left))
+        self._right = GraphContractionTree(self._graph.subgraph(right))
+
+    def contraction_cost(self) -> int:
+        if self.is_leaf():
+            return 0
+        this_contract_cost = int(
+            np.prod([weight for _, _, weight in self._between_edges])
         )
-
-
-def _default_bisect(graph: nx.Graph) -> tuple[set[int], set[int]]:
-    graph = graph.copy()
-    girvan_newman_cut_graph(graph, 2)
-    con = list(nx.connected_components(graph))
-    assert len(con) == 2
-    return con[0], con[1]
-
-
-def contraction_tree_cut_circuit(
-    circuit: QuantumCircuit,
-    success_estimator: SuccessEstimator,
-    max_contraction_cost: int = 1000,
-    alpha: float = 0.5,
-    max_iters: int = 100,
-):
-    if any(isinstance(instr.operation, VirtualBinaryGate) for instr in circuit):
-        raise ValueError("Circuit already contains virtual gates")
-
-    circuit_graph = CircuitGraph(circuit)
-    contraction_tree = ContractionTree(circuit_graph.get_nx_graph())
-
-    current_score = (1 - alpha) * success_estimator.estimate(circuit)
-
-    for _ in range(max_iters):
-        contraction_tree.bisect()
-        new_circuit = circuit_graph.generate_circuit(contraction_tree.removed_edges())
-
-        success_est = success_estimator.estimate(new_circuit)
-        if success_est <= 0.0:
-            continue
-
-        knit_cost = contraction_tree.contraction_cost() / max_contraction_cost
-        if knit_cost > 1.0:
-            raise ValueError("Contraction cost too high")
-
-        score = alpha * (1 - knit_cost) + (1 - alpha) * success_est
-
-        if score > current_score:
-            current_score = score
-            circuit = new_circuit
-        else:
-            break
-
-    return circuit
+        right_contraction_cost = self._right.contraction_cost() * this_contract_cost
+        left_contraction_cost = self._left.contraction_cost() * this_contract_cost
+        return this_contract_cost + right_contraction_cost + left_contraction_cost

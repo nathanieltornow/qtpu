@@ -50,7 +50,7 @@ class VirtualMove(VirtualBinaryGate):
     def coefficients_1d(self) -> NDArray[np.float32]:
         return 0.5 * np.array([1, 1, 1, -1, 1, -1, 1, -1], dtype=np.float32)
 
-    def instantiations_qubit0(self) -> list[QuantumCircuit]:
+    def instances_q0(self) -> list[QuantumCircuit]:
         i = QuantumCircuit(1, 1)
         i.reset(0)
 
@@ -70,7 +70,7 @@ class VirtualMove(VirtualBinaryGate):
 
         return [i, z, x, y]
 
-    def instantiations_qubit1(self) -> list[QuantumCircuit]:
+    def instances_q1(self) -> list[QuantumCircuit]:
         zero = QuantumCircuit(1, 1)
         zero.reset(0)
 

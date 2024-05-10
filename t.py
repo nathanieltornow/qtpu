@@ -1,53 +1,59 @@
-import multiprocessing
+import numpy as np
+from qiskit.circuit import QuantumCircuit, ClassicalRegister, Qubit
+from qiskit.circuit.library import EfficientSU2
+from qiskit.primitives import Estimator
+from qiskit import transpile
 
-class Node:
-    def __init__(self, value=None, left=None, right=None):
-        self.value = value
-        self.left = left
-        self.right = right
 
-def evaluate_tree_parallel(root):
-    if root is None:
-        return 0
-    
-    # Evaluate the tree in parallel
-    with multiprocessing.Pool() as pool:
-        result = evaluate_node(root, pool)
-    
-    return result
+from qvm.compiler.compiler import compile_circuit
+from qvm.compiler.optimizer import NumQubitsOptimizer
+from qvm.runtime.runtime import contract_hybrid_tn
+from qvm.runtime.qpu_manager import SimulatorQPUManager
 
-def evaluate_node(node, pool):
-    if node.left is None and node.right is None:
-        return node.value
-    
-    if node.left is not None and node.right is not None:
-        left_result = pool.apply_async(evaluate_node, (node.left, pool))
-        right_result = pool.apply_async(evaluate_node, (node.right, pool))
-        return perform_operation(node.value, left_result.get(), right_result.get())
 
-def perform_operation(operator, left, right):
-    if operator == '+':
-        return left + right
-    elif operator == '-':
-        return left - right
-    elif operator == '*':
-        return left * right
-    elif operator == '/':
-        if right != 0:
-            return left / right
-        else:
-            raise ValueError("Division by zero")
+def measure_all(qc: QuantumCircuit) -> None:
+    qc.add_register(ClassicalRegister(qc.num_qubits, name="c"))
+    qc.measure(range(qc.num_qubits), range(qc.num_qubits))
 
-# Example usage
+
 if __name__ == "__main__":
-    # Example tree: (+ (+ 1 2) (* 3 4))
-    leaf1 = Node(1)
-    leaf2 = Node(2)
-    leaf3 = Node(3)
-    leaf4 = Node(4)
-    inner_node1 = Node('+', leaf1, leaf2)
-    inner_node2 = Node('*', leaf3, leaf4)
-    root = Node('+', inner_node1, inner_node2)
 
-    result = evaluate_tree_parallel(root)
-    print("Result:", result)
+    qc = EfficientSU2(5, reps=1).decompose()
+    qc = qc.assign_parameters({param: np.random.randn() / 2 for param in qc.parameters})
+
+    # qc = QuantumCircuit(3)
+    # qc.h(0)
+    # qc.cx(0, 1)
+    # qc.cx(1, 2)
+
+    act_val = Estimator().run(qc, "Z" * qc.num_qubits).result().values
+
+    measure_all(qc)
+
+    hybrid_tn = compile_circuit(qc, NumQubitsOptimizer(2), {})
+
+    for qtens in hybrid_tn.quantum_tensors:
+        print(qtens._circuit)
+
+    # cg = CircuitGraph(qc)
+
+    # from networkx.algorithms.community.kernighan_lin import kernighan_lin_bisection
+
+    # compressed = compress_qubits(cg)
+
+    # print(len(compressed.nodes))
+
+    # A, B = kernighan_lin_bisection(compressed)
+
+    # # C, D = kernighan_lin_bisection(compressed.subgraph(A))
+    # # # A, B = cut_qubits(cg, qc.qubits[:2], qc.qubits[2:])
+
+    # hybrid_tn = cg.hybrid_tn(
+    #     [decompress_nodes(A), decompress_nodes(B)]
+    # )
+
+    # for qt in hybrid_tn._quantum_tensors:
+    #     print(qt._circuit)
+
+    print(act_val)
+    print(contract_hybrid_tn(hybrid_tn, SimulatorQPUManager()))

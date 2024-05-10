@@ -10,16 +10,16 @@ from qvm.tensor import QuantumTensor
 
 class QPUManager(abc.ABC):
     @abc.abstractmethod
-    def run_quantum_tensor(self, tensor: QuantumTensor) -> qtn.Tensor: ...
+    def run_quantum_tensor(self, tensor: QuantumTensor, **kwargs) -> qtn.Tensor: ...
 
 
 class _DummyQPUManager(QPUManager):
-    def run_quantum_tensor(self, tensor: QuantumTensor) -> qtn.Tensor:
-        return qtn.Tensor(np.random.randn(tensor.shape), inds=tensor.indices)
+    def run_quantum_tensor(self, tensor: QuantumTensor, **kwargs) -> qtn.Tensor:
+        return qtn.Tensor(np.random.randn(tensor.shape), inds=tensor.inds)
 
 
 class SimulatorQPUManager(QPUManager):
-    def run_quantum_tensor(self, quantum_tensor: QuantumTensor) -> qtn.Tensor:
+    def run_quantum_tensor(self, quantum_tensor: QuantumTensor, **kwargs) -> qtn.Tensor:
         simulator = AerSimulator()
         circuits = list(quantum_tensor.instances())
 
@@ -27,7 +27,7 @@ class SimulatorQPUManager(QPUManager):
 
         for circuit in circuits:
             try:
-                counts = simulator.run(circuit, shots=20000).result().get_counts()
+                counts = simulator.run(circuit, shots=80000).result().get_counts()
                 expvals.append(expval_from_counts(counts))
             except Exception as e:
                 expvals.append(1.0)
@@ -35,7 +35,7 @@ class SimulatorQPUManager(QPUManager):
         expvals = np.array(expvals, dtype=np.float32)
         expvals = expvals.reshape(quantum_tensor.shape)
 
-        return qtn.Tensor(expvals, inds=quantum_tensor.indices)
+        return qtn.Tensor(expvals, inds=quantum_tensor.inds)
 
 
 def expval_from_counts(counts: dict[str, int]) -> float:
