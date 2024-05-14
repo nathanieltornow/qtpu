@@ -34,7 +34,7 @@ def contract_hybrid_tn(
         ]
 
         # while the circuits are running, compute a contraction tree
-        contr_future = executor.submit(_get_optimal_contraction_tree, hybrid_tn)
+        contr_future = executor.submit(_get_optimized_contraction_tree, hybrid_tn)
 
         tensors = [fut.result() for fut in futures]
         contr_tree = contr_future.result()
@@ -49,7 +49,7 @@ def _process_quantum_tensor(
     return qpu_manager.run_quantum_tensor(quantum_tensor, **kwargs)
 
 
-def _get_optimal_contraction_tree(
+def _get_optimized_contraction_tree(
     hybrid_tn: HybridTensorNetwork,
 ) -> ctg.ContractionTree:
     opt = ctg.HyperOptimizer()

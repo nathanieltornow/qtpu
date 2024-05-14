@@ -9,6 +9,7 @@ from qvm.compiler._compression import (
     CompressedNode,
     compress_qubits,
     compress_nothing,
+    remove_1q_gates,
     decompress_nodes,
 )
 from qvm.compiler.contraction_tree import GraphContractionTree
@@ -22,6 +23,8 @@ class Optimizer(abc.ABC):
         match self._compression_method:
             case "qubits":
                 compressed_graph = compress_qubits(circuit_graph)
+            case "rm_1q":
+                compressed_graph = remove_1q_gates(circuit_graph)
             case None:
                 compressed_graph = compress_nothing(circuit_graph)
             case _:
@@ -45,8 +48,7 @@ class GreedyOptimizer(Optimizer, abc.ABC):
         self, graph: nx.Graph
     ) -> tuple[set[CompressedNode], set[CompressedNode]]:
         components = next(girvan_newman(graph))
-        assert len(components) == 2
-        return components[0], components[1]
+        return components[0], set(itertools.chain.from_iterable(components[1:]))
 
     @abc.abstractmethod
     def _next_leaf(self, tree: GraphContractionTree) -> GraphContractionTree | None: ...

@@ -4,8 +4,6 @@ import numpy as np
 from numpy.typing import NDArray
 from qiskit.circuit import (
     Gate,
-    Instruction,
-    Parameter,
     QuantumCircuit,
     QuantumRegister,
 )

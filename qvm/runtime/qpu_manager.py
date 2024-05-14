@@ -15,7 +15,7 @@ class QPUManager(abc.ABC):
 
 class _DummyQPUManager(QPUManager):
     def run_quantum_tensor(self, tensor: QuantumTensor, **kwargs) -> qtn.Tensor:
-        return qtn.Tensor(np.random.randn(tensor.shape), inds=tensor.inds)
+        return qtn.Tensor(np.random.randn(*tensor.shape), inds=tensor.inds)
 
 
 class SimulatorQPUManager(QPUManager):

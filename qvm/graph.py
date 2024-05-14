@@ -17,7 +17,7 @@ class CircuitGraphNode(NamedTuple):
 class CircuitGraph:
     def __init__(self, circuit: QuantumCircuit) -> None:
         self._circuit = circuit
-        graph = nx.MultiDiGraph()
+        graph = nx.DiGraph()
 
         qubit_to_node = {}
 
@@ -156,6 +156,7 @@ class CircuitGraph:
     def generate_classical_tensors(
         self, connected_components: list[set[CircuitGraphNode]]
     ) -> list[qtn.Tensor]:
+        print(len(set(itertools.chain(*connected_components))), len(set(self._graph.nodes)))
         assert set(itertools.chain(*connected_components)) == set(self._graph.nodes)
 
         tensors = []
