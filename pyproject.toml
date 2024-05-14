@@ -1,5 +1,5 @@
 [project]
-name = "Quantum Virtual Machine"
+name = "qvm"
 version = "0.0.1"
 description = "Framework for Virtual and Distributed Quantum Computing"
 authors = [
@@ -46,4 +46,3 @@ bench = [
 [build-system]
 requires = ["pdm-pep517>=1.0.0"]
 build-backend = "pdm.pep517.api"
-
