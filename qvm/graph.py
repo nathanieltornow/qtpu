@@ -6,7 +6,7 @@ from qiskit.circuit import QuantumCircuit, Qubit, QuantumRegister
 import quimb.tensor as qtn
 
 from qvm.tensor import HybridTensorNetwork, QuantumTensor, InstanceGate
-from qvm.virtual_gates import VirtualBinaryGate, VIRTUAL_GATE_GENERATORS, VirtualMove
+from qvm.virtual_gates import VIRTUAL_GATE_GENERATORS, VirtualMove
 
 
 class CircuitGraphNode(NamedTuple):
@@ -27,7 +27,6 @@ class CircuitGraph:
                     f"Only 1 or 2 qubit gates are supported, got {instr.operation}"
                 )
 
-            # TODO check if gate is virtualizable
 
             for qubit in instr.qubits:
                 new_node = CircuitGraphNode(op_id=op_id, qubit=qubit)
@@ -38,6 +37,7 @@ class CircuitGraph:
                 qubit_to_node[qubit] = new_node
 
             if len(instr.qubits) == 2:
+                assert instr.operation.name in VIRTUAL_GATE_GENERATORS
                 graph.add_edge(
                     CircuitGraphNode(op_id=op_id, qubit=instr.qubits[0]),
                     CircuitGraphNode(op_id=op_id, qubit=instr.qubits[1]),
@@ -156,7 +156,6 @@ class CircuitGraph:
     def generate_classical_tensors(
         self, connected_components: list[set[CircuitGraphNode]]
     ) -> list[qtn.Tensor]:
-        print(len(set(itertools.chain(*connected_components))), len(set(self._graph.nodes)))
         assert set(itertools.chain(*connected_components)) == set(self._graph.nodes)
 
         tensors = []

@@ -1,16 +1,30 @@
 import itertools
 from typing import Iterator
+import numpy as np
 
 import quimb.tensor as qtn
 from qiskit.circuit import QuantumCircuit, Barrier, ClassicalRegister
 
 
 class InstanceGate(Barrier):
-    def __init__(self, num_qubits: int, index: str, instances: list[QuantumCircuit]):
+    def __init__(
+        self,
+        num_qubits: int,
+        index: str,
+        instances: list[QuantumCircuit],
+        shot_portion: list[float] | None = None,
+    ):
         assert all(inst.num_qubits == num_qubits for inst in instances)
+
+        if shot_portion is None:
+            shot_portion = [1 / len(instances) for _ in instances]
+
+        # sum of shot_portion must be approximately 1
+        assert abs(sum(shot_portion) - 1) < 1e-6
 
         self._index = index
         self._instances = instances
+        self._shot_portion = shot_portion
         super().__init__(num_qubits, label=index)
 
     @property
@@ -20,6 +34,10 @@ class InstanceGate(Barrier):
     @property
     def instances(self) -> list[QuantumCircuit]:
         return self._instances
+
+    @property
+    def shot_portion(self) -> list[float]:
+        return self._shot_portion
 
 
 class QuantumTensor:
@@ -33,6 +51,17 @@ class QuantumTensor:
         self._indices = tuple(gate.index for gate in self._instance_gates)
         self._shape = tuple(len(gate.instances) for gate in self._instance_gates)
 
+        self._shot_portions = np.array([1])
+
+        if len(self._instance_gates) == 0:
+            return
+
+        self._shot_portions = np.array(self._instance_gates[0].shot_portion)
+        for gate in self._instance_gates[1:]:
+            self._shot_portions = np.kron(self._shot_portions, gate.shot_portion)
+        print(self._shot_portions)
+        print(sum(self._shot_portions))
+
     @property
     def circuit(self) -> QuantumCircuit:
         return self._circuit
@@ -45,13 +74,15 @@ class QuantumTensor:
     def shape(self) -> tuple[int, ...]:
         return self._shape
 
-    def instances(self) -> Iterator[QuantumCircuit]:
-        for instance_label in self._instance_labels():
-            yield self._get_instance(instance_label)
+    def instances(self) -> Iterator[tuple[QuantumCircuit, float]]:
+        for instance_label, shot_portion in self._instance_labels():
+            yield self._get_instance(instance_label), shot_portion
 
-    def _instance_labels(self) -> Iterator[dict[str, int]]:
-        for instance_label in itertools.product(*[range(n) for n in self._shape]):
-            yield dict(zip(self._indices, instance_label))
+    def _instance_labels(self) -> Iterator[tuple[dict[str, int], float]]:
+        for instance_label, shot_portion in zip(
+            itertools.product(*[range(n) for n in self._shape]), self._shot_portions
+        ):
+            yield dict(zip(self._indices, instance_label)), shot_portion
 
     def _get_instance(self, instance_label: dict[str, int]) -> QuantumCircuit:
         assert all(label in self._indices for label in instance_label)
@@ -146,3 +177,11 @@ class HybridTensorNetwork:
             self._index_to_chr[index]: size
             for index, (_, size) in self._index_map.items()
         }
+
+    def equation(self) -> str:
+        in_str = ("".join(ix for ix in inds) for inds in self.inputs())
+        in_str = ",".join(in_str)
+        out_str = "".join(
+            ix for ix in self._index_to_chr.values() if in_str.count(ix) == 1
+        )
+        return f"{in_str}->{out_str}"

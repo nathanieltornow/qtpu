@@ -1,6 +1,7 @@
 import os
 import csv
 import numpy as np
+import matplotlib.pyplot as plt
 
 from qiskit.circuit import QuantumCircuit
 from qiskit.quantum_info.operators import Pauli
@@ -15,13 +16,20 @@ import cotengra as ctg
 from qvm.tensor import HybridTensorNetwork
 
 
-def get_hybrid_tn_info(hybrid_tn: HybridTensorNetwork) -> dict:
-    circuits = [qt.circuit for qt in hybrid_tn.quantum_tensors]
-
+def get_hybrid_tn_info(
+    hybrid_tn: HybridTensorNetwork, backend: BackendV2 | None = None
+) -> dict:
+    circuits = [
+        transpile(qt.circuit, backend=backend, optimization_level=3)
+        for qt in hybrid_tn.quantum_tensors
+    ]
     return {
         "contract_cost": contraction_cost(hybrid_tn),
         "bruteforce_cost": bruteforce_cost(hybrid_tn),
-        "esp": min([eps(circuit) for circuit in circuits]),
+        "num_qpds": len(hybrid_tn.classical_tensors),
+        "num_subcircuits": len(circuits),
+        "num_instances": sum([np.prod(qt.shape) for qt in hybrid_tn.quantum_tensors]),
+        "esp": min([esp(circuit) for circuit in circuits]),
         "depth": max([circuit.depth() for circuit in circuits]),
         "max_qubits": max([circuit.num_qubits for circuit in circuits]),
         "swap_count": max([circuit.count_ops().get("swap", 0) for circuit in circuits]),
@@ -65,7 +73,7 @@ def get_perfect_z_expval(circuit: QuantumCircuit) -> float:
     return sv.expectation_value(op)
 
 
-def eps(circuit: QuantumCircuit) -> float:
+def esp(circuit: QuantumCircuit) -> float:
     fid = 1.0
     for instr in circuit:
         op = instr.operation
@@ -85,4 +93,13 @@ def eps(circuit: QuantumCircuit) -> float:
         else:
             raise ValueError(f"Unsupported operation: {op}")
 
-    return fid
+    return round(fid, 3)
+
+
+def postprocess_barplot(ax: plt.Axes) -> None:
+    hatches = ["/", "\\", "//", "\\\\", "x", ".", ",", "*"]
+    num_xticks = len(ax.get_xticks())
+    num_bars = len(ax.get_legend_handles_labels()[0])
+    patch_idx_to_hatch_idx = np.arange(num_bars).repeat(num_xticks)
+    for i, patch in enumerate(ax.patches):
+        patch.set_hatch(hatches[patch_idx_to_hatch_idx[i] % len(hatches)])

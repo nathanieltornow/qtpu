@@ -3,7 +3,6 @@ mkShell rec {
   buildInputs = [
     pdm
     python312
-    python312Packages.virtualenv
   ];
   
   NIX_LD_LIBRARY_PATH = lib.makeLibraryPath [

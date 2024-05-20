@@ -10,7 +10,6 @@ from qvm.compiler.optimizer import Optimizer
 def compile_circuit(
     circuit: QuantumCircuit,
     optimizer: Optimizer,
-    opt_args: dict[str, Any],
 ) -> HybridTensorNetwork:
     # frontend
     cg = CircuitGraph(circuit)

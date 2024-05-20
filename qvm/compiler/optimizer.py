@@ -74,3 +74,14 @@ class NumQubitsOptimizer(GreedyOptimizer):
             if self._num_qubits(leaf.graph.nodes) > self._qpu_size:
                 return leaf
         return None
+
+
+class MaxContractionCostOptimizer(GreedyOptimizer):
+    def __init__(self, max_cost: int, compression_method: str | None = None) -> None:
+        self._max_cost = max_cost
+        super().__init__(compression_method=compression_method)
+
+    def _next_leaf(self, tree: GraphContractionTree) -> GraphContractionTree | None:
+        if tree.contraction_cost() > self._max_cost:
+            return None
+        return max(tree.leafs(), key=lambda leaf: len(leaf.graph.nodes))

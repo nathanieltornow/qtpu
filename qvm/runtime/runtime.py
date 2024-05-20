@@ -1,4 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import quimb.tensor as qtn
@@ -11,6 +10,7 @@ from qvm.tensor import QuantumTensor, HybridTensorNetwork
 def contract_hybrid_tn(
     hybrid_tn: HybridTensorNetwork,
     qpu_manager: QPUManager,
+    shots: int,
     qtens_kwarg_map: list[dict[str, Any]] | None = None,
 ) -> float | qtn.Tensor:
 
@@ -22,31 +22,20 @@ def contract_hybrid_tn(
 
     assert len(quantum_tensors) == len(qtens_kwarg_map)
 
-    with ThreadPoolExecutor() as executor:
-        futures = [
-            executor.submit(
-                _process_quantum_tensor,
-                qpu_manager,
-                qtens,
-                **qtens_kwargs,
-            )
-            for qtens, qtens_kwargs in zip(quantum_tensors, qtens_kwarg_map)
-        ]
-
-        # while the circuits are running, compute a contraction tree
-        contr_future = executor.submit(_get_optimized_contraction_tree, hybrid_tn)
-
-        tensors = [fut.result() for fut in futures]
-        contr_tree = contr_future.result()
+    tensors = [
+        qpu_manager.run_quantum_tensor(qtens, shots=shots, **qtens_kwargs)
+        for qtens, qtens_kwargs in zip(quantum_tensors, qtens_kwarg_map)
+    ]
+    contr_tree = _get_optimized_contraction_tree(hybrid_tn)
 
     tn = qtn.TensorNetwork(tensors + classical_tensors)
     return tn.contract(all, optimize=contr_tree)
 
 
 def _process_quantum_tensor(
-    qpu_manager: QPUManager, quantum_tensor: QuantumTensor, **kwargs
+    qpu_manager: QPUManager, quantum_tensor: QuantumTensor, shots: int, **kwargs
 ) -> qtn.Tensor:
-    return qpu_manager.run_quantum_tensor(quantum_tensor, **kwargs)
+    return qpu_manager.run_quantum_tensor(quantum_tensor, shots=shots, **kwargs)
 
 
 def _get_optimized_contraction_tree(

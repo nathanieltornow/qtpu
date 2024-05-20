@@ -9,7 +9,7 @@ class VirtualRZZ(VirtualBinaryGate):
     def __init__(self, params: list, label: str | None = None) -> None:
         super().__init__("v_rzz", params, label)
 
-    def instantiations(self) -> list[tuple[QuantumCircuit, QuantumCircuit]]:
+    def instantiations(self) -> list[QuantumCircuit]:
         c1 = QuantumCircuit(2, 1)
 
         c2 = QuantumCircuit(2, 1)
