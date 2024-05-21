@@ -24,8 +24,8 @@ def get_hybrid_tn_info(
         for qt in hybrid_tn.quantum_tensors
     ]
     return {
-        "contract_cost": contraction_cost(hybrid_tn),
-        "bruteforce_cost": bruteforce_cost(hybrid_tn),
+        "contract_cost": round(contraction_cost_log10(hybrid_tn), 3),
+        "bruteforce_cost": round(bruteforce_cost_log10(hybrid_tn), 3),
         "num_qpds": len(hybrid_tn.classical_tensors),
         "num_subcircuits": len(circuits),
         "num_instances": sum([np.prod(qt.shape) for qt in hybrid_tn.quantum_tensors]),
@@ -38,19 +38,20 @@ def get_hybrid_tn_info(
     }
 
 
-def contraction_cost(hybrid_tn: HybridTensorNetwork) -> int:
+def contraction_cost_log10(hybrid_tn: HybridTensorNetwork) -> int:
     if hybrid_tn.size_dict() == {}:
         return 0
     opt = ctg.HyperOptimizer()
+
     return opt.search(
         hybrid_tn.inputs(), hybrid_tn.output(), hybrid_tn.size_dict()
-    ).contraction_cost()
+    ).contraction_cost(log=10)
 
 
-def bruteforce_cost(hybrid_tn: HybridTensorNetwork) -> int:
-    return np.prod([tens.shape[0] for tens in hybrid_tn.classical_tensors]) * (
-        len(hybrid_tn.classical_tensors) + len(hybrid_tn.quantum_tensors) - 1
-    )
+def bruteforce_cost_log10(hybrid_tn: HybridTensorNetwork) -> int:
+    return np.sum(
+        [np.log10(tens.shape[0]) for tens in hybrid_tn.classical_tensors]
+    ) + np.log10(len(hybrid_tn.classical_tensors) + len(hybrid_tn.quantum_tensors) - 1)
 
 
 def append_to_csv(file_path: str, data: dict) -> None:

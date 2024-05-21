@@ -59,8 +59,6 @@ class QuantumTensor:
         self._shot_portions = np.array(self._instance_gates[0].shot_portion)
         for gate in self._instance_gates[1:]:
             self._shot_portions = np.kron(self._shot_portions, gate.shot_portion)
-        print(self._shot_portions)
-        print(sum(self._shot_portions))
 
     @property
     def circuit(self) -> QuantumCircuit:
