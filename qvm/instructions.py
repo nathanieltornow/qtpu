@@ -2,11 +2,7 @@ import abc
 
 import numpy as np
 from numpy.typing import NDArray
-from qiskit.circuit import (
-    Gate,
-    QuantumCircuit,
-    QuantumRegister,
-)
+from qiskit.circuit import Gate, QuantumCircuit, QuantumRegister, Barrier
 
 
 class VirtualBinaryGate(Gate, abc.ABC):
@@ -43,3 +39,37 @@ class VirtualBinaryGate(Gate, abc.ABC):
             if tuple(instr.qubits) == (qubit,):
                 new_circ.append(instr.operation, [qreg[0]], instr.clbits)
         return new_circ
+
+
+class InstanceGate(Barrier):
+    def __init__(
+        self,
+        num_qubits: int,
+        index: str,
+        instances: list[QuantumCircuit],
+        shot_portion: list[float] | None = None,
+    ):
+        assert all(inst.num_qubits == num_qubits for inst in instances)
+
+        if shot_portion is None:
+            shot_portion = [1 / len(instances) for _ in instances]
+
+        # sum of shot_portion must be approximately 1
+        assert abs(sum(shot_portion) - 1) < 1e-6
+
+        self._index = index
+        self._instances = instances
+        self._shot_portion = shot_portion
+        super().__init__(num_qubits, label=index)
+
+    @property
+    def index(self) -> str:
+        return self._index
+
+    @property
+    def instances(self) -> list[QuantumCircuit]:
+        return self._instances
+
+    @property
+    def shot_portion(self) -> list[float]:
+        return self._shot_portion

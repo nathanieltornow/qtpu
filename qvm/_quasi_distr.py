@@ -84,7 +84,8 @@ class QuasiDistr(dict[int, float]):
         self[key] = self.get(key, 0.0) + value
 
 
-def prepare_quasidist(quasidist: QuasiDistr, num_bits: int) -> QuasiDistr:
+def prepare_samples(counts: dict[str, int], num_bits: int) -> QuasiDistr:
+    quasidist = QuasiDistr.from_counts(counts)
     new_quasidist = QuasiDistr({})
     for key, value in quasidist.items():
         mask = (1 << num_bits) - 1

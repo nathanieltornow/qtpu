@@ -1,17 +1,13 @@
 import numpy as np
 from qiskit.circuit import QuantumCircuit, ClassicalRegister, Qubit
-from qiskit.circuit.library import EfficientSU2
+from qiskit.circuit.library import EfficientSU2, TwoLocal
 from qiskit.primitives import Estimator
 from qiskit import transpile
+from qiskit_aer import AerSimulator
 
+from qvm.compiler.oracle import MaxQubitsOracle
+from qvm.compiler import compile
 
-from qvm.compiler.compiler import compile_circuit
-from qvm.compiler.optimizer import NumQubitsOptimizer
-from qvm.runtime.runtime import contract_hybrid_tn
-from qvm.runtime.qpu_manager import (
-    SimulatorQPUManager,
-    _DummyQPUManager,
-)
 
 def measure_all(qc: QuantumCircuit) -> None:
     qc.add_register(ClassicalRegister(qc.num_qubits, name="c"))
@@ -20,28 +16,15 @@ def measure_all(qc: QuantumCircuit) -> None:
 
 if __name__ == "__main__":
 
-    qc = EfficientSU2(20, reps=1).decompose()
-    qc = qc.assign_parameters({param: np.random.randn() / 2 for param in qc.parameters})
+    qc = TwoLocal(20, ["ry", "rz"], "cx", "circular", reps=3).decompose()
+    # qc = qc.assign_parameters({param: np.random.randn() / 2 for param in qc.parameters})
 
-    qc.remove_final_measurements(inplace=True)
+    # qc = QuantumCircuit(2)
+    # qc.h(0)
+    # qc.rzz(1.2, 0, 1)
+    # qc.h(1)
 
-    act_val = Estimator().run(qc, "Z" * qc.num_qubits).result().values
-    #
-    measure_all(qc)
+    htn = compile(qc, oracle=MaxQubitsOracle(15), show_progress_bar=True)
 
-    hybrid_tn = compile_circuit(qc, NumQubitsOptimizer(10, "rm_1q"))
-
-    for qtens in hybrid_tn.quantum_tensors:
-        print(qtens._circuit)
-
-    # print(act_val)
-    from time import perf_counter
-
-    import sys
-
-    start = perf_counter()
-
-    print(contract_hybrid_tn(hybrid_tn, SimulatorQPUManager(True), 200000))
-    print(perf_counter() - start)
-    print(act_val)
-    
+    for qtn in htn.quantum_tensors:
+        print(qtn.circuit)

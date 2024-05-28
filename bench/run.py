@@ -3,7 +3,7 @@ import argparse
 from qiskit.circuit import QuantumCircuit
 
 from qvm.compiler.compiler import compile_circuit
-from qvm.compiler.optimizer import NumQubitsOptimizer
+from qvm.compiler.partition_optimizer import NumQubitsOptimizer
 
 from benchmarks import generate_benchmark, generate_benchmarks_range
 from util import *

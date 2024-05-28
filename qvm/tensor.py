@@ -1,43 +1,30 @@
 import itertools
 from typing import Iterator
 import numpy as np
+from numpy.typing import NDArray
 
-import quimb.tensor as qtn
-from qiskit.circuit import QuantumCircuit, Barrier, ClassicalRegister
+from qiskit.circuit import QuantumCircuit, ClassicalRegister
+
+from qvm.instructions import InstanceGate
 
 
-class InstanceGate(Barrier):
-    def __init__(
-        self,
-        num_qubits: int,
-        index: str,
-        instances: list[QuantumCircuit],
-        shot_portion: list[float] | None = None,
-    ):
-        assert all(inst.num_qubits == num_qubits for inst in instances)
-
-        if shot_portion is None:
-            shot_portion = [1 / len(instances) for _ in instances]
-
-        # sum of shot_portion must be approximately 1
-        assert abs(sum(shot_portion) - 1) < 1e-6
-
-        self._index = index
-        self._instances = instances
-        self._shot_portion = shot_portion
-        super().__init__(num_qubits, label=index)
+class ClassicalTensor:
+    def __init__(self, data: NDArray, inds: tuple[str, ...]) -> None:
+        assert len(data.shape) == len(inds)
+        self._data = data
+        self._inds = inds
 
     @property
-    def index(self) -> str:
-        return self._index
+    def data(self) -> NDArray:
+        return self._data
 
     @property
-    def instances(self) -> list[QuantumCircuit]:
-        return self._instances
+    def shape(self) -> tuple[int, ...]:
+        return self._data.shape
 
     @property
-    def shot_portion(self) -> list[float]:
-        return self._shot_portion
+    def inds(self) -> tuple[chr, ...]:
+        return self._inds
 
 
 class QuantumTensor:
@@ -114,12 +101,12 @@ class QuantumTensor:
 
 class HybridTensorNetwork:
     def __init__(
-        self, quantum_tensors: list[QuantumTensor], classical_tensors: list[qtn.Tensor]
+        self, quantum_tensors: list[QuantumTensor], classical_tensors: list[ClassicalTensor]
     ) -> None:
         self._quantum_tensors = quantum_tensors
         self._classical_tensors = classical_tensors
 
-        self._index_map: dict[str, tuple[set[QuantumTensor | qtn.Tensor], int]] = {}
+        self._index_map: dict[str, tuple[set[QuantumTensor | ClassicalTensor], int]] = {}
 
         self._index_to_chr = {
             index: chr(65 + i)
@@ -152,7 +139,7 @@ class HybridTensorNetwork:
         return self._quantum_tensors.copy()
 
     @property
-    def classical_tensors(self) -> list[qtn.Tensor]:
+    def classical_tensors(self) -> list[ClassicalTensor]:
         return self._classical_tensors.copy()
 
     def inputs(self) -> list[tuple[str, ...]]:
