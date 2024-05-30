@@ -17,88 +17,33 @@ class NodeInfo:
     rel_qubit: int  # Relative qubit in the operation
 
 
-class HybridCircuitIface(abc.ABC):
-    @abc.abstractmethod
-    def inputs(self) -> list[tuple[str, ...]]:
-        """The inputs of the TN-like representation of the circuit.
+# class IRInterface(abc.ABC):
+#     @abc.abstractmethod
+#     def contraction_tree(self) -> ctg.ContractionTree: ...
 
-        Returns:
-            list[tuple[str, ...]]: The inputs of the TN-like representation of the circuit.
-        """
-        ...
+#     @abc.abstractmethod
+#     def quantum_tensor(self, node_subset: set[int]) -> QuantumTensor: ...
 
-    def output(self) -> tuple[str, ...]:
-        """The output of the TN-like representation of the circuit.
+#     @abc.abstractmethod
+#     def node_infos(self, node: int) -> set[NodeInfo]: ...
 
-        Returns:
-            tuple[str, ...]: The output of the TN-like representation of the circuit.
-        """
-        return tuple()
+#     @abc.abstractmethod
+#     def hybrid_tn(self, node_subsets: list[set[int]]) -> HybridTensorNetwork: ...
 
-    @abc.abstractmethod
-    def size_dict(self) -> dict[str, int]:
-        """The size dictionary of each index the TN-like representation of the circuit.
-
-        Returns:
-            dict[str, int]: The size dictionary of the TN-like representation of the circuit.
-        """
-        ...
-
-    @abc.abstractmethod
-    def node_infos(self) -> dict[int, set[NodeInfo]]:
-        """Node information for each node in the TN-like representation of the circuit.
-
-        Returns:
-            dict[int, set[NodeInfo]]: The node information for each node.
-        """
-        ...
-
-    @abc.abstractmethod
-    def quantum_tensor(self, node_subset: set[int]) -> QuantumTensor:
-        """Generates a quantum tensor from a subset of nodes.
-
-        Args:
-            node_subset (set[int]): A subset of nodes of the TN-like representation of the circuit.
-
-        Returns:
-            QuantumTensor: The quantum tensor generated from the subset of nodes.
-        """
-        ...
-
-    @abc.abstractmethod
-    def hybrid_tn(self, node_subsets: list[set[int]]) -> HybridTensorNetwork:
-        """Generates a hybrid tensor network from a list of node subsets.
-
-        Args:
-            node_subsets (list[set[int]]): The list of node subsets.
-
-        Returns:
-            HybridTensorNetwork: The hybrid tensor network generated from the list of node subsets.
-        """
-        ...
-
-    def num_qubits(self, node_subset: set[int]) -> int:
-        """Computes the number of qubits in a subset of nodes.
-
-        Args:
-            node_subset (set[int]): The node subset corresponding to a quantum tensor.
-
-        Returns:
-            int: The number of qubits.
-        """
-        return len(
-            set(
-                itertools.chain.from_iterable(
-                    set(info.abs_qubit for info in self.node_infos()[node])
-                    for node in node_subset
-                )
-            )
-        )
+#     def num_qubits(self, node_subset: set[int]) -> int:
+#         return len(
+#             set(
+#                 itertools.chain.from_iterable(
+#                     set(info.abs_qubit for info in self.node_infos(node))
+#                     for node in node_subset
+#                 )
+#             )
+#         )
 
 
-class HybridCircuitIR(HybridCircuitIface):
+class HybridCircuitIR:
     def __init__(self, circuit: QuantumCircuit) -> None:
-        node_infos: dict[int, NodeInfo] = {}
+        node_infos: list[NodeInfo] = []
         op_nodes: list[set[int]] = []
         inputs: list[tuple[str, ...]] = []
         size_dict: dict[str, int] = {}
@@ -115,20 +60,17 @@ class HybridCircuitIR(HybridCircuitIface):
 
             for i, qubit in enumerate(instr.qubits):
                 inputs.append(tuple())
-                node_id = len(inputs) - 1
-                op_nodes[-1].add(node_id)
-                node_infos[node_id] = NodeInfo(
-                    op_idx=op_id, abs_qubit=qubit, rel_qubit=i
-                )
+                op_nodes[-1].add(len(inputs) - 1)
+                node_infos.append(NodeInfo(op_idx=op_id, abs_qubit=qubit, rel_qubit=i))
 
                 if qubit in current_nodes:
                     inputs[current_nodes[qubit]] += (str(chr(edge_index)),)
-                    inputs[node_id] += (str(chr(edge_index)),)
+                    inputs[-1] += (str(chr(edge_index)),)
                     size_dict[str(chr(edge_index))] = 4
 
                     edge_index += 1
 
-                current_nodes[qubit] = node_id
+                current_nodes[qubit] = len(inputs) - 1
 
             if len(instr.qubits) == 2:
                 assert instr.operation.name in VIRTUAL_GATE_GENERATORS
@@ -144,14 +86,23 @@ class HybridCircuitIR(HybridCircuitIface):
         self._node_infos = node_infos
         self._hypergraph = ctg.HyperGraph(inputs, tuple(), size_dict)
 
-    def node_infos(self) -> dict[int, NodeInfo]:
-        return {node: {info} for node, info in self._node_infos.items()}
+    def node_info(self, node: int) -> NodeInfo:
+        return self._node_infos[node]
 
-    def inputs(self) -> list[tuple[str, ...]]:
-        return self._hypergraph.inputs.copy()
+    def node_infos(self) -> list[set[NodeInfo]]:
+        return [{info} for info in self._node_infos]
 
-    def size_dict(self) -> dict[str, int]:
-        return self._hypergraph.size_dict.copy()
+    def contraction_tree(self) -> ctg.ContractionTree:
+        return ctg.ContractionTree(
+            self._hypergraph.inputs,
+            tuple(),
+            self._hypergraph.size_dict,
+            track_flops=True,
+            track_childless=True,
+        )
+
+    def num_qubits(self, node_subset: set[int]) -> int:
+        return len(set(self._node_infos[node].abs_qubit for node in node_subset))
 
     @property
     def circuit(self) -> QuantumCircuit:

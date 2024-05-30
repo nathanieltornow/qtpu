@@ -1,30 +1,37 @@
-import abc
-import itertools
-from typing import Callable
-
 import cotengra as ctg
+import networkx as nx
 
-from qvm.ir import HybridCircuitIface
+from qvm.ir import HybridCircuitIR
 from qvm.tensor import HybridTensorNetwork
 
-from qvm.compiler.oracle import Oracle
+
+from qvm.compiler.oracle import LeafOracle
+from qvm.compiler.compress import CompressedIR, compress_2q_gates, compress_qubits
+from .util import get_leafs
 
 
-class Optimizer:
+class TreeOptimizer:
     """
-    This class is largely taken and modified from cotengra.core. Thanks to the cotengra contributors for the implementation.
+    This class is largely taken and modified from cotengra.core.
+    Thanks to the cotengra contributors for the implementation.
     """
 
-    def __init__(self, oracle: Oracle, max_cost: int):
-        self.partition_fn = (
-            ctg.pathfinders.path_kahypar.kahypar_subgraph_find_membership
-        )
+    def __init__(self, oracle: LeafOracle, partition_method: str = "gn") -> None:
+        match partition_method:
+            case "gn":
+                self.partition_fn = partition_girvan_newman
+            case "kahypar":
+                self.partition_fn = (
+                    ctg.pathfinders.path_kahypar.kahypar_subgraph_find_membership
+                )
+            case _:
+                raise ValueError(f"Unknown partition method: {partition_method}")
         self.oracle = oracle
-        self.max_cost = max_cost
 
     def optimize(
         self,
-        ir: HybridCircuitIface,
+        ir: HybridCircuitIR,
+        compress: str = "none",
         random_strength=0.01,
         # cutoff=10,
         parts=2,
@@ -33,16 +40,26 @@ class Optimizer:
         check=False,
         seed=None,
         **partition_opts,
-    ) -> ctg.ContractionTree:
+    ) -> tuple[CompressedIR, ctg.ContractionTree]:
 
-        inputs, output, size_dict = ir.inputs(), ir.output(), ir.size_dict()
+        # TODO simplify inputs here
 
-        tree = ctg.ContractionTree(
-            inputs, output, size_dict, track_childless=True, track_flops=True
-        )
+        match compress:
+            case "2q":
+                ir = compress_2q_gates(ir)
+            case "qubits":
+                ir = compress_qubits(ir)
+            case "none":
+                ir = CompressedIR(ir, set())
+            case _:
+                raise ValueError(f"Unknown compression method: {compress}")
+
+        tree = ir.contraction_tree()
 
         rng = ctg.core.get_rng(seed)
-        rand_size_dict = ctg.core.jitter_dict(size_dict, random_strength, rng)
+        rand_size_dict = ctg.core.jitter_dict(
+            tree.size_dict.copy(), random_strength, rng
+        )
 
         dynamic_imbalance = ("imbalance" in partition_opts) and (
             "imbalance_decay" in partition_opts
@@ -56,6 +73,8 @@ class Optimizer:
         dynamic_fix = partition_opts.get("fix_output_nodes", None) == "auto"
 
         while tree_node := self.oracle.choose_leaf(ir=ir, tree=tree):
+            if tree_node is None:
+                break
             subgraph = tuple(tree_node)
             subsize = len(subgraph)
 
@@ -105,15 +124,16 @@ class Optimizer:
             # update tree structure with newly contracted subgraphs
             tree.contract_nodes(new_subgs, optimize=super_optimize, check=check)
 
+            # if tree.contraction_cost() > max_cost:
+            #     print("Cost exceeded")
+            #     tree.children.pop(tree_node)
+            #     break
 
-            if tree.contraction_cost() > self.max_cost:
-                tree.children.pop(tree_node)
-                break
+        # TODO desimplify inputs here
 
-        return tree
+        return ir, tree
 
 
-# import networkx as nx
 # import cotengra as ctg
 # from cotengra.pathfinders.path_kahypar import kahypar_subgraph_find_membership
 # from cotengra.pathfinders.path_igraph import igraph_subgraph_find_membership
@@ -147,26 +167,31 @@ class Optimizer:
 #     return labels_partition(inputs, output, size_dict, parts)
 
 
-# def partition_girvan_newman(
-#     inputs: list[tuple[str, ...]],
-#     output: tuple[str, ...],
-#     size_dict: dict[str, int],
-#     parts: int,
-# ) -> list[int]:
-#     hypergraph = ctg.HyperGraph(inputs, output, size_dict)
-#     graph = hypergraph.to_networkx()
-#     for _, _, data in graph.edges(data=True):
-#         data["weight"] = size_dict[data["ind"]]
+def partition_girvan_newman(
+    inputs: list[tuple[str, ...]],
+    output: tuple[str, ...],
+    size_dict: dict[str, int],
+    parts: int,
+    **kwargs,
+) -> list[int]:
+    hypergraph = ctg.HyperGraph(inputs, output, size_dict)
 
-#     for components in nx.algorithms.community.girvan_newman(graph):
-#         if len(components) == parts:
-#             break
+    graph = hypergraph.to_networkx()
+    for _, _, data in graph.edges(data=True):
+        data["weight"] = size_dict[data["ind"]]
 
-#     membership = [0] * len(inputs)
-#     for i, component in enumerate(components):
-#         for node in component:
-#             membership[node] = i
-#     return membership
+    for components in nx.algorithms.community.girvan_newman(graph):
+        if len(components) == parts:
+            break
+
+    # print(components)
+    membership = [0] * len(inputs)
+    for i, component in enumerate(components):
+        for node in component:
+            if isinstance(node, str):
+                continue
+            membership[node] = i
+    return membership
 
 
 # def membership_to_subsets(membership: list[int]) -> list[set[int]]:
