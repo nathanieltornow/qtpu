@@ -5,7 +5,7 @@
 For this, qTPU compiles circuits into **hybrid tensor networks**, consisting of quantum- and classical-tensors, where quantum tensors are represented by smaller quantum circuits.
 For this, qTPU makes use of **quasiprobability decompostiton (QPD)**.
 
-To contraction of a hybrid tensor network returns the result of the original circuit and can be run in a co-processing routine on quantum- and classical accelerators.
+The contraction of a hybrid tensor network returns the result of the original circuit and can be run in a co-processing routine on quantum- and classical accelerators.
 
 
 ## Quickstart
