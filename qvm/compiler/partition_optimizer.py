@@ -16,16 +16,16 @@ class TreeOptimizer:
     Thanks to the cotengra contributors for the implementation.
     """
 
-    def __init__(self, oracle: LeafOracle, partition_method: str = "gn") -> None:
-        match partition_method:
-            case "gn":
-                self.partition_fn = partition_girvan_newman
-            case "kahypar":
-                self.partition_fn = (
-                    ctg.pathfinders.path_kahypar.kahypar_subgraph_find_membership
-                )
-            case _:
-                raise ValueError(f"Unknown partition method: {partition_method}")
+    def __init__(self, oracle: LeafOracle) -> None:
+        try:
+            import kahypar
+
+            self.partition_fn = (
+                ctg.pathfinders.path_kahypar.kahypar_subgraph_find_membership
+            )
+        except ImportError:
+            self.partition_fn = partition_girvan_newman
+
         self.oracle = oracle
 
     def optimize(

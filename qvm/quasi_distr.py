@@ -77,20 +77,25 @@ class QuasiDistr(dict[int, float]):
             )
         raise TypeError(f"Cannot multiply QuasiDistr by {type(other)}")
 
+    def prepare(self, num_bits: int) -> "QuasiDistr":
+        new_quasidist = QuasiDistr({})
+        for key, value in self.items():
+            mask = (1 << num_bits) - 1
+            first_bits = bin(key & ~mask)[2:]
+            parity = sum(int(c) for c in first_bits) % 2
+            new_value = value if parity == 0 else -value
+            new_quasidist.add_value(key & mask, new_value)
+        return new_quasidist
+
+    def expval(self) -> float:
+        val = 0.0
+        for key, value in self.items():
+            parity = 1 - 2 * int(bin(key).count("1") % 2)
+            val += parity * value
+        return val
+
     def __rmul__(self, other: Union[int, float, "QuasiDistr"]) -> "QuasiDistr":
         return self.__mul__(other)
 
     def add_value(self, key: int, value: float) -> None:
         self[key] = self.get(key, 0.0) + value
-
-
-def prepare_samples(counts: dict[str, int], num_bits: int) -> QuasiDistr:
-    quasidist = QuasiDistr.from_counts(counts)
-    new_quasidist = QuasiDistr({})
-    for key, value in quasidist.items():
-        mask = (1 << num_bits) - 1
-        first_bits = bin(key & ~mask)[2:]
-        parity = sum(int(c) for c in first_bits) % 2
-        new_value = value if parity == 0 else -value
-        new_quasidist.add_value(key & mask, new_value)
-    return new_quasidist

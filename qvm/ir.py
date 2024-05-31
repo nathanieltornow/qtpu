@@ -1,4 +1,3 @@
-import abc
 import itertools
 from dataclasses import dataclass
 
@@ -15,30 +14,6 @@ class NodeInfo:
     op_idx: int  # Index of the operation in the circuit
     abs_qubit: Qubit  # Absolute qubit in the circuit
     rel_qubit: int  # Relative qubit in the operation
-
-
-# class IRInterface(abc.ABC):
-#     @abc.abstractmethod
-#     def contraction_tree(self) -> ctg.ContractionTree: ...
-
-#     @abc.abstractmethod
-#     def quantum_tensor(self, node_subset: set[int]) -> QuantumTensor: ...
-
-#     @abc.abstractmethod
-#     def node_infos(self, node: int) -> set[NodeInfo]: ...
-
-#     @abc.abstractmethod
-#     def hybrid_tn(self, node_subsets: list[set[int]]) -> HybridTensorNetwork: ...
-
-#     def num_qubits(self, node_subset: set[int]) -> int:
-#         return len(
-#             set(
-#                 itertools.chain.from_iterable(
-#                     set(info.abs_qubit for info in self.node_infos(node))
-#                     for node in node_subset
-#                 )
-#             )
-#         )
 
 
 class HybridCircuitIR:
@@ -240,3 +215,27 @@ def remove_idle_qubits(circuit: QuantumCircuit) -> QuantumCircuit:
         new_circuit.append(instr.operation, new_qubits, instr.clbits)
 
     return new_circuit
+
+
+# class IRInterface(abc.ABC):
+#     @abc.abstractmethod
+#     def contraction_tree(self) -> ctg.ContractionTree: ...
+
+#     @abc.abstractmethod
+#     def quantum_tensor(self, node_subset: set[int]) -> QuantumTensor: ...
+
+#     @abc.abstractmethod
+#     def node_infos(self, node: int) -> set[NodeInfo]: ...
+
+#     @abc.abstractmethod
+#     def hybrid_tn(self, node_subsets: list[set[int]]) -> HybridTensorNetwork: ...
+
+#     def num_qubits(self, node_subset: set[int]) -> int:
+#         return len(
+#             set(
+#                 itertools.chain.from_iterable(
+#                     set(info.abs_qubit for info in self.node_infos(node))
+#                     for node in node_subset
+#                 )
+#             )
+#         )

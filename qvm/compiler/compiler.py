@@ -1,6 +1,5 @@
 import optuna
-from qiskit.circuit import QuantumCircuit
-
+from qiskit.circuit import QuantumCircuit, Barrier
 
 from qvm.ir import HybridCircuitIR
 from qvm.tensor import HybridTensorNetwork
@@ -9,14 +8,22 @@ from .oracle import LeafOracle
 
 from .util import get_leafs
 
+LOGGING = False
 
-def compile(
+if not LOGGING:
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+
+def compile_circuit(
     circuit: QuantumCircuit,
     oracle: LeafOracle | None = None,
     compression_methods: list[str] | None = None,
     max_trials: int = 100,
     show_progress_bar: bool = False,
 ) -> HybridTensorNetwork:
+
+    circuit = _remove_barriers(circuit)
+
     if compression_methods is None:
         compression_methods = ["qubits", "2q", "none"]
 
@@ -92,3 +99,12 @@ def hyper_optimize(
     return ir.hybrid_tn(
         [set(leaf) for leaf in get_leafs(study.best_trial.user_attrs["tree"])]
     )
+
+
+def _remove_barriers(circuit: QuantumCircuit) -> QuantumCircuit:
+    new_circuit = QuantumCircuit(*circuit.qregs, *circuit.cregs)
+    for instr in circuit:
+        if isinstance(instr.operation, Barrier):
+            continue
+        new_circuit.append(instr)
+    return new_circuit
