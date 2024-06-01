@@ -4,7 +4,6 @@ import networkx as nx
 import numpy as np
 
 from qtpu.ir import HybridCircuitIR
-from qtpu.compiler.oracle import LeafOracle, NumQubitsOracle
 from qtpu.compiler.compress import CompressedIR, compress_2q_gates, compress_qubits
 from qtpu.compiler.util import get_leafs
 

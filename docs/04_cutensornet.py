@@ -15,7 +15,7 @@ circuit.measure_all()
 
 
 hybrid_tn = qtpu.cut(
-    circuit, qtpu.compiler.NumQubitsOracle(N // 2), show_progress_bar=True
+    circuit, max_cost=16, show_progress_bar=True
 )
 
 sim = AerSimulator()
