@@ -1,12 +1,17 @@
+from typing import Callable
+
 import optuna
+import cotengra as ctg
+import numpy as np
 from qiskit.circuit import QuantumCircuit, Barrier
 
 from qtpu.ir import HybridCircuitIR
 from qtpu.tensor import HybridTensorNetwork
-from .partition_optimizer import TreeOptimizer
-from .oracle import LeafOracle
 
-from .util import get_leafs
+from qtpu.compiler.optimizer import optimize
+from qtpu.compiler.compress import CompressedIR
+from qtpu.compiler.util import get_leafs
+from qtpu.compiler.success import success_probability_static
 
 LOGGING = False
 
@@ -16,41 +21,96 @@ if not LOGGING:
 
 def compile_circuit(
     circuit: QuantumCircuit,
-    oracle: LeafOracle | None = None,
+    success_fn: Callable[[CompressedIR, ctg.ContractionTree], float] | None = None,
+    terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
+    max_cost: int = np.inf,
+    choose_leaf_methods: list[set[int]] | None = None,
     compression_methods: list[str] | None = None,
+    # function to choos the value from the pareto front
+    pareto_fn: Callable[[float, float], float] | None = None,
     max_trials: int = 100,
     show_progress_bar: bool = False,
 ) -> HybridTensorNetwork:
 
-    circuit = _remove_barriers(circuit)
+    if success_fn is None:
+        success_fn = success_probability_static
 
     if compression_methods is None:
         compression_methods = ["qubits", "2q", "none"]
 
-    if oracle is None:
-        oracle = LeafOracle()
+    if choose_leaf_methods is None:
+        choose_leaf_methods = ["qubits", "nodes", "random"]
 
-    ir = HybridCircuitIR(circuit)
+    if pareto_fn is None:
+        pareto_fn = only_success_pareto_function
 
-    opt = TreeOptimizer(oracle)
+    ir = HybridCircuitIR(_remove_barriers(circuit))
 
     return hyper_optimize(
         ir,
-        opt,
+        success_fn=success_fn,
+        pareto_fn=pareto_fn,
+        terminate_fn=terminate_fn,
+        max_cost=max_cost,
+        choose_leaf_methods=choose_leaf_methods,
         compression_methods=compression_methods,
         n_trials=max_trials,
         show_progress_bar=show_progress_bar,
     )
 
 
-def _objective(
+def hyper_optimize(
+    ir: HybridCircuitIR,
+    # hyperargs
+    success_fn: Callable[[CompressedIR, ctg.ContractionTree], float],
+    pareto_fn: Callable[[float, float], float],
+    terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
+    max_cost: int = np.inf,
+    choose_leaf_methods: list[set[int]] | None = None,
+    compression_methods: list[str] | None = None,
+    # optuna args
+    n_trials: int = 100,
+    show_progress_bar: bool = False,
+) -> HybridTensorNetwork:
+    study = optuna.create_study(directions=["minimize", "maximize"])
+    study.optimize(
+        lambda trial: objective(
+            trial,
+            ir=ir,
+            success_fn=success_fn,
+            terminate_fn=terminate_fn,
+            max_cost=max_cost,
+            choose_leaf_methods=choose_leaf_methods,
+            compression_methods=compression_methods,
+        ),
+        n_trials=n_trials,
+        show_progress_bar=show_progress_bar,
+    )
+
+    best_trial = max(study.best_trials, key=lambda trial: pareto_fn(*trial.values))
+
+    if best_trial.values[0] > max_cost:
+        raise ValueError("No valid solution found")
+
+    return best_trial.user_attrs["ir"].hybrid_tn(
+        list(get_leafs(best_trial.user_attrs["tree"]))
+    )
+
+
+def objective(
     trial: optuna.Trial,
     ir: HybridCircuitIR,
-    opt: TreeOptimizer,
-    compression_methods: list[str],
+    success_fn: Callable[[CompressedIR, ctg.ContractionTree], float],
+    terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
+    max_cost: int = np.inf,
+    choose_leaf_methods: list[set[int]] | None = None,
+    compression_methods: list[str] | None = None,
 ) -> float:
 
     compress = trial.suggest_categorical("compress", compression_methods)
+    choose_leaf = trial.suggest_categorical("choose_leaf", choose_leaf_methods)
+
+    # partition arguments
     random_strength = trial.suggest_float("random_strength", 0.01, 10.0)
     weight_edges = trial.suggest_categorical("weight_edges", ["const", "log"])
     imbalance = trial.suggest_float("imbalance", 0.01, 1.0)
@@ -61,9 +121,14 @@ def _objective(
     objective = trial.suggest_categorical("objective", ["cut", "km1"])
     fix_output_nodes = trial.suggest_categorical("fix_output_nodes", ["auto", ""])
 
-    ir, tree = opt.optimize(
+    ir, tree = optimize(
         ir,
+        # optimizer arguments
+        terminate_fn=terminate_fn,
+        max_cost=max_cost,
+        choose_leaf=choose_leaf,
         compress=compress,
+        # partition arguments
         random_strength=random_strength,
         weight_edges=weight_edges,
         imbalance=imbalance,
@@ -78,27 +143,13 @@ def _objective(
     trial.set_user_attr("ir", ir)
     trial.set_user_attr("tree", tree)
 
-    return tree.contraction_cost()
+    if terminate_fn is not None:
+        # optimization returned due to max_cost,
+        # but termination condition was not met
+        if not terminate_fn(ir, tree):
+            return np.inf, 0
 
-
-def hyper_optimize(
-    ir: HybridCircuitIR,
-    optimizer: TreeOptimizer,
-    compression_methods: list[str],
-    n_trials: int = 100,
-    show_progress_bar: bool = False,
-) -> HybridTensorNetwork:
-    study = optuna.create_study(direction="minimize")
-    study.optimize(
-        lambda trial: _objective(trial, ir, optimizer, compression_methods),
-        n_trials=n_trials,
-        show_progress_bar=show_progress_bar,
-    )
-
-    ir = study.best_trial.user_attrs["ir"]
-    return ir.hybrid_tn(
-        [set(leaf) for leaf in get_leafs(study.best_trial.user_attrs["tree"])]
-    )
+    return tree.contraction_cost(), success_fn(ir, tree)
 
 
 def _remove_barriers(circuit: QuantumCircuit) -> QuantumCircuit:
@@ -108,3 +159,19 @@ def _remove_barriers(circuit: QuantumCircuit) -> QuantumCircuit:
             continue
         new_circuit.append(instr)
     return new_circuit
+
+
+# Functions for choosing a solution from the pareto front
+
+
+def default_pareto_fn(
+    max_cost: int, cost_weight: float = 0.5, success_weight: float = 0.5
+) -> float:
+    def _pareto_fn(cost: float, success: float) -> float:
+        normalized_cost = np.log10(cost + 1) / np.log10(max_cost + 1)
+        return cost_weight * (1 - normalized_cost) + success_weight * success
+
+    return _pareto_fn
+
+
+only_success_pareto_function = default_pareto_fn(10, 0, 1)
