@@ -23,14 +23,53 @@ def compile_circuit(
     circuit: QuantumCircuit,
     success_fn: Callable[[CompressedIR, ctg.ContractionTree], float] | None = None,
     terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
-    max_cost: int = np.inf,
+    max_cost: int | tuple[int, int] | list[int] = np.inf,
     choose_leaf_methods: list[set[int]] | None = None,
     compression_methods: list[str] | None = None,
     # function to choos the value from the pareto front
     pareto_fn: Callable[[float, float], float] | None = None,
-    max_trials: int = 100,
+    n_trials: int = 100,
     show_progress_bar: bool = False,
 ) -> HybridTensorNetwork:
+
+    if pareto_fn is None:
+        pareto_fn = only_success_pareto_function
+
+    study = hyper_optimize(
+        circuit,
+        success_fn=success_fn,
+        terminate_fn=terminate_fn,
+        max_cost=max_cost,
+        choose_leaf_methods=choose_leaf_methods,
+        compression_methods=compression_methods,
+        n_trials=n_trials,
+        show_progress_bar=show_progress_bar,
+    )
+
+    best_trial = max(study.best_trials, key=lambda trial: pareto_fn(*trial.values))
+
+    if best_trial.values[0] > max_cost:
+        raise ValueError("No valid solution found")
+
+    return trial_to_hybrid_tn(best_trial)
+
+
+def trial_to_hybrid_tn(trial: optuna.Trial) -> HybridTensorNetwork:
+    return trial.user_attrs["ir"].hybrid_tn(list(get_leafs(trial.user_attrs["tree"])))
+
+
+def hyper_optimize(
+    circuit: QuantumCircuit,
+    # hyperargs
+    success_fn: Callable[[CompressedIR, ctg.ContractionTree], float] | None = None,
+    terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
+    max_cost: int | tuple[int, int] | list[int] = np.inf,
+    choose_leaf_methods: list[set[int]] | None = None,
+    compression_methods: list[str] | None = None,
+    # optuna args
+    n_trials: int = 100,
+    show_progress_bar: bool = False,
+) -> optuna.Study:
 
     if success_fn is None:
         success_fn = success_probability_static
@@ -41,37 +80,8 @@ def compile_circuit(
     if choose_leaf_methods is None:
         choose_leaf_methods = ["qubits", "nodes", "random"]
 
-    if pareto_fn is None:
-        pareto_fn = only_success_pareto_function
-
     ir = HybridCircuitIR(_remove_barriers(circuit))
 
-    return hyper_optimize(
-        ir,
-        success_fn=success_fn,
-        pareto_fn=pareto_fn,
-        terminate_fn=terminate_fn,
-        max_cost=max_cost,
-        choose_leaf_methods=choose_leaf_methods,
-        compression_methods=compression_methods,
-        n_trials=max_trials,
-        show_progress_bar=show_progress_bar,
-    )
-
-
-def hyper_optimize(
-    ir: HybridCircuitIR,
-    # hyperargs
-    success_fn: Callable[[CompressedIR, ctg.ContractionTree], float],
-    pareto_fn: Callable[[float, float], float],
-    terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
-    max_cost: int = np.inf,
-    choose_leaf_methods: list[set[int]] | None = None,
-    compression_methods: list[str] | None = None,
-    # optuna args
-    n_trials: int = 100,
-    show_progress_bar: bool = False,
-) -> HybridTensorNetwork:
     study = optuna.create_study(directions=["minimize", "maximize"])
     study.optimize(
         lambda trial: objective(
@@ -86,15 +96,7 @@ def hyper_optimize(
         n_trials=n_trials,
         show_progress_bar=show_progress_bar,
     )
-
-    best_trial = max(study.best_trials, key=lambda trial: pareto_fn(*trial.values))
-
-    if best_trial.values[0] > max_cost:
-        raise ValueError("No valid solution found")
-
-    return best_trial.user_attrs["ir"].hybrid_tn(
-        list(get_leafs(best_trial.user_attrs["tree"]))
-    )
+    return study
 
 
 def objective(
@@ -102,10 +104,16 @@ def objective(
     ir: HybridCircuitIR,
     success_fn: Callable[[CompressedIR, ctg.ContractionTree], float],
     terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
-    max_cost: int = np.inf,
+    max_cost: int | tuple[int, int] | list[int] = np.inf,
     choose_leaf_methods: list[set[int]] | None = None,
     compression_methods: list[str] | None = None,
 ) -> float:
+
+    if isinstance(max_cost, tuple):
+        assert max_cost[0] < max_cost[1]
+        max_cost = trial.suggest_int("max_cost", *max_cost)
+    elif isinstance(max_cost, list):
+        max_cost = trial.suggest_categorical("max_cost", max_cost)
 
     compress = trial.suggest_categorical("compress", compression_methods)
     choose_leaf = trial.suggest_categorical("choose_leaf", choose_leaf_methods)

@@ -5,7 +5,6 @@ import numpy as np
 
 from qtpu.ir import HybridCircuitIR
 from qtpu.compiler.compress import CompressedIR, compress_2q_gates, compress_qubits
-from qtpu.compiler.util import get_leafs
 
 
 def partition_girvan_newman(
@@ -99,6 +98,8 @@ def optimize(
     while terminate_fn is None or not terminate_fn(ir, tree):
 
         tree_node = choose_leaf_fn(ir, tree)
+        if tree_node is None:
+            break
 
         ref_tree = tree.copy() if max_cost < np.inf else None
 
@@ -163,16 +164,32 @@ def optimize(
 # Functions for (greedily) choosing leaf nodes
 
 
-def max_qubits_leaf(ir: CompressedIR, tree: ctg.ContractionTree) -> frozenset[int]:
-    return max(get_leafs(tree), key=lambda x: ir.num_qubits(x))
+def max_qubits_leaf(
+    ir: CompressedIR, tree: ctg.ContractionTree
+) -> frozenset[int] | None:
+    if len(tree.childless) == 1:
+        return next(iter(tree.childless))
+    if len(tree.childless) == 0:
+        return None
+    return max(tree.childless, key=lambda x: ir.num_qubits(x))
 
 
-def max_nodes_leaf(ir: CompressedIR, tree: ctg.ContractionTree) -> frozenset[int]:
-    return max(get_leafs(tree), key=lambda x: len(ir.decompress_nodes(x)))
+def max_nodes_leaf(
+    ir: CompressedIR, tree: ctg.ContractionTree
+) -> frozenset[int] | None:
+    if len(tree.childless) == 1:
+        return next(iter(tree.childless))
+    if len(tree.childless) == 0:
+        return None
+    return max(tree.childless, key=lambda x: len(ir.decompress_nodes(x)))
 
 
-def random_leaf(_: CompressedIR, tree: ctg.ContractionTree) -> frozenset[int]:
-    return np.random.choice(list(get_leafs(tree)))
+def random_leaf(_: CompressedIR, tree: ctg.ContractionTree) -> frozenset[int] | None:
+    if len(tree.childless) == 1:
+        return next(iter(tree.childless))
+    if len(tree.childless) == 0:
+        return None
+    return np.random.choice(list(tree.childless))
 
 
 # class TreeOptimizer:
