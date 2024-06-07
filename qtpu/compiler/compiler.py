@@ -24,7 +24,7 @@ def compile_circuit(
     success_fn: Callable[[CompressedIR, ctg.ContractionTree], float] | None = None,
     terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
     max_cost: int | tuple[int, int] | list[int] = np.inf,
-    choose_leaf_methods: list[set[int]] | None = None,
+    choose_leaf_methods: list[str] | None = None,
     compression_methods: list[str] | None = None,
     # function to choos the value from the pareto front
     pareto_fn: Callable[[float, float], float] | None = None,
@@ -64,7 +64,7 @@ def hyper_optimize(
     success_fn: Callable[[CompressedIR, ctg.ContractionTree], float] | None = None,
     terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
     max_cost: int | tuple[int, int] | list[int] = np.inf,
-    choose_leaf_methods: list[set[int]] | None = None,
+    choose_leaf_methods: list[str] | None = None,
     compression_methods: list[str] | None = None,
     # optuna args
     n_trials: int = 100,
@@ -105,7 +105,7 @@ def objective(
     success_fn: Callable[[CompressedIR, ctg.ContractionTree], float],
     terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
     max_cost: int | tuple[int, int] | list[int] = np.inf,
-    choose_leaf_methods: list[set[int]] | None = None,
+    choose_leaf_methods: list[str] | None = None,
     compression_methods: list[str] | None = None,
 ) -> float:
 
