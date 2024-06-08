@@ -3,6 +3,7 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 
+import optuna
 from qiskit.circuit import QuantumCircuit
 from qiskit.quantum_info.operators import Pauli
 from qiskit.quantum_info import Statevector
@@ -104,3 +105,28 @@ def postprocess_barplot(ax: plt.Axes) -> None:
     patch_idx_to_hatch_idx = np.arange(num_bars).repeat(num_xticks)
     for i, patch in enumerate(ax.patches):
         patch.set_hatch(hatches[patch_idx_to_hatch_idx[i] % len(hatches)])
+
+
+def plot_pareto_front(study: optuna.Study, ax: plt.Axes) -> None:
+    trials = set(tuple(trial.values) for trial in study.trials)
+    best_trials = sorted(
+        set(tuple(trial.values) for trial in study.best_trials),
+        key=lambda x: (x[0], -x[1]),
+    )
+    non_optimal_trials = trials - set(best_trials)
+
+    ax.plot(
+        [vals[0] for vals in best_trials],
+        [vals[1] for vals in best_trials],
+        "o-",
+        label="Pareto optimal",
+    )
+    ax.plot(
+        [vals[0] for vals in non_optimal_trials],
+        [vals[1] for vals in non_optimal_trials],
+        "x",
+        label="Non-optimal",
+    )
+
+    ax.set_xlabel("Cost")
+    ax.set_ylabel("Success")

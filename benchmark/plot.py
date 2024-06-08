@@ -10,7 +10,7 @@ import matplotlib.patches as mpatches
 
 import seaborn as sns
 
-from benchmarks import pretty_names
+from .benchmarks import pretty_names
 
 FONTSIZE = 12
 ISBETTER_FONTSIZE = FONTSIZE + 2
@@ -195,6 +195,7 @@ def plot_cost_bench(file_path: str) -> None:
     fig.savefig("knit_cost.pdf", bbox_inches="tight")
 
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("type", type=str)
@@ -203,3 +204,4 @@ if __name__ == "__main__":
     match args.type:
         case "knit_cost":
             plot_cost_bench("results/knit_cost.csv")
+
