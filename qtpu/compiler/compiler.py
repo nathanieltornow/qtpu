@@ -44,7 +44,7 @@ def compile_circuit(
     )
 
     # best_trial = max(study.best_trials, key=lambda trial: pareto_fn(*trial.values))
-    best_trial = find_best_trial(study, pareto_gradient)
+    best_trial = find_best_trial(study, pareto_tradeoff)
 
     return trial_to_hybrid_tn(best_trial)
 
