@@ -27,13 +27,10 @@ def compile_circuit(
     choose_leaf_methods: list[str] | None = None,
     compression_methods: list[str] | None = None,
     # function to choos the value from the pareto front
-    pareto_fn: Callable[[float, float], float] | None = None,
+    pareto_gradient: float = 0.0,
     n_trials: int = 100,
     show_progress_bar: bool = False,
 ) -> HybridTensorNetwork:
-
-    if pareto_fn is None:
-        pareto_fn = only_success_pareto_function
 
     study = hyper_optimize(
         circuit,
@@ -46,10 +43,8 @@ def compile_circuit(
         show_progress_bar=show_progress_bar,
     )
 
-    best_trial = max(study.best_trials, key=lambda trial: pareto_fn(*trial.values))
-
-    if best_trial.values[0] > max_cost:
-        raise ValueError("No valid solution found")
+    # best_trial = max(study.best_trials, key=lambda trial: pareto_fn(*trial.values))
+    best_trial = find_best_trial(study, pareto_gradient)
 
     return trial_to_hybrid_tn(best_trial)
 
@@ -169,17 +164,21 @@ def _remove_barriers(circuit: QuantumCircuit) -> QuantumCircuit:
     return new_circuit
 
 
-# Functions for choosing a solution from the pareto front
+def find_best_trial(
+    study: optuna.Study,
+    pareto_value: float = 0.0,
+) -> optuna.Trial:
+    best_trials = sorted(
+        study.best_trials,
+        key=lambda x: (x.values[0], -x.values[1]),
+    )
 
+    values_to_trial = {tuple(t.values): t for t in best_trials}
 
-def default_pareto_fn(
-    max_cost: int, cost_weight: float = 0.5, success_weight: float = 0.5
-) -> float:
-    def _pareto_fn(cost: float, success: float) -> float:
-        normalized_cost = np.log10(cost + 1) / np.log10(max_cost + 1)
-        return cost_weight * (1 - normalized_cost) + success_weight * success
+    values = np.array([[v[0], v[1]] for v in values_to_trial.keys()])
 
-    return _pareto_fn
+    grad = np.gradient(values[:, 1], values[:, 0])
 
+    indices = np.where(grad < pareto_value)[0]
 
-only_success_pareto_function = default_pareto_fn(10, 0, 1)
+    return best_trials[indices[0]] if len(indices) > 0 else best_trials[-1]
