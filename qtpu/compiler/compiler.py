@@ -173,8 +173,10 @@ def find_best_trial(
         key=lambda x: (x.values[0], -x.values[1]),
     )
 
+    current_trial = best_trials[0]
     for t in best_trials:
         if pareto_value > t.values[0] / t.values[1]:
-            return t
+            return current_trial
+        current_trial = t
 
     return best_trials[-1]
