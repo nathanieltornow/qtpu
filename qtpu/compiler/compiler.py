@@ -27,7 +27,7 @@ def compile_circuit(
     choose_leaf_methods: list[str] | None = None,
     compression_methods: list[str] | None = None,
     # function to choos the value from the pareto front
-    pareto_gradient: float = 0.0,
+    pareto_tradeoff: float = 0.0,
     n_trials: int = 100,
     show_progress_bar: bool = False,
 ) -> HybridTensorNetwork:
@@ -44,7 +44,7 @@ def compile_circuit(
     )
 
     # best_trial = max(study.best_trials, key=lambda trial: pareto_fn(*trial.values))
-    best_trial = find_best_trial(study, pareto_gradient)
+    best_trial = find_best_trial(study, pareto_tradeoff)
 
     return trial_to_hybrid_tn(best_trial)
 
@@ -173,12 +173,8 @@ def find_best_trial(
         key=lambda x: (x.values[0], -x.values[1]),
     )
 
-    values_to_trial = {tuple(t.values): t for t in best_trials}
+    for t in best_trials:
+        if pareto_value > t.values[0] / t.values[1]:
+            return t
 
-    values = np.array([[v[0], v[1]] for v in values_to_trial.keys()])
-
-    grad = np.gradient(values[:, 1], values[:, 0])
-
-    indices = np.where(grad < pareto_value)[0]
-
-    return best_trials[indices[0]] if len(indices) > 0 else best_trials[-1]
+    return best_trials[-1]
