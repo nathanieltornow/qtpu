@@ -96,7 +96,8 @@ def optimize(
     dynamic_fix = partition_opts.get("fix_output_nodes", None) == "auto"
 
     while terminate_fn is None or not terminate_fn(ir, tree):
-
+        if tree.is_complete():
+            break
         tree_node = choose_leaf_fn(ir, tree)
         if tree_node is None:
             break

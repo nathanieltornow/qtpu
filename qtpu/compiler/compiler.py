@@ -27,7 +27,6 @@ def compile_circuit(
     choose_leaf_methods: list[str] | None = None,
     compression_methods: list[str] | None = None,
     # function to choos the value from the pareto front
-    pareto_tradeoff: float = 0.0,
     n_trials: int = 100,
     show_progress_bar: bool = False,
 ) -> HybridTensorNetwork:
@@ -44,7 +43,7 @@ def compile_circuit(
     )
 
     # best_trial = max(study.best_trials, key=lambda trial: pareto_fn(*trial.values))
-    best_trial = find_best_trial(study, pareto_tradeoff)
+    best_trial = find_best_trial(study)
 
     return trial_to_hybrid_tn(best_trial)
 
@@ -166,17 +165,21 @@ def _remove_barriers(circuit: QuantumCircuit) -> QuantumCircuit:
 
 def find_best_trial(
     study: optuna.Study,
-    pareto_value: float = 0.0,
 ) -> optuna.Trial:
-    best_trials = sorted(
-        study.best_trials,
-        key=lambda x: (x.values[0], -x.values[1]),
-    )
+    best_trials = study.best_trials
 
-    current_trial = best_trials[0]
-    for t in best_trials:
-        if pareto_value > t.values[0] / t.values[1]:
-            return current_trial
-        current_trial = t
+    costs = np.array([trial.values[0] for trial in best_trials])
+    success = np.array([trial.values[1] for trial in best_trials])
 
-    return best_trials[-1]
+    print(costs.max(), costs.min(), success.max(), success.min())
+    norm_costs = (costs - costs.min()) / (costs.max() - costs.min() + 1e-9)
+    norm_success = (success - success.min()) / (success.max() - success.min() + 1e-9)
+
+    norm_points = np.stack([norm_costs, norm_success], axis=1)
+
+    ideal_point = np.array([0, 1])
+
+    distances = np.linalg.norm(norm_points - ideal_point, axis=1)
+    best_index = np.argmin(distances)
+
+    return best_trials[best_index]
