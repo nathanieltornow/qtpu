@@ -171,7 +171,6 @@ def find_best_trial(
     costs = np.array([trial.values[0] for trial in best_trials])
     success = np.array([trial.values[1] for trial in best_trials])
 
-    print(costs.max(), costs.min(), success.max(), success.min())
     norm_costs = (costs - costs.min()) / (costs.max() - costs.min() + 1e-9)
     norm_success = (success - success.min()) / (success.max() - success.min() + 1e-9)
 
