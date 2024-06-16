@@ -26,10 +26,10 @@ class HybridCircuitIR:
         edge_index = 200
         current_nodes: dict[Qubit, int] = {}
         for op_id, instr in enumerate(circuit):
-            if len(instr.qubits) > 2:
-                raise ValueError(
-                    f"Only 1 or 2 qubit gates are supported, got {instr.operation}"
-                )
+            # if len(instr.qubits) > 2:
+            #     raise ValueError(
+            #         f"Only 1 or 2 qubit gates are supported, got {instr.operation}"
+            #     )
 
             op_nodes.append(set())
 
@@ -47,14 +47,23 @@ class HybridCircuitIR:
 
                 current_nodes[qubit] = len(inputs) - 1
 
-            if len(instr.qubits) == 2:
-                assert instr.operation.name in VIRTUAL_GATE_GENERATORS
+            edge_weigth = 5 if instr.operation.name in VIRTUAL_GATE_GENERATORS else 500
 
-                inputs[-2] += (str(chr(edge_index)),)
-                inputs[-1] += (str(chr(edge_index)),)
-                size_dict[str(chr(edge_index))] = 5
+            for i in range(len(instr.qubits) - 1):
+                inputs[-i - 2] += (str(chr(edge_index)),)
+                inputs[-i - 1] += (str(chr(edge_index)),)
+                size_dict[str(chr(edge_index))] = edge_weigth
 
                 edge_index += 1
+
+            # if len(instr.qubits) == 2:
+            #     assert instr.operation.name in VIRTUAL_GATE_GENERATORS
+
+            #     inputs[-2] += (str(chr(edge_index)),)
+            #     inputs[-1] += (str(chr(edge_index)),)
+            #     size_dict[str(chr(edge_index))] = 5
+
+            #     edge_index += 1
 
         self._circuit = circuit
         self._op_nodes = op_nodes
