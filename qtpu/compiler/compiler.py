@@ -145,11 +145,11 @@ def objective(
     trial.set_user_attr("ir", ir)
     trial.set_user_attr("tree", tree)
 
-    if terminate_fn is not None:
+    if terminate_fn is not None and not terminate_fn(ir, tree):
         # optimization returned due to max_cost,
         # but termination condition was not met
-        if not terminate_fn(ir, tree):
-            return np.inf, 0
+        # make sure that the trial is not considered
+        return np.inf, 0.0
 
     return tree.contraction_cost(), success_fn(ir, tree)
 
@@ -170,6 +170,12 @@ def find_best_trial(
 
     costs = np.array([trial.values[0] for trial in best_trials])
     success = np.array([trial.values[1] for trial in best_trials])
+
+    if costs.max() == np.inf:
+        raise ValueError(
+            "No trial with finite cost found. "
+            + "This is likely due to the termination condition not being met for any trial."
+        )
 
     norm_costs = (costs - costs.min()) / (costs.max() - costs.min() + 1e-9)
     norm_success = (success - success.min()) / (success.max() - success.min() + 1e-9)
