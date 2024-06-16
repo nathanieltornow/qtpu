@@ -1,6 +1,10 @@
 from pathlib import Path
 
+import numpy as np
+
+import networkx as nx
 from qiskit.circuit import QuantumCircuit, ClassicalRegister
+from qiskit.circuit.library import TwoLocal
 
 from mqt.bench import get_benchmark
 
@@ -85,7 +89,21 @@ pretty_names = {
 }
 
 
+def qaoa(graph: nx.Graph) -> QuantumCircuit:
+    # edges = sorted(graph.edges(data=False), key=lambda x: (x[0] + 1) * (x[1] + 1))
+    edges = graph.edges(data=False)
+    circuit = QuantumCircuit(graph.number_of_nodes())
+    for i, j in edges:
+        circuit.rzz(2, i, j)
+    return circuit
+
+
 def generate_benchmark(name: str, num_qubits: int) -> QuantumCircuit:
+    if name.startswith("qaoa"):
+        d = int(name[-1])
+        graph = nx.random_regular_graph(d, num_qubits, seed=120)
+        return qaoa(graph)
+
     if name in mqt_benchmarks:
         circuit = get_benchmark(name, 1, num_qubits)
         return _remove_barrier(circuit)
@@ -128,3 +146,65 @@ def _remove_barrier(circuit: QuantumCircuit) -> QuantumCircuit:
             continue
         new_circ.append(instr, instr.qubits, instr.clbits)
     return new_circ
+
+
+def brick_ansatz(num_qubits: int, depth: int) -> QuantumCircuit:
+    circuit = QuantumCircuit(num_qubits)
+    for _ in range(depth):
+        for i in range(num_qubits):
+            circuit.rx(np.random.rand() * 2 * np.pi, i)
+            circuit.rz(np.random.rand() * 2 * np.pi, i)
+        for i in range(0, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+        for i in range(1, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+    return circuit
+
+
+def linear_ansatz(num_qubits: int, depth: int) -> QuantumCircuit:
+    circuit = QuantumCircuit(num_qubits)
+    for _ in range(depth):
+        for i in range(num_qubits):
+            circuit.rx(np.random.rand() * 2 * np.pi, i)
+            circuit.rz(np.random.rand() * 2 * np.pi, i)
+        for i in range(num_qubits - 1):
+            circuit.cx(i, i + 1)
+    return circuit
+
+
+def random_ansatz(num_qubits: int, depth: int) -> QuantumCircuit:
+    circuit = QuantumCircuit(num_qubits)
+    for _ in range(depth):
+        for i in range(num_qubits):
+            circuit.rx(np.random.rand() * 2 * np.pi, i)
+            circuit.rz(np.random.rand() * 2 * np.pi, i)
+
+        # create random tuples of qubits to apply CNOT gates, such that each qubit is in at most once
+        qubits = list(range(num_qubits))
+        np.random.shuffle(qubits)
+
+        for i in range(0, num_qubits - 1, 2):
+            circuit.cx(qubits[i], qubits[i + 1])
+
+    return circuit
+
+
+def _cluster(num_qubits: int):
+    cluster = TwoLocal(num_qubits, "ry", "rzz", reps=1)
+    cluster = cluster.assign_parameters(np.random.rand(cluster.num_parameters) * 2 * np.pi)
+    return cluster
+
+
+def cluster_ansatz(cluster_sizes: list[int], depth: int) -> QuantumCircuit:
+    circuit = QuantumCircuit(sum(cluster_sizes))
+    for _ in range(depth):
+        start = 0
+        for s in cluster_sizes:
+            cluster = _cluster(s)
+            circuit.compose(cluster, range(start, start + s), inplace=True)
+            start += s
+        start = 0
+        for s in cluster_sizes[:-1]:
+            circuit.cx(start + s - 1, start + s)
+            start += s
+    return circuit
