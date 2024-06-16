@@ -207,4 +207,4 @@ def cluster_ansatz(cluster_sizes: list[int], depth: int) -> QuantumCircuit:
         for s in cluster_sizes[:-1]:
             circuit.cx(start + s - 1, start + s)
             start += s
-    return circuit
+    return circuit.decompose()
