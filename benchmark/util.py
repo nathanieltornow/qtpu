@@ -59,7 +59,8 @@ def bruteforce_cost_log10(hybrid_tn: HybridTensorNetwork) -> int:
 
 def append_to_csv(file_path: str, data: dict) -> None:
     if not os.path.exists(file_path):
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        if os.path.dirname(file_path) != "":
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, "w") as f:
             writer = csv.DictWriter(f, fieldnames=data.keys())
             writer.writeheader()

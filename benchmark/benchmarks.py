@@ -1,9 +1,10 @@
 from pathlib import Path
+import itertools
 
 import numpy as np
 
 import networkx as nx
-from qiskit.circuit import QuantumCircuit, ClassicalRegister
+from qiskit.circuit import QuantumCircuit, ClassicalRegister, QuantumRegister
 from qiskit.circuit.library import TwoLocal
 
 from mqt.bench import get_benchmark
@@ -172,6 +173,43 @@ def linear_ansatz(num_qubits: int, depth: int) -> QuantumCircuit:
     return circuit
 
 
+def ring_ansatz(num_qubits: int, depth: int) -> QuantumCircuit:
+    circuit = QuantumCircuit(num_qubits)
+    for _ in range(depth):
+        for i in range(num_qubits):
+            circuit.rx(np.random.rand() * 2 * np.pi, i)
+            circuit.rz(np.random.rand() * 2 * np.pi, i)
+        for i in range(num_qubits):
+            circuit.cx(i, (i + 1) % num_qubits)
+    return circuit
+
+
+def _qaoa(graph: nx.Graph, depth: int) -> QuantumCircuit:
+    circuit = QuantumCircuit(graph.number_of_nodes())
+    for d in range(depth):
+        for i in graph.nodes:
+            circuit.rx(np.random.rand() * 2 * np.pi, i)
+            circuit.rz(np.random.rand() * 2 * np.pi, i)
+
+        edges = (
+            graph.edges(data=False) if d % 2 == 0 else reversed(graph.edges(data=False))
+        )
+
+        for i, j in edges:
+            circuit.rzz(np.random.rand() * 2 * np.pi, i, j)
+    return circuit
+
+
+def qaoa_regular_ansatz(num_qubits: int, depth: int) -> QuantumCircuit:
+    graph = nx.random_regular_graph(3, num_qubits, seed=123)
+    return _qaoa(graph, depth)
+
+
+def qaoa_powerlaw_ansatz(num_qubits: int, depth: int) -> QuantumCircuit:
+    graph = nx.powerlaw_cluster_graph(num_qubits, 3, 0.0005, seed=123)
+    return _qaoa(graph, depth)
+
+
 def random_ansatz(num_qubits: int, depth: int) -> QuantumCircuit:
     circuit = QuantumCircuit(num_qubits)
     for _ in range(depth):
@@ -189,22 +227,28 @@ def random_ansatz(num_qubits: int, depth: int) -> QuantumCircuit:
     return circuit
 
 
-def _cluster(num_qubits: int):
-    cluster = TwoLocal(num_qubits, "ry", "rzz", reps=1)
-    cluster = cluster.assign_parameters(np.random.rand(cluster.num_parameters) * 2 * np.pi)
-    return cluster
+def _cluster(num_qubits: int, prob: float = 0.8) -> QuantumCircuit:
+    cluster = QuantumCircuit(num_qubits)
+    for i in range(num_qubits):
+        cluster.rx(np.random.rand() * 2 * np.pi, i)
+        cluster.rz(np.random.rand() * 2 * np.pi, i)
+    for q1, q2 in itertools.combinations(range(num_qubits), 2):
+        if np.random.rand() < prob:
+            cluster.cx(q1, q2)
+
+    circuit = QuantumCircuit(num_qubits)
+    circuit.append(cluster.to_gate(), range(num_qubits))
+    return circuit
 
 
 def cluster_ansatz(cluster_sizes: list[int], depth: int) -> QuantumCircuit:
-    circuit = QuantumCircuit(sum(cluster_sizes))
+    cluster_regs = [QuantumRegister(s, f"q_{i}") for i, s in enumerate(cluster_sizes)]
+    circuit = QuantumCircuit(*cluster_regs)
+
     for _ in range(depth):
-        start = 0
-        for s in cluster_sizes:
-            cluster = _cluster(s)
-            circuit.compose(cluster, range(start, start + s), inplace=True)
-            start += s
-        start = 0
-        for s in cluster_sizes[:-1]:
-            circuit.cx(start + s - 1, start + s)
-            start += s
-    return circuit.decompose()
+        for qreg in cluster_regs:
+            circuit.compose(_cluster(qreg.size), qubits=qreg, inplace=True)
+
+        for i in range(len(cluster_sizes) - 1):
+            circuit.cx(cluster_regs[i][-1], cluster_regs[i + 1][0])
+    return circuit
