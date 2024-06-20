@@ -16,9 +16,12 @@ tex_fonts = {
     # line width
     "lines.linewidth": 2,
     # set markersize
-    "lines.markersize": 8,
+    "lines.markersize": 6,
     "lines.markeredgewidth": 1.5,
     "lines.markeredgecolor": "black",
+    
+    # modify error bar settings
+    "errorbar.capsize": 3,
     # bar edge width
 }
 

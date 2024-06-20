@@ -47,7 +47,7 @@ class HybridCircuitIR:
 
                 current_nodes[qubit] = len(inputs) - 1
 
-            edge_weigth = 5 if instr.operation.name in VIRTUAL_GATE_GENERATORS else 500
+            edge_weigth = 5 if instr.operation.name in VIRTUAL_GATE_GENERATORS else 1e15
 
             for i in range(len(instr.qubits) - 1):
                 inputs[-i - 2] += (str(chr(edge_index)),)

@@ -42,6 +42,11 @@ def evaluate(
     ]
 
 
+def qtensor_to_instances(qtensor: QuantumTensor, shots: int) -> tuple[list, list]:
+    circuits, shots_per_circ = zip(*qtensor.instances())
+    return list(circuits), [int(shots * weight) for weight in shots_per_circ]
+
+
 def evaluate_quantum_tensor(
     qtensor: QuantumTensor,
     qiface: QuantumInterface,

@@ -35,7 +35,7 @@ def partition_girvan_newman(
 
 try:
     import kahypar
-
+    # raise ImportError
     partition_fn = ctg.pathfinders.path_kahypar.kahypar_subgraph_find_membership
 except ImportError:
     partition_fn = partition_girvan_newman
@@ -75,7 +75,7 @@ def optimize(
         case "nodes":
             choose_leaf_fn = max_nodes_leaf
         case "random":
-            choose_leaf_fn = random_leaf
+            choose_leaf_fn = max_qubits_leaf
         case _:
             raise ValueError(f"Unknown leaf selection method: {choose_leaf}")
 

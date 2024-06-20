@@ -1,4 +1,5 @@
 import abc
+import time
 
 from qiskit.circuit import QuantumCircuit
 from qiskit.compiler import transpile
@@ -56,5 +57,12 @@ class BackendInterface(QuantumInterface):
 
 
 class DummyQuantumInterface(QuantumInterface):
-    def run(self, _: list[QuantumCircuit], shots: list[int]) -> list[QuasiDistr]:
-        return [QuasiDistr({0: s}) for s in shots]
+    def run(self, circuits: list[QuantumCircuit], shots: list[int]) -> list[QuasiDistr]:
+        depths = [circuit.depth() * s for circuit, s in zip(circuits, shots)]
+
+        # each layer of depth takes 10 ns
+        sleeptime = sum(depths) * 10e-9
+        print(f"Sleeping for {sleeptime} seconds")
+        time.sleep(sleeptime)
+
+        return [QuasiDistr({0: s // 2, 1: s // 2}) for s in shots]

@@ -7,7 +7,7 @@ import optuna
 from qiskit.circuit import QuantumCircuit
 from qiskit.quantum_info.operators import Pauli
 from qiskit.quantum_info import Statevector
-from qiskit_aer import StatevectorSimulator
+from qiskit_aer import StatevectorSimulator, AerSimulator
 from qiskit.providers import BackendV2
 from qiskit.circuit.library import SwapGate, CXGate
 from qiskit.compiler import transpile
@@ -17,15 +17,18 @@ import cotengra as ctg
 from qtpu.tensor import HybridTensorNetwork
 
 
-
-
 def get_hybrid_tn_info(
     hybrid_tn: HybridTensorNetwork, backend: BackendV2 | None = None
 ) -> dict:
+
+    # if backend is None:
+    #     backend = AerSimulator()
+
     circuits = [
         transpile(qt.circuit, backend=backend, optimization_level=3)
         for qt in hybrid_tn.quantum_tensors
     ]
+
     return {
         "contract_cost": round(contraction_cost_log10(hybrid_tn), 3),
         "bruteforce_cost": round(bruteforce_cost_log10(hybrid_tn), 3),
@@ -38,6 +41,22 @@ def get_hybrid_tn_info(
         "swap_count": max([circuit.count_ops().get("swap", 0) for circuit in circuits]),
         "cx_count": max([circuit.count_ops().get("cx", 0) for circuit in circuits]),
         "2q_count": max([circuit.num_nonlocal_gates() for circuit in circuits]),
+    }
+
+
+def get_base_info(circuit: QuantumCircuit, backend: BackendV2 | None = None) -> dict:
+    # if backend is None:
+    #     backend = AerSimulator()
+
+    circuit = transpile(circuit, backend=backend, optimization_level=3)
+    
+    return {
+        "base_qubits": circuit.num_qubits,
+        "base_depth": circuit.depth(),
+        "base_esp": esp(circuit),
+        "base_swap_count": circuit.count_ops().get("swap", 0),
+        "base_cx_count": circuit.count_ops().get("cx", 0),
+        "base_2q_count": circuit.num_nonlocal_gates(),
     }
 
 
@@ -108,5 +127,3 @@ def postprocess_barplot(ax: plt.Axes) -> None:
     patch_idx_to_hatch_idx = np.arange(num_bars).repeat(num_xticks)
     for i, patch in enumerate(ax.patches):
         patch.set_hatch(hatches[patch_idx_to_hatch_idx[i] % len(hatches)])
-
-

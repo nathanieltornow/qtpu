@@ -47,6 +47,13 @@ class QuantumTensor:
         for gate in self._instance_gates[1:]:
             self._shot_portions = np.kron(self._shot_portions, gate.shot_portion)
 
+        self._instances = None
+
+    def __repr__(self) -> str:
+        return (
+            f"QuantumTensor(num_qubits={self._circuit.num_qubits}, shape={self._shape})"
+        )
+
     @property
     def circuit(self) -> QuantumCircuit:
         return self._circuit
@@ -59,9 +66,17 @@ class QuantumTensor:
     def shape(self) -> tuple[int, ...]:
         return self._shape
 
-    def instances(self) -> Iterator[tuple[QuantumCircuit, float]]:
-        for instance_label, shot_portion in self._instance_labels():
-            yield self._get_instance(instance_label), shot_portion
+    def generate_instances(self) -> list[tuple[QuantumCircuit, float]]:
+        self._instances = [
+            (self._get_instance(instance_label), shot_portion)
+            for instance_label, shot_portion in self._instance_labels()
+        ]
+        return self._instances
+
+    def instances(self) -> list[tuple[QuantumCircuit, float]]:
+        if self._instances is None:
+            self._instances = self._generate_instances()
+        return self._instances
 
     def _instance_labels(self) -> Iterator[tuple[dict[str, int], float]]:
         for instance_label, shot_portion in zip(
@@ -101,15 +116,19 @@ class QuantumTensor:
 
 class HybridTensorNetwork:
     def __init__(
-        self, quantum_tensors: list[QuantumTensor], classical_tensors: list[ClassicalTensor]
+        self,
+        quantum_tensors: list[QuantumTensor],
+        classical_tensors: list[ClassicalTensor],
     ) -> None:
         self._quantum_tensors = quantum_tensors
         self._classical_tensors = classical_tensors
 
-        self._index_map: dict[str, tuple[set[QuantumTensor | ClassicalTensor], int]] = {}
+        self._index_map: dict[str, tuple[set[QuantumTensor | ClassicalTensor], int]] = (
+            {}
+        )
 
         self._index_to_chr = {
-            index: chr(65 + i)
+            index: chr(1000 + i)
             for i, index in enumerate(
                 itertools.chain.from_iterable(
                     tens.inds for tens in quantum_tensors + classical_tensors

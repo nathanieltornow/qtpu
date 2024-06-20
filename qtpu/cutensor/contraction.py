@@ -1,3 +1,4 @@
+from time import perf_counter
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -24,21 +25,49 @@ def contract_gpu(
 
     # evaluate quantum tensors
     quantum_tensors = hybrid_tn.quantum_tensors
-    with ThreadPoolExecutor() as executor:
-        futs = [
-            executor.submit(evaluate_quantum_tensor, qtens, qiface, shots, "expval")
-            for qtens in quantum_tensors
-        ]
-        # load results to GPU
-        eval_tensors = [cp.array(fut.result().data, dtype=cp.float32) for fut in futs]
+
+    print("generating instances")
+    start = perf_counter()
+    for qtens in quantum_tensors:
+        qtens.generate_instances()
+        
+    gen_time = perf_counter() - start
+    print("gen_time", gen_time)
+
+    print("quantum_tensors", quantum_tensors)
+    start = perf_counter()
+    futs = [
+        evaluate_quantum_tensor(qtens, qiface, shots, "expval")
+        for qtens in quantum_tensors
+    ]
+    # load results to GPU
+    eval_tensors = [cp.array(fut.data, dtype=cp.float32) for fut in futs]
+    exec_time = perf_counter() - start
+    print("exec_time", exec_time)
+
+    # with ThreadPoolExecutor() as executor:
+    #     print("quantum_tensors", quantum_tensors)
+    #     start = perf_counter()
+    #     futs = [
+    #         executor.submit(evaluate_quantum_tensor, qtens, qiface, shots, "expval")
+    #         for qtens in quantum_tensors
+    #     ]
+    #     # load results to GPU
+    #     eval_tensors = [cp.array(fut.result().data, dtype=cp.float32) for fut in futs]
+    #     exec_time = perf_counter() - start
+    # print("exec_time", exec_time)
 
     # contract tensors
     with Network(hybrid_tn.equation(), *(eval_tensors + classical_tensors)) as tn:
+        start = perf_counter()
         path, info = tn.contract_path()
         tn.autotune(iterations=5)
         result = tn.contract()
+        contract_time = perf_counter() - start
 
-    return result
+    print("contract_time", contract_time)
+
+    return result, info.opt_cost
 
 
 # def graph_to_einsum_eq(graph: nx.Graph) -> tuple[str, dict[str, int]]:
