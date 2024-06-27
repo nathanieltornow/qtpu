@@ -1,69 +1,37 @@
+from typing import Callable
 from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 from numpy.typing import NDArray
 import cotengra as ctg
+from qiskit.primitives import Estimator
 
 from qtpu.tensor import HybridTensorNetwork, QuantumTensor, ClassicalTensor
-
-from qtpu.qinterface import QuantumInterface, BackendInterface
+from qtpu.evaluate import evaluate_estimator
 
 
 def contract(
     hybrid_tn: HybridTensorNetwork,
-    shots: int,
-    qiface: QuantumInterface | None = None,
-    result_type: str = "expval",
+    eval_fn: Callable[[QuantumTensor], ClassicalTensor] | None = None,
 ):
-    if qiface is None:
-        qiface = BackendInterface()
-    eq, operators = evaluate(hybrid_tn, shots, qiface, result_type)
+    if eval_fn is None:
+        eval_fn = evaluate_estimator(Estimator())
+
+    eq, operators = evaluate(hybrid_tn, eval_fn)
     return ctg.einsum(eq, *operators).item()
 
 
 def evaluate(
     hybrid_tn: HybridTensorNetwork,
-    shots: int,
-    qiface: QuantumInterface,
-    result_type: str,
+    eval_fn: Callable[[QuantumTensor], ClassicalTensor],
 ) -> tuple[str, list[NDArray]]:
     quantum_tensors = hybrid_tn.quantum_tensors
     classical_tensors = hybrid_tn.classical_tensors
 
     with ThreadPoolExecutor() as executor:
-        futs = [
-            executor.submit(evaluate_quantum_tensor, qtens, qiface, shots, result_type)
-            for qtens in quantum_tensors
-        ]
+        futs = [executor.submit(eval_fn, qt) for qt in quantum_tensors]
         eval_tensors = [fut.result() for fut in futs]
 
     return hybrid_tn.equation(), [
         tens.data for tens in eval_tensors + classical_tensors
     ]
-
-
-def qtensor_to_instances(qtensor: QuantumTensor, shots: int) -> tuple[list, list]:
-    circuits, shots_per_circ = zip(*qtensor.instances())
-    return list(circuits), [int(shots * weight) for weight in shots_per_circ]
-
-
-def evaluate_quantum_tensor(
-    qtensor: QuantumTensor,
-    qiface: QuantumInterface,
-    shots: int,
-    result_type: str,
-) -> ClassicalTensor:
-    num_bits = qtensor.circuit.cregs[0].size
-
-    circuits = [circ for circ, _ in qtensor.instances()]
-    shot_per_circ = [int(shots * weight) for _, weight in qtensor.instances()]
-
-    quasi_dists = qiface.run(circuits, shot_per_circ)
-
-    match result_type:
-        case "expval":
-            arr = np.array([qd.expval() for qd in quasi_dists])
-        case "samples":
-            arr = np.array([qd.prepare(num_bits) for qd in quasi_dists])
-
-    return ClassicalTensor(arr.reshape(qtensor.shape), qtensor.inds)

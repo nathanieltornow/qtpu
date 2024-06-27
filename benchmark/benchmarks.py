@@ -107,9 +107,9 @@ def generate_benchmark(name: str, num_qubits: int) -> QuantumCircuit:
         graph = nx.random_regular_graph(d, num_qubits, seed=120)
         return qaoa(graph)
 
-    if name in mqt_benchmarks:
-        circuit = get_benchmark(name, 1, num_qubits)
-        return _remove_barrier(circuit)
+    # if name in mqt_benchmarks:
+    #     circuit = get_benchmark(name, 1, num_qubits)
+    #     return _remove_barrier(circuit)
 
     current_path = Path(__file__).parent
 

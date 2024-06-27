@@ -6,6 +6,7 @@ from numpy.typing import NDArray
 from qiskit.circuit import QuantumCircuit, ClassicalRegister
 
 from qtpu.instructions import InstanceGate
+from qtpu.helpers import defer_mid_measurements
 
 
 class ClassicalTensor:
@@ -75,7 +76,7 @@ class QuantumTensor:
 
     def instances(self) -> list[tuple[QuantumCircuit, float]]:
         if self._instances is None:
-            self._instances = self._generate_instances()
+            self._instances = self.generate_instances()
         return self._instances
 
     def _instance_labels(self) -> Iterator[tuple[dict[str, int], float]]:
@@ -111,7 +112,9 @@ class QuantumTensor:
 
             res_circuit.append(op, qubits, clbits)
 
-        return res_circuit.decompose()
+        res_circuit = res_circuit.decompose()
+        res_circuit = defer_mid_measurements(res_circuit)
+        return res_circuit
 
 
 class HybridTensorNetwork:

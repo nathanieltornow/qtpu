@@ -1,4 +1,3 @@
-import logging
 import time
 
 import cotengra as ctg
@@ -9,12 +8,15 @@ import cupy as cp
 import qtpu
 from qtpu.compiler.terminators import reach_num_qubits
 from qtpu.compiler.success import success_reach_qubits
+from qtpu.evaluate import evaluate_estimator
+from qiskit_aer.primitives import Estimator as AerEstimator
+# from qiskit.primitives import Estimator as AerEstimator
 
 from benchmark.benchmarks import cluster_ansatz, linear_ansatz, brick_ansatz
 from benchmark.util import contraction_cost_log10, append_to_csv
 
 
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 
 
 def execute_cutensornet(circuit: QuantumCircuit) -> dict[str, float]:
@@ -24,18 +26,18 @@ def execute_cutensornet(circuit: QuantumCircuit) -> dict[str, float]:
     start = time.perf_counter()
     cost = contract_path(expression, *operands)[1].opt_cost
     compile_time = time.perf_counter() - start
-    logging.info(f"CutensorNet Compile Time: {compile_time}")
+    print(f"CutensorNet Compile Time: {compile_time}")
 
     # start = time.perf_counter()
     # ctg_cost = cotengra_cost(expression, operands)
     # ctg_compile_time = time.perf_counter() - start
     # logging.info(f"Cotengra Compile Time: {ctg_compile_time}")
 
-    logging.info(f"Cutensor Cost: {cost}")
+    print(f"Cutensor Cost: {cost}")
     start = time.perf_counter()
     _ = contract(expression, *operands)
     runtime = time.perf_counter() - start
-    logging.info(f"Cutensor Runtime: {runtime}")
+    print(f"Cutensor Runtime: {runtime}")
     return {
         "cutensor_cost": cost,
         # "ctg_cost": ctg_cost,
@@ -43,48 +45,56 @@ def execute_cutensornet(circuit: QuantumCircuit) -> dict[str, float]:
     }
 
 
-def execute_qtpu_fake(
-    circuit: QuantumCircuit, max_cost: int, shots: int, parallel: bool = False
-) -> dict[str, float]:
+def execute_qtpu(circuit: QuantumCircuit, max_cost: int) -> dict[str, float]:
+    circuit.measure_all()
     start = time.perf_counter()
     htn = qtpu.cut(
         circuit,
-        max_cost=1e15,
-        terminate_fn=reach_num_qubits(20),
-        success_fn=success_reach_qubits(20),
+        max_cost=max_cost,
+        terminate_fn=reach_num_qubits(15),
+        success_fn=success_reach_qubits(15),
         show_progress_bar=True,
+        compression_methods=["qubits"],
         n_trials=100,
     )
     compile_time = time.perf_counter() - start
-    logging.info(f"QTPU Compile Time: {compile_time}")
+    print(f"QTPU Compile Time: {compile_time}")
     cost = 10 ** contraction_cost_log10(htn)
-    logging.info(f"QTPU Cost: {cost}")
-
-    circuit_times = [
-        qt.circuit.decompose().depth() * 1e-8 * shots for qt in htn.quantum_tensors
-    ]
-    runtime = max(circuit_times) if parallel else sum(circuit_times)
-    logging.info(f"QTPU Runtime: {runtime}")
+    print(f"QTPU Cost: {cost}")
 
     print([qt.circuit.num_qubits for qt in htn.quantum_tensors])
 
-    eval_tensors = [
-        cp.random.randn(*qtens.shape, dtype=cp.float64) for qtens in htn.quantum_tensors
-    ]
-    operands = eval_tensors + [
-        cp.array(ct.data, dtype=cp.float64) for ct in htn.classical_tensors
-    ]
+    start = time.perf_counter()
+    for qt in htn.quantum_tensors:
+        qt.generate_instances()
+    gen_time = time.perf_counter() - start
+    print(f"QTPU Generation Time: {gen_time}")
 
-    eq = htn.equation()
+    est = AerEstimator(
+        run_options={"method": "statevector", "shots": None}, approximation=True
+    )
+    est.set_options(device="GPU", cuStateVec_enable=True)
+
+
+    start = time.perf_counter()
+    eq, operands = qtpu.evaluate(htn, eval_fn=evaluate_estimator(est))
+    
+    operands = [cp.array(op, dtype=cp.float32) for op in operands]
+    
+    eval_time = time.perf_counter() - start
+    print(f"QTPU Evaluation Time: {eval_time}")
+
     _ = contract_path(eq, *operands)
 
     start = time.perf_counter()
     _ = contract(eq, *operands)
     contract_time = time.perf_counter() - start
-    logging.info(f"QTPU Contract Time: {contract_time}")
+    print(f"QTPU Contract Time: {contract_time}")
     return {
         "qtpu_cost": cost,
-        "qtpu_runtime": runtime,
+        "qtpu_compile_time": compile_time,
+        "qtpu_gen_time": gen_time,
+        "qtpu_evaltime": eval_time,
         "qtpu_contract_time": contract_time,
     }
 
@@ -95,14 +105,14 @@ def cotengra_cost(equation: str, operands: list[cp.ndarray]) -> float:
 
 if __name__ == "__main__":
 
-    name = "brick"
+    name = "linear"
 
     benches = [
         # (4, 18, 2),
         # (5, 20, 2),
-        # (5, 20, 3),
-        (5, 20, 7),
-        (5, 20, 8),
+        (2, 15, 3),
+        # (5, 20, 7),
+        # (5, 20, 8),
         # (5, 20, 4),
         # (5, 20, 5),
     ] * 5
@@ -110,7 +120,7 @@ if __name__ == "__main__":
     for n, s, d in benches:
         match name:
             case "linear":
-                circuit = linear_ansatz(n * s, d)
+                circuit = linear_ansatz(n * s, d).decompose()
                 benchname = f"linear_{n * s}_{d}"
             case "brick":
                 circuit = brick_ansatz(n * s, d)
@@ -120,7 +130,9 @@ if __name__ == "__main__":
                 benchname = f"cluster_{n}_{s}_{d}"
 
         cu_res = execute_cutensornet(circuit)
-        our_res = execute_qtpu_fake(circuit, 1000, 1000000)
+        our_res = execute_qtpu(circuit, max_cost=1e12)
+        
+        
 
         print(
             f"results/cutensor.csv",
@@ -130,4 +142,3 @@ if __name__ == "__main__":
                 **our_res,
             },
         )
-        logging.info(f"Finished cluster_{n}_{s}_{d}")
