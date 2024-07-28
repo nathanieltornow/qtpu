@@ -9,14 +9,13 @@ import qtpu
 from qtpu.compiler.terminators import reach_num_qubits
 from qtpu.compiler.success import success_reach_qubits
 from qtpu.evaluate import evaluate_estimator
-from qiskit_aer.primitives import Estimator as AerEstimator
+from qiskit.primitives import BackendEstimator
+from qiskit_aer.primitives import Estimator
+
 # from qiskit.primitives import Estimator as AerEstimator
 
 from benchmark.benchmarks import cluster_ansatz, linear_ansatz, brick_ansatz
 from benchmark.util import contraction_cost_log10, append_to_csv
-
-
-# logging.basicConfig(level=logging.INFO)
 
 
 def execute_cutensornet(circuit: QuantumCircuit) -> dict[str, float]:
@@ -51,8 +50,8 @@ def execute_qtpu(circuit: QuantumCircuit, max_cost: int) -> dict[str, float]:
     htn = qtpu.cut(
         circuit,
         max_cost=max_cost,
-        terminate_fn=reach_num_qubits(15),
-        success_fn=success_reach_qubits(15),
+        terminate_fn=reach_num_qubits(20),
+        success_fn=success_reach_qubits(20),
         show_progress_bar=True,
         compression_methods=["qubits"],
         n_trials=100,
@@ -70,17 +69,19 @@ def execute_qtpu(circuit: QuantumCircuit, max_cost: int) -> dict[str, float]:
     gen_time = time.perf_counter() - start
     print(f"QTPU Generation Time: {gen_time}")
 
-    est = AerEstimator(
+    estimator = Estimator(
         run_options={"method": "statevector", "shots": None}, approximation=True
     )
-    est.set_options(device="GPU", cuStateVec_enable=True)
-
+    # estimator.set_options(device="CPU", cuStateVec_enable=False)
 
     start = time.perf_counter()
-    eq, operands = qtpu.evaluate(htn, eval_fn=evaluate_estimator(est))
-    
+    eq, operands = qtpu.evaluate(htn, eval_fn=evaluate_estimator(estimator))
+
     operands = [cp.array(op, dtype=cp.float32) for op in operands]
-    
+
+    for op in operands:
+        print(op.shape)
+
     eval_time = time.perf_counter() - start
     print(f"QTPU Evaluation Time: {eval_time}")
 
@@ -105,17 +106,17 @@ def cotengra_cost(equation: str, operands: list[cp.ndarray]) -> float:
 
 if __name__ == "__main__":
 
-    name = "linear"
+    name = "brick"
 
     benches = [
         # (4, 18, 2),
         # (5, 20, 2),
-        (2, 15, 3),
+        (5, 15, 2),
         # (5, 20, 7),
         # (5, 20, 8),
         # (5, 20, 4),
         # (5, 20, 5),
-    ] * 5
+    ]
 
     for n, s, d in benches:
         match name:
@@ -131,8 +132,6 @@ if __name__ == "__main__":
 
         cu_res = execute_cutensornet(circuit)
         our_res = execute_qtpu(circuit, max_cost=1e12)
-        
-        
 
         print(
             f"results/cutensor.csv",

@@ -2,6 +2,8 @@ import quimb.tensor as qtn
 from qiskit.circuit import QuantumCircuit, Gate, QuantumRegister, ClassicalRegister
 
 
+qtn.TNOptimizer
+
 def qiskit_to_quimb(circuit: QuantumCircuit) -> qtn.Circuit:
     circ = qtn.Circuit(circuit.num_qubits)
     for instr in circuit:

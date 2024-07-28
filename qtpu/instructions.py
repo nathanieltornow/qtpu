@@ -1,8 +1,9 @@
 import abc
+from uuid import uuid4
 
 import numpy as np
 from numpy.typing import NDArray
-from qiskit.circuit import Gate, QuantumCircuit, QuantumRegister, Barrier
+from qiskit.circuit import Gate, QuantumCircuit, QuantumRegister, Barrier, Instruction
 
 
 class VirtualBinaryGate(Gate, abc.ABC):
@@ -12,6 +13,7 @@ class VirtualBinaryGate(Gate, abc.ABC):
         params: list,
         label: str | None = None,
     ) -> None:
+        self.idx = str(uuid4())
         super().__init__(name=name, num_qubits=2, params=params, label=label)
 
     @abc.abstractmethod
@@ -73,3 +75,11 @@ class InstanceGate(Barrier):
     @property
     def shot_portion(self) -> list[float]:
         return self._shot_portion
+
+
+class WireCut(Barrier):
+    def __init__(self) -> None:
+        super().__init__(1, label="WireCut")
+
+    def _define(self):
+        pass

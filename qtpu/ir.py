@@ -7,6 +7,7 @@ from qiskit.circuit import QuantumRegister, QuantumCircuit, Qubit
 from qtpu.instructions import InstanceGate
 from qtpu.virtual_gates import VirtualMove, VIRTUAL_GATE_GENERATORS
 from qtpu.tensor import QuantumTensor, ClassicalTensor, HybridTensorNetwork
+from qtpu.circuit import insert_cuts
 
 
 @dataclass(frozen=True)
@@ -26,10 +27,6 @@ class HybridCircuitIR:
         edge_index = 200
         current_nodes: dict[Qubit, int] = {}
         for op_id, instr in enumerate(circuit):
-            # if len(instr.qubits) > 2:
-            #     raise ValueError(
-            #         f"Only 1 or 2 qubit gates are supported, got {instr.operation}"
-            #     )
 
             op_nodes.append(set())
 
@@ -55,15 +52,6 @@ class HybridCircuitIR:
                 size_dict[str(chr(edge_index))] = edge_weigth
 
                 edge_index += 1
-
-            # if len(instr.qubits) == 2:
-            #     assert instr.operation.name in VIRTUAL_GATE_GENERATORS
-
-            #     inputs[-2] += (str(chr(edge_index)),)
-            #     inputs[-1] += (str(chr(edge_index)),)
-            #     size_dict[str(chr(edge_index))] = 5
-
-            #     edge_index += 1
 
         self._circuit = circuit
         self._op_nodes = op_nodes
@@ -115,6 +103,27 @@ class HybridCircuitIR:
         classical_tensors = [self._classical_tensor(u, v) for u, v in removed_edges]
 
         return HybridTensorNetwork(quantum_tensors, classical_tensors)
+
+    def cut_circuit(self, node_subsets: list[set[int]]) -> QuantumCircuit:
+        node_to_subset = {
+            node: i for i, subset in enumerate(node_subsets) for node in subset
+        }
+        cut_edges = [
+            (u, v)
+            for u, v in self._hypergraph.edges.values()
+            if node_to_subset[u] != node_to_subset[v]
+        ]
+        wire_cuts = {
+            (self._node_infos[u].op_idx, self._node_infos[u].rel_qubit)
+            for u, v in cut_edges
+            if self._node_infos[u].abs_qubit == self._node_infos[v].abs_qubit
+        }
+        gate_cuts = {
+            self._node_infos[u].op_idx
+            for u, v in cut_edges
+            if self._node_infos[u].op_idx == self._node_infos[v].op_idx
+        }
+        return insert_cuts(self._circuit, gate_cuts, wire_cuts)
 
     def _prev_nodes(self, node: int) -> list[int]:
         return sorted(

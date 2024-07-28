@@ -1,44 +1,23 @@
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
-from qiskit_aer.primitives import Estimator as AerEstimator
-from mpi4py import MPI
+import jax
+import jax.numpy as jnp
 
-def Hpauli(dict,N):
-    tableop = ""
-    tableind = []
-    for index, Pauli in sorted(dict.items(),reverse=True):
-        tableop+=Pauli
-        tableind.append(index)
-    operator = SparsePauliOp.from_sparse_list([(tableop, tableind, 1)], num_qubits = N)
-    return operator.simplify()
+def entire_tensor_network_contraction(tensor_list):
+    """
+    Perform a series of tensor contractions on a list of tensors.
+    """
+    result = tensor_list[0]
+    for i in range(1, len(tensor_list)):
+        result = jnp.tensordot(result, tensor_list[i], axes=1)
+    return result
 
+# Generate a list of random tensors
+tensor_list = [jnp.ones((100, 100)) for _ in range(5)]
 
+# JIT compile the entire tensor network contraction function
+jit_entire_tensor_network_contraction = jax.jit(entire_tensor_network_contraction)
 
+# Execute the JIT-compiled function
+result = jit_entire_tensor_network_contraction(tensor_list)
 
-def create_ghz_circuit(n_qubits):
-    ghz = QuantumCircuit(n_qubits)
-    ghz.h(0)
-    for qubit in range(n_qubits - 1):
-        ghz.cx(qubit, qubit + 1)
-    ghz.h(0)
-    for qubit in range(n_qubits - 1):
-        ghz.cx(qubit, qubit + 1)
-    
-    ghz.h(0)
-    for qubit in range(n_qubits - 1):
-        ghz.cx(qubit, qubit + 1)
-    ghz.h(0)
-    for qubit in range(n_qubits - 1):
-        ghz.cx(qubit, qubit + 1)
-    return ghz
-
-size=28
-circuit = create_ghz_circuit(size)
-
-dicts = {}
-for i in range(size):
-    dicts[i]='Z'
-
-result = estimator.run(circuit, "Z"*size).result()
-if MPI.COMM_WORLD.Get_rank() == 0:
-    print(result.values[0])
+# Print the result
+print(result)

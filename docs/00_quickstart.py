@@ -3,7 +3,7 @@ import qtpu
 from qtpu.compiler.terminators import reach_num_qubits
 
 
-N = 19
+N = 20
 circuit = QuantumCircuit(N)
 circuit.h(0)
 circuit.cx(range(0, N - 1), range(1, N))

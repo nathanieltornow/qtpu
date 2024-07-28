@@ -6,32 +6,33 @@ from qiskit.providers import Backend
 from qiskit.compiler import transpile
 from qiskit.circuit import QuantumCircuit, ClassicalRegister
 
-from qtpu.tensor import QuantumTensor, ClassicalTensor
 from qtpu.quasi_distr import QuasiDistr
 
 
 def evaluate_estimator(
     estimator: Estimator,
-) -> Callable[[QuantumTensor], ClassicalTensor]:
-    def _eval(qt: QuantumTensor) -> ClassicalTensor:
-        circuits = [circ.copy() for circ, _ in qt.instances()]
+) -> Callable[[list[QuantumCircuit]], list[float]]:
+    def _eval(circuits: list[QuantumCircuit]) -> list[float]:
+        print(f"Running {len(circuits)} circuits...")
         observables = [_get_Z_observable(circ) for circ in circuits]
-        if not all(circuit.num_qubits == len(obs) for circuit, obs in zip(circuits, observables)):
+        circuits = [
+            circuit.remove_final_measurements(inplace=False) for circuit in circuits
+        ]
+        if not all(
+            circuit.num_qubits == len(obs)
+            for circuit, obs in zip(circuits, observables)
+        ):
             raise ValueError("Circuit and observable qubit count mismatch")
-        print(circuits[0])
-        results = np.array([
-            estimator.run(circ, obs).result().values[0] for circ, obs in zip(circuits, observables)
-        ]).reshape(qt.shape)
-        # results = estimator.run(circuits, observables).result().values.reshape(qt.shape)
-        return ClassicalTensor(results, inds=qt.inds)
+        results = estimator.run(circuits, observables).result().values
+        return list(results)
 
     return _eval
 
 
 def evaluate_backend(
     backend: Backend, shots: int = 10000, optimization_level: int = 0
-) -> Callable[[QuantumTensor], ClassicalTensor]:
-    def _eval(qt: QuantumTensor) -> ClassicalTensor:
+) -> Callable[[list[QuantumCircuit]], list[float]]:
+    def _eval(circuits: list[QuantumCircuit]) -> list[float]:
         circuits = [circ for circ, _ in qt.instances()]
 
         cid_withour_meas = [
@@ -77,7 +78,6 @@ def _get_Z_observable(circuit: QuantumCircuit) -> str:
     obs = ["I"] * circuit.num_qubits
     for qubit in measured_qubits:
         obs[qubit] = "Z"
-    # circuit.remove_final_measurements()
     return "".join(obs)
 
 
