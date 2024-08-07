@@ -15,6 +15,9 @@ dependencies = [
     "cotengra @ git+https://github.com/jcmgray/cotengra.git@main",
     "quimb>=1.8.1",
     "optuna>=3.6.1",
+    "pyyaml>=6.0.1",
+    "pyzmq>=26.1.0",
+    "circuit-knitting-toolbox>=0.6.0",
 ]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"
@@ -42,3 +45,5 @@ bench = [
 [build-system]
 requires = ["pdm-pep517>=1.0.0"]
 build-backend = "pdm.pep517.api"
+
+[tool.pdm]

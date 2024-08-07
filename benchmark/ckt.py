@@ -19,8 +19,11 @@ def run_ckt(
     sampler: Sampler,
     num_samples: int = 1000,
     shots: int = 2**12,
+    obs: str | None = None,
 ) -> float:
-    observable = SparsePauliOp(["Z" * circuit.num_qubits])
+    if obs is None:
+        obs = "Z" * circuit.num_qubits
+    observable = SparsePauliOp([obs])
 
     qc_w_ancilla = cut_wires(circuit)
     observables_expanded = expand_observables(observable.paulis, circuit, qc_w_ancilla)

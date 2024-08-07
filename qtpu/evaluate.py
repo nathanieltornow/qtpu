@@ -18,14 +18,18 @@ def evaluate_estimator(
         # circuits = [
         #     circuit.remove_final_measurements(inplace=False) for circuit in circuits
         # ]
-        counts = AerSimulator().run(circuits, shots=10000).result().get_counts()
+        for circuit in circuits:
+            print(circuit)
+        counts = AerSimulator().run(circuits, shots=100000).result().get_counts()
+        results = [QuasiDistr.from_counts(count).prepare(5) for count in counts]
+
     
-        if not all(
-            circuit.num_qubits == len(obs)
-            for circuit, obs in zip(circuits, observables)
-        ):
-            raise ValueError("Circuit and observable qubit count mismatch")
-        results = estimator.run(circuits, observables).result().values
+        # if not all(
+        #     circuit.num_qubits == len(obs)
+        #     for circuit, obs in zip(circuits, observables)
+        # ):
+        #     raise ValueError("Circuit and observable qubit count mismatch")
+        # results = estimator.run(circuits, observables).result().values
         return list(results)
 
     return _eval

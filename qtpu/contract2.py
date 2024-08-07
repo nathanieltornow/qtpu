@@ -19,6 +19,7 @@ def contract(
 
     eval_tn = evaluate_hybrid_tn(hybrid_tn, eval_fn)
     for t in eval_tn.tensors:
+        print(t.inds)
         print(t.data)
     return eval_tn.contract(all, optimize="auto-hq", output_inds=[])
 

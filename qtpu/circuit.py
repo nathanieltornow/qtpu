@@ -152,15 +152,15 @@ def _qpd_to_instance_gate(basis: QPDBasis, index: str) -> InstanceGate:
             if isinstance(op, QPDMeasure):
                 circuit.measure(0, 0)
                 continue
-            if op.name == "reset":
-                continue
+            # if op.name == "reset":
+            #     continue
             circuit.append(op, [0], [])
         for op in map[1]:
             if isinstance(op, QPDMeasure):
                 circuit.measure(1, 0)
                 continue
-            if op.name == "reset":
-                continue
+            # if op.name == "reset":
+            #     continue
             circuit.append(op, [1], [])
         instances.append(circuit)
     return InstanceGate(2, index, instances)
@@ -177,15 +177,15 @@ def _qpd_to_instance_gate_2qubit(
             if isinstance(op, QPDMeasure):
                 c1.measure(0, 0)
                 continue
-            if op.name == "reset":
-                continue
+            # if op.name == "reset":
+                # continue
             c1.append(op, [0], [])
         for op in map[1]:
             if isinstance(op, QPDMeasure):
                 c2.measure(0, 0)
                 continue
-            if op.name == "reset":
-                continue
+            # if op.name == "reset":
+            #     continue
             c2.append(op, [0], [])
         instances[0].append(c1)
         instances[1].append(c2)

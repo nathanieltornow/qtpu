@@ -63,8 +63,8 @@ def defer_mid_measurements(circuit: QuantumCircuit) -> QuantumCircuit:
             new_circuit.measure(new_qr, instr.clbits[0])
             continue
 
-        if instr.operation.name != "reset":
-            new_circuit.append(instr)
+        # if instr.operation.name != "reset":
+        new_circuit.append(instr)
 
     return merge_regs(new_circuit)
 
