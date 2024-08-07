@@ -2,7 +2,7 @@ from itertools import chain
 
 import cotengra as ctg
 
-from qtpu.ir import HybridCircuitIR, NodeInfo
+from qtpu.compiler.ir import HybridCircuitIR, NodeInfo
 from qtpu.tensor import HybridTensorNetwork, QuantumTensor
 
 
@@ -60,6 +60,10 @@ class CompressedIR:
     def hybrid_tn(self, node_subsets: list[set[int]]) -> HybridTensorNetwork:
         decompressed_nodes = [self.decompress_nodes(subset) for subset in node_subsets]
         return self._ir.hybrid_tn(decompressed_nodes)
+    
+    def cut_circuit(self, node_subsets: list[set[int]]) -> HybridTensorNetwork:
+        decompressed_nodes = [self.decompress_nodes(subset) for subset in node_subsets]
+        return self._ir.cut_circuit(decompressed_nodes)
 
     def quantum_tensor(self, node_subset: set[int]) -> QuantumTensor:
         decompressed_nodes = self.decompress_nodes(node_subset)

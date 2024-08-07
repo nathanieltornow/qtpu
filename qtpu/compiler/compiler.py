@@ -5,7 +5,7 @@ import cotengra as ctg
 import numpy as np
 from qiskit.circuit import QuantumCircuit, Barrier
 
-from qtpu.ir import HybridCircuitIR
+from qtpu.compiler.ir import HybridCircuitIR
 from qtpu.tensor import HybridTensorNetwork
 
 from qtpu.compiler.optimizer import optimize
@@ -45,11 +45,16 @@ def compile_circuit(
     # best_trial = max(study.best_trials, key=lambda trial: pareto_fn(*trial.values))
     best_trial = find_best_trial(study)
 
-    return trial_to_hybrid_tn(best_trial)
+    return trial_to_circuit(best_trial)
+    # return trial_to_hybrid_tn(best_trial)
 
 
 def trial_to_hybrid_tn(trial: optuna.Trial) -> HybridTensorNetwork:
     return trial.user_attrs["ir"].hybrid_tn(list(get_leafs(trial.user_attrs["tree"])))
+
+
+def trial_to_circuit(trial: optuna.Trial) -> QuantumCircuit:
+    return trial.user_attrs["ir"].cut_circuit(list(get_leafs(trial.user_attrs["tree"])))
 
 
 def hyper_optimize(

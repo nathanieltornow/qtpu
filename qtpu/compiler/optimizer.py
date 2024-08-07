@@ -3,7 +3,7 @@ import cotengra as ctg
 import networkx as nx
 import numpy as np
 
-from qtpu.ir import HybridCircuitIR
+from qtpu.compiler.ir import HybridCircuitIR
 from qtpu.compiler.compress import CompressedIR, compress_2q_gates, compress_qubits
 
 

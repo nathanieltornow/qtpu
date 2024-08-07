@@ -7,17 +7,19 @@ from qiskit.compiler import transpile
 from qiskit.circuit import QuantumCircuit, ClassicalRegister
 
 from qtpu.quasi_distr import QuasiDistr
-
+from qiskit_aer import AerSimulator
 
 def evaluate_estimator(
     estimator: Estimator,
 ) -> Callable[[list[QuantumCircuit]], list[float]]:
     def _eval(circuits: list[QuantumCircuit]) -> list[float]:
         print(f"Running {len(circuits)} circuits...")
-        observables = [_get_Z_observable(circ) for circ in circuits]
-        circuits = [
-            circuit.remove_final_measurements(inplace=False) for circuit in circuits
-        ]
+        # observables = [_get_Z_observable(circ) for circ in circuits]
+        # circuits = [
+        #     circuit.remove_final_measurements(inplace=False) for circuit in circuits
+        # ]
+        counts = AerSimulator().run(circuits, shots=10000).result().get_counts()
+    
         if not all(
             circuit.num_qubits == len(obs)
             for circuit, obs in zip(circuits, observables)

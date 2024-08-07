@@ -3,9 +3,16 @@ import itertools
 import networkx as nx
 from qiskit.circuit import QuantumCircuit, QuantumRegister
 
-from qtpu.instructions import WireCut, InstanceGate
-from qtpu.virtual_gates import VirtualMove, VirtualBinaryGate, VIRTUAL_GATE_GENERATORS
-from qtpu.tensor import HybridTensorNetwork, QuantumTensor, ClassicalTensor
+from circuit_knitting.cutting.instructions import CutWire, Move
+from circuit_knitting.cutting.qpd import (
+    QPDBasis,
+    QPDMeasure,
+    TwoQubitQPDGate,
+    SingleQubitQPDGate,
+)
+
+from qtpu.instructions import InstanceGate
+from qtpu.qpd_tensor import QuantumTensor, QPDTensor, HybridTensorNetwork
 
 
 def insert_cuts(
@@ -17,19 +24,19 @@ def insert_cuts(
         op, qubits = instr.operation, instr.qubits
 
         if i in gate_cuts:
-            op = VIRTUAL_GATE_GENERATORS[op.name](op.params)
+            op = TwoQubitQPDGate.from_instruction(op)
 
         new_circuit.append(op, qubits, instr.clbits)
 
         for j in range(len(qubits)):
             if (i, j) in wire_cuts:
-                new_circuit.append(WireCut(), [qubits[j]], [])
+                new_circuit.append(CutWire(), [qubits[j]], [])
     return new_circuit
 
 
 def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
     circuit = fragment(circuit)
-    ctensors = _extract_classical_tensors(circuit)
+    ctensors = _extract_qpd_tensors(circuit)
 
     circuit = _decompose_virtual_gates(circuit)
 
@@ -40,37 +47,35 @@ def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
     return HybridTensorNetwork(qtensors, ctensors)
 
 
-def wire_cuts_to_move(circuit: QuantumCircuit) -> QuantumCircuit:
-    new_circuit = QuantumCircuit(*circuit.qregs, *circuit.cregs)
+def cuts_to_moves(circuit: QuantumCircuit) -> QuantumCircuit:
 
     qubit_mapping = {}
 
-    def find_qubit(qubit):
+    def _find_qubit(qubit):
         while qubit in qubit_mapping:
             qubit = qubit_mapping[qubit]
         return qubit
 
+    new_circuit = QuantumCircuit(*circuit.qregs, *circuit.cregs)
     ctr = 0
     for instr in circuit:
         op, qubits, clbits = instr.operation, instr.qubits, instr.clbits
+        qubits = [_find_qubit(qubit) for qubit in qubits]
 
-        qubits = [find_qubit(qubit) for qubit in qubits]
-
-        if isinstance(op, WireCut):
-            qreg = QuantumRegister(1, f"wc{ctr}")
+        if isinstance(op, CutWire):
+            new_reg = QuantumRegister(1, name=f"cut_{ctr}")
+            new_circuit.add_register(new_reg)
+            qubit_mapping[qubits[0]] = new_reg[0]
             ctr += 1
-            circuit.add_register(qreg)
-            qubit_mapping[qubits[0]] = qreg[0]
-            circuit.append(VirtualMove(), [qubits[0], qreg[0]])
-            continue
+            qubits += [new_reg[0]]
+            op = TwoQubitQPDGate.from_instruction(Move())
 
-        circuit.append(op, qubits, clbits)
-
+        new_circuit.append(op, qubits, clbits)
     return new_circuit
 
 
 def fragment(circuit: QuantumCircuit) -> QuantumCircuit:
-    ccs = nx.connected_components(_qubit_graph(circuit))
+    ccs = list(nx.connected_components(_qubit_graph(circuit)))
 
     fragments = [QuantumRegister(len(cc), name=f"f{i}") for i, cc in enumerate(ccs)]
     sorted_ccs = [sorted(cc, key=lambda q: circuit.qubits.index(q)) for cc in ccs]
@@ -89,8 +94,11 @@ def fragment(circuit: QuantumCircuit) -> QuantumCircuit:
 
 def _qubit_graph(circuit: QuantumCircuit) -> nx.Graph:
     graph = nx.Graph()
+    graph.add_nodes_from(circuit.qubits)
     for instr in circuit:
-        if instr.operation.name == "barrier":
+        if instr.operation.name == "barrier" or isinstance(
+            instr.operation, TwoQubitQPDGate
+        ):
             continue
 
         qubits = instr.qubits
@@ -99,49 +107,99 @@ def _qubit_graph(circuit: QuantumCircuit) -> nx.Graph:
     return graph
 
 
-def _extract_classical_tensors(circuit: QuantumCircuit) -> list[ClassicalTensor]:
-    ctensors = []
+def _extract_qpd_tensors(circuit: QuantumCircuit) -> list[QPDTensor]:
+    qpd_tensors = []
+    qpd_ctr = 0
     for instr in circuit:
         op, qubits = instr.operation, instr.qubits
-        if isinstance(op, VirtualBinaryGate):
-            reg1 = circuit.find_bit(qubits[0]).registers[0][0]
-            reg2 = circuit.find_bit(qubits[1]).registers[0][0]
-            if reg1 == reg2:
-                ct = ClassicalTensor(op.coefficients_1d(), [op.idx])
-                ctensors.append(ct)
-            else:
-                ct = ClassicalTensor(
-                    op.coefficients_2d(), [f"{op.idx}_0", f"{op.idx}_1"]
-                )
-                ctensors.append(ct)
-    return ctensors
+
+        assert not isinstance(op, SingleQubitQPDGate)
+
+        if isinstance(op, TwoQubitQPDGate):
+            ct = QPDTensor(op.basis, str(qpd_ctr))
+            qpd_tensors.append(ct)
+            qpd_ctr += 1
+    return qpd_tensors
 
 
 def _decompose_virtual_gates(circuit: QuantumCircuit) -> QuantumCircuit:
     new_circuit = QuantumCircuit(*circuit.qregs, *circuit.cregs)
+    qpd_ctr = 0
     for instr in circuit:
         op, qubits, clbits = instr.operation, instr.qubits, instr.clbits
-        if isinstance(op, VirtualBinaryGate):
+        if isinstance(op, TwoQubitQPDGate):
             reg1 = circuit.find_bit(qubits[0]).registers[0][0]
             reg2 = circuit.find_bit(qubits[1]).registers[0][0]
             if reg1 == reg2:
-                ig = InstanceGate(2, op.idx, op.instantiations()), qubits, clbits
-                new_circuit.append(ig)
+                ig = _qpd_to_instance_gate(op.basis, str(qpd_ctr))
+                new_circuit.append(ig, qubits, [])
             else:
-                ig1 = InstanceGate(1, f"{op.idx}_0", op.instances_q0())
-                ig2 = InstanceGate(1, f"{op.idx}_1", op.instances_q1())
+                ig1, ig2 = _qpd_to_instance_gate_2qubit(op.basis, str(qpd_ctr))
                 new_circuit.append(ig1, [qubits[0]], [])
                 new_circuit.append(ig2, [qubits[1]], [])
+            qpd_ctr += 1
             continue
 
         new_circuit.append(op, qubits, clbits)
     return new_circuit
 
 
+def _qpd_to_instance_gate(basis: QPDBasis, index: str) -> InstanceGate:
+    instances = []
+    for map in basis.maps:
+        circuit = QuantumCircuit(2, 1)
+        for op in map[0]:
+            if isinstance(op, QPDMeasure):
+                circuit.measure(0, 0)
+                continue
+            if op.name == "reset":
+                continue
+            circuit.append(op, [0], [])
+        for op in map[1]:
+            if isinstance(op, QPDMeasure):
+                circuit.measure(1, 0)
+                continue
+            if op.name == "reset":
+                continue
+            circuit.append(op, [1], [])
+        instances.append(circuit)
+    return InstanceGate(2, index, instances)
+
+
+def _qpd_to_instance_gate_2qubit(
+    qpd_basis: QPDBasis, index: str
+) -> tuple[InstanceGate, InstanceGate]:
+    instances = ([], [])
+    for map in qpd_basis.maps:
+        c1 = QuantumCircuit(1, 1)
+        c2 = QuantumCircuit(1, 1)
+        for op in map[0]:
+            if isinstance(op, QPDMeasure):
+                c1.measure(0, 0)
+                continue
+            if op.name == "reset":
+                continue
+            c1.append(op, [0], [])
+        for op in map[1]:
+            if isinstance(op, QPDMeasure):
+                c2.measure(0, 0)
+                continue
+            if op.name == "reset":
+                continue
+            c2.append(op, [0], [])
+        instances[0].append(c1)
+        instances[1].append(c2)
+
+    return (
+        InstanceGate(1, index, instances[0]),
+        InstanceGate(1, index, instances[1]),
+    )
+
+
 def _circuit_on_qreg(circuit: QuantumCircuit, qreg: QuantumRegister) -> QuantumCircuit:
     new_circuit = QuantumCircuit(qreg, *circuit.cregs)
     for instr in circuit:
-        qubits = instr.operation
+        qubits = instr.qubits
         intersection = set(qubits) & set(qreg)
 
         if len(intersection) == 0:

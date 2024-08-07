@@ -26,3 +26,4 @@ def tree_to_hypergraph(tree: ctg.ContractionTree) -> ctg.HyperGraph:
         for v in nodes[1:]:
             hypergraph.contract(v, nodes[0])
     return hypergraph
+
