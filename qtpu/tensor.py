@@ -1,93 +1,72 @@
-import itertools
-from typing import Iterator
 import numpy as np
-from numpy.typing import NDArray
-
+import quimb.tensor as qtn
 from qiskit.circuit import QuantumCircuit, ClassicalRegister
 
 from qtpu.instructions import InstanceGate
 from qtpu.helpers import defer_mid_measurements
 
 
-class ClassicalTensor:
-    def __init__(self, data: NDArray, inds: tuple[str, ...]) -> None:
-        assert len(data.shape) == len(inds)
-        self._data = data
-        self._inds = inds
-
-    @property
-    def data(self) -> NDArray:
-        return self._data
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        return self._data.shape
-
-    @property
-    def inds(self) -> tuple[chr, ...]:
-        return self._inds
+def wire_tensor(ind: str) -> qtn.Tensor:
+    A = np.array(
+        [[1, 1, 0, 0], [1, -1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], dtype=np.float32
+    )
+    B = np.array(
+        [[1, 0, 0, 0], [0, 1, 0, 0], [-1, -1, 2, 0], [-1, -1, 0, 2]],
+        dtype=np.float32,
+    )
+    return qtn.Tensor(0.5 * A @ B, inds=[f"{ind}_0", f"{ind}_1"], tags=["wire"])
 
 
 class QuantumTensor:
-    def __init__(self, circuit: QuantumCircuit):
+    def __init__(self, circuit: QuantumCircuit) -> None:
         self._circuit = circuit
         self._instance_gates = [
             instr.operation
             for instr in circuit
             if isinstance(instr.operation, InstanceGate)
         ]
-        self._indices = tuple(gate.index for gate in self._instance_gates)
+        self._inds = tuple(gate.index for gate in self._instance_gates)
         self._shape = tuple(len(gate.instances) for gate in self._instance_gates)
 
-        self._shot_portions = np.array([1])
-
-        if len(self._instance_gates) == 0:
-            return
-
-        self._shot_portions = np.array(self._instance_gates[0].shot_portion)
-        for gate in self._instance_gates[1:]:
-            self._shot_portions = np.kron(self._shot_portions, gate.shot_portion)
+        self._ind_tensor = qtn.Tensor(
+            np.arange(np.prod(self._shape)).reshape(self._shape),
+            self._inds,
+            tags=["Q"],
+        )
 
         self._instances = None
 
-    def __repr__(self) -> str:
-        return (
-            f"QuantumTensor(num_qubits={self._circuit.num_qubits}, shape={self._shape})"
-        )
-
     @property
-    def circuit(self) -> QuantumCircuit:
-        return self._circuit
-
-    @property
-    def inds(self) -> tuple[str]:
-        return self._indices
+    def inds(self) -> tuple[str, ...]:
+        return self._inds
 
     @property
     def shape(self) -> tuple[int, ...]:
         return self._shape
 
-    def generate_instances(self) -> list[tuple[QuantumCircuit, float]]:
-        self._instances = [
-            (self._get_instance(instance_label), shot_portion)
-            for instance_label, shot_portion in self._instance_labels()
-        ]
-        return self._instances
+    @property
+    def ind_tensor(self) -> qtn.Tensor:
+        return self._ind_tensor
 
-    def instances(self) -> list[tuple[QuantumCircuit, float]]:
-        if self._instances is None:
-            self._instances = self.generate_instances()
-        return self._instances
+    # setter for ind_tensor
+    @ind_tensor.setter
+    def ind_tensor(self, tensor: qtn.Tensor) -> None:
+        self._instances = None
+        self._ind_tensor = tensor
 
-    def _instance_labels(self) -> Iterator[tuple[dict[str, int], float]]:
-        for instance_label, shot_portion in zip(
-            itertools.product(*[range(n) for n in self._shape]), self._shot_portions
-        ):
-            yield dict(zip(self._indices, instance_label)), shot_portion
+    def _flat_ind_to_instance_label(self, flat_ind: int) -> dict[str, int]:
+        instance_label = {}
+        for ind, size in reversed(list(zip(self._inds, self._shape))):
+            instance_label[ind] = flat_ind % size
+            flat_ind //= size
+        return instance_label
 
-    def _get_instance(self, instance_label: dict[str, int]) -> QuantumCircuit:
-        assert all(label in self._indices for label in instance_label)
-        assert len(instance_label) == len(self._indices)
+    def get_instance(self, idx: int) -> QuantumCircuit:
+
+        instance_label = self._flat_ind_to_instance_label(idx)
+
+        assert all(label in self._inds for label in instance_label)
+        assert len(instance_label) == len(self._inds)
 
         res_circuit = QuantumCircuit(*self._circuit.qregs, *self._circuit.cregs)
 
@@ -116,79 +95,105 @@ class QuantumTensor:
         res_circuit = defer_mid_measurements(res_circuit)
         return res_circuit
 
+    def generate_instances(self) -> list[QuantumCircuit]:
+        self._instances = [
+            self.get_instance(instance_label)
+            for instance_label in self.ind_tensor.data.flat
+        ]
+
+    def instances(self) -> list[QuantumCircuit]:
+        if self._instances is None:
+            self.generate_instances()
+        return self._instances
+
 
 class HybridTensorNetwork:
     def __init__(
-        self,
-        quantum_tensors: list[QuantumTensor],
-        classical_tensors: list[ClassicalTensor],
-    ) -> None:
-        self._quantum_tensors = quantum_tensors
-        self._classical_tensors = classical_tensors
+        self, quantum_tensors: list[QuantumTensor], qpd_tensors: list[qtn.Tensor]
+    ):
+        self.quantum_tensors = quantum_tensors
+        for i, qt in enumerate(self.quantum_tensors):
+            qt.ind_tensor.add_tag(str(i))
+        self.qpd_tensors = qpd_tensors
 
-        self._index_map: dict[str, tuple[set[QuantumTensor | ClassicalTensor], int]] = (
-            {}
+    def approximate(self, tolerance: float = 0.01) -> None:
+        tn = qtn.TensorNetwork([qt.ind_tensor for qt in self.quantum_tensors])
+        multibonds = tn.get_multibonds()
+        tn.fuse_multibonds(inplace=True)
+
+        new_qpds = [qpd for qpd in self.qpd_tensors if "wire" in qpd.tags]
+        ind_to_qpdtens = {qt.inds[0]: qt for qt in self.qpd_tensors}
+
+        ind_to_argsort = {}
+        for mb_inds in multibonds.keys():
+            qpd_tensors = [ind_to_qpdtens[ind] for ind in mb_inds]
+            qpd_kron = np.array([1])
+            for qpd in qpd_tensors:
+                qpd_kron = np.kron(qpd_kron, qpd.data)
+
+            sort = np.argsort(np.abs(qpd_kron))
+            qpd_kron = qpd_kron[sort]
+
+            # get the index until the cumulative sum is less than tolerance
+            s = 0
+            for i, val in enumerate(qpd_kron):
+                s += val
+                if s > tolerance:
+                    break
+
+            qpd_kron = qpd_kron[i:]
+
+            ind_to_argsort[mb_inds[0]] = sort[i:]
+
+            tens = qtn.Tensor(qpd_kron, [mb_inds[0]], tags=["QPD"])
+            new_qpds.append(tens)
+
+        self.qpd_tensors = new_qpds
+
+        for i, qt in enumerate(self.quantum_tensors):
+            qt.ind_tensor = sort_indices(tn.tensors[i], ind_to_argsort)
+            assert str(i) in qt.ind_tensor.tags
+
+    def to_tensor_network(self) -> qtn.TensorNetwork:
+        return qtn.TensorNetwork(
+            [qt.ind_tensor for qt in self.quantum_tensors] + self.qpd_tensors
         )
 
-        self._index_to_chr = {
-            index: chr(1000 + i)
-            for i, index in enumerate(
-                itertools.chain.from_iterable(
-                    tens.inds for tens in quantum_tensors + classical_tensors
-                )
-            )
-        }
-        assert len(self._index_to_chr) < 0x11000
 
-        for tensor in quantum_tensors + classical_tensors:
-            for index, index_size in zip(tensor.inds, tensor.shape):
-                if index not in self._index_map:
-                    self._index_map[index] = (set(), index_size)
+def sort_indices(tensor: qtn.Tensor, ind_to_sort: dict[str, np.ndarray]) -> qtn.Tensor:
+    data = tensor.data
+    for ind, sort in ind_to_sort.items():
+        if ind not in tensor.inds:
+            continue
+        dim = tensor.inds.index(ind)
+        data = np.take(data, sort, axis=dim)
+    return qtn.Tensor(data, inds=tensor.inds, tags=tensor.tags)
 
-                if len(self._index_map[index][0]) > 1:
-                    raise ValueError(
-                        f"Index {index} is already used by more than one tensor"
-                    )
-                if index_size != self._index_map[index][1]:
-                    raise ValueError(
-                        f"Index {index} has different size than other tensors"
-                    )
 
-                self._index_map[index][0].add(tensor)
+def truncate_tensor_index(tensor: qtn.Tensor, ind: str, new_size: int) -> qtn.Tensor:
+    if ind not in tensor.inds:
+        return tensor
+    dim = tensor.inds.index(ind)
+    slices = [slice(None)] * len(tensor.shape)
+    slices[dim] = slice(new_size)
+    truncated_data = tensor.data[tuple(slices)]
+    return qtn.Tensor(truncated_data, inds=tensor.inds, tags=tensor.tags)
 
-    @property
-    def quantum_tensors(self) -> list[QuantumTensor]:
-        return self._quantum_tensors.copy()
 
-    @property
-    def classical_tensors(self) -> list[ClassicalTensor]:
-        return self._classical_tensors.copy()
+def truncate_tn_index(
+    tn: qtn.TensorNetwork, ind: str, new_size: int
+) -> qtn.TensorNetwork:
+    return qtn.TensorNetwork(
+        [truncate_tensor_index(t, ind, new_size) for t in tn.tensors]
+    )
 
-    def inputs(self) -> list[tuple[str, ...]]:
-        return [
-            tuple(self._index_to_chr[ind] for ind in tens.inds)
-            for tens in self._quantum_tensors + self._classical_tensors
-        ]
 
-    def output(self) -> tuple[str, ...]:
-        return tuple(
-            [
-                self._index_to_chr[index]
-                for index, tensors in self._index_map.items()
-                if len(tensors[0]) == 1
-            ]
-        )
+def find_fusable_indices(tn: qtn.TensorNetwork) -> list[set[str]]:
+    # find the groups of indices that have the same set of tensors with tags "Q"
+    groups: dict[tuple[int, ...], list[str]] = {}
 
-    def size_dict(self) -> dict[str, int]:
-        return {
-            self._index_to_chr[index]: size
-            for index, (_, size) in self._index_map.items()
-        }
+    for index, tids in tn.ind_map.items():
+        q_tids = tuple(sorted([tid for tid in tids if "Q" in tn.tensor_map[tid].tags]))
+        groups.setdefault(q_tids, []).append(index)
 
-    def equation(self) -> str:
-        in_str = ("".join(ix for ix in inds) for inds in self.inputs())
-        in_str = ",".join(in_str)
-        out_str = "".join(
-            ix for ix in self._index_to_chr.values() if in_str.count(ix) == 1
-        )
-        return f"{in_str}->{out_str}"
+    return groups

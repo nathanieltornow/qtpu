@@ -1,9 +1,9 @@
 from itertools import chain
 
 import cotengra as ctg
+from qiskit.circuit import QuantumCircuit
 
 from qtpu.compiler.ir import HybridCircuitIR, NodeInfo
-from qtpu.tensor import HybridTensorNetwork, QuantumTensor
 
 
 class CompressedIR:
@@ -57,17 +57,17 @@ class CompressedIR:
             )
         )
 
-    def hybrid_tn(self, node_subsets: list[set[int]]) -> HybridTensorNetwork:
-        decompressed_nodes = [self.decompress_nodes(subset) for subset in node_subsets]
-        return self._ir.hybrid_tn(decompressed_nodes)
+    # def hybrid_tn(self, node_subsets: list[set[int]]) -> HybridTensorNetwork:
+    #     decompressed_nodes = [self.decompress_nodes(subset) for subset in node_subsets]
+    #     return self._ir.hybrid_tn(decompressed_nodes)
     
-    def cut_circuit(self, node_subsets: list[set[int]]) -> HybridTensorNetwork:
+    def cut_circuit(self, node_subsets: list[set[int]]) -> QuantumCircuit:
         decompressed_nodes = [self.decompress_nodes(subset) for subset in node_subsets]
         return self._ir.cut_circuit(decompressed_nodes)
 
-    def quantum_tensor(self, node_subset: set[int]) -> QuantumTensor:
-        decompressed_nodes = self.decompress_nodes(node_subset)
-        return self._ir.quantum_tensor(decompressed_nodes)
+    # def quantum_tensor(self, node_subset: set[int]) -> QuantumTensor:
+    #     decompressed_nodes = self.decompress_nodes(node_subset)
+    #     return self._ir.quantum_tensor(decompressed_nodes)
 
     def node_infos(self, node: int) -> set[NodeInfo]:
         decompressed_nodes = self.decompress_nodes({node})

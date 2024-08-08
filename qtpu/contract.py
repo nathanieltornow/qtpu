@@ -6,7 +6,7 @@ import quimb.tensor as qtn
 from qiskit.circuit import QuantumCircuit
 from qiskit.primitives import Estimator
 
-from qtpu.qpd_tensor import HybridTensorNetwork, QuantumTensor
+from qtpu.tensor import HybridTensorNetwork, QuantumTensor
 from qtpu.evaluate import evaluate_estimator
 
 
@@ -18,9 +18,6 @@ def contract(
         eval_fn = evaluate_estimator(Estimator())
 
     eval_tn = evaluate_hybrid_tn(hybrid_tn, eval_fn)
-    for t in eval_tn.tensors:
-        print(t.inds)
-        print(t.data)
     return eval_tn.contract(all, optimize="auto-hq", output_inds=[])
 
 
@@ -29,9 +26,8 @@ def evaluate_hybrid_tn(
     eval_fn: Callable[[list[QuantumCircuit]], list],
 ) -> qtn.TensorNetwork:
     quantum_tensors = hybrid_tn.quantum_tensors
-    classical_tensors = [qpdtens.tensor for qpdtens in hybrid_tn.qpd_tensors]
     eval_tensors = evaluate_quantum_tensors(quantum_tensors, eval_fn)
-    return qtn.TensorNetwork(eval_tensors + classical_tensors)
+    return qtn.TensorNetwork(eval_tensors + hybrid_tn.qpd_tensors)
 
 
 def evaluate_quantum_tensors(

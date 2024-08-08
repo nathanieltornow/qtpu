@@ -9,68 +9,58 @@ from qiskit.circuit import QuantumCircuit, ClassicalRegister
 from qtpu.quasi_distr import QuasiDistr
 from qiskit_aer import AerSimulator
 
+
 def evaluate_estimator(
     estimator: Estimator,
 ) -> Callable[[list[QuantumCircuit]], list[float]]:
     def _eval(circuits: list[QuantumCircuit]) -> list[float]:
         print(f"Running {len(circuits)} circuits...")
-        # observables = [_get_Z_observable(circ) for circ in circuits]
-        # circuits = [
-        #     circuit.remove_final_measurements(inplace=False) for circuit in circuits
-        # ]
-        for circuit in circuits:
-            print(circuit)
-        counts = AerSimulator().run(circuits, shots=100000).result().get_counts()
-        results = [QuasiDistr.from_counts(count).prepare(5) for count in counts]
-
-    
-        # if not all(
-        #     circuit.num_qubits == len(obs)
-        #     for circuit, obs in zip(circuits, observables)
-        # ):
-        #     raise ValueError("Circuit and observable qubit count mismatch")
-        # results = estimator.run(circuits, observables).result().values
+        observables = [_get_Z_observable(circ) for circ in circuits]
+        circuits = [
+            circuit.remove_final_measurements(inplace=False) for circuit in circuits
+        ]
+        results = estimator.run(circuits, observables).result().values
         return list(results)
 
     return _eval
 
 
-def evaluate_backend(
-    backend: Backend, shots: int = 10000, optimization_level: int = 0
-) -> Callable[[list[QuantumCircuit]], list[float]]:
-    def _eval(circuits: list[QuantumCircuit]) -> list[float]:
-        circuits = [circ for circ, _ in qt.instances()]
+# def evaluate_backend(
+#     backend: Backend, shots: int = 10000, optimization_level: int = 0
+# ) -> Callable[[list[QuantumCircuit]], list[float]]:
+#     def _eval(circuits: list[QuantumCircuit]) -> list[float]:
+#         circuits = [circ for circ, _ in qt.instances()]
 
-        cid_withour_meas = [
-            (i, s)
-            for i, circ in enumerate(circuits)
-            if circ.count_ops().get("measure", 0) == 0
-        ]
+#         cid_withour_meas = [
+#             (i, s)
+#             for i, circ in enumerate(circuits)
+#             if circ.count_ops().get("measure", 0) == 0
+#         ]
 
-        for i, _ in reversed(cid_withour_meas):
-            circuits.pop(i)
+#         for i, _ in reversed(cid_withour_meas):
+#             circuits.pop(i)
 
-        circuits = [
-            transpile(circ, backend=backend, optimization_level=optimization_level)
-            for circ in circuits
-        ]
+#         circuits = [
+#             transpile(circ, backend=backend, optimization_level=optimization_level)
+#             for circ in circuits
+#         ]
 
-        counts = backend.run(circuits, shots=shots).result().get_counts()
-        counts = [counts] if isinstance(counts, dict) else counts
+#         counts = backend.run(circuits, shots=shots).result().get_counts()
+#         counts = [counts] if isinstance(counts, dict) else counts
 
-        for i, s in cid_withour_meas:
-            counts.insert(i, {"0": s})
+#         for i, s in cid_withour_meas:
+#             counts.insert(i, {"0": s})
 
-        quasi_dists = np.array(
-            [
-                QuasiDistr.from_counts(count).prepare(qt.circuit.num_clbits)
-                for count in counts
-            ]
-        ).reshape(qt.shape)
+#         quasi_dists = np.array(
+#             [
+#                 QuasiDistr.from_counts(count).prepare(qt.circuit.num_clbits)
+#                 for count in counts
+#             ]
+#         ).reshape(qt.shape)
 
-        return ClassicalTensor(quasi_dists, inds=qt.inds)
+#         return ClassicalTensor(quasi_dists, inds=qt.inds)
 
-    return _eval
+#     return _eval
 
 
 def _get_Z_observable(circuit: QuantumCircuit) -> str:
@@ -84,7 +74,7 @@ def _get_Z_observable(circuit: QuantumCircuit) -> str:
     obs = ["I"] * circuit.num_qubits
     for qubit in measured_qubits:
         obs[qubit] = "Z"
-    return "".join(obs)
+    return "".join(reversed(obs))
 
 
 def remap_circuit(circuit: QuantumCircuit) -> tuple[QuantumCircuit, list[int]]:

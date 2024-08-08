@@ -1,5 +1,6 @@
 import itertools
 
+import quimb.tensor as qtn
 import networkx as nx
 from qiskit.circuit import QuantumCircuit, QuantumRegister
 
@@ -12,7 +13,7 @@ from circuit_knitting.cutting.qpd import (
 )
 
 from qtpu.instructions import InstanceGate
-from qtpu.qpd_tensor import QuantumTensor, QPDTensor, HybridTensorNetwork
+from qtpu.tensor import QuantumTensor, HybridTensorNetwork, wire_tensor
 
 
 def insert_cuts(
@@ -107,7 +108,7 @@ def _qubit_graph(circuit: QuantumCircuit) -> nx.Graph:
     return graph
 
 
-def _extract_qpd_tensors(circuit: QuantumCircuit) -> list[QPDTensor]:
+def _extract_qpd_tensors(circuit: QuantumCircuit) -> list[qtn.Tensor]:
     qpd_tensors = []
     qpd_ctr = 0
     for instr in circuit:
@@ -116,7 +117,14 @@ def _extract_qpd_tensors(circuit: QuantumCircuit) -> list[QPDTensor]:
         assert not isinstance(op, SingleQubitQPDGate)
 
         if isinstance(op, TwoQubitQPDGate):
-            ct = QPDTensor(op.basis, str(qpd_ctr))
+            ct = qtn.Tensor(op.basis.coeffs, inds=[str(qpd_ctr)])
+            if (
+                op.label == "cut_move"
+                and circuit.find_bit(qubits[0]).registers[0][0]
+                != circuit.find_bit(qubits[1]).registers[0][0]
+            ):
+                ct = wire_tensor(str(qpd_ctr))
+
             qpd_tensors.append(ct)
             qpd_ctr += 1
     return qpd_tensors
@@ -135,6 +143,8 @@ def _decompose_virtual_gates(circuit: QuantumCircuit) -> QuantumCircuit:
                 new_circuit.append(ig, qubits, [])
             else:
                 ig1, ig2 = _qpd_to_instance_gate_2qubit(op.basis, str(qpd_ctr))
+                if op.label == "cut_move":
+                    ig1, ig2 = _move_instance_gates(str(qpd_ctr))
                 new_circuit.append(ig1, [qubits[0]], [])
                 new_circuit.append(ig2, [qubits[1]], [])
             qpd_ctr += 1
@@ -178,7 +188,7 @@ def _qpd_to_instance_gate_2qubit(
                 c1.measure(0, 0)
                 continue
             # if op.name == "reset":
-                # continue
+            # continue
             c1.append(op, [0], [])
         for op in map[1]:
             if isinstance(op, QPDMeasure):
@@ -212,3 +222,42 @@ def _circuit_on_qreg(circuit: QuantumCircuit, qreg: QuantumRegister) -> QuantumC
             raise ValueError("Operation spans multiple qregs.")
 
     return new_circuit
+
+
+def _move_instance_gates(ind: str) -> tuple[InstanceGate, InstanceGate]:
+    i = QuantumCircuit(1, 1)
+    i.reset(0)
+
+    z = QuantumCircuit(1, 1)
+    z.measure(0, 0)
+    z.reset(0)
+
+    x = QuantumCircuit(1, 1)
+    x.h(0)
+    x.measure(0, 0)
+    x.reset(0)
+
+    y = QuantumCircuit(1, 1)
+    y.sx(0)
+    y.measure(0, 0)
+    y.reset(0)
+
+    zero = QuantumCircuit(1, 1)
+    zero.reset(0)
+
+    one = QuantumCircuit(1, 1)
+    one.reset(0)
+    one.x(0)
+
+    plus = QuantumCircuit(1, 1)
+    plus.reset(0)
+    plus.h(0)
+
+    iplus = QuantumCircuit(1, 1)
+    iplus.reset(0)
+    iplus.sxdg(0)
+
+    return (
+        InstanceGate(1, f"{ind}_0", [i, z, x, y]),
+        InstanceGate(1, f"{ind}_1", [zero, one, plus, iplus]),
+    )

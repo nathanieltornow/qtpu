@@ -6,7 +6,6 @@ import numpy as np
 from qiskit.circuit import QuantumCircuit, Barrier
 
 from qtpu.compiler.ir import HybridCircuitIR
-from qtpu.tensor import HybridTensorNetwork
 
 from qtpu.compiler.optimizer import optimize
 from qtpu.compiler.compress import CompressedIR
@@ -29,7 +28,7 @@ def compile_circuit(
     # function to choos the value from the pareto front
     n_trials: int = 100,
     show_progress_bar: bool = False,
-) -> HybridTensorNetwork:
+) -> QuantumCircuit:
 
     study = hyper_optimize(
         circuit,
@@ -49,8 +48,8 @@ def compile_circuit(
     # return trial_to_hybrid_tn(best_trial)
 
 
-def trial_to_hybrid_tn(trial: optuna.Trial) -> HybridTensorNetwork:
-    return trial.user_attrs["ir"].hybrid_tn(list(get_leafs(trial.user_attrs["tree"])))
+# def trial_to_hybrid_tn(trial: optuna.Trial) -> HybridTensorNetwork:
+#     return trial.user_attrs["ir"].hybrid_tn(list(get_leafs(trial.user_attrs["tree"])))
 
 
 def trial_to_circuit(trial: optuna.Trial) -> QuantumCircuit:
