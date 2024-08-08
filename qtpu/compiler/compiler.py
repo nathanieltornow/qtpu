@@ -5,12 +5,13 @@ import cotengra as ctg
 import numpy as np
 from qiskit.circuit import QuantumCircuit, Barrier
 
+from qtpu.helpers import remove_barriers
 from qtpu.compiler.ir import HybridCircuitIR
-
 from qtpu.compiler.optimizer import optimize
 from qtpu.compiler.compress import CompressedIR
 from qtpu.compiler.util import get_leafs
-from qtpu.compiler.success import success_probability_static
+from qtpu.compiler.success import success_probability_static, success_reach_qubits
+from qtpu.compiler.terminators import reach_num_qubits
 
 LOGGING = False
 
@@ -56,6 +57,26 @@ def trial_to_circuit(trial: optuna.Trial) -> QuantumCircuit:
     return trial.user_attrs["ir"].cut_circuit(list(get_leafs(trial.user_attrs["tree"])))
 
 
+def compile_reach_size(
+    circuit: QuantumCircuit,
+    size: int,
+    max_cost: int | tuple[int, int] | list[int] = np.inf,
+    compression_methods: list[str] | None = None,
+    n_trials: int = 100,
+    show_progress_bar: bool = False,
+) -> QuantumCircuit:
+    return compile_circuit(
+        circuit=circuit,
+        success_fn=success_reach_qubits(size),
+        terminate_fn=reach_num_qubits(size),
+        max_cost=max_cost,
+        choose_leaf_methods=["qubits"],
+        compression_methods=compression_methods,
+        n_trials=n_trials,
+        show_progress_bar=show_progress_bar,
+    )
+
+
 def hyper_optimize(
     circuit: QuantumCircuit,
     # hyperargs
@@ -78,7 +99,7 @@ def hyper_optimize(
     if choose_leaf_methods is None:
         choose_leaf_methods = ["qubits", "nodes", "random"]
 
-    ir = HybridCircuitIR(_remove_barriers(circuit))
+    ir = HybridCircuitIR(remove_barriers(circuit))
 
     study = optuna.create_study(directions=["minimize", "maximize"])
     study.optimize(
@@ -158,13 +179,7 @@ def objective(
     return tree.contraction_cost(), success_fn(ir, tree)
 
 
-def _remove_barriers(circuit: QuantumCircuit) -> QuantumCircuit:
-    new_circuit = QuantumCircuit(*circuit.qregs, *circuit.cregs)
-    for instr in circuit:
-        if isinstance(instr.operation, Barrier):
-            continue
-        new_circuit.append(instr)
-    return new_circuit
+
 
 
 def find_best_trial(

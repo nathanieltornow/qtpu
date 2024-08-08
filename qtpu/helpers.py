@@ -1,5 +1,11 @@
 import quimb.tensor as qtn
-from qiskit.circuit import QuantumCircuit, Gate, QuantumRegister, ClassicalRegister
+from qiskit.circuit import (
+    QuantumCircuit,
+    Gate,
+    QuantumRegister,
+    ClassicalRegister,
+    Barrier,
+)
 
 
 qtn.TNOptimizer
@@ -79,4 +85,13 @@ def merge_regs(circuit: QuantumCircuit) -> QuantumCircuit:
             [qreg[circuit.qubits.index(q)] for q in instr.qubits],
             [creg[circuit.clbits.index(c)] for c in instr.clbits],
         )
+    return new_circuit
+
+
+def remove_barriers(circuit: QuantumCircuit) -> QuantumCircuit:
+    new_circuit = QuantumCircuit(*circuit.qregs, *circuit.cregs)
+    for instr in circuit:
+        if isinstance(instr.operation, Barrier):
+            continue
+        new_circuit.append(instr)
     return new_circuit

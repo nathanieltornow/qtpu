@@ -14,8 +14,6 @@ def contract(
     hybrid_tn: HybridTensorNetwork,
     eval_fn: Callable[[list[QuantumCircuit]], list] | None = None,
 ) -> qtn.TensorNetwork:
-    if eval_fn is None:
-        eval_fn = evaluate_estimator(Estimator())
 
     eval_tn = evaluate_hybrid_tn(hybrid_tn, eval_fn)
     return eval_tn.contract(all, optimize="auto-hq", output_inds=[])
@@ -23,8 +21,12 @@ def contract(
 
 def evaluate_hybrid_tn(
     hybrid_tn: HybridTensorNetwork,
-    eval_fn: Callable[[list[QuantumCircuit]], list],
+    eval_fn: Callable[[list[QuantumCircuit]], list] | None = None,
 ) -> qtn.TensorNetwork:
+
+    if eval_fn is None:
+        eval_fn = evaluate_estimator(Estimator())
+
     quantum_tensors = hybrid_tn.quantum_tensors
     eval_tensors = evaluate_quantum_tensors(quantum_tensors, eval_fn)
     return qtn.TensorNetwork(eval_tensors + hybrid_tn.qpd_tensors)

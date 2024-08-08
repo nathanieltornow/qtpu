@@ -1,11 +1,12 @@
 from typing import Callable
 
 import numpy as np
-from qiskit.primitives import Estimator
+from qiskit.primitives import Estimator, Sampler
 from qiskit.providers import Backend
 from qiskit.compiler import transpile
 from qiskit.circuit import QuantumCircuit, ClassicalRegister
 
+from qtpu.helpers import defer_mid_measurements
 from qtpu.quasi_distr import QuasiDistr
 from qiskit_aer import AerSimulator
 
@@ -15,12 +16,52 @@ def evaluate_estimator(
 ) -> Callable[[list[QuantumCircuit]], list[float]]:
     def _eval(circuits: list[QuantumCircuit]) -> list[float]:
         print(f"Running {len(circuits)} circuits...")
+        circuits = [defer_mid_measurements(circ) for circ in circuits]
         observables = [_get_Z_observable(circ) for circ in circuits]
         circuits = [
             circuit.remove_final_measurements(inplace=False) for circuit in circuits
         ]
         results = estimator.run(circuits, observables).result().values
         return list(results)
+
+    return _eval
+
+
+def evaluate_sampler(
+    sampler: Sampler,
+    shots: int = 10000,
+    return_quasi_distr: bool = False,
+):
+    def _eval(circuits: list[QuantumCircuit]) -> list[float]:
+
+        cid_withour_meas = [
+            i
+            for i, circ in enumerate(circuits)
+            if circ.count_ops().get("measure", 0) == 0
+        ]
+
+        for i, _ in reversed(cid_withour_meas):
+            circuits.pop(i)
+
+        # circuits = [
+        #     transpile(circ, backend=backend, optimization_level=optimization_level)
+        #     for circ in circuits
+        # ]
+
+        dists = sampler.run(circuits, shots=shots).result().quasi_dists
+        dists = [dists] if isinstance(dists, dict) else dists
+
+        for i in cid_withour_meas:
+            dists.insert(i, {0: 1.0})
+
+        if return_quasi_distr:
+            size = circuits[0].cregs[0].size
+            res = [QuasiDistr(d).prepare(size) for d in dists]
+
+        else:
+            res = [d.expval() for d in [QuasiDistr(d) for d in dists]]
+
+        return res
 
     return _eval
 

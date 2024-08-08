@@ -12,6 +12,7 @@ from circuit_knitting.cutting.qpd import (
     SingleQubitQPDGate,
 )
 
+from qtpu.helpers import remove_barriers
 from qtpu.instructions import InstanceGate
 from qtpu.tensor import QuantumTensor, HybridTensorNetwork, wire_tensor
 
@@ -36,7 +37,7 @@ def insert_cuts(
 
 
 def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
-    circuit = fragment(circuit)
+    circuit = fragment(remove_barriers(circuit))
     ctensors = _extract_qpd_tensors(circuit)
 
     circuit = _decompose_virtual_gates(circuit)

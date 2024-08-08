@@ -1,9 +1,9 @@
+from itertools import chain
 import numpy as np
 import quimb.tensor as qtn
 from qiskit.circuit import QuantumCircuit, ClassicalRegister
 
 from qtpu.instructions import InstanceGate
-from qtpu.helpers import defer_mid_measurements
 
 
 def wire_tensor(ind: str) -> qtn.Tensor:
@@ -92,7 +92,7 @@ class QuantumTensor:
             res_circuit.append(op, qubits, clbits)
 
         res_circuit = res_circuit.decompose()
-        res_circuit = defer_mid_measurements(res_circuit)
+        # res_circuit = defer_mid_measurements(res_circuit)
         return res_circuit
 
     def generate_instances(self) -> list[QuantumCircuit]:
@@ -116,13 +116,19 @@ class HybridTensorNetwork:
             qt.ind_tensor.add_tag(str(i))
         self.qpd_tensors = qpd_tensors
 
-    def approximate(self, tolerance: float = 0.01) -> None:
+    def simplify(self, tolerance: float = 0.01) -> None:
         tn = qtn.TensorNetwork([qt.ind_tensor for qt in self.quantum_tensors])
         multibonds = tn.get_multibonds()
         tn.fuse_multibonds(inplace=True)
 
-        new_qpds = [qpd for qpd in self.qpd_tensors if "wire" in qpd.tags]
+        all_multibonds = set(chain.from_iterable(multibonds.keys()))
+
+        # new_qpds = [qpd for qpd in self.qpd_tensors if "wire" in qpd.tags]
         ind_to_qpdtens = {qt.inds[0]: qt for qt in self.qpd_tensors}
+
+        new_qpds = [
+            qpd for ind, qpd in ind_to_qpdtens.items() if ind not in all_multibonds
+        ]
 
         ind_to_argsort = {}
         for mb_inds in multibonds.keys():

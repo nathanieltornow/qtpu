@@ -12,9 +12,23 @@ from qiskit.providers import BackendV2
 from qiskit.circuit.library import SwapGate, CXGate
 from qiskit.compiler import transpile
 
+from circuit_knitting.cutting.qpd import TwoQubitQPDGate
 import cotengra as ctg
 
 from qtpu.tensor import HybridTensorNetwork
+
+
+def get_info(circuit: QuantumCircuit, backend: BackendV2 | None = None) -> dict:
+    qpds = [
+        instr.operation.basis
+        for instr in circuit
+        if isinstance(instr.operation, TwoQubitQPDGate)
+    ]
+    
+
+    return {
+        "ckt_cost": np.prod([len(qpd.coeffs) for qpd in qpds]),
+    }
 
 
 def get_hybrid_tn_info(
@@ -49,7 +63,7 @@ def get_base_info(circuit: QuantumCircuit, backend: BackendV2 | None = None) -> 
     #     backend = AerSimulator()
 
     circuit = transpile(circuit, backend=backend, optimization_level=3)
-    
+
     return {
         "base_qubits": circuit.num_qubits,
         "base_depth": circuit.depth(),
