@@ -41,6 +41,8 @@ def compile_circuit(
         n_trials=n_trials,
         show_progress_bar=show_progress_bar,
     )
+    
+    print(study.best_trials)
 
     # best_trial = max(study.best_trials, key=lambda trial: pareto_fn(*trial.values))
     best_trial = find_best_trial(study)
@@ -67,7 +69,7 @@ def compile_reach_size(
 ) -> QuantumCircuit:
     return compile_circuit(
         circuit=circuit,
-        success_fn=success_reach_qubits(size),
+        # success_fn=success_reach_qubits(size),
         terminate_fn=reach_num_qubits(size),
         max_cost=max_cost,
         choose_leaf_methods=["qubits"],

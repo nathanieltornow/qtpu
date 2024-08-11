@@ -1,3 +1,4 @@
+import signal
 from typing import Callable
 import cotengra as ctg
 import networkx as nx
@@ -35,6 +36,7 @@ def partition_girvan_newman(
 
 try:
     import kahypar
+
     # raise ImportError
     partition_fn = ctg.pathfinders.path_kahypar.kahypar_subgraph_find_membership
 except ImportError:
@@ -54,6 +56,7 @@ def optimize(
     parts_decay: float = 0.5,
     super_optimize: str = "auto-hq",
     seed: int | None = None,
+    timeout: int = 2,  # timeout in seconds
     **partition_opts,
 ):
     if terminate_fn is None and max_cost == np.inf:
@@ -95,69 +98,82 @@ def optimize(
 
     dynamic_fix = partition_opts.get("fix_output_nodes", None) == "auto"
 
-    while terminate_fn is None or not terminate_fn(ir, tree):
-        if tree.is_complete():
-            break
-        tree_node = choose_leaf_fn(ir, tree)
-        if tree_node is None:
-            break
+    def timeout_handler(signum, frame):
+        raise TimeoutError("Optimization timed out")
 
-        ref_tree = tree.copy() if max_cost < np.inf else None
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(timeout)
 
-        if tree_node is None:
-            break
-        subgraph = tuple(tree_node)
-        subsize = len(subgraph)
+    try:
+        while terminate_fn is None or not terminate_fn(ir, tree):
+            if tree.is_complete():
+                break
+            tree_node = choose_leaf_fn(ir, tree)
+            if tree_node is None:
+                break
 
-        # relative subgraph size
-        s = subsize / tree.N
+            ref_tree = tree.copy() if max_cost < np.inf else None
 
-        # let the target number of communities depend on subgraph size
-        parts_s = max(int(s**parts_decay * parts), 2)
+            if tree_node is None:
+                break
+            subgraph = tuple(tree_node)
+            subsize = len(subgraph)
 
-        # let the imbalance either rise or fall
-        if dynamic_imbalance:
-            if imbalance_decay >= 0:
-                imbalance_s = s**imbalance_decay * imbalance
-            else:
-                imbalance_s = 1 - s**-imbalance_decay * (1 - imbalance)
-            partition_opts["imbalance"] = imbalance_s
+            # relative subgraph size
+            s = subsize / tree.N
 
-        if dynamic_fix:
-            # for the top level subtree (s==1.0) we partition the outputs
-            # nodes first into their own bi-partition
-            parts_s = 2
-            partition_opts["fix_output_nodes"] = s == 1.0
+            # let the target number of communities depend on subgraph size
+            parts_s = max(int(s**parts_decay * parts), 2)
 
-        # partition! get community membership list e.g.
-        # [0, 0, 1, 0, 1, 0, 0, 2, 2, ...]
-        inputs = tuple(map(tuple, tree.node_to_terms(subgraph)))
-        output = tuple(tree.get_legs(tree_node))
-        membership = partition_fn(
-            inputs,
-            output,
-            rand_size_dict,
-            parts=parts_s,
-            seed=rng,
-            **partition_opts,
-        )
+            # let the imbalance either rise or fall
+            if dynamic_imbalance:
+                if imbalance_decay >= 0:
+                    imbalance_s = s**imbalance_decay * imbalance
+                else:
+                    imbalance_s = 1 - s**-imbalance_decay * (1 - imbalance)
+                partition_opts["imbalance"] = imbalance_s
 
-        # divide subgraph up e.g. if we enumerate the subgraph index sets
-        # (0, 1, 2, 3, 4, 5, 6, 7, 8, ...) ->
-        # ({0, 1, 3, 5, 6}, {2, 4}, {7, 8})
-        new_subgs = tuple(
-            map(ctg.core.node_from_seq, ctg.core.separate(subgraph, membership))
-        )
+            if dynamic_fix:
+                # for the top level subtree (s==1.0) we partition the outputs
+                # nodes first into their own bi-partition
+                parts_s = 2
+                partition_opts["fix_output_nodes"] = s == 1.0
 
-        if len(new_subgs) == 1:
-            continue
+            # partition! get community membership list e.g.
+            # [0, 0, 1, 0, 1, 0, 0, 2, 2, ...]
+            inputs = tuple(map(tuple, tree.node_to_terms(subgraph)))
+            output = tuple(tree.get_legs(tree_node))
+            membership = partition_fn(
+                inputs,
+                output,
+                rand_size_dict,
+                parts=parts_s,
+                seed=rng,
+                **partition_opts,
+            )
 
-        # update tree structure with newly contracted subgraphs
-        tree.contract_nodes(new_subgs, optimize=super_optimize, check=None)
+            # divide subgraph up e.g. if we enumerate the subgraph index sets
+            # (0, 1, 2, 3, 4, 5, 6, 7, 8, ...) ->
+            # ({0, 1, 3, 5, 6}, {2, 4}, {7, 8})
+            new_subgs = tuple(
+                map(ctg.core.node_from_seq, ctg.core.separate(subgraph, membership))
+            )
 
-        if tree.contraction_cost() > max_cost:
-            tree = ref_tree
-            break
+            if len(new_subgs) == 1:
+                continue
+
+            # update tree structure with newly contracted subgraphs
+            tree.contract_nodes(new_subgs, optimize=super_optimize, check=None)
+
+            if tree.contraction_cost() > max_cost:
+                tree = ref_tree
+                break
+
+    except TimeoutError:
+        # print("Optimization timed out")
+        return ir, tree
+
+    signal.alarm(0)  # Reset the alarm
 
     return ir, tree
 

@@ -1,12 +1,14 @@
 from typing import Callable
 
 import numpy as np
+import quimb as qu
+import quimb.tensor as qtn
 from qiskit.primitives import Estimator, Sampler
 from qiskit.providers import Backend
 from qiskit.compiler import transpile
 from qiskit.circuit import QuantumCircuit, ClassicalRegister
 
-from qtpu.helpers import defer_mid_measurements
+from qtpu.helpers import defer_mid_measurements, qiskit_to_quimb
 from qtpu.quasi_distr import QuasiDistr
 from qiskit_aer import AerSimulator
 
@@ -25,6 +27,25 @@ def evaluate_estimator(
         return list(results)
 
     return _eval
+
+
+def evaluate_quimb(circuits: list[QuantumCircuit]):
+    circuits = [defer_mid_measurements(circ) for circ in circuits]
+    meas_qubits = [_get_meas_qubits(circ) for circ in circuits]
+    circuits = [qiskit_to_quimb(circ) for circ in circuits]
+    print(circuits)
+
+    results = [
+        circuit.local_expectation(_quimb_Z_obs(len(mq)), mq)
+        for circuit, mq in zip(circuits, meas_qubits)
+    ]
+    return results
+
+def _quimb_Z_obs(num_qubits: int):
+    Z = qu.pauli("Z")
+    for i in range(num_qubits - 1):
+        Z = Z & qu.pauli("Z")
+    return Z
 
 
 def evaluate_sampler(
@@ -66,45 +87,7 @@ def evaluate_sampler(
     return _eval
 
 
-# def evaluate_backend(
-#     backend: Backend, shots: int = 10000, optimization_level: int = 0
-# ) -> Callable[[list[QuantumCircuit]], list[float]]:
-#     def _eval(circuits: list[QuantumCircuit]) -> list[float]:
-#         circuits = [circ for circ, _ in qt.instances()]
-
-#         cid_withour_meas = [
-#             (i, s)
-#             for i, circ in enumerate(circuits)
-#             if circ.count_ops().get("measure", 0) == 0
-#         ]
-
-#         for i, _ in reversed(cid_withour_meas):
-#             circuits.pop(i)
-
-#         circuits = [
-#             transpile(circ, backend=backend, optimization_level=optimization_level)
-#             for circ in circuits
-#         ]
-
-#         counts = backend.run(circuits, shots=shots).result().get_counts()
-#         counts = [counts] if isinstance(counts, dict) else counts
-
-#         for i, s in cid_withour_meas:
-#             counts.insert(i, {"0": s})
-
-#         quasi_dists = np.array(
-#             [
-#                 QuasiDistr.from_counts(count).prepare(qt.circuit.num_clbits)
-#                 for count in counts
-#             ]
-#         ).reshape(qt.shape)
-
-#         return ClassicalTensor(quasi_dists, inds=qt.inds)
-
-#     return _eval
-
-
-def _get_Z_observable(circuit: QuantumCircuit) -> str:
+def _get_meas_qubits(circuit: QuantumCircuit) -> list[int]:
     measured_qubits = sorted(
         set(
             circuit.qubits.index(instr.qubits[0])
@@ -112,6 +95,11 @@ def _get_Z_observable(circuit: QuantumCircuit) -> str:
             if instr.operation.name == "measure"
         ),
     )
+    return measured_qubits
+
+
+def _get_Z_observable(circuit: QuantumCircuit) -> str:
+    measured_qubits = _get_meas_qubits(circuit)
     obs = ["I"] * circuit.num_qubits
     for qubit in measured_qubits:
         obs[qubit] = "Z"

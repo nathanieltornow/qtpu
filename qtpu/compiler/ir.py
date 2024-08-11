@@ -35,7 +35,7 @@ class HybridCircuitIR:
                 if qubit in current_nodes:
                     inputs[current_nodes[qubit]] += (str(chr(edge_index)),)
                     inputs[-1] += (str(chr(edge_index)),)
-                    size_dict[str(chr(edge_index))] = 4
+                    size_dict[str(chr(edge_index))] = 8
 
                     edge_index += 1
 

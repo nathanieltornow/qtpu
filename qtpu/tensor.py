@@ -116,7 +116,7 @@ class HybridTensorNetwork:
             qt.ind_tensor.add_tag(str(i))
         self.qpd_tensors = qpd_tensors
 
-    def simplify(self, tolerance: float = 0.01) -> None:
+    def simplify(self, tolerance: float = 0.0) -> None:
         tn = qtn.TensorNetwork([qt.ind_tensor for qt in self.quantum_tensors])
         multibonds = tn.get_multibonds()
         tn.fuse_multibonds(inplace=True)
@@ -141,9 +141,12 @@ class HybridTensorNetwork:
             qpd_kron = qpd_kron[sort]
 
             # get the index until the cumulative sum is less than tolerance
+            # relative to the sum of the whole array
+            total = np.sum(np.abs(qpd_kron))
+
             s = 0
             for i, val in enumerate(qpd_kron):
-                s += val
+                s += abs(val) / total
                 if s > tolerance:
                     break
 
@@ -164,6 +167,9 @@ class HybridTensorNetwork:
         return qtn.TensorNetwork(
             [qt.ind_tensor for qt in self.quantum_tensors] + self.qpd_tensors
         )
+
+    def num_circuits(self) -> int:
+        return np.sum([qt.ind_tensor.size for qt in self.quantum_tensors])
 
 
 def sort_indices(tensor: qtn.Tensor, ind_to_sort: dict[str, np.ndarray]) -> qtn.Tensor:

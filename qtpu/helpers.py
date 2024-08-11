@@ -1,4 +1,5 @@
 import quimb.tensor as qtn
+import quimb as qu
 from qiskit.circuit import (
     QuantumCircuit,
     Gate,
@@ -15,7 +16,8 @@ def qiskit_to_quimb(circuit: QuantumCircuit) -> qtn.Circuit:
     circ = qtn.Circuit(circuit.num_qubits)
     for instr in circuit:
         op, qubits = instr.operation, instr.qubits
-        assert isinstance(op, Gate)
+        if not isinstance(op, Gate):
+            continue
 
         circ.apply_gate_raw(op.to_matrix(), [circuit.qubits.index(q) for q in qubits])
 
@@ -32,6 +34,14 @@ def sample_quimb(circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         sample_str = "".join(reversed(sample))
         counts[sample_str] = counts.get(sample_str, 0) + 1
     return counts
+
+    
+def expval_quimb(circuit: QuantumCircuit) -> float:
+    tn_circ = qiskit_to_quimb(circuit)
+    Z = qu.pauli('Z')
+    for i in range(circuit.num_qubits - 1):
+        Z = Z & qu.pauli('Z')
+    return tn_circ.local_expectation(Z, range(circuit.num_qubits))
 
 
 def compute_Z_expectation(circuit: QuantumCircuit) -> float:

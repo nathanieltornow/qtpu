@@ -209,12 +209,12 @@ def qaoa_regular_ansatz(num_qubits: int, depth: int) -> QuantumCircuit:
 
 
 def qaoa_powerlaw_ansatz(num_qubits: int, depth: int) -> QuantumCircuit:
-    graph = nx.powerlaw_cluster_graph(num_qubits, 3, 0.0005, seed=123)
+    graph = nx.powerlaw_cluster_graph(num_qubits, 2, 0.0005, seed=123)
     return _qaoa(graph, depth)
 
 
 def qaoa_erdos_renyi_ansatz(num_qubits: int, depth: int) -> QuantumCircuit:
-    graph = nx.erdos_renyi_graph(num_qubits, 3 / num_qubits)
+    graph = nx.erdos_renyi_graph(num_qubits, .2)
     return _qaoa(graph, depth)
 
 
@@ -256,9 +256,13 @@ def _cluster(
     return circuit
 
 
-def cluster_ansatz(
-    cluster_sizes: list[int], depth: int, seed: int = None
-) -> QuantumCircuit:
+def cluster_ansatz(num_qubits: int, depth: int, seed: int = None) -> QuantumCircuit:
+
+    # fill clusters with random numbers between 15 - 20 qubits each, and the last cluster with the remaining qubits
+    cluster_sizes = np.random.randint(15, 20, num_qubits // 20)
+    cluster_sizes: list[int] = list(cluster_sizes) + [num_qubits - sum(cluster_sizes)]
+
+    print(cluster_sizes)
 
     cluster_regs = [QuantumRegister(s, f"q_{i}") for i, s in enumerate(cluster_sizes)]
     circuit = QuantumCircuit(*cluster_regs)

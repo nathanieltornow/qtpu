@@ -16,19 +16,40 @@ from circuit_knitting.cutting.qpd import TwoQubitQPDGate
 import cotengra as ctg
 
 from qtpu.tensor import HybridTensorNetwork
+from qtpu.circuit import cuts_to_moves, circuit_to_hybrid_tn
 
 
 def get_info(circuit: QuantumCircuit, backend: BackendV2 | None = None) -> dict:
+    circuit = cuts_to_moves(circuit)
     qpds = [
         instr.operation.basis
         for instr in circuit
         if isinstance(instr.operation, TwoQubitQPDGate)
     ]
-    
 
     return {
         "ckt_cost": np.prod([len(qpd.coeffs) for qpd in qpds]),
+        "qtpu_cost": circuit_to_hybrid_tn(circuit)
+        .to_tensor_network()
+        .contraction_cost(optimize="auto"),
     }
+
+
+def ckt_cost(circuit: QuantumCircuit, num_samples: int = np.inf) -> int:
+    circuit = cuts_to_moves(circuit)
+    qpds = [
+        instr.operation.basis
+        for instr in circuit
+        if isinstance(instr.operation, TwoQubitQPDGate)
+    ]
+    return min(np.prod([len(qpd.coeffs) for qpd in qpds]), num_samples)
+
+
+def qtpu_cost(circuit: QuantumCircuit, tolerance: float = 0.0) -> int:
+    circuit = cuts_to_moves(circuit)
+    htn = circuit_to_hybrid_tn(circuit)
+    htn.simplify(tolerance)
+    return htn.to_tensor_network().contraction_cost(optimize="auto")
 
 
 def get_hybrid_tn_info(

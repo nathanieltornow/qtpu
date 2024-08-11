@@ -34,6 +34,7 @@ def run_qtpu(
     start = perf_counter()
     htn = circuit_to_hybrid_tn(circuit)
     htn.simplify(tolerance)
+    print(htn.num_circuits())
     for qt in htn.quantum_tensors:
         qt.generate_instances()
 
@@ -58,7 +59,7 @@ def run_ckt(
     circuit: QuantumCircuit,
     sampler: Sampler,
     num_samples: int = np.inf,
-    shots: int = 20000,
+    shots: int = 10000,
     obs: str | None = None,
 ) -> tuple[float, dict]:
     if obs is None:
@@ -77,6 +78,7 @@ def run_ckt(
     subexperiments, coefficients = generate_cutting_experiments(
         circuits=subcircuits, observables=subobservables, num_samples=num_samples
     )
+    print(len(coefficients))
 
     preptime = perf_counter() - start
 
@@ -86,6 +88,9 @@ def run_ckt(
     # }
 
     start = perf_counter()
+    print(
+        f"Running {sum(len(subexpts) for subexpts in subexperiments.values())} circuits."
+    )
     results = {
         label: sampler.run(subsystem_subexpts, shots=shots).result()
         for label, subsystem_subexpts in subexperiments.items()
