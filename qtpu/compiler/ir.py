@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import cotengra as ctg
 from qiskit.circuit import QuantumCircuit, Qubit
 from circuit_knitting.cutting.qpd import QPDBasis
+from circuit_knitting.cutting.instructions import Move
 
 from qtpu.circuit import insert_cuts
 
@@ -35,14 +36,16 @@ class HybridCircuitIR:
                 if qubit in current_nodes:
                     inputs[current_nodes[qubit]] += (str(chr(edge_index)),)
                     inputs[-1] += (str(chr(edge_index)),)
-                    size_dict[str(chr(edge_index))] = 8
+                    size_dict[str(chr(edge_index))] = round(
+                        QPDBasis.from_instruction(Move()).overhead
+                    )
 
                     edge_index += 1
 
                 current_nodes[qubit] = len(inputs) - 1
 
             try:
-                edge_weigth = len(QPDBasis.from_instruction(instr.operation).coeffs)
+                edge_weigth = round(QPDBasis.from_instruction(instr.operation).overhead)
             except ValueError:
                 edge_weigth = 1e15
 

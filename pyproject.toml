@@ -15,11 +15,9 @@ dependencies = [
     "cotengra @ git+https://github.com/jcmgray/cotengra.git@main",
     "quimb>=1.8.1",
     "optuna>=3.6.1",
-    "pyyaml>=6.0.1",
-    "pyzmq>=26.1.0",
     "circuit-knitting-toolbox>=0.7.3",
 ]
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10,<3.12"
 readme = "README.md"
 license = {text = "MIT"}
 [project.optional-dependencies]

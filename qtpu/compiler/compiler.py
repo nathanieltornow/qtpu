@@ -27,6 +27,7 @@ def compile_circuit(
     choose_leaf_methods: list[str] | None = None,
     compression_methods: list[str] | None = None,
     # function to choos the value from the pareto front
+    pareto_fn: Callable[[optuna.Study], optuna.Trial] | None = None,
     n_trials: int = 100,
     show_progress_bar: bool = False,
 ) -> QuantumCircuit:
@@ -41,11 +42,15 @@ def compile_circuit(
         n_trials=n_trials,
         show_progress_bar=show_progress_bar,
     )
-    
+
     print(study.best_trials)
 
     # best_trial = max(study.best_trials, key=lambda trial: pareto_fn(*trial.values))
-    best_trial = find_best_trial(study)
+    if pareto_fn is None:
+        pareto_fn = find_best_trial
+
+    best_trial = pareto_fn(study)
+    print(best_trial.values)
 
     return trial_to_circuit(best_trial)
     # return trial_to_hybrid_tn(best_trial)
@@ -64,9 +69,15 @@ def compile_reach_size(
     size: int,
     max_cost: int | tuple[int, int] | list[int] = np.inf,
     compression_methods: list[str] | None = None,
+    pareto_fn: Callable[[optuna.Study], optuna.Trial] | None = None,
+
     n_trials: int = 100,
     show_progress_bar: bool = False,
 ) -> QuantumCircuit:
+    
+    if pareto_fn is None:
+        pareto_fn = find_least_cost_trial
+
     return compile_circuit(
         circuit=circuit,
         # success_fn=success_reach_qubits(size),
@@ -74,6 +85,7 @@ def compile_reach_size(
         max_cost=max_cost,
         choose_leaf_methods=["qubits"],
         compression_methods=compression_methods,
+        pareto_fn=pareto_fn,
         n_trials=n_trials,
         show_progress_bar=show_progress_bar,
     )
@@ -181,7 +193,12 @@ def objective(
     return tree.contraction_cost(), success_fn(ir, tree)
 
 
+def find_least_cost_trial(
+    study: optuna.Study,
+) -> optuna.Trial:
+    best_trials = study.best_trials
 
+    return min(best_trials, key=lambda trial: trial.values[0])
 
 
 def find_best_trial(

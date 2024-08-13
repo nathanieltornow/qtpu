@@ -1,4 +1,6 @@
+from typing import Any, Sequence
 import os
+
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,8 +12,11 @@ from qiskit.quantum_info import Statevector
 from qiskit_aer import StatevectorSimulator, AerSimulator
 from qiskit.providers import BackendV2
 from qiskit.circuit.library import SwapGate, CXGate
+from qiskit.primitives import BaseSampler, SamplerResult, PrimitiveJob
+from qiskit.result import QuasiDistribution
 from qiskit.compiler import transpile
 
+from circuit_knitting.utils.iteration import strict_zip
 from circuit_knitting.cutting.qpd import TwoQubitQPDGate
 import cotengra as ctg
 
@@ -26,12 +31,24 @@ def get_info(circuit: QuantumCircuit, backend: BackendV2 | None = None) -> dict:
         for instr in circuit
         if isinstance(instr.operation, TwoQubitQPDGate)
     ]
+    htn = circuit_to_hybrid_tn(circuit)
+
+    sub_circuits = [
+        transpile(qt._circuit, backend=backend, optimization_level=3)
+        for qt in htn.quantum_tensors
+    ]
 
     return {
-        "ckt_cost": np.prod([len(qpd.coeffs) for qpd in qpds]),
-        "qtpu_cost": circuit_to_hybrid_tn(circuit)
-        .to_tensor_network()
-        .contraction_cost(optimize="auto"),
+        "qtpu_cost": htn.to_tensor_network().contraction_cost(optimize="auto"),
+        "ckt_cost": np.prod([len(qpd.coeffs) for qpd in qpds])
+        * (len(qpds) + len(htn.quantum_tensors) - 1),
+        "num_qpds": len(qpds),
+        "num_subcircuits": len(htn.quantum_tensors),
+        "num_instances": np.sum([qt.ind_tensor.size for qt in htn.quantum_tensors]),
+        "num_2q": max([circuit.num_nonlocal_gates() for circuit in sub_circuits]),
+        "max_qubits": max([circuit.num_qubits for circuit in sub_circuits]),
+        "depth": max([circuit.depth() for circuit in sub_circuits]),
+        "esp": min([esp(circuit) for circuit in sub_circuits]),
     }
 
 
@@ -162,3 +179,32 @@ def postprocess_barplot(ax: plt.Axes) -> None:
     patch_idx_to_hatch_idx = np.arange(num_bars).repeat(num_xticks)
     for i, patch in enumerate(ax.patches):
         patch.set_hatch(hatches[patch_idx_to_hatch_idx[i] % len(hatches)])
+
+
+class DummySampler(BaseSampler):
+
+    def _call(
+        self,
+        circuits: tuple[QuantumCircuit, ...],
+        parameter_values: Sequence[Sequence[float]],
+        **ignored_run_options,
+    ) -> SamplerResult:
+        metadata: list[dict[str, Any]] = [{} for _ in range(len(circuits))]
+        bound_circuits = [
+            circuit if len(value) == 0 else circuit.assign_parameters(value)
+            for circuit, value in strict_zip(circuits, parameter_values)
+        ]
+        probabilities = [{0: 1.0} for qc in bound_circuits]
+        quasis = [QuasiDistribution(p) for p in probabilities]
+        return SamplerResult(quasis, metadata)
+
+    def _run(
+        self,
+        circuits: tuple[QuantumCircuit, ...],
+        parameter_values: tuple[tuple[float, ...], ...],
+        **run_options,
+    ):
+        job = PrimitiveJob(self._call, circuits, parameter_values, **run_options)
+        # The public submit method was removed in Qiskit 1.0
+        (job.submit if hasattr(job, "submit") else job._submit)()
+        return job

@@ -41,6 +41,7 @@ def evaluate_quimb(circuits: list[QuantumCircuit]):
     ]
     return results
 
+
 def _quimb_Z_obs(num_qubits: int):
     Z = qu.pauli("Z")
     for i in range(num_qubits - 1):
@@ -85,6 +86,10 @@ def evaluate_sampler(
         return res
 
     return _eval
+
+
+def _evaluate_dummy(circuits: list[QuantumCircuit]) -> list[float]:
+    return [np.random.rand() for _ in circuits]
 
 
 def _get_meas_qubits(circuit: QuantumCircuit) -> list[int]:
