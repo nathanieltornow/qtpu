@@ -37,11 +37,15 @@ def get_info(circuit: QuantumCircuit, backend: BackendV2 | None = None) -> dict:
         transpile(qt._circuit, backend=backend, optimization_level=3)
         for qt in htn.quantum_tensors
     ]
+    circuit = replace_qpd_gates(circuit)
+    circuit = transpile(circuit, backend=backend, optimization_level=3)
 
     return {
-        "qtpu_cost": htn.to_tensor_network().contraction_cost(optimize="auto"),
-        "ckt_cost": np.prod([len(qpd.coeffs) for qpd in qpds])
-        * (len(qpds) + len(htn.quantum_tensors) - 1),
+        "qtpu_cost_log10": np.log10(
+            htn.to_tensor_network().contraction_cost(optimize="auto") + 1
+        ),
+        "ckt_cost_log10": np.sum([np.log10(len(qpd.coeffs)) for qpd in qpds])
+        + np.log10(len(qpds) + len(htn.quantum_tensors)),
         "num_qpds": len(qpds),
         "num_subcircuits": len(htn.quantum_tensors),
         "num_instances": np.sum([qt.ind_tensor.size for qt in htn.quantum_tensors]),
@@ -49,7 +53,21 @@ def get_info(circuit: QuantumCircuit, backend: BackendV2 | None = None) -> dict:
         "max_qubits": max([circuit.num_qubits for circuit in sub_circuits]),
         "depth": max([circuit.depth() for circuit in sub_circuits]),
         "esp": min([esp(circuit) for circuit in sub_circuits]),
+        "base_qubits": circuit.num_qubits,
+        "base_depth": circuit.depth(),
+        "base_num_2q": circuit.num_nonlocal_gates(),
+        "base_esp": esp(circuit),
     }
+
+
+def replace_qpd_gates(circuit: QuantumCircuit) -> QuantumCircuit:
+    circ = QuantumCircuit(*circuit.qregs, *circuit.cregs)
+    for instr in circuit:
+        if isinstance(instr.operation, TwoQubitQPDGate):
+            circ.append(CXGate(), instr.qubits)
+        else:
+            circ.append(instr, instr.qubits)
+    return circ
 
 
 def ckt_cost(circuit: QuantumCircuit, num_samples: int = np.inf) -> int:

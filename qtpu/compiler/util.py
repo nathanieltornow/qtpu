@@ -14,9 +14,22 @@ def traverse(tree: ctg.ContractionTree, order: str = "bfs") -> Iterator[frozense
 
 
 def get_leafs(tree: ctg.ContractionTree) -> Iterator[frozenset[int]]:
-    for node in traverse(tree):
-        if node not in tree.children:
-            yield node
+    nodes = frozenset(range(tree.N))
+    for node in tree.childless:
+        nodes -= node
+    
+    additional = [frozenset([node]) for node in nodes]
+    return list(tree.childless) + additional
+
+
+    # res = []
+    # for node in traverse(tree):
+    #     if node not in tree.children:
+    #         assert node in my, f"{node} not in {my}"
+    #         res.append(node)
+
+    # assert set(res) == set(my)
+    # return my
 
 
 def tree_to_hypergraph(tree: ctg.ContractionTree) -> ctg.HyperGraph:

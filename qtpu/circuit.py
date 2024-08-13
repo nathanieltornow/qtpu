@@ -49,6 +49,14 @@ def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
     return HybridTensorNetwork(qtensors, ctensors)
 
 
+def subcircuits(circuit: QuantumCircuit) -> list[QuantumCircuit]:
+    circuit = fragment(remove_barriers(circuit))
+    ctensors = _extract_qpd_tensors(circuit)
+
+    circuit = _decompose_virtual_gates(circuit)
+
+    return [_circuit_on_qreg(circuit, qreg) for qreg in circuit.qregs]
+
 def cuts_to_moves(circuit: QuantumCircuit) -> QuantumCircuit:
 
     qubit_mapping = {}

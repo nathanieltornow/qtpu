@@ -5,12 +5,13 @@ import cotengra as ctg
 import numpy as np
 from qiskit.circuit import QuantumCircuit, Barrier
 
+from qtpu.circuit import subcircuits
 from qtpu.helpers import remove_barriers
 from qtpu.compiler.ir import HybridCircuitIR
 from qtpu.compiler.optimizer import optimize
 from qtpu.compiler.compress import CompressedIR
 from qtpu.compiler.util import get_leafs
-from qtpu.compiler.success import success_probability_static, success_reach_qubits
+from qtpu.compiler.success import estimated_fidelity
 from qtpu.compiler.terminators import reach_num_qubits
 
 LOGGING = False
@@ -21,7 +22,7 @@ if not LOGGING:
 
 def compile_circuit(
     circuit: QuantumCircuit,
-    success_fn: Callable[[CompressedIR, ctg.ContractionTree], float] | None = None,
+    error_fn: Callable[[QuantumCircuit], float] | None = None,
     terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
     max_cost: int | tuple[int, int] | list[int] = np.inf,
     choose_leaf_methods: list[str] | None = None,
@@ -34,7 +35,7 @@ def compile_circuit(
 
     study = hyper_optimize(
         circuit,
-        success_fn=success_fn,
+        error_fn=error_fn,
         terminate_fn=terminate_fn,
         max_cost=max_cost,
         choose_leaf_methods=choose_leaf_methods,
@@ -43,14 +44,11 @@ def compile_circuit(
         show_progress_bar=show_progress_bar,
     )
 
-    print(study.best_trials)
-
     # best_trial = max(study.best_trials, key=lambda trial: pareto_fn(*trial.values))
     if pareto_fn is None:
         pareto_fn = find_best_trial
 
     best_trial = pareto_fn(study)
-    print(best_trial.values)
 
     return trial_to_circuit(best_trial)
     # return trial_to_hybrid_tn(best_trial)
@@ -94,7 +92,7 @@ def compile_reach_size(
 def hyper_optimize(
     circuit: QuantumCircuit,
     # hyperargs
-    success_fn: Callable[[CompressedIR, ctg.ContractionTree], float] | None = None,
+    error_fn: Callable[[QuantumCircuit], float] | None = None,
     terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
     max_cost: int | tuple[int, int] | list[int] = np.inf,
     choose_leaf_methods: list[str] | None = None,
@@ -104,8 +102,8 @@ def hyper_optimize(
     show_progress_bar: bool = False,
 ) -> optuna.Study:
 
-    if success_fn is None:
-        success_fn = success_probability_static
+    if error_fn is None:
+        error_fn = estimated_fidelity
 
     if compression_methods is None:
         compression_methods = ["qubits", "2q", "none"]
@@ -115,12 +113,12 @@ def hyper_optimize(
 
     ir = HybridCircuitIR(remove_barriers(circuit))
 
-    study = optuna.create_study(directions=["minimize", "maximize"])
+    study = optuna.create_study(directions=["minimize", "minimize"])
     study.optimize(
         lambda trial: objective(
             trial,
             ir=ir,
-            success_fn=success_fn,
+            error_fn=error_fn,
             terminate_fn=terminate_fn,
             max_cost=max_cost,
             choose_leaf_methods=choose_leaf_methods,
@@ -135,7 +133,7 @@ def hyper_optimize(
 def objective(
     trial: optuna.Trial,
     ir: HybridCircuitIR,
-    success_fn: Callable[[CompressedIR, ctg.ContractionTree], float],
+    error_fn: Callable[[QuantumCircuit], float] | None = None,
     terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
     max_cost: int | tuple[int, int] | list[int] = np.inf,
     choose_leaf_methods: list[str] | None = None,
@@ -189,8 +187,11 @@ def objective(
         # but termination condition was not met
         # make sure that the trial is not considered
         return np.inf, 0.0
+    
+    circuit = ir.cut_circuit(get_leafs(tree))
+    subcircs = subcircuits(circuit)
 
-    return tree.contraction_cost(), success_fn(ir, tree)
+    return tree.contraction_cost(), max(error_fn(circ) for circ in subcircs)
 
 
 def find_least_cost_trial(
@@ -207,7 +208,7 @@ def find_best_trial(
     best_trials = study.best_trials
 
     costs = np.array([trial.values[0] for trial in best_trials])
-    success = np.array([trial.values[1] for trial in best_trials])
+    error = np.array([trial.values[1] for trial in best_trials])
 
     if costs.max() == np.inf:
         raise ValueError(
@@ -216,11 +217,11 @@ def find_best_trial(
         )
 
     norm_costs = (costs - costs.min()) / (costs.max() - costs.min() + 1e-9)
-    norm_success = (success - success.min()) / (success.max() - success.min() + 1e-9)
+    norm_success = (error - error.min()) / (error.max() - error.min() + 1e-9)
 
     norm_points = np.stack([norm_costs, norm_success], axis=1)
 
-    ideal_point = np.array([0, 1])
+    ideal_point = np.array([0, 0])
 
     distances = np.linalg.norm(norm_points - ideal_point, axis=1)
     best_index = np.argmin(distances)
