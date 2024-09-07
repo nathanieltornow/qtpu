@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+
 from itertools import chain
 import numpy as np
 import quimb.tensor as qtn
@@ -96,6 +98,12 @@ class QuantumTensor:
         return res_circuit
 
     def generate_instances(self) -> list[QuantumCircuit]:
+        # self._instances = [QuantumCircuit(1, 1) for _ in range(self._ind_tensor.size)]
+
+        # with ThreadPoolExecutor(32) as executor:
+        #     self._instances = list(
+        #         executor.map(self.get_instance, range(self._ind_tensor.size))
+        #     )
         self._instances = [
             self.get_instance(instance_label)
             for instance_label in self.ind_tensor.data.flat
@@ -116,52 +124,10 @@ class HybridTensorNetwork:
             qt.ind_tensor.add_tag(str(i))
         self.qpd_tensors = qpd_tensors
 
-    def simplify(self, tolerance: float = 0.0) -> None:
-        tn = qtn.TensorNetwork([qt.ind_tensor for qt in self.quantum_tensors])
-        multibonds = tn.get_multibonds()
-        tn.fuse_multibonds(inplace=True)
-
-        all_multibonds = set(chain.from_iterable(multibonds.keys()))
-
-        # new_qpds = [qpd for qpd in self.qpd_tensors if "wire" in qpd.tags]
-        ind_to_qpdtens = {qt.inds[0]: qt for qt in self.qpd_tensors}
-
-        new_qpds = [
-            qpd for ind, qpd in ind_to_qpdtens.items() if ind not in all_multibonds
-        ]
-
-        ind_to_argsort = {}
-        for mb_inds in multibonds.keys():
-            qpd_tensors = [ind_to_qpdtens[ind] for ind in mb_inds]
-            qpd_kron = np.array([1])
-            for qpd in qpd_tensors:
-                qpd_kron = np.kron(qpd_kron, qpd.data)
-
-            sort = np.argsort(np.abs(qpd_kron))
-            qpd_kron = qpd_kron[sort]
-
-            # get the index until the cumulative sum is less than tolerance
-            # relative to the sum of the whole array
-            total = np.sum(np.abs(qpd_kron))
-
-            s = 0
-            for i, val in enumerate(qpd_kron):
-                s += abs(val) / total
-                if s > tolerance:
-                    break
-
-            qpd_kron = qpd_kron[i:]
-
-            ind_to_argsort[mb_inds[0]] = sort[i:]
-
-            tens = qtn.Tensor(qpd_kron, [mb_inds[0]], tags=["QPD"])
-            new_qpds.append(tens)
-
-        self.qpd_tensors = new_qpds
-
-        for i, qt in enumerate(self.quantum_tensors):
-            qt.ind_tensor = sort_indices(tn.tensors[i], ind_to_argsort)
-            assert str(i) in qt.ind_tensor.tags
+    def simplify(self, tolerance: float = 0.0, max_bond: int = np.inf) -> np.ndarray:
+        self.fuse()
+        errs = self.approximate(tolerance, max_bond)
+        return errs
 
     def to_tensor_network(self) -> qtn.TensorNetwork:
         return qtn.TensorNetwork(
@@ -170,6 +136,65 @@ class HybridTensorNetwork:
 
     def num_circuits(self) -> int:
         return np.sum([qt.ind_tensor.size for qt in self.quantum_tensors])
+
+    def fuse(self) -> None:
+        tn = qtn.TensorNetwork([qt.ind_tensor for qt in self.quantum_tensors])
+        multibonds = tn.get_multibonds()
+        ind_to_qpdtens = {qt.inds[0]: qt for qt in self.qpd_tensors}
+
+        for inds in multibonds.keys():
+            tens = qtn.tensor_contract(*[ind_to_qpdtens[ind] for ind in inds])
+            tn.add_tensor(tens)
+
+        tn = tn.fuse_multibonds(inplace=False)
+
+        for qt, new_tens in list(zip(self.quantum_tensors, tn.tensors)):
+            qt.ind_tensor = new_tens
+
+        wire_tensors = [tens for tens in self.qpd_tensors if "wire" in tens.tags]
+        self.qpd_tensors = list(tn.tensors[len(self.quantum_tensors) :]) + wire_tensors
+
+    def approximate(self, tolerance: float = 0.0, max_bond: int = np.inf):
+
+        ind_to_sort = {}
+        all_tensors = [tens for tens in self.qpd_tensors if "wire" in tens.tags]
+
+        errors = []
+        for tens in self.qpd_tensors:
+            if "wire" in tens.tags:
+                continue
+
+            assert len(tens.inds) == 1
+
+            total = np.sum(np.abs(tens.data))
+            sort = np.argsort(np.abs(tens.data))
+
+            norm_data = np.abs(tens.data) / total
+            sort = np.argsort(norm_data)
+            norm_data = norm_data[sort]
+
+
+            cumsum = 0.0
+            for i in range(len(sort)):
+                cumsum += norm_data[i]
+                if cumsum > tolerance:
+                    break
+
+            cutoff = max(i, len(tens.data) - max_bond)
+
+            errors.append(np.sum(norm_data[:cutoff]))
+
+            data = tens.data[sort[cutoff:]]
+            print(len(data))
+            all_tensors.append(qtn.Tensor(data, inds=tens.inds, tags=tens.tags))
+            ind_to_sort[tens.inds[0]] = sort[cutoff:]
+
+        for qt in self.quantum_tensors:
+            qt.ind_tensor = sort_indices(qt.ind_tensor, ind_to_sort)
+
+        self.qpd_tensors = all_tensors
+
+        return np.array(errors)
 
 
 def sort_indices(tensor: qtn.Tensor, ind_to_sort: dict[str, np.ndarray]) -> qtn.Tensor:
@@ -180,32 +205,3 @@ def sort_indices(tensor: qtn.Tensor, ind_to_sort: dict[str, np.ndarray]) -> qtn.
         dim = tensor.inds.index(ind)
         data = np.take(data, sort, axis=dim)
     return qtn.Tensor(data, inds=tensor.inds, tags=tensor.tags)
-
-
-def truncate_tensor_index(tensor: qtn.Tensor, ind: str, new_size: int) -> qtn.Tensor:
-    if ind not in tensor.inds:
-        return tensor
-    dim = tensor.inds.index(ind)
-    slices = [slice(None)] * len(tensor.shape)
-    slices[dim] = slice(new_size)
-    truncated_data = tensor.data[tuple(slices)]
-    return qtn.Tensor(truncated_data, inds=tensor.inds, tags=tensor.tags)
-
-
-def truncate_tn_index(
-    tn: qtn.TensorNetwork, ind: str, new_size: int
-) -> qtn.TensorNetwork:
-    return qtn.TensorNetwork(
-        [truncate_tensor_index(t, ind, new_size) for t in tn.tensors]
-    )
-
-
-def find_fusable_indices(tn: qtn.TensorNetwork) -> list[set[str]]:
-    # find the groups of indices that have the same set of tensors with tags "Q"
-    groups: dict[tuple[int, ...], list[str]] = {}
-
-    for index, tids in tn.ind_map.items():
-        q_tids = tuple(sorted([tid for tid in tids if "Q" in tn.tensor_map[tid].tags]))
-        groups.setdefault(q_tids, []).append(index)
-
-    return groups

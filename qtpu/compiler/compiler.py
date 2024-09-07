@@ -30,6 +30,7 @@ def compile_circuit(
     # function to choos the value from the pareto front
     pareto_fn: Callable[[optuna.Study], optuna.Trial] | None = None,
     n_trials: int = 100,
+    timeout: int = 10,
     show_progress_bar: bool = False,
 ) -> QuantumCircuit:
 
@@ -41,6 +42,7 @@ def compile_circuit(
         choose_leaf_methods=choose_leaf_methods,
         compression_methods=compression_methods,
         n_trials=n_trials,
+        timeout=timeout,
         show_progress_bar=show_progress_bar,
     )
 
@@ -49,6 +51,9 @@ def compile_circuit(
         pareto_fn = find_best_trial
 
     best_trial = pareto_fn(study)
+
+    if terminate_fn is not None:
+        print(terminate_fn(best_trial.user_attrs["ir"], best_trial.user_attrs["tree"]))
 
     return trial_to_circuit(best_trial)
     # return trial_to_hybrid_tn(best_trial)
@@ -68,24 +73,25 @@ def compile_reach_size(
     max_cost: int | tuple[int, int] | list[int] = np.inf,
     compression_methods: list[str] | None = None,
     pareto_fn: Callable[[optuna.Study], optuna.Trial] | None = None,
-
     n_trials: int = 100,
     show_progress_bar: bool = False,
 ) -> QuantumCircuit:
-    
+
     if pareto_fn is None:
         pareto_fn = find_least_cost_trial
 
     return compile_circuit(
         circuit=circuit,
+        error_fn=lambda circ: 0.0 if circ.num_qubits <= size else 1.0,
         # success_fn=success_reach_qubits(size),
         terminate_fn=reach_num_qubits(size),
         max_cost=max_cost,
         choose_leaf_methods=["qubits"],
         compression_methods=compression_methods,
-        pareto_fn=pareto_fn,
+        # pareto_fn=pareto_fn,
         n_trials=n_trials,
         show_progress_bar=show_progress_bar,
+        timeout=100
     )
 
 
@@ -99,6 +105,7 @@ def hyper_optimize(
     compression_methods: list[str] | None = None,
     # optuna args
     n_trials: int = 100,
+    timeout: int = 10,
     show_progress_bar: bool = False,
 ) -> optuna.Study:
 
@@ -126,6 +133,7 @@ def hyper_optimize(
         ),
         n_trials=n_trials,
         show_progress_bar=show_progress_bar,
+        timeout=timeout,
     )
     return study
 
@@ -186,8 +194,9 @@ def objective(
         # optimization returned due to max_cost,
         # but termination condition was not met
         # make sure that the trial is not considered
-        return np.inf, 0.0
-    
+        print("Termination condition not met")
+        return np.inf, np.inf
+
     circuit = ir.cut_circuit(get_leafs(tree))
     subcircs = subcircuits(circuit)
 
@@ -210,6 +219,7 @@ def find_best_trial(
     costs = np.array([trial.values[0] for trial in best_trials])
     error = np.array([trial.values[1] for trial in best_trials])
 
+    print(costs)
     if costs.max() == np.inf:
         raise ValueError(
             "No trial with finite cost found. "

@@ -81,8 +81,8 @@ def qaoa(edges: list[tuple[int, int]], depth: int) -> QuantumCircuit:
     circuit = QuantumCircuit(graph.number_of_nodes())
     for d in range(depth):
         for i in graph.nodes:
-            circuit.rx(np.random.rand() * 2 * np.pi, i)
-            circuit.rz(np.random.rand() * 2 * np.pi, i)
+            circuit.rx(0.4, i)
+            circuit.rz(0.4, i)
 
         cur_edges = edges if d % 2 == 0 else reversed(edges)
 
@@ -98,7 +98,7 @@ def qaoa1(r: int, n: int, m: int):
 
 def qaoa2(r: int, n: int, m: int):
     edges = generate_clustered_graph(r, n, m)
-    return qaoa(edges, 2)
+    return qaoa(edges, 1)
 
 
 def _cluster(

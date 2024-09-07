@@ -36,18 +36,18 @@ class HybridCircuitIR:
                 if qubit in current_nodes:
                     inputs[current_nodes[qubit]] += (str(chr(edge_index)),)
                     inputs[-1] += (str(chr(edge_index)),)
-                    # size_dict[str(chr(edge_index))] = round(
-                        # QPDBasis.from_instruction(Move()).overhead
-                    # )
-                    size_dict[str(chr(edge_index))] = 16
+                    size_dict[str(chr(edge_index))] = round(
+                        QPDBasis.from_instruction(Move()).overhead
+                    )
+                    # size_dict[str(chr(edge_index))] = 16
 
                     edge_index += 1
 
                 current_nodes[qubit] = len(inputs) - 1
 
             try:
-                # edge_weigth = round(QPDBasis.from_instruction(instr.operation).overhead)
-                edge_weigth = len(QPDBasis.from_instruction(instr.operation).coeffs)
+                edge_weigth = round(QPDBasis.from_instruction(instr.operation).overhead)
+                # edge_weigth = len(QPDBasis.from_instruction(instr.operation).coeffs)
             except ValueError:
                 edge_weigth = 1e15
 

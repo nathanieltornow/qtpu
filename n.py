@@ -1,17 +1,38 @@
 import numpy as np
-
-Z = np.array([[1, 0], [0, -1]], dtype=complex)
-I = np.eye(2, dtype=complex)
+import quimb.tensor as qtn
 
 
+# tensor = qtn.Tensor(np.array([0.25]*36), inds=["i", "j"], tags=["wire"])
+
+
+# tn = qtn.TensorNetwork([tensor])
+
+class MyTensor(qtn.Tensor):
+    def __init__(self):
+        data = np.array([0.25]*36)
+        super().__init__(data, ["i"], None)
+
+    def __new__(cls):
+        return super().__new__(cls)
+
+
+tn = qtn.TensorNetwork([MyTensor(), MyTensor()])
+
+print(tn.contract(all, optimize="auto-hq"))
 
 
 
-def isunitary(U):
-    return np.allclose(np.eye(U.shape[0]), U.conj().T @ U)
+# tn = tn.replace_with_svd(["wire"], ["i"], 0.0)
+# print(tn)
+
+# print(tensor)
 
 
-U2 = np.exp(1j * 2 * np.pi * Z / 4)
+A = np.diag(np.array([1, 0, 2, 3, 6]))
 
-U = np.kron((I + Z)/2, U2)
-print(isunitary(U))
+print(A)
+
+U, S, V = np.linalg.svd(A)
+print(U)
+print(S)
+print(V)

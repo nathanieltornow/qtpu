@@ -45,6 +45,7 @@ def evaluate_quantum_tensors(
     eval_tensors = []
     for qt in quantum_tensors:
         num_results = np.prod(qt.ind_tensor.shape)
+        print(num_results)
         eval_tensors.append(
             qtn.Tensor(
                 np.array(results[:num_results]).reshape(qt.ind_tensor.shape),

@@ -5,8 +5,12 @@ from qiskit.circuit import QuantumCircuit
 from cuquantum import Network, CircuitToEinsum, contract, contract_path
 import cupy as cp
 
+from qiskit_aer import AerSimulator
+from qiskit.primitives import BackendEstimator
 from qiskit_aer.primitives import Estimator
 from qtpu.circuit import circuit_to_hybrid_tn
+from qtpu.compiler.compiler import compile_reach_size
+from benchmark.ansatz import qaoa2
 
 # from qiskit.primitives import Estimator as AerEstimator
 
@@ -19,7 +23,6 @@ from benchmark.ansatz import (
 
 from qtpu.contract import evaluate_hybrid_tn, evaluate_estimator
 from benchmark.util import append_to_csv
-from benchmark.ckt import run_qtpu
 
 
 def run_cutensor(circuit: QuantumCircuit):
@@ -46,7 +49,9 @@ def run_cutensor(circuit: QuantumCircuit):
     }
 
 
-def run_qtpu(cut_circuit: QuantumCircuit, est):
+def run_qtpu(circuit: QuantumCircuit):
+
+    circuit = compile_reach_size(circuit, 30, show_progress_bar=True)
     start = perf_counter()
     htn = circuit_to_hybrid_tn(circuit)
     htn.simplify(0.0)
@@ -56,12 +61,16 @@ def run_qtpu(cut_circuit: QuantumCircuit, est):
 
     preptime = perf_counter() - start
 
+    sim = AerSimulator()
+    est = BackendEstimator(sim)
+    # est.set_options(device="GPU", cuStateVec_enable=True)
+
     start = perf_counter()
-    tn = evaluate_hybrid_tn(htn, eval_fn=evaluate_estimator(est))
+    tn = evaluate_hybrid_tn(htn, eval_fn=lambda circuits: [1.0] * len(circuits))
     runtime = perf_counter() - start
 
-    eq, operands = tn.get_equation(), tn.tensors
-    operands = [cp.array(op, dtype=cp.float32) for op in operands]
+    eq, tensors = tn.get_equation(), tn.tensors
+    operands = [cp.array(t.data, dtype=cp.float32) for t in tensors]
 
     with Network(eq, *operands) as tn:
         start = perf_counter()
@@ -93,17 +102,24 @@ def run_cusvaer(circuit: QuantumCircuit):
 
 
 if __name__ == "__main__":
-    edges = generate_seperator_graph(4, 6, 2)
-    # edges = generate_clustered_graph(3, 4, 2)
 
-    circuit = qaoa(edges, 1)
+    bench = qaoa2(6, 20, 2)
 
-    print(run_cusvaer(circuit))
-    # print(circuit)
+    cutensor_res, cutensor_times = run_cutensor(bench)
 
-    result, info = run_cutensor(circuit)
-    print(result)
-    print(info)
+    qtpu_res, qtpu_times = run_qtpu(bench)
+
+    # cusvaer_res, cusvaer_times = run_cusvaer(bench)
+
+    print(cutensor_times)
+    print(qtpu_times)
+    # print(cusvaer_times)
+
+    
+
+
+
+
 
 
 # def execute_cutensornet(circuit: QuantumCircuit) -> dict[str, float]:
