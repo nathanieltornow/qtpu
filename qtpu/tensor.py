@@ -50,7 +50,6 @@ class QuantumTensor:
     def ind_tensor(self) -> qtn.Tensor:
         return self._ind_tensor
 
-    # setter for ind_tensor
     @ind_tensor.setter
     def ind_tensor(self, tensor: qtn.Tensor) -> None:
         self._instances = None
@@ -154,6 +153,37 @@ class HybridTensorNetwork:
         wire_tensors = [tens for tens in self.qpd_tensors if "wire" in tens.tags]
         self.qpd_tensors = list(tn.tensors[len(self.quantum_tensors) :]) + wire_tensors
 
+    def sample(self, num_samples: int = np.inf):
+        if num_samples == np.inf:
+            return
+
+        ind_to_sort = {}
+        all_tensors = [tens for tens in self.qpd_tensors if "wire" in tens.tags]
+
+        errors = []
+        for tens in self.qpd_tensors:
+            if "wire" in tens.tags:
+                continue
+
+            assert len(tens.inds) == 1
+
+            probs = np.abs(tens.data) / np.sum(np.abs(tens.data))
+            samples = np.random.choice(len(probs), size=num_samples, p=probs)
+            unique, counts = np.unique(samples, return_counts=True)
+            indices = unique[counts > 1]
+
+            data = tens.data[indices]
+
+            all_tensors.append(qtn.Tensor(data, inds=tens.inds, tags=tens.tags))
+            ind_to_sort[tens.inds[0]] = indices
+
+        for qt in self.quantum_tensors:
+            qt.ind_tensor = sort_indices(qt.ind_tensor, ind_to_sort)
+
+        self.qpd_tensors = all_tensors
+
+        return np.array(errors)
+
     def approximate(self, tolerance: float = 0.0, max_bond: int = np.inf):
 
         ind_to_sort = {}
@@ -172,7 +202,6 @@ class HybridTensorNetwork:
             norm_data = np.abs(tens.data) / total
             sort = np.argsort(norm_data)
             norm_data = norm_data[sort]
-
 
             cumsum = 0.0
             for i in range(len(sort)):
