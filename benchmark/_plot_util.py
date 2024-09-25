@@ -31,6 +31,16 @@ plt.rcParams.update(tex_fonts)
 
 
 def postprocess_barplot(ax: plt.Axes) -> None:
-    hatches = ["//", "\\\\", "||", "--", "++", "xx", "oo", "OO", "..", "**"]
+    hatches = ["**", "//", "oo", "xx", "oo", "OO"]
 
+    color_to_hatch = {}
+
+    i = 0
+    for patch in ax.patches:
+        if patch.get_facecolor() not in color_to_hatch:
+            color_to_hatch[patch.get_facecolor()] = hatches[i % len(hatches)]
+            i += 1
+
+    for patch in ax.patches:
+        patch.set_hatch(color_to_hatch[patch.get_facecolor()])
     # for container in ax.containers:

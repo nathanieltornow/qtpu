@@ -7,7 +7,7 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.primitives import Estimator
 
 from qtpu.tensor import HybridTensorNetwork, QuantumTensor
-from qtpu.evaluate import evaluate_estimator, evaluate_quimb
+from qtpu.evaluate import evaluate_estimator
 
 
 def contract(
@@ -24,8 +24,6 @@ def evaluate_hybrid_tn(
     eval_fn: Callable[[list[QuantumCircuit]], list] | None = None,
 ) -> qtn.TensorNetwork:
 
-    # if eval_fn is None:
-        # eval_fn = evaluate_quimb
     if eval_fn is None:
         eval_fn = evaluate_estimator(Estimator())
 

@@ -9,9 +9,6 @@ from qiskit.circuit import (
 )
 
 
-qtn.TNOptimizer
-
-
 def qiskit_to_quimb(circuit: QuantumCircuit) -> qtn.Circuit:
     circ = qtn.Circuit(circuit.num_qubits)
     for instr in circuit:
@@ -35,12 +32,12 @@ def sample_quimb(circuit: QuantumCircuit, shots: int) -> dict[str, int]:
         counts[sample_str] = counts.get(sample_str, 0) + 1
     return counts
 
-    
+
 def expval_quimb(circuit: QuantumCircuit) -> float:
     tn_circ = qiskit_to_quimb(circuit)
-    Z = qu.pauli('Z')
+    Z = qu.pauli("Z")
     for i in range(circuit.num_qubits - 1):
-        Z = Z & qu.pauli('Z')
+        Z = Z & qu.pauli("Z")
     return tn_circ.local_expectation(Z, range(circuit.num_qubits))
 
 

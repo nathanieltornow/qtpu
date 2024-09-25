@@ -51,7 +51,7 @@ def _quimb_Z_obs(num_qubits: int):
 
 def evaluate_sampler(
     sampler: Sampler,
-    shots: int = 10000,
+    shots: int = 20000,
     return_quasi_distr: bool = False,
 ):
     def _eval(circuits: list[QuantumCircuit]) -> list[float]:

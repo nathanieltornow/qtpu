@@ -1,5 +1,6 @@
 import itertools
 
+import numpy as np
 import quimb.tensor as qtn
 import networkx as nx
 from qiskit.circuit import QuantumCircuit, QuantumRegister
@@ -15,6 +16,24 @@ from circuit_knitting.cutting.qpd import (
 from qtpu.helpers import remove_barriers
 from qtpu.instructions import InstanceGate
 from qtpu.tensor import QuantumTensor, HybridTensorNetwork, wire_tensor
+
+
+def circuit_to_hybrid_tn(
+    circuit: QuantumCircuit, num_samples: int = np.inf
+) -> HybridTensorNetwork:
+    circuit = fragment(remove_barriers(circuit))
+    ctensors = _extract_qpd_tensors(circuit)
+
+    circuit = _decompose_virtual_gates(circuit)
+
+    qtensors = []
+    for qreg in circuit.qregs:
+        qtensors.append(QuantumTensor(_circuit_on_qreg(circuit, qreg)))
+
+    htn = HybridTensorNetwork(qtensors, ctensors)
+    htn.fuse()
+    htn.sample(num_samples)
+    return htn
 
 
 def insert_cuts(
@@ -36,19 +55,6 @@ def insert_cuts(
     return new_circuit
 
 
-def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
-    circuit = fragment(remove_barriers(circuit))
-    ctensors = _extract_qpd_tensors(circuit)
-
-    circuit = _decompose_virtual_gates(circuit)
-
-    qtensors = []
-    for qreg in circuit.qregs:
-        qtensors.append(QuantumTensor(_circuit_on_qreg(circuit, qreg)))
-
-    return HybridTensorNetwork(qtensors, ctensors)
-
-
 def subcircuits(circuit: QuantumCircuit) -> list[QuantumCircuit]:
     circuit = fragment(remove_barriers(circuit))
     ctensors = _extract_qpd_tensors(circuit)
@@ -56,6 +62,7 @@ def subcircuits(circuit: QuantumCircuit) -> list[QuantumCircuit]:
     circuit = _decompose_virtual_gates(circuit)
 
     return [_circuit_on_qreg(circuit, qreg) for qreg in circuit.qregs]
+
 
 def cuts_to_moves(circuit: QuantumCircuit) -> QuantumCircuit:
 

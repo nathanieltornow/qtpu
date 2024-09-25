@@ -3,7 +3,7 @@ from typing import Callable
 from qiskit.circuit import QuantumCircuit
 
 
-def estimated_fidelity(circuit: QuantumCircuit) -> float:
+def estimated_error(circuit: QuantumCircuit) -> float:
     fid = 1.0
     for instr in circuit:
         op = instr.operation

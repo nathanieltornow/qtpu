@@ -93,22 +93,6 @@ class HybridCircuitIR:
     def hypergraph(self) -> ctg.HyperGraph:
         return self._hypergraph.copy()
 
-    # def hybrid_tn(self, node_subsets: list[set[int]]) -> HybridTensorNetwork:
-    #     assert set(itertools.chain(*node_subsets)) == set(
-    #         range(self._hypergraph.num_nodes)
-    #     )
-
-    #     quantum_tensors = []
-    #     removed_edges = set()
-    #     for node_subset in node_subsets:
-    #         qt, re = self.quantum_tensor(set(node_subset), True)
-    #         quantum_tensors.append(qt)
-    #         removed_edges |= re
-
-    #     classical_tensors = [self._classical_tensor(u, v) for u, v in removed_edges]
-
-    #     return HybridTensorNetwork(quantum_tensors, classical_tensors)
-
     def cut_circuit(self, node_subsets: list[set[int]]) -> QuantumCircuit:
         node_to_subset = {
             node: i for i, subset in enumerate(node_subsets) for node in subset
@@ -129,6 +113,22 @@ class HybridCircuitIR:
             if self._node_infos[u].op_idx == self._node_infos[v].op_idx
         }
         return insert_cuts(self._circuit, gate_cuts, wire_cuts)
+
+    # def hybrid_tn(self, node_subsets: list[set[int]]) -> HybridTensorNetwork:
+    #     assert set(itertools.chain(*node_subsets)) == set(
+    #         range(self._hypergraph.num_nodes)
+    #     )
+
+    #     quantum_tensors = []
+    #     removed_edges = set()
+    #     for node_subset in node_subsets:
+    #         qt, re = self.quantum_tensor(set(node_subset), True)
+    #         quantum_tensors.append(qt)
+    #         removed_edges |= re
+
+    #     classical_tensors = [self._classical_tensor(u, v) for u, v in removed_edges]
+
+    #     return HybridTensorNetwork(quantum_tensors, classical_tensors)
 
     # def _prev_nodes(self, node: int) -> list[int]:
     #     return sorted(

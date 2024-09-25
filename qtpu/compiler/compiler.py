@@ -11,7 +11,7 @@ from qtpu.compiler.ir import HybridCircuitIR
 from qtpu.compiler.optimizer import optimize
 from qtpu.compiler.compress import CompressedIR
 from qtpu.compiler.util import get_leafs
-from qtpu.compiler.success import estimated_fidelity
+from qtpu.compiler.success import estimated_error
 from qtpu.compiler.terminators import reach_num_qubits
 
 LOGGING = False
@@ -86,9 +86,9 @@ def compile_reach_size(
         # success_fn=success_reach_qubits(size),
         terminate_fn=reach_num_qubits(size),
         max_cost=max_cost,
-        choose_leaf_methods=["qubits"],
+        choose_leaf_methods=["qubits", "nodes"],
         compression_methods=compression_methods,
-        # pareto_fn=pareto_fn,
+        pareto_fn=pareto_fn,
         n_trials=n_trials,
         show_progress_bar=show_progress_bar,
         timeout=100
@@ -110,7 +110,7 @@ def hyper_optimize(
 ) -> optuna.Study:
 
     if error_fn is None:
-        error_fn = estimated_fidelity
+        error_fn = estimated_error
 
     if compression_methods is None:
         compression_methods = ["qubits", "2q", "none"]
