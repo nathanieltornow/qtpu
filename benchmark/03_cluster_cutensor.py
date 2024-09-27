@@ -21,7 +21,7 @@ from benchmark.ansatz import (
     generate_clustered_graph,
 )
 
-from qtpu.contract import evaluate_hybrid_tn, evaluate_estimator
+from qtpu.contract import evaluate_hybrid_tn, _evaluate_estimator
 from benchmark.util import append_to_csv
 
 

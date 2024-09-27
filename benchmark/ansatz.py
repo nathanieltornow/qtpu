@@ -96,9 +96,9 @@ def qaoa1(r: int, n: int, m: int):
     return qaoa(edges, 1)
 
 
-def qaoa2(r: int, n: int, m: int):
+def qaoa2(r: int, n: int, m: int, reps: int = 1):
     edges = generate_clustered_graph(r, n, m)
-    return qaoa(edges, 1)
+    return qaoa(edges, reps)
 
 
 def _cluster(

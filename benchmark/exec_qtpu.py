@@ -1,9 +1,9 @@
 from time import perf_counter
-from typing import Callable
 
 import numpy as np
 
 from qiskit.circuit import QuantumCircuit
+from qiskit.primitives import BaseEstimator, BaseSampler
 
 from qtpu.contract import evaluate_hybrid_tn
 from qtpu.circuit import circuit_to_hybrid_tn, cuts_to_moves
@@ -11,14 +11,13 @@ from qtpu.helpers import defer_mid_measurements
 
 
 def qtpu_execute_dummy(
-    circuit: QuantumCircuit, tolerance: float = 0.0
+    circuit: QuantumCircuit, num_samples: int = np.inf
 ) -> dict[str, float]:
 
     start = perf_counter()
     circuit = cuts_to_moves(circuit)
-    htn = circuit_to_hybrid_tn(circuit)
-    if tolerance > 0:
-        htn.simplify(tolerance)
+    htn = circuit_to_hybrid_tn(circuit, num_samples)
+
     prep_time = perf_counter() - start
 
     tn = htn.to_tensor_network()
@@ -29,20 +28,22 @@ def qtpu_execute_dummy(
     return {"qtpu_pre": prep_time, "qtpu_post": post_time}
 
 
-def qtpu_execute_dummy_cutensor(circuit: QuantumCircuit, tolerance: float = 0.0):
+def qtpu_execute_dummy_cutensor(
+    circuit: QuantumCircuit, num_samples: int = np.inf
+) -> dict[str, float]:
     from cuquantum import Network, CircuitToEinsum, contract, contract_path
     import cupy as cp
 
     start = perf_counter()
     circuit = cuts_to_moves(circuit)
-    htn = circuit_to_hybrid_tn(circuit)
+    htn = circuit_to_hybrid_tn(circuit, num_samples)
 
-    htn.simplify(tolerance)
     prep_time = perf_counter() - start
 
     tn = htn.to_tensor_network()
 
     eq, tensors = tn.get_equation(), tn.tensors
+    print(eq)
     operands = [cp.array(t.data, dtype=cp.float32) for t in tensors]
 
     with Network(eq, *operands) as cutn:
@@ -62,16 +63,15 @@ def qtpu_execute_dummy_cutensor(circuit: QuantumCircuit, tolerance: float = 0.0)
     }
 
 
-def run_qtpu(
+def qtpu_execute(
     circuit: QuantumCircuit,
-    tolerance: float = 0.0,
-    eval_fn: Callable[[list[QuantumCircuit]], list] | None = None,
+    evaluator: BaseEstimator | BaseSampler | None = None,
+    num_samples: int = np.inf,
 ) -> tuple[float, dict]:
 
     start = perf_counter()
     circuit = cuts_to_moves(circuit)
-    htn = circuit_to_hybrid_tn(circuit)
-    htn.simplify(tolerance)
+    htn = circuit_to_hybrid_tn(circuit, num_samples)
 
     for qt in htn.quantum_tensors:
         qt.generate_instances()
@@ -79,7 +79,7 @@ def run_qtpu(
     preptime = perf_counter() - start
 
     start = perf_counter()
-    tn = evaluate_hybrid_tn(htn, eval_fn)
+    tn = evaluate_hybrid_tn(htn, evaluator)
     runtime = perf_counter() - start
 
     start = perf_counter()
@@ -95,9 +95,8 @@ def run_qtpu(
 
 def qtpu_execute_cutensor(
     circuit: QuantumCircuit,
-    tolerance: float = 0.0,
-    eval_fn: Callable[[list[QuantumCircuit]], list] | None = None,
-    return_result: bool = False,
+    evaluator: BaseEstimator | BaseSampler | None = None,
+    num_samples: int = np.inf,
 ) -> tuple[float, dict]:
 
     from cuquantum import Network
@@ -105,8 +104,7 @@ def qtpu_execute_cutensor(
 
     start = perf_counter()
     circuit = cuts_to_moves(circuit)
-    htn = circuit_to_hybrid_tn(circuit)
-    htn.simplify(tolerance)
+    htn = circuit_to_hybrid_tn(circuit, num_samples)
     num_circuits = htn.num_circuits()
 
     for qt in htn.quantum_tensors:
@@ -115,7 +113,7 @@ def qtpu_execute_cutensor(
     preptime = perf_counter() - start
 
     start = perf_counter()
-    tn = evaluate_hybrid_tn(htn, eval_fn)
+    tn = evaluate_hybrid_tn(htn, evaluator)
     runtime = perf_counter() - start
 
     eq, tensors = tn.get_equation(), tn.tensors
@@ -131,41 +129,40 @@ def qtpu_execute_cutensor(
         result = cutn.contract()
         exec_time = perf_counter() - start
 
-    if return_result:
-        return result, {
-            "qtpu_gpu_pre": preptime,
-            "qtpu_gpu_comp": compile_time,
-            "qtpu_gpu_run": runtime,
-            "qtpu_gpu_post": exec_time,
-            "num_instances": num_circuits,
-        }
-
-    return {
+    return result, {
         "qtpu_gpu_pre": preptime,
         "qtpu_gpu_comp": compile_time,
         "qtpu_gpu_run": runtime,
         "qtpu_gpu_post": exec_time,
-        "num_instances": num_circuits
+        "num_instances": num_circuits,
     }
 
 
-def run_circuit_cutensor(circuit: QuantumCircuit) -> float:
+def run_cutensor(circuit: QuantumCircuit):
     from cuquantum import Network, CircuitToEinsum
     import cupy as cp
 
-    circuit = defer_mid_measurements(circuit)
     myconverter = CircuitToEinsum(circuit, dtype="complex128", backend=cp)
-
-    obs = _get_Z_observable(circuit)
-
-    expression, operands = myconverter.expectation(obs, lightcone=True)
+    pauli_string = "Z" * circuit.num_qubits
+    expression, operands = myconverter.expectation(pauli_string, lightcone=True)
 
     with Network(expression, *operands) as tn:
+        start = perf_counter()
         path, info = tn.contract_path()
         tn.autotune(iterations=5)
-        result = tn.contract()
+        compile_time = perf_counter() - start
 
-    return float(np.real(result))
+        print(info)
+
+        start = perf_counter()
+        result = tn.contract()
+        exec_time = perf_counter() - start
+
+    return result, {
+        "cutensor_compile": compile_time,
+        "cutensor_exec": exec_time,
+        "cutensor_cost": info.opt_cost,
+    }
 
 
 def _get_meas_qubits(circuit: QuantumCircuit) -> list[int]:

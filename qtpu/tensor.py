@@ -99,14 +99,14 @@ class QuantumTensor:
     def generate_instances(self) -> list[QuantumCircuit]:
         # self._instances = [QuantumCircuit(1, 1) for _ in range(self._ind_tensor.size)]
 
-        with ThreadPoolExecutor() as executor:
-            self._instances = list(
-                executor.map(self.get_instance, range(self._ind_tensor.size))
-            )
-        # self._instances = [
-        #     self.get_instance(instance_label)
-        #     for instance_label in self.ind_tensor.data.flat
-        # ]
+        # with ThreadPoolExecutor() as executor:
+        #     self._instances = list(
+        #         executor.map(self.get_instance, range(self._ind_tensor.size))
+        #     )
+        self._instances = [
+            self.get_instance(instance_label)
+            for instance_label in self.ind_tensor.data.flat
+        ]
 
     def instances(self) -> list[QuantumCircuit]:
         if self._instances is None:

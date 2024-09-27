@@ -4,46 +4,55 @@ from itertools import chain
 import numpy as np
 import quimb.tensor as qtn
 from qiskit.circuit import QuantumCircuit
-from qiskit.primitives import Estimator
+from qiskit.primitives import BaseEstimatorV2, BaseSamplerV2, Estimator
 
 from qtpu.tensor import HybridTensorNetwork, QuantumTensor
-from qtpu.evaluate import evaluate_estimator
+from qtpu.helpers import defer_mid_measurements
+from qtpu.quasi_distr import QuasiDistr
 
 
 def contract(
     hybrid_tn: HybridTensorNetwork,
-    eval_fn: Callable[[list[QuantumCircuit]], list] | None = None,
+    evaluator: BaseEstimatorV2 | BaseSamplerV2 | None = None,
 ) -> qtn.TensorNetwork:
 
-    eval_tn = evaluate_hybrid_tn(hybrid_tn, eval_fn)
+    eval_tn = evaluate_hybrid_tn(hybrid_tn, evaluator)
     return eval_tn.contract(all, optimize="auto-hq", output_inds=[])
 
 
 def evaluate_hybrid_tn(
     hybrid_tn: HybridTensorNetwork,
-    eval_fn: Callable[[list[QuantumCircuit]], list] | None = None,
+    evaluator: BaseEstimatorV2 | BaseSamplerV2 | None = None,
 ) -> qtn.TensorNetwork:
 
-    if eval_fn is None:
-        eval_fn = evaluate_estimator(Estimator())
+    if evaluator is None:
+        evaluator = Estimator()
 
     quantum_tensors = hybrid_tn.quantum_tensors
-    eval_tensors = evaluate_quantum_tensors(quantum_tensors, eval_fn)
+    eval_tensors = _evaluate_quantum_tensors(quantum_tensors, evaluator)
     return qtn.TensorNetwork(eval_tensors + hybrid_tn.qpd_tensors)
 
 
-def evaluate_quantum_tensors(
-    quantum_tensors: list[QuantumTensor],
-    eval_fn: Callable[[list[QuantumCircuit]], list],
+def _evaluate_quantum_tensors(
+    quantum_tensors: list[QuantumTensor], evaluator: BaseEstimatorV2 | BaseSamplerV2
 ) -> list[qtn.Tensor]:
+
+    print(f"Evaluating {sum(qt.ind_tensor.size for qt in quantum_tensors)} circuits")
+
     serialized_circuits = list(
         chain.from_iterable([circ for circ in qt.instances()] for qt in quantum_tensors)
     )
-    results = eval_fn(serialized_circuits)
+
+    if isinstance(evaluator, BaseEstimatorV2):
+        results = _evaluate_estimator(evaluator, serialized_circuits)
+    elif isinstance(evaluator, BaseSamplerV2):
+        results = _evaluate_sampler(evaluator, serialized_circuits)
+    else:
+        raise ValueError("Invalid evaluator")
+
     eval_tensors = []
     for qt in quantum_tensors:
         num_results = np.prod(qt.ind_tensor.shape)
-        print(num_results)
         eval_tensors.append(
             qtn.Tensor(
                 np.array(results[:num_results]).reshape(qt.ind_tensor.shape),
@@ -53,3 +62,59 @@ def evaluate_quantum_tensors(
         results = results[num_results:]
 
     return eval_tensors
+
+
+def _evaluate_estimator(
+    estimator: BaseEstimatorV2, circuits: list[QuantumCircuit]
+) -> Callable[[list[QuantumCircuit]], list[float]]:
+    circuits = [defer_mid_measurements(circ) for circ in circuits]
+    observables = [_get_Z_observable(circ) for circ in circuits]
+    circuits = [
+        circuit.remove_final_measurements(inplace=False) for circuit in circuits
+    ]
+    results = estimator.run(list(zip(circuits, observables))).result()
+    expvals = [res.data.evs for res in results]
+    return expvals
+
+
+def _evaluate_sampler(
+    sampler: BaseSamplerV2,
+    circuits: list[QuantumCircuit],
+):
+    cid_withour_meas = [
+        i for i, circ in enumerate(circuits) if circ.count_ops().get("measure", 0) == 0
+    ]
+
+    for i in reversed(cid_withour_meas):
+        circuits.pop(i)
+
+    dists = sampler.run(circuits).result().quasi_dists
+    dists = [dists] if isinstance(dists, dict) else dists
+
+    for i in cid_withour_meas:
+        dists.insert(i, {0: 1.0})
+
+    # we assume that the first register is the original register of the original circuit
+    size = circuits[0].cregs[0].size
+    res = [QuasiDistr(d).prepare(size) for d in dists]
+
+    return res
+
+
+def _get_Z_observable(circuit: QuantumCircuit) -> str:
+    measured_qubits = _get_meas_qubits(circuit)
+    obs = ["I"] * circuit.num_qubits
+    for qubit in measured_qubits:
+        obs[qubit] = "Z"
+    return "".join(reversed(obs))
+
+
+def _get_meas_qubits(circuit: QuantumCircuit) -> list[int]:
+    measured_qubits = sorted(
+        set(
+            circuit.qubits.index(instr.qubits[0])
+            for instr in circuit
+            if instr.operation.name == "measure"
+        ),
+    )
+    return measured_qubits

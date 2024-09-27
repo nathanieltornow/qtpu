@@ -48,7 +48,10 @@ class QuasiDistr(dict[int, float]):
                     merged_data[key1 ^ key2] = value1 * value2
         return QuasiDistr(merged_data)
 
-    def __add__(self, other: "QuasiDistr") -> "QuasiDistr":
+    def __add__(self, other: Union["QuasiDistr", int]) -> "QuasiDistr":
+        if isinstance(other, int):
+            return QuasiDistr({key: self[key] + other for key in self.keys()})
+
         added_data = {key: self[key] + other.get(key, 0.0) for key in self.keys()}
         only_others = {
             key: other[key] for key in other.keys() if key not in self.keys()

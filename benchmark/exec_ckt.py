@@ -22,6 +22,8 @@ from circuit_knitting.cutting.automated_cut_finding import (
     DeviceConstraints,
 )
 
+from qtpu.helpers import defer_mid_measurements
+
 from benchmark.util import DummySampler
 
 
@@ -29,7 +31,6 @@ def ckt_execute(
     circuit: QuantumCircuit,
     sampler: Sampler,
     num_samples: int = np.inf,
-    shots: int = 10000,
     obs: str | None = None,
 ) -> tuple[float, dict]:
     if obs is None:
@@ -62,7 +63,7 @@ def ckt_execute(
         f"Running {sum(len(subexpts) for subexpts in subexperiments.values())} circuits."
     )
     results = {
-        label: sampler.run(subsystem_subexpts, shots=shots).result()
+        label: sampler.run([defer_mid_measurements(circ) for circ in subsystem_subexpts]).result()
         for label, subsystem_subexpts in subexperiments.items()
     }
     runtime = perf_counter() - start
@@ -75,7 +76,7 @@ def ckt_execute(
     )
     posttime = perf_counter() - start
 
-    return {
+    return reconstructed_expvals[0], {
         "ckt_pre": preptime,
         "ckt_run": runtime,
         "ckt_post": posttime,
