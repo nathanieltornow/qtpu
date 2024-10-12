@@ -4,6 +4,7 @@ import os
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 import optuna
 from qiskit.circuit import QuantumCircuit
@@ -22,6 +23,18 @@ import cotengra as ctg
 
 from qtpu.tensor import HybridTensorNetwork
 from qtpu.circuit import cuts_to_moves, circuit_to_hybrid_tn
+
+
+def concat_data(file_path: str, data: dict):
+    if os.path.exists(file_path):
+        # Read the existing JSON file into a DataFrame
+        df = pd.read_json(file_path)
+    else:
+        # Create an empty DataFrame if the file doesn't exist
+        df = pd.DataFrame()
+
+    df = pd.concat([df, pd.DataFrame([data])], ignore_index=True)
+    df.to_json(file_path, orient="records", indent=4)
 
 
 def get_info(circuit: QuantumCircuit, backend: BackendV2 | None = None) -> dict:

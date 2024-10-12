@@ -19,7 +19,6 @@ tex_fonts = {
     "lines.markersize": 6,
     "lines.markeredgewidth": 1.5,
     "lines.markeredgecolor": "black",
-    
     # modify error bar settings
     "errorbar.capsize": 3,
     # bar edge width
@@ -30,8 +29,9 @@ tex_fonts = {
 plt.rcParams.update(tex_fonts)
 
 
-def postprocess_barplot(ax: plt.Axes) -> None:
-    hatches = ["**", "//", "oo", "xx", "oo", "OO"]
+def postprocess_barplot(ax: plt.Axes, hatches: list[str] | None = None) -> None:
+    if hatches is None:
+        hatches = ["//", "\\\\", "oo", "xx", "oo", "OO"]
 
     color_to_hatch = {}
 
@@ -44,3 +44,28 @@ def postprocess_barplot(ax: plt.Axes) -> None:
     for patch in ax.patches:
         patch.set_hatch(color_to_hatch[patch.get_facecolor()])
     # for container in ax.containers:
+
+
+def postprocess_lineplot(ax: plt.Axes, linestyles=None, markers=None) -> None:
+    if linestyles is None:
+        linestyles = ["-", "--", "-.", ":", (0, (3, 1, 1, 1)), (0, (5, 1))]
+    if markers is None:
+        markers = ["o", "s", "^", "D", "v", "p"]
+
+    color_to_style = {}
+    color_to_marker = {}
+    i = 0
+
+    for line in ax.get_lines():
+        color = line.get_color()
+        if color not in color_to_style:
+            color_to_style[color] = linestyles[i % len(linestyles)]
+            color_to_marker[color] = markers[i % len(markers)]
+            i += 1
+
+        line.set_linestyle(color_to_style[color])
+        line.set_marker(color_to_marker[color])
+        line.set_markersize(6)
+        line.set_markeredgewidth(1)
+        line.set_markeredgecolor("black")
+        line.set_markerfacecolor(color)

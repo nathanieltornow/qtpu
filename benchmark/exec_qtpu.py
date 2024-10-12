@@ -10,6 +10,12 @@ from qtpu.circuit import circuit_to_hybrid_tn, cuts_to_moves
 from qtpu.helpers import defer_mid_measurements
 
 
+def qtpu_num_coeffs(circuit: QuantumCircuit, num_samples: int = np.inf) -> int:
+    circuit = cuts_to_moves(circuit)
+    htn = circuit_to_hybrid_tn(circuit, num_samples)
+    return np.prod([tens.size for tens in htn.qpd_tensors])
+
+
 def qtpu_execute_dummy(
     circuit: QuantumCircuit, num_samples: int = np.inf
 ) -> dict[str, float]:
@@ -68,6 +74,9 @@ def qtpu_execute(
     evaluator: BaseEstimator | BaseSampler | None = None,
     num_samples: int = np.inf,
 ) -> tuple[float, dict]:
+    circuit = circuit.copy()
+    circuit.remove_final_measurements()
+    circuit.measure_all()
 
     start = perf_counter()
     circuit = cuts_to_moves(circuit)
@@ -129,7 +138,7 @@ def qtpu_execute_cutensor(
         result = cutn.contract()
         exec_time = perf_counter() - start
 
-    return result, {
+    return float(np.real(result)), {
         "qtpu_gpu_pre": preptime,
         "qtpu_gpu_comp": compile_time,
         "qtpu_gpu_run": runtime,
@@ -149,6 +158,7 @@ def run_cutensor(circuit: QuantumCircuit):
     with Network(expression, *operands) as tn:
         start = perf_counter()
         path, info = tn.contract_path()
+
         tn.autotune(iterations=5)
         compile_time = perf_counter() - start
 
@@ -158,7 +168,7 @@ def run_cutensor(circuit: QuantumCircuit):
         result = tn.contract()
         exec_time = perf_counter() - start
 
-    return result, {
+    return float(np.real(result)), {
         "cutensor_compile": compile_time,
         "cutensor_exec": exec_time,
         "cutensor_cost": info.opt_cost,

@@ -143,6 +143,11 @@ class HybridTensorNetwork:
 
         for inds in multibonds.keys():
             tens = qtn.tensor_contract(*[ind_to_qpdtens[ind] for ind in inds])
+            for ind in inds:
+                ind_to_qpdtens.pop(ind)
+            tn.add_tensor(tens)
+
+        for tens in ind_to_qpdtens.values():
             tn.add_tensor(tens)
 
         tn = tn.fuse_multibonds(inplace=False)

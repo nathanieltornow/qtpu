@@ -1,11 +1,12 @@
 from typing import Callable
+from concurrent.futures import ThreadPoolExecutor
 
 import optuna
 import cotengra as ctg
 import numpy as np
 from qiskit.circuit import QuantumCircuit, Barrier
 
-from qtpu.circuit import subcircuits
+from qtpu.circuit import subcircuits, cuts_to_moves
 from qtpu.helpers import remove_barriers
 from qtpu.compiler.ir import HybridCircuitIR
 from qtpu.compiler.optimizer import optimize
@@ -46,7 +47,6 @@ def compile_circuit(
         show_progress_bar=show_progress_bar,
     )
 
-    # best_trial = max(study.best_trials, key=lambda trial: pareto_fn(*trial.values))
     if pareto_fn is None:
         pareto_fn = find_best_trial
 
@@ -56,7 +56,6 @@ def compile_circuit(
         print(terminate_fn(best_trial.user_attrs["ir"], best_trial.user_attrs["tree"]))
 
     return trial_to_circuit(best_trial)
-    # return trial_to_hybrid_tn(best_trial)
 
 
 # def trial_to_hybrid_tn(trial: optuna.Trial) -> HybridTensorNetwork:
@@ -86,12 +85,12 @@ def compile_reach_size(
         # success_fn=success_reach_qubits(size),
         terminate_fn=reach_num_qubits(size),
         max_cost=max_cost,
-        choose_leaf_methods=["qubits", "nodes"],
+        choose_leaf_methods=["qubits"],
         compression_methods=compression_methods,
         pareto_fn=pareto_fn,
         n_trials=n_trials,
         show_progress_bar=show_progress_bar,
-        timeout=100
+        timeout=100,
     )
 
 
@@ -162,11 +161,13 @@ def objective(
     weight_edges = trial.suggest_categorical("weight_edges", ["const", "log"])
     imbalance = trial.suggest_float("imbalance", 0.01, 1.0)
     imbalance_decay = trial.suggest_float("imbalance_decay", -5, 5)
-    parts = trial.suggest_int("parts", 2, 16)
+    parts = trial.suggest_int("parts", 2, 5)
     parts_decay = trial.suggest_float("parts_decay", 0.0, 1.0)
     mode = trial.suggest_categorical("mode", ["direct", "recursive"])
     objective = trial.suggest_categorical("objective", ["cut", "km1"])
     fix_output_nodes = trial.suggest_categorical("fix_output_nodes", ["auto", ""])
+
+    # set a timeout for the optimization
 
     ir, tree = optimize(
         ir,
@@ -194,10 +195,11 @@ def objective(
         # optimization returned due to max_cost,
         # but termination condition was not met
         # make sure that the trial is not considered
-        print("Termination condition not met")
+        # print("Termination condition not met")
         return np.inf, np.inf
 
     circuit = ir.cut_circuit(get_leafs(tree))
+    circuit = cuts_to_moves(circuit)
     subcircs = subcircuits(circuit)
 
     return tree.contraction_cost(), max(error_fn(circ) for circ in subcircs)
@@ -219,7 +221,6 @@ def find_best_trial(
     costs = np.array([trial.values[0] for trial in best_trials])
     error = np.array([trial.values[1] for trial in best_trials])
 
-    print(costs)
     if costs.max() == np.inf:
         raise ValueError(
             "No trial with finite cost found. "

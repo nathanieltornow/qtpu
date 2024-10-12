@@ -58,12 +58,17 @@ def ckt_execute(
     #     for label, partition_subexpts in subexperiments.items()
     # }
 
-    start = perf_counter()
     print(
         f"Running {sum(len(subexpts) for subexpts in subexperiments.values())} circuits."
     )
+    start = perf_counter()
+    subexperiments = {
+        label: [defer_mid_measurements(circ) for circ in subsystem_subexpts]
+        for label, subsystem_subexpts in subexperiments.items()
+    }
+
     results = {
-        label: sampler.run([defer_mid_measurements(circ) for circ in subsystem_subexpts]).result()
+        label: sampler.run(subsystem_subexpts, shots=20000).result()
         for label, subsystem_subexpts in subexperiments.items()
     }
     runtime = perf_counter() - start
@@ -81,6 +86,24 @@ def ckt_execute(
         "ckt_run": runtime,
         "ckt_post": posttime,
     }
+
+
+def ckt_numcoeffs(circuit: QuantumCircuit, num_samples: int = np.inf) -> int:
+    obs = "Z" * circuit.num_qubits
+    observable = SparsePauliOp([obs])
+
+    qc_w_ancilla = cut_wires(circuit)
+    observables_expanded = expand_observables(observable.paulis, circuit, qc_w_ancilla)
+    partitioned_problem = partition_problem(
+        circuit=qc_w_ancilla, observables=observables_expanded
+    )
+
+    subcircuits = partitioned_problem.subcircuits
+    subobservables = partitioned_problem.subobservables
+    subexperiments, coefficients = generate_cutting_experiments_dummy(
+        circuits=subcircuits, observables=subobservables, num_samples=num_samples
+    )
+    return len(coefficients)
 
 
 def ckt_execute_dummy(circuit: QuantumCircuit, num_samples: int = np.inf) -> dict:
@@ -132,7 +155,7 @@ def ckt_execute_dummy(circuit: QuantumCircuit, num_samples: int = np.inf) -> dic
 
 
 def cut_ckt(circuit: QuantumCircuit, subcircuit_size: int) -> QuantumCircuit:
-    optimization_settings = OptimizationParameters()
+    optimization_settings = OptimizationParameters(max_gamma=6000000)
 
     # Specify the size of the QPUs available
     device_constraints = DeviceConstraints(qubits_per_subcircuit=subcircuit_size)
@@ -144,7 +167,10 @@ def cut_ckt(circuit: QuantumCircuit, subcircuit_size: int) -> QuantumCircuit:
         f'Found solution using {len(metadata["cuts"])} cuts with a sampling '
         f'overhead of {metadata["sampling_overhead"]}.'
     )
-    return cut_circuit
+    return cut_circuit, {
+        "overhead": metadata["sampling_overhead"],
+        "num_cuts": len(metadata["cuts"]),
+    }
 
 
 from circuit_knitting.cutting.cutting_experiments import *

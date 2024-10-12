@@ -4,7 +4,9 @@ from itertools import chain
 import numpy as np
 import quimb.tensor as qtn
 from qiskit.circuit import QuantumCircuit
-from qiskit.primitives import BaseEstimatorV2, BaseSamplerV2, Estimator
+from qiskit.primitives import BaseEstimatorV2
+from qiskit_aer import AerSimulator
+from qiskit_aer.primitives import EstimatorV2
 
 from qtpu.tensor import HybridTensorNetwork, QuantumTensor
 from qtpu.helpers import defer_mid_measurements
@@ -13,7 +15,7 @@ from qtpu.quasi_distr import QuasiDistr
 
 def contract(
     hybrid_tn: HybridTensorNetwork,
-    evaluator: BaseEstimatorV2 | BaseSamplerV2 | None = None,
+    evaluator: BaseEstimatorV2 | AerSimulator | None = None,
 ) -> qtn.TensorNetwork:
 
     eval_tn = evaluate_hybrid_tn(hybrid_tn, evaluator)
@@ -22,11 +24,11 @@ def contract(
 
 def evaluate_hybrid_tn(
     hybrid_tn: HybridTensorNetwork,
-    evaluator: BaseEstimatorV2 | BaseSamplerV2 | None = None,
+    evaluator: BaseEstimatorV2 | AerSimulator | None = None,
 ) -> qtn.TensorNetwork:
 
     if evaluator is None:
-        evaluator = Estimator()
+        evaluator = EstimatorV2()
 
     quantum_tensors = hybrid_tn.quantum_tensors
     eval_tensors = _evaluate_quantum_tensors(quantum_tensors, evaluator)
@@ -34,7 +36,7 @@ def evaluate_hybrid_tn(
 
 
 def _evaluate_quantum_tensors(
-    quantum_tensors: list[QuantumTensor], evaluator: BaseEstimatorV2 | BaseSamplerV2
+    quantum_tensors: list[QuantumTensor], evaluator: BaseEstimatorV2
 ) -> list[qtn.Tensor]:
 
     print(f"Evaluating {sum(qt.ind_tensor.size for qt in quantum_tensors)} circuits")
@@ -45,8 +47,8 @@ def _evaluate_quantum_tensors(
 
     if isinstance(evaluator, BaseEstimatorV2):
         results = _evaluate_estimator(evaluator, serialized_circuits)
-    elif isinstance(evaluator, BaseSamplerV2):
-        results = _evaluate_sampler(evaluator, serialized_circuits)
+    elif isinstance(evaluator, AerSimulator):
+        results = _evaluate_simulator(evaluator, serialized_circuits)
     else:
         raise ValueError("Invalid evaluator")
 
@@ -77,8 +79,8 @@ def _evaluate_estimator(
     return expvals
 
 
-def _evaluate_sampler(
-    sampler: BaseSamplerV2,
+def _evaluate_simulator(
+    sim: AerSimulator,
     circuits: list[QuantumCircuit],
 ):
     cid_withour_meas = [
@@ -88,16 +90,21 @@ def _evaluate_sampler(
     for i in reversed(cid_withour_meas):
         circuits.pop(i)
 
-    dists = sampler.run(circuits).result().quasi_dists
-    dists = [dists] if isinstance(dists, dict) else dists
+    counts = (
+        sim.run([defer_mid_measurements(circ) for circ in circuits])
+        .result()
+        .get_counts()
+    )
+    counts = [counts] if isinstance(counts, dict) else counts
 
     for i in cid_withour_meas:
-        dists.insert(i, {0: 1.0})
+        counts.insert(i, {"0": 20000})
 
     # we assume that the first register is the original register of the original circuit
-    size = circuits[0].cregs[0].size
-    res = [QuasiDistr(d).prepare(size) for d in dists]
+    # size = circuits[0].cregs[0].size
+    # res = [QuasiDistr(d).expval(size) for d in dists]
 
+    res = [QuasiDistr.from_counts(d).expval() for d in counts]
     return res
 
 
