@@ -79,6 +79,7 @@ def generate_figure():
     fig.subplots_adjust(wspace=0.2)
 
     df = pd.read_json(data_path)
+    # df = df[df["name"] == "qaoa2"]
     df = df[df["num_samples"].isin([100, 500, 1000, 5000, 10000])]
 
     df["cutensor"] = df["cutensor_exec"] + df["cutensor_compile"]
@@ -152,7 +153,7 @@ def generate_figure():
 
     # ax1.axhline(1, color="black", linestyle="--", linewidth=2)
 
-    ax0.set_yscale("log")
+    # ax0.set_yscale("log")
     ax1.set_yscale("log")
     postprocess_barplot(ax0)
     postprocess_barplot(ax1)

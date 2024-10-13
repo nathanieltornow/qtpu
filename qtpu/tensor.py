@@ -1,6 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor
-
-from itertools import chain
 import numpy as np
 import quimb.tensor as qtn
 from qiskit.circuit import QuantumCircuit, ClassicalRegister
@@ -92,17 +89,9 @@ class QuantumTensor:
 
             res_circuit.append(op, qubits, clbits)
 
-        res_circuit = res_circuit.decompose()
-        # res_circuit = defer_mid_measurements(res_circuit)
-        return res_circuit
+        return res_circuit.decompose()
 
     def generate_instances(self) -> list[QuantumCircuit]:
-        # self._instances = [QuantumCircuit(1, 1) for _ in range(self._ind_tensor.size)]
-
-        # with ThreadPoolExecutor() as executor:
-        #     self._instances = list(
-        #         executor.map(self.get_instance, range(self._ind_tensor.size))
-        #     )
         self._instances = [
             self.get_instance(instance_label)
             for instance_label in self.ind_tensor.data.flat
@@ -219,7 +208,6 @@ class HybridTensorNetwork:
             errors.append(np.sum(norm_data[:cutoff]))
 
             data = tens.data[sort[cutoff:]]
-            print(len(data))
             all_tensors.append(qtn.Tensor(data, inds=tens.inds, tags=tens.tags))
             ind_to_sort[tens.inds[0]] = sort[cutoff:]
 
