@@ -46,7 +46,9 @@ class HybridCircuitIR:
                 current_nodes[qubit] = len(inputs) - 1
 
             try:
-                edge_weigth = round(QPDBasis.from_instruction(instr.operation).overhead)
+                # edge_weigth = round(QPDBasis.from_instruction(instr.operation).overhead)
+                edge_weigth = QPDBasis.from_instruction(instr.operation).overhead
+
                 # edge_weigth = len(QPDBasis.from_instruction(instr.operation).coeffs)
             except ValueError:
                 edge_weigth = 1e15

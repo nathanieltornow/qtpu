@@ -8,6 +8,13 @@ For this, qTPU makes use of **quasiprobability decompostiton (QPD)**.
 The contraction of a hybrid tensor network returns the result of the original circuit and can be run in a co-processing routine on quantum- and classical accelerators.
 
 
+## TODO
+
+- Make hyperoptmizer outside of circuit
+- Change quantum tensor with weights
+- More complex observables
+- uncertainty estimation
+
 ## Quickstart
 
 ```shell

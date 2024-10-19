@@ -1,7 +1,5 @@
 from typing import Callable
-from functools import partial
 
-import numpy as np
 import cotengra as ctg
 
 from qtpu.compiler.compress import CompressedIR

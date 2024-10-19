@@ -1,9 +1,12 @@
 from typing import Callable
 
+import numpy as np
 from qiskit.circuit import QuantumCircuit
 
+from qtpu.circuit import subcircuits, cuts_to_moves
 
-def estimated_error(circuit: QuantumCircuit) -> float:
+
+def esp(circuit: QuantumCircuit) -> float:
     fid = 1.0
     for instr in circuit:
         op = instr.operation
@@ -23,4 +26,9 @@ def estimated_error(circuit: QuantumCircuit) -> float:
         else:
             raise ValueError(f"Unsupported operation: {op}")
 
-    return 1 - round(fid, 3)
+    return round(fid, 3)
+
+
+def estimated_error(circuit: QuantumCircuit) -> float:
+    circuits = subcircuits(cuts_to_moves(circuit))
+    return np.mean([1 - esp(c) for c in circuits])
