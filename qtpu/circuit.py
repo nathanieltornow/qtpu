@@ -21,7 +21,7 @@ from qtpu.tensor import QuantumTensor, HybridTensorNetwork, wire_tensor
 def circuit_to_hybrid_tn(
     circuit: QuantumCircuit, num_samples: int = np.inf
 ) -> HybridTensorNetwork:
-    circuit = fragment(remove_barriers(circuit))
+    circuit = fragment(cuts_to_moves(remove_barriers(circuit)))
     ctensors = _extract_qpd_tensors(circuit)
 
     circuit = _decompose_virtual_gates(circuit)
@@ -133,7 +133,7 @@ def _extract_qpd_tensors(circuit: QuantumCircuit) -> list[qtn.Tensor]:
         assert not isinstance(op, SingleQubitQPDGate)
 
         if isinstance(op, TwoQubitQPDGate):
-            ct = qtn.Tensor(op.basis.coeffs, inds=[str(qpd_ctr)])
+            ct = qtn.Tensor(op.basis.coeffs, inds=[str(qpd_ctr)], tags=["QPD"])
             if (
                 op.label == "cut_move"
                 and circuit.find_bit(qubits[0]).registers[0][0]

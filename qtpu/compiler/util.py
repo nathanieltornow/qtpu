@@ -1,3 +1,4 @@
+import networkx as nx
 import numpy as np
 import cotengra as ctg
 from qiskit.circuit import QuantumCircuit
@@ -34,3 +35,30 @@ def sampling_overhead_circuit(circuit: QuantumCircuit) -> float:
             if isinstance(instr.operation, TwoQubitQPDGate)
         ]
     )
+
+
+def partition_girvan_newman(
+    inputs: list[tuple[str, ...]],
+    output: tuple[str, ...],
+    size_dict: dict[str, int],
+    parts: int,
+    **kwargs,
+) -> list[int]:
+    hypergraph = ctg.HyperGraph(inputs, output, size_dict)
+
+    graph = hypergraph.to_networkx()
+    for _, _, data in graph.edges(data=True):
+        data["weight"] = size_dict[data["ind"]]
+
+    for components in nx.algorithms.community.girvan_newman(graph):
+        if len(components) == parts:
+            break
+
+    membership = [0] * len(inputs)
+    for i, component in enumerate(components):
+        for node in component:
+            if isinstance(node, str):
+                continue
+            membership[node] = i
+    return membership
+

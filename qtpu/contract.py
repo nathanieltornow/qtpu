@@ -8,9 +8,19 @@ from qiskit.primitives import BaseEstimatorV2
 from qiskit_aer import AerSimulator
 from qiskit_aer.primitives import EstimatorV2
 
+from qtpu.circuit import circuit_to_hybrid_tn
 from qtpu.tensor import HybridTensorNetwork, QuantumTensor
 from qtpu.helpers import defer_mid_measurements
 from qtpu.quasi_distr import QuasiDistr
+
+
+def run(
+    circuit: QuantumCircuit,
+    evaluator: BaseEstimatorV2 | AerSimulator | None = None,
+    num_samples: int = np.inf,
+) -> qtn.TensorNetwork:
+    hybrid_tn = circuit_to_hybrid_tn(circuit, num_samples)
+    return contract(hybrid_tn, evaluator)
 
 
 def contract(

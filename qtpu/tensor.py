@@ -218,6 +218,12 @@ class HybridTensorNetwork:
 
         return np.array(errors)
 
+    def contraction_cost(self) -> int:
+        return self.to_tensor_network().contraction_cost(optimize="auto-hq")
+
+    def draw(self, color=["QPD", "Q", "wire"], **kwargs):
+        return self.to_tensor_network().draw(color=color, **kwargs)
+
 
 def sort_indices(tensor: qtn.Tensor, ind_to_sort: dict[str, np.ndarray]) -> qtn.Tensor:
     data = tensor.data

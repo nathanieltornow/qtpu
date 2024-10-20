@@ -12,7 +12,7 @@ from qtpu.compiler.compress import CompressedIR, compress_2q_gates, compress_qub
 from qtpu.compiler.util import (
     get_leafs,
     sampling_overhead_tree,
-    sampling_overhead_circuit,
+    partition_girvan_newman,
 )
 from qtpu.compiler.success import estimated_error
 from qtpu.helpers import remove_barriers
@@ -21,7 +21,19 @@ from qtpu.helpers import remove_barriers
 logger = logging.getLogger("qtpu.compiler")
 
 
-partition_fn = ctg.pathfinders.path_kahypar.kahypar_subgraph_find_membership
+LOGGING = False
+
+if not LOGGING:
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+
+try:
+    import kahypar
+
+    partition_fn = ctg.pathfinders.path_kahypar.kahypar_subgraph_find_membership
+except ImportError:
+    print("KAHYPAR not found, using Girvan-Newman partitioning")
+    partition_fn = partition_girvan_newman
 
 
 def optimize(
@@ -250,7 +262,6 @@ def hyper_optimize(
     )
 
     return study
-    # return [trial.user_attrs["circuit"] for trial in study.best_trials]
 
 
 def max_qubits_leaf(
