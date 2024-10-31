@@ -31,3 +31,13 @@ res = qtpu.contract(htn, est)
 
 See [./docs](./docs/) for more examples and explanations.
 
+## Paper
+
+```text
+@article{tornow2024quantum,
+  title={Quantum-Classical Computing via Tensor Networks},
+  author={Tornow, Nathaniel and Mendl, Christian B and Bhatotia, Pramod},
+  journal={arXiv preprint arXiv:2410.15080},
+  year={2024}
+}
+```

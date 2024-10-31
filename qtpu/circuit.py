@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 import quimb.tensor as qtn
 import networkx as nx
-from qiskit.circuit import QuantumCircuit, QuantumRegister
+from qiskit.circuit import QuantumCircuit, QuantumRegister, Qubit
 
 from circuit_knitting.cutting.instructions import CutWire, Move
 from circuit_knitting.cutting.qpd import (
@@ -16,6 +16,11 @@ from circuit_knitting.cutting.qpd import (
 from qtpu.helpers import remove_barriers
 from qtpu.instructions import InstanceGate
 from qtpu.tensor import QuantumTensor, HybridTensorNetwork, wire_tensor
+
+
+class CircuitWithMeasurements:
+    circuit: QuantumCircuit
+    measurements: dict[Qubit, int]
 
 
 def circuit_to_hybrid_tn(
