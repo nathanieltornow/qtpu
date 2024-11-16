@@ -1,17 +1,18 @@
 import matplotlib.pyplot as plt
 
+FONTSIZE = 12
 
 tex_fonts = {
     # Use LaTeX to write all text
     # "text.usetex": True,
     "font.family": "serif",
     # Use 10pt font in plots, to match 10pt font in document
-    "axes.labelsize": 10,
-    "font.size": 10,
+    "axes.labelsize": FONTSIZE,
+    "font.size": FONTSIZE,
     # Make the legend/label fonts a little smaller
-    "legend.fontsize": 8,
-    "xtick.labelsize": 8,
-    "ytick.labelsize": 8,
+    "legend.fontsize": FONTSIZE - 2,
+    "xtick.labelsize": FONTSIZE - 2,
+    "ytick.labelsize": FONTSIZE - 2,
     "axes.titlesize": 10,
     # line width
     "lines.linewidth": 2,

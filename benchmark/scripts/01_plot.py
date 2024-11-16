@@ -5,7 +5,7 @@ import numpy as np
 
 
 data_path = "benchmark/results/postprocessing.json"
-FIG_SIZE = (15, 1.9)
+FIG_SIZE = (10, 2.3)
 
 
 def get_dfs():
@@ -14,8 +14,8 @@ def get_dfs():
 
     dfs = {
         "VQE": df[df["name"] == "vqe"].copy().drop(columns=["name"]),
-        "QML": df[df["name"] == "qml"].copy().drop(columns=["name"]),
-        "QAOA I": df[df["name"] == "qaoa1"].copy().drop(columns=["name"]),
+        # "QML": df[df["name"] == "qml"].copy().drop(columns=["name"]),
+        # "QAOA I": df[df["name"] == "qaoa1"].copy().drop(columns=["name"]),
         "QAOA II": df[df["name"] == "qaoa2"].copy().drop(columns=["name"]),
     }
     return dfs
@@ -71,7 +71,8 @@ def generate_overhead_figure():
         fontweight="bold",
         color="midnightblue",
     )
-    fig.savefig("benchmark/plots/01_post_overhead.pdf", bbox_inches="tight")
+    # fig.savefig("benchmark/plots/01_post_overhead.pdf", bbox_inches="tight")
+    fig.savefig("benchmark/plots/01_post_overhead.png", bbox_inches="tight", dpi=400)
 
 
 def generate_speedup_figure():
@@ -116,7 +117,8 @@ def generate_speedup_figure():
         color="midnightblue",
     )
 
-    fig.savefig("benchmark/plots/01_post_speedup.pdf", bbox_inches="tight")
+    # fig.savefig("benchmark/plots/01_post_speedup.pdf", bbox_inches="tight")
+    fig.savefig("benchmark/plots/01_post_speedup.png", bbox_inches="tight", dpi=400)
 
 
 def print_summary():

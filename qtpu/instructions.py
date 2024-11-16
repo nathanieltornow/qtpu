@@ -1,4 +1,5 @@
 from qiskit.circuit import QuantumCircuit, Barrier
+from qiskit.circuit.library import Measure
 
 
 class InstanceGate(Barrier):
@@ -21,3 +22,13 @@ class InstanceGate(Barrier):
     @property
     def instances(self) -> list[QuantumCircuit]:
         return self._instances
+
+
+# measurement and postprocessing
+class NamedMeasure(Measure):
+    def __init__(self, label=None, *, duration=None, unit="dt"):
+        super().__init__(label, duration=duration, unit=unit)
+
+    
+
+# list of quantum circuits and list of results

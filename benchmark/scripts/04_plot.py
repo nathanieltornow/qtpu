@@ -104,7 +104,8 @@ def generate_figure():
         fontweight="bold",
         color="midnightblue",
     )
-    fig.savefig("benchmark/plots/04_threshold.pdf", bbox_inches="tight")
+    # fig.savefig("benchmark/plots/04_threshold.pdf", bbox_inches="tight")
+    fig.savefig("benchmark/plots/04_threshold.png", bbox_inches="tight", dpi=400)
 
 
 generate_figure()

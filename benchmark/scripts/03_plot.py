@@ -114,7 +114,7 @@ def plot_end2end_2(ax):
 
 
 def generate_figure():
-    fig, ax1 = plt.subplots(1, 1, figsize=(4.5, 2.1))
+    fig, ax1 = plt.subplots(1, 1, figsize=(6, 2.1))
     # plot_end2end(ax1)
     plot_end2end_2(ax1)
     # handles, labels = ax.get_legend_handles_labels()
@@ -123,12 +123,13 @@ def generate_figure():
         ["VQE", "QML", "QAOA I", "QAOA II", "CuTensorNet"],
         loc="lower center",
         ncol=5,
-        bbox_to_anchor=(0.5, -0.22),
+        bbox_to_anchor=(0.5, -0.3),
     )
 
     # plot_end2end(ax1)
 
-    fig.savefig("benchmark/plots/03_end_to_end.pdf", bbox_inches="tight")
+    # fig.savefig("benchmark/plots/03_end_to_end.pdf", bbox_inches="tight")
+    fig.savefig("benchmark/plots/03_end_to_end.png", bbox_inches="tight", dpi=400)
 
 
 # def print_summary():
