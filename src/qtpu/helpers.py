@@ -9,6 +9,40 @@ from qiskit.circuit import (
 )
 
 
+def nearest_probability_distribution(quasi_dist) -> dict[int, float]:
+    """
+    Implements the original algorithm for projecting to valid probabilities.
+    This version maintains the exact logic of the provided code.
+
+    Args:
+        quasi_dist: Array-like of probabilities that sum to 1
+    Returns:
+        dict: Mapping of indices to projected probabilities
+    """
+    # Convert to dictionary with indices
+    probs = {i: p for i, p in enumerate(quasi_dist)}
+
+    # Sort by probability value (ascending)
+    sorted_probs = dict(sorted(probs.items(), key=lambda item: item[1]))
+
+    num_elems = len(sorted_probs)
+    new_probs = {}
+    beta = 0.0
+    diff = 0.0
+
+    for key, val in sorted_probs.items():
+        temp = val + beta / num_elems
+        if temp < 0:
+            beta += val
+            num_elems -= 1
+            diff += val * val
+        else:
+            diff += (beta / num_elems) * (beta / num_elems)
+            new_probs[key] = val + beta / num_elems
+
+    return new_probs
+
+
 def qiskit_to_quimb(circuit: QuantumCircuit) -> qtn.Circuit:
     circ = qtn.Circuit(circuit.num_qubits)
     for instr in circuit:

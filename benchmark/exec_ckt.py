@@ -9,14 +9,14 @@ from qiskit.quantum_info import SparsePauliOp
 from qiskit.compiler import transpile
 
 
-from circuit_knitting.cutting import (
+from qiskit_addon_cutting import (
     cut_wires,
     expand_observables,
     partition_problem,
     generate_cutting_experiments,
     reconstruct_expectation_values,
 )
-from circuit_knitting.cutting.automated_cut_finding import (
+from qiskit_addon_cutting.automated_cut_finding import (
     find_cuts,
     OptimizationParameters,
     DeviceConstraints,
@@ -172,9 +172,8 @@ def cut_ckt(circuit: QuantumCircuit, subcircuit_size: int) -> QuantumCircuit:
         "num_cuts": len(metadata["cuts"]),
     }
 
-
-from circuit_knitting.cutting.cutting_experiments import *
-from circuit_knitting.cutting.cutting_experiments import (
+from qiskit_addon_cutting.cutting_experiments import *
+from qiskit_addon_cutting.cutting_experiments import (
     _append_measurement_register,
     _append_measurement_circuit,
     _remove_resets_in_zero_state,

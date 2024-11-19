@@ -2,10 +2,10 @@ from dataclasses import dataclass
 
 import cotengra as ctg
 from qiskit.circuit import QuantumCircuit, Qubit
-from circuit_knitting.cutting.qpd import QPDBasis
-from circuit_knitting.cutting.instructions import Move
+from qiskit_addon_cutting.qpd import QPDBasis
+from qiskit_addon_cutting.instructions import Move
 
-from qtpu.circuit import insert_cuts
+from qtpu.transforms import insert_cuts
 
 
 @dataclass(frozen=True)

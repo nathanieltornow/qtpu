@@ -6,7 +6,7 @@ import numpy as np
 import cotengra as ctg
 from qiskit.circuit import QuantumCircuit
 
-from qtpu.circuit import cuts_to_moves
+from qtpu.transforms import wire_cuts_to_moves
 from qtpu.compiler.ir import HybridCircuitIR
 from qtpu.compiler.compress import CompressedIR, compress_2q_gates, compress_qubits
 from qtpu.compiler.util import (
@@ -159,7 +159,7 @@ def optimize(
     if terminate_fn is not None and not terminate_fn(ir, tree):
         sampling_overhead = np.inf
 
-    return cuts_to_moves(ir.cut_circuit(get_leafs(tree))), {
+    return wire_cuts_to_moves(ir.cut_circuit(get_leafs(tree))), {
         "sampling_overhead": sampling_overhead,
         "post_overhead": tree.contraction_cost(),
     }

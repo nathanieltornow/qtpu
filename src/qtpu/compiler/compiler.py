@@ -7,7 +7,7 @@ from qiskit.circuit import QuantumCircuit
 
 from qtpu.compiler.opt import hyper_optimize
 from qtpu.compiler.terminators import reach_num_qubits
-from qtpu.circuit import subcircuits
+from qtpu.transforms import circuit_to_hybrid_tn
 
 
 def find_best_trial(
@@ -51,7 +51,12 @@ def cut(
     study = hyper_optimize(
         circuit=circuit,
         error_fn=lambda circ: (
-            0.0 if any(c.num_qubits > num_qubits for c in subcircuits(circ)) else 1.0
+            0.0
+            if any(
+                c.num_qubits > num_qubits
+                for c in circuit_to_hybrid_tn(circuit).subcircuits
+            )
+            else 1.0
         ),
         max_overhead=max_overhead,
         terminate_fn=reach_num_qubits(num_qubits),

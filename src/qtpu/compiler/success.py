@@ -3,7 +3,7 @@ from typing import Callable
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 
-from qtpu.circuit import subcircuits, cuts_to_moves
+from qtpu.transforms import wire_cuts_to_moves, circuit_to_hybrid_tn
 
 
 def esp(circuit: QuantumCircuit) -> float:
@@ -30,5 +30,5 @@ def esp(circuit: QuantumCircuit) -> float:
 
 
 def estimated_error(circuit: QuantumCircuit) -> float:
-    circuits = subcircuits(cuts_to_moves(circuit))
+    circuits = circuit_to_hybrid_tn(wire_cuts_to_moves(circuit)).subcircuits
     return np.mean([1 - esp(c) for c in circuits])

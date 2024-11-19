@@ -2,9 +2,9 @@ import networkx as nx
 import numpy as np
 import cotengra as ctg
 from qiskit.circuit import QuantumCircuit
-from circuit_knitting.cutting.qpd import TwoQubitQPDGate
+from qiskit_addon_cutting.qpd import TwoQubitQPDGate
 
-from qtpu.circuit import cuts_to_moves
+from qtpu.transforms import wire_cuts_to_moves
 
 
 def get_leafs(tree: ctg.ContractionTree) -> list[frozenset[int]]:
@@ -27,7 +27,7 @@ def sampling_overhead_tree(tree: ctg.ContractionTree) -> float:
 
 
 def sampling_overhead_circuit(circuit: QuantumCircuit) -> float:
-    circuit = cuts_to_moves(circuit)
+    circuit = wire_cuts_to_moves(circuit)
     return np.prod(
         [
             instr.operation.basis.overhead

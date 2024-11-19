@@ -6,12 +6,12 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.primitives import BaseEstimator, BaseSampler
 
 from qtpu.contract import evaluate_hybrid_tn
-from qtpu.circuit import circuit_to_hybrid_tn, cuts_to_moves
+from qtpu.transforms import circuit_to_hybrid_tn, wire_cuts_to_moves
 from qtpu.helpers import defer_mid_measurements
 
 
 def qtpu_num_coeffs(circuit: QuantumCircuit, num_samples: int = np.inf) -> int:
-    circuit = cuts_to_moves(circuit)
+    circuit = wire_cuts_to_moves(circuit)
     htn = circuit_to_hybrid_tn(circuit, num_samples)
     return np.prod([tens.size for tens in htn.qpd_tensors])
 
@@ -21,7 +21,7 @@ def qtpu_execute_dummy(
 ) -> dict[str, float]:
 
     start = perf_counter()
-    circuit = cuts_to_moves(circuit)
+    circuit = wire_cuts_to_moves(circuit)
     htn = circuit_to_hybrid_tn(circuit, num_samples)
 
     prep_time = perf_counter() - start
@@ -41,7 +41,7 @@ def qtpu_execute_dummy_cutensor(
     import cupy as cp
 
     start = perf_counter()
-    circuit = cuts_to_moves(circuit)
+    circuit = wire_cuts_to_moves(circuit)
     htn = circuit_to_hybrid_tn(circuit, num_samples)
 
     prep_time = perf_counter() - start
@@ -79,7 +79,7 @@ def qtpu_execute(
     circuit.measure_all()
 
     start = perf_counter()
-    circuit = cuts_to_moves(circuit)
+    circuit = wire_cuts_to_moves(circuit)
     htn = circuit_to_hybrid_tn(circuit, num_samples)
 
     for qt in htn.quantum_tensors:
@@ -112,7 +112,7 @@ def qtpu_execute_cutensor(
     import cupy as cp
 
     start = perf_counter()
-    circuit = cuts_to_moves(circuit)
+    circuit = wire_cuts_to_moves(circuit)
     htn = circuit_to_hybrid_tn(circuit, num_samples)
     num_circuits = htn.num_circuits()
 

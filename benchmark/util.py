@@ -17,8 +17,8 @@ from qiskit.primitives import BaseSampler, SamplerResult, PrimitiveJob
 from qiskit.result import QuasiDistribution
 from qiskit.compiler import transpile
 
-from circuit_knitting.utils.iteration import strict_zip
-from circuit_knitting.cutting.qpd import TwoQubitQPDGate
+from qiskit_addon_cutting.utils.iteration import strict_zip
+from qiskit_addon_cutting.qpd import TwoQubitQPDGate
 import cotengra as ctg
 
 from qtpu.tensor import HybridTensorNetwork
