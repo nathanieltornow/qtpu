@@ -10,26 +10,31 @@ pip install git+https://github.com/nathanieltornow/qtpu
 
 ```python
 from qiskit import QuantumCircuit
-from qiskit_aer.primitives import EstimatorV2
 import qtpu
 
-N = 20
-circuit = QuantumCircuit(N)
-# ...
+# generate some quantumcircuit
+circuit = QuantumCircuit(...)
 
-# cut the circuit into subcircuits a quater the size of the original cricuit
-cut_circuit = qtpu.cut(circuit, num_qubits=N//4, show_progress_bar=True, n_trials=10)
+# cut the circuit into two halves
+cut_circ = qtpu.cut(circuit, num_qubits=circuit.num_qubits // 2)
 
-# convert the circuit into a hybrid tensor network (h-TN)
-hybrid_tn = qtpu.circuit_to_hybrid_tn(cut_circuit, num_samples=np.inf)
+# convert the circuit into a hybrid tensor network
+hybrid_tn = qtpu.circuit_to_hybrid_tn(cut_circ)
 
-# contract the hybrid tensor network to get the <ZZ..Z>
-est = EstimatorV2()
-res = qtpu.contract(htn, est)
+for i, subcirc in enumerate(hybrid_tn.subcircuits):
+    print(f"Subcircuit {i}:")
+    print(subcirc)
+    print("--------------------")
+
+# evaluate the hybrid tensor network to a classical tensor network
+tn = qtpu.evaluate(hybrid_tn)
+
+# contract the classical tensor network
+res = tn.contract(all, optimize="auto-hq", output_inds=[])
 
 ```
 
-See [./docs](./docs/) for more examples and explanations.
+See [./examples](./examples/) for more examples and explanations.
 
 ## Paper
 
