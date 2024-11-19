@@ -1,9 +1,16 @@
+from __future__ import annotations
+
 from itertools import chain
+from typing import TYPE_CHECKING
 
 import cotengra as ctg
-from qiskit.circuit import QuantumCircuit
 
-from qtpu.compiler.ir import HybridCircuitIR, NodeInfo
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from qiskit.circuit import QuantumCircuit
+
+    from qtpu.compiler._ir import HybridCircuitIR, NodeInfo
 
 
 class CompressedIR:
@@ -41,7 +48,7 @@ class CompressedIR:
     def contraction_tree(self) -> ctg.ContractionTree:
         return ctg.ContractionTree(
             self._inputs,
-            tuple(),
+            (),
             self._sizedict,
             track_childless=True,
             track_flops=True,
@@ -51,14 +58,16 @@ class CompressedIR:
         return len(
             set(
                 chain.from_iterable(
-                    set(info.abs_qubit for info in self.node_infos(node))
+                    {info.abs_qubit for info in self.node_infos(node)}
                     for node in node_subset
                 )
             )
         )
 
-    def cut_circuit(self, node_subsets: list[set[int]]) -> QuantumCircuit:
-        decompressed_nodes = [self.decompress_nodes(subset) for subset in node_subsets]
+    def cut_circuit(
+        self, node_subsets: Sequence[set[int] | frozenset[int]]
+    ) -> QuantumCircuit:
+        decompressed_nodes = [self.decompress_nodes(set(subset)) for subset in node_subsets]
         return self._ir.cut_circuit(decompressed_nodes)
 
     def node_infos(self, node: int) -> set[NodeInfo]:

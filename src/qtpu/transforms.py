@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from itertools import combinations
+from typing import TYPE_CHECKING
 
 import networkx as nx
 import numpy as np
-from numpy.typing import NDArray
 import quimb.tensor as qtn
 from qiskit.circuit import (
     CircuitInstruction,
@@ -31,6 +31,9 @@ from qiskit_addon_cutting.instructions import CutWire, Move
 from qiskit_addon_cutting.qpd import QPDMeasure, TwoQubitQPDGate
 
 from qtpu.tensor import CircuitTensor, HybridTensorNetwork, InstructionVector
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 
 def insert_cuts(

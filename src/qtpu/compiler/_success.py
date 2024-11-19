@@ -1,9 +1,13 @@
-from typing import Callable
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
-from qiskit.circuit import QuantumCircuit
 
-from qtpu.transforms import wire_cuts_to_moves, circuit_to_hybrid_tn
+from qtpu.transforms import circuit_to_hybrid_tn, wire_cuts_to_moves
+
+if TYPE_CHECKING:
+    from qiskit.circuit import QuantumCircuit
 
 
 def esp(circuit: QuantumCircuit) -> float:
@@ -24,11 +28,12 @@ def esp(circuit: QuantumCircuit) -> float:
             fid *= 1 - 1e-3
 
         else:
-            raise ValueError(f"Unsupported operation: {op}")
+            msg = f"Unsupported operation: {op}"
+            raise ValueError(msg)
 
     return round(fid, 3)
 
 
 def estimated_error(circuit: QuantumCircuit) -> float:
     circuits = circuit_to_hybrid_tn(wire_cuts_to_moves(circuit)).subcircuits
-    return np.mean([1 - esp(c) for c in circuits])
+    return float(np.mean([1 - esp(c) for c in circuits]))

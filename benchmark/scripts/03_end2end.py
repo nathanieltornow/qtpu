@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
-from qtpu.compiler.compiler import compile_reach_size
+from qtpu.compiler._compiler import compile_reach_size
 
 from qiskit_aer import AerSimulator
 from qiskit.primitives import BackendSamplerV2, BackendEstimatorV2

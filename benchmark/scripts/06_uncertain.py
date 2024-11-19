@@ -71,7 +71,7 @@ print(res[0].data.evs)
 # print(circuit)
 
 from benchmark.exec_ckt import cut_ckt
-from qtpu.compiler.compiler import compile_reach_size
+from qtpu.compiler._compiler import compile_reach_size
 from qtpu.contract import contract
 from qtpu.circuit import circuit_to_hybrid_tn, cuts_to_moves
 from benchmark.util import get_info

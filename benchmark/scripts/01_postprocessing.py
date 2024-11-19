@@ -1,4 +1,4 @@
-from qtpu.compiler.compiler import compile_reach_size
+from qtpu.compiler._compiler import compile_reach_size
 
 from benchmark.util import get_info, concat_data
 from benchmark.ansatz import vqe, qml, qaoa1, qaoa2

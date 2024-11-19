@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import cotengra as ctg
-from qiskit.circuit import QuantumCircuit, Qubit
-from qiskit_addon_cutting.qpd import QPDBasis
 from qiskit_addon_cutting.instructions import Move
+from qiskit_addon_cutting.qpd import QPDBasis
 
 from qtpu.transforms import insert_cuts
+
+if TYPE_CHECKING:
+    from qiskit.circuit import QuantumCircuit, Qubit
 
 
 @dataclass(frozen=True)
@@ -29,7 +34,7 @@ class HybridCircuitIR:
             op_nodes.append(set())
 
             for i, qubit in enumerate(instr.qubits):
-                inputs.append(tuple())
+                inputs.append(())
                 op_nodes[-1].add(len(inputs) - 1)
                 node_infos.append(NodeInfo(op_idx=op_id, abs_qubit=qubit, rel_qubit=i))
 
@@ -63,7 +68,7 @@ class HybridCircuitIR:
         self._circuit = circuit
         self._op_nodes = op_nodes
         self._node_infos = node_infos
-        self._hypergraph = ctg.HyperGraph(inputs, tuple(), size_dict)
+        self._hypergraph = ctg.HyperGraph(inputs, (), size_dict)
 
     def node_info(self, node: int) -> NodeInfo:
         return self._node_infos[node]
@@ -74,14 +79,14 @@ class HybridCircuitIR:
     def contraction_tree(self) -> ctg.ContractionTree:
         return ctg.ContractionTree(
             self._hypergraph.inputs,
-            tuple(),
+            (),
             self._hypergraph.size_dict,
             track_flops=True,
             track_childless=True,
         )
 
     def num_qubits(self, node_subset: set[int]) -> int:
-        return len(set(self._node_infos[node].abs_qubit for node in node_subset))
+        return len({self._node_infos[node].abs_qubit for node in node_subset})
 
     @property
     def circuit(self) -> QuantumCircuit:

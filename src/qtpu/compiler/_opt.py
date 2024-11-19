@@ -1,21 +1,25 @@
+from __future__ import annotations
+
 import logging
-from typing import Callable
+from typing import TYPE_CHECKING, Any, cast
 
-import optuna
-import numpy as np
 import cotengra as ctg
-from qiskit.circuit import QuantumCircuit
+import numpy as np
+import optuna
 
-from qtpu.transforms import wire_cuts_to_moves, remove_operations_by_name
-from qtpu.compiler.ir import HybridCircuitIR
-from qtpu.compiler.compress import CompressedIR, compress_2q_gates, compress_qubits
-from qtpu.compiler.util import (
+from qtpu.compiler._compress import CompressedIR, compress_2q_gates, compress_qubits
+from qtpu.compiler._ir import HybridCircuitIR
+from qtpu.compiler._success import estimated_error
+from qtpu.compiler._util import (
     get_leafs,
     sampling_overhead_tree,
-    partition_girvan_newman,
 )
-from qtpu.compiler.success import estimated_error
+from qtpu.transforms import remove_operations_by_name, wire_cuts_to_moves
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from qiskit.circuit import QuantumCircuit
 
 logger = logging.getLogger("qtpu.compiler")
 
@@ -24,15 +28,6 @@ LOGGING = False
 
 if not LOGGING:
     optuna.logging.set_verbosity(optuna.logging.WARNING)
-
-
-try:
-    import kahypar
-
-    partition_fn = ctg.pathfinders.path_kahypar.kahypar_subgraph_find_membership
-except ImportError:
-    print("KAHYPAR not found, using Girvan-Newman partitioning")
-    partition_fn = partition_girvan_newman
 
 
 def optimize(
@@ -48,23 +43,25 @@ def optimize(
     parts_decay: float = 0.5,
     super_optimize: str = "auto-hq",
     seed: int | None = None,
-    **partition_opts,
-):
+    **partition_opts: Any, # noqa: ANN401
+) -> tuple[QuantumCircuit, dict[str, float]]:
     if terminate_fn is None and max_overhead == np.inf:
-        raise ValueError("No stopping condition provided")
+        msg = "No stopping condition provided"
+        raise ValueError(msg)
 
     circuit = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
-    ir = HybridCircuitIR(circuit)
+    hir = HybridCircuitIR(circuit)
 
     match compress:
         case "2q":
-            ir = compress_2q_gates(ir)
+            ir = compress_2q_gates(hir)
         case "qubits":
-            ir = compress_qubits(ir)
+            ir = compress_qubits(hir)
         case "none":
-            ir = CompressedIR(ir, set())
+            ir = CompressedIR(hir, set())
         case _:
-            raise ValueError(f"Unknown compression method: {compress}")
+            msg = f"Unknown compression method: {compress}"
+            raise ValueError(msg)
 
     match choose_leaf:
         case "qubits":
@@ -72,7 +69,8 @@ def optimize(
         case "nodes":
             choose_leaf_fn = max_nodes_leaf
         case _:
-            raise ValueError(f"Unknown leaf selection method: {choose_leaf}")
+            msg = f"Unknown leaf selection method: {choose_leaf}"
+            raise ValueError(msg)
 
     tree = ir.contraction_tree()
 
@@ -88,7 +86,7 @@ def optimize(
     else:
         imbalance = imbalance_decay = None
 
-    dynamic_fix = partition_opts.get("fix_output_nodes", None) == "auto"
+    dynamic_fix = partition_opts.get("fix_output_nodes") == "auto"
 
     while terminate_fn is None or not terminate_fn(ir, tree):
         if tree.is_complete():
@@ -99,8 +97,6 @@ def optimize(
 
         ref_tree = tree.copy() if max_overhead < np.inf else None
 
-        if tree_node is None:
-            break
         subgraph = tuple(tree_node)
         subsize = len(subgraph)
 
@@ -128,7 +124,7 @@ def optimize(
         # [0, 0, 1, 0, 1, 0, 0, 2, 2, ...]
         inputs = tuple(map(tuple, tree.node_to_terms(subgraph)))
         output = tuple(tree.get_legs(tree_node))
-        membership = partition_fn(
+        membership = ctg.pathfinders.path_kahypar.kahypar_subgraph_find_membership(
             inputs,
             output,
             rand_size_dict,
@@ -169,16 +165,16 @@ def objective(
     trial: optuna.Trial,
     circuit: QuantumCircuit,
     error_fn: Callable[[QuantumCircuit], float],
+    choose_leaf_methods: list[str],
+    compression_methods: list[str],
     overhead_type: str = "sampling",  # {"sampling", "post"}
-    max_overhead: int | tuple[int, int] | list[int] = np.inf,
+    max_overhead: float | tuple[float, float] | list[float] = np.inf,
     terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
-    choose_leaf_methods: list[str] | None = None,
-    compression_methods: list[str] | None = None,
-) -> float:
+) -> tuple[float, float]:
 
     if isinstance(max_overhead, tuple):
         assert max_overhead[0] < max_overhead[1]
-        max_overhead = trial.suggest_int("max_overhead", *max_overhead)
+        max_overhead = trial.suggest_float("max_overhead", *max_overhead)
     elif isinstance(max_overhead, list):
         max_overhead = trial.suggest_categorical("max_overhead", max_overhead)
 
@@ -229,14 +225,14 @@ def objective(
 def hyper_optimize(
     circuit: QuantumCircuit,
     error_fn: Callable[[QuantumCircuit], float] | None = None,
-    max_overhead: int | tuple[int, int] | list[int] = np.inf,
+    max_overhead: float | tuple[float, float] | list[float] = np.inf,
     terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
     choose_leaf_methods: list[str] | None = None,
     compression_methods: list[str] | None = None,
     # optuna args
     n_trials: int = 100,
     show_progress_bar: bool = False,
-) -> list[QuantumCircuit]:
+) -> optuna.Study:
     if error_fn is None:
         error_fn = estimated_error
 
@@ -268,17 +264,19 @@ def max_qubits_leaf(
     ir: CompressedIR, tree: ctg.ContractionTree
 ) -> frozenset[int] | None:
     if len(tree.childless) == 1:
-        return next(iter(tree.childless))
+        return cast(frozenset[int], next(iter(tree.childless)))
     if len(tree.childless) == 0:
         return None
-    return max(tree.childless, key=lambda x: ir.num_qubits(x))
+    return cast(frozenset[int], max(tree.childless, key=ir.num_qubits))
 
 
 def max_nodes_leaf(
     ir: CompressedIR, tree: ctg.ContractionTree
 ) -> frozenset[int] | None:
     if len(tree.childless) == 1:
-        return next(iter(tree.childless))
+        return cast(frozenset[int], next(iter(tree.childless)))
     if len(tree.childless) == 0:
         return None
-    return max(tree.childless, key=lambda x: len(ir.decompress_nodes(x)))
+    return cast(
+        frozenset[int], max(tree.childless, key=lambda x: len(ir.decompress_nodes(x)))
+    )

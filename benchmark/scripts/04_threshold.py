@@ -2,7 +2,7 @@ import numpy as np
 
 from qiskit.circuit import QuantumCircuit
 
-from qtpu.compiler.compiler import compile_reach_size
+from qtpu.compiler._compiler import compile_reach_size
 
 from benchmark.util import get_info, concat_data
 from benchmark.ansatz import qaoa2
