@@ -1,17 +1,22 @@
+"""Functions for transforming quantum circuits into hybrid tensor networks."""
+
+from __future__ import annotations
+
 from itertools import combinations
 
-import numpy as np
 import networkx as nx
+import numpy as np
 import quimb.tensor as qtn
 from qiskit.circuit import (
-    QuantumCircuit,
-    ClassicalRegister,
-    QuantumRegister,
     CircuitInstruction,
-    Measure,
-    Qubit,
-    Parameter,
+    ClassicalRegister,
     Clbit,
+    Instruction,
+    Measure,
+    Parameter,
+    QuantumCircuit,
+    QuantumRegister,
+    Qubit,
 )
 from qiskit.circuit.library import (
     HGate,
@@ -21,12 +26,10 @@ from qiskit.circuit.library import (
     XGate,
 )
 from qiskit.converters import circuit_to_dag, dag_to_circuit
-
-from qiskit_addon_cutting.qpd import QPDMeasure, TwoQubitQPDGate
 from qiskit_addon_cutting.instructions import CutWire, Move
+from qiskit_addon_cutting.qpd import QPDMeasure, TwoQubitQPDGate
 
-from qtpu.tensor import HybridTensorNetwork, CircuitTensor
-from qtpu.instructions import InstructionVector
+from qtpu.tensor import CircuitTensor, HybridTensorNetwork, InstructionVector
 
 
 def insert_cuts(
@@ -35,11 +38,23 @@ def insert_cuts(
     wire_cuts: set[tuple[int, int]],
     inplace: bool = False,
 ) -> QuantumCircuit:
+    """Inserts gate and wire cuts into a quantum circuit.
 
+    Args:
+        circuit (QuantumCircuit): The quantum circuit to modify.
+        gate_cuts (set[int]): A set of indices where gate cuts should be inserted.
+        wire_cuts (set[tuple[int, int]]): A set of tuples, each containing an operation index and
+            a relative qubit index, after which a wire cut should be inserted.
+        inplace (bool, optional): If True, modifies the circuit in place. If False,
+            creates a copy of the circuit and modifies the copy. Defaults to False.
+
+    Returns:
+        QuantumCircuit: The modified quantum circuit with the specified cuts inserted.
+    """
     if not inplace:
         circuit = circuit.copy()
 
-    wire_cut_dict = {ind: qubit_ind for ind, qubit_ind in wire_cuts}
+    wire_cut_dict = dict(wire_cuts)
 
     indices = sorted(set(gate_cuts) | set(wire_cut_dict.keys()), reverse=True)
 
@@ -63,6 +78,16 @@ def insert_cuts(
 def wire_cuts_to_moves(
     circuit: QuantumCircuit, inplace: bool = False
 ) -> QuantumCircuit:
+    """Replaces CutWire operations with virtual Move operations.
+
+    Args:
+        circuit (QuantumCircuit): The quantum circuit to transform.
+        inplace (bool): If True, modifies the circuit in place. If False,
+            creates a copy of the circuit and modifies the copy. Default is False.
+
+    Returns:
+        QuantumCircuit: The transformed quantum circuit with CutWire operations replaced by Move operations.
+    """
     if not inplace:
         circuit = circuit.copy()
 
@@ -70,7 +95,7 @@ def wire_cuts_to_moves(
 
     qubit_mapping = {}
 
-    def _find_qubit(qubit):
+    def _find_qubit(qubit: Qubit) -> Qubit:
         while qubit in qubit_mapping:
             qubit = qubit_mapping[qubit]
         return qubit
@@ -96,8 +121,15 @@ def wire_cuts_to_moves(
 
 
 def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
+    """Convert a quantum circuit to a hybrid tensor network.
 
-    circuit = clean_clbits(circuit)
+    Args:
+        circuit (QuantumCircuit): The quantum circuit to be converted.
+
+    Returns:
+        HybridTensorNetwork: The resulting hybrid tensor network.
+    """
+    circuit = seperate_clbits(circuit)
 
     graph = _qubit_graph(circuit)
     ccs = list(nx.connected_components(graph))
@@ -117,7 +149,7 @@ def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
         idx = f"i_{len(qpd_inds) - i - 1}"
 
         param1 = param2 = Parameter(idx)
-        op_vector1, op_vector2 = zip(*gate.operation.basis.maps)
+        op_vector1, op_vector2 = zip(*gate.operation.basis.maps, strict=False)
 
         ct = qtn.Tensor(gate.operation.basis.coeffs, inds=[idx], tags=["QPD"])
 
@@ -155,10 +187,23 @@ def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
 
 
 def circuit_on_component(circuit: QuantumCircuit, qubits: set[Qubit]) -> QuantumCircuit:
+    """Extracts a subcircuit from the given quantum circuit that operates only on the specified qubits.
+
+    Args:
+        circuit (QuantumCircuit): The original quantum circuit.
+        qubits (set[Qubit]): A set of qubits to extract the subcircuit for.
+
+    Returns:
+        QuantumCircuit: A new quantum circuit that contains only the operations from the original circuit
+                        that act exclusively on the specified qubits.
+
+    Raises:
+        ValueError: If any gate in the original circuit acts on qubits in *and* out of the specified set.
+    """
     qreg = QuantumRegister(len(qubits), "q")
     qubit_mapping = {
         qubit: qreg[i]
-        for i, qubit in enumerate(sorted(qubits, key=lambda q: circuit.qubits.index(q)))
+        for i, qubit in enumerate(sorted(qubits, key=circuit.qubits.index))
     }
     new_circuit = QuantumCircuit(qreg, *circuit.cregs)
     for instr in circuit:
@@ -170,7 +215,8 @@ def circuit_on_component(circuit: QuantumCircuit, qubits: set[Qubit]) -> Quantum
             )
 
         elif set(instr.qubits) & qubits:
-            raise ValueError("Gate acts on qubits not in the component.")
+            msg = "Gate acts on qubits not in the component."
+            raise ValueError(msg)
 
     return new_circuit
 
@@ -178,7 +224,17 @@ def circuit_on_component(circuit: QuantumCircuit, qubits: set[Qubit]) -> Quantum
 def decompose_qpd_measures(
     circuit: QuantumCircuit, defer: bool = True, inplace: bool = True
 ) -> QuantumCircuit:
+    """Decomposes QPD (Quantum Phase Detection) measure operations in a given quantum circuit.
 
+    Args:
+        circuit (QuantumCircuit): The quantum circuit containing QPD measure operations.
+        defer (bool, optional): If True, defers the measurement using an auxiliary qubit. Defaults to True.
+        inplace (bool, optional): If True, modifies the circuit in place. If False,
+            creates a copy of the circuit. Defaults to True.
+
+    Returns:
+        QuantumCircuit: The modified quantum circuit with QPD measure operations decomposed.
+    """
     if not inplace:
         circuit = circuit.copy()
 
@@ -226,6 +282,17 @@ def decompose_qpd_measures(
 def remove_operations_by_name(
     circuit: QuantumCircuit, names: str | set[str], inplace: bool = True
 ) -> QuantumCircuit:
+    """Remove operations from a QuantumCircuit by their names.
+
+    Args:
+        circuit (QuantumCircuit): The quantum circuit from which to remove operations.
+        names (str or set[str]): The name or set of names of the operations to remove.
+        inplace (bool): If True, modify the circuit in place. If False,
+            return a copy of the circuit with the operations removed. Default is True.
+
+    Returns:
+        QuantumCircuit: The modified quantum circuit with the specified operations removed.
+    """
     if not inplace:
         circuit = circuit.copy()
 
@@ -244,18 +311,19 @@ def remove_operations_by_name(
     return circuit
 
 
-def clean_clbits(circuit: QuantumCircuit) -> QuantumCircuit:
-    """Converts the clbits in a circuit to classical registers for each bit.
+def seperate_clbits(circuit: QuantumCircuit) -> QuantumCircuit:
+    """Create a new QuantumCircuit with classical bits each placed in their own ClassicalRegister.
 
     Args:
-        circuit (QuantumCircuit): The input circuit.
+        circuit (QuantumCircuit): The input quantum circuit to be transformed.
 
     Returns:
-        QuantumCircuit: The circuit with clbits replaced by cregs.
+        QuantumCircuit: A new quantum circuit with the same classical bits
+        and operations, but with classical bits each placed in their own
+        ClassicalRegister.
     """
-
     cregs = [ClassicalRegister(1, f"c{i}") for i in range(circuit.num_clbits)]
-    clbit_to_creg = {clbit: creg for clbit, creg in zip(circuit.clbits, cregs)}
+    clbit_to_creg = dict(zip(circuit.clbits, cregs, strict=False))
 
     new_circuit = QuantumCircuit(*circuit.qregs, *cregs)
     for instr in circuit:
@@ -264,18 +332,18 @@ def clean_clbits(circuit: QuantumCircuit) -> QuantumCircuit:
             instr.qubits,
             [clbit_to_creg[clbit][0] for clbit in instr.clbits],
         )
-    # new_circuit = _remove_idle_cregs(new_circuit)
     return new_circuit
 
 
 def remove_idle_cregs(circuit: QuantumCircuit) -> QuantumCircuit:
-    """Removes classical registers that are not used in the circuit.
+    """Removes classical registers that have at least one unused bit.
 
     Args:
         circuit (QuantumCircuit): The input circuit.
 
     Returns:
-        QuantumCircuit: The circuit with unused classical registers removed.
+        QuantumCircuit: The circuit with classical registers having at
+            least one unused classical bit removed.
     """
     dag = circuit_to_dag(circuit)
     idle_bits = list(dag.idle_wires())
@@ -300,7 +368,9 @@ def _qubit_graph(circuit: QuantumCircuit) -> nx.Graph:
     return graph
 
 
-def _generate_wire_data():
+def _generate_wire_data() -> (
+    tuple[np.ndarray, list[list[Instruction]], list[list[Instruction]]]
+):
     op_vector1 = [
         [Reset()],
         [QPDMeasure(), Reset()],
@@ -313,11 +383,11 @@ def _generate_wire_data():
         [Reset(), HGate()],
         [Reset(), SXdgGate()],
     ]
-    A = np.array(
+    a = np.array(
         [[1, 1, 0, 0], [1, -1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], dtype=np.float32
     )
-    B = np.array(
+    b = np.array(
         [[1, 0, 0, 0], [0, 1, 0, 0], [-1, -1, 2, 0], [-1, -1, 0, 2]],
         dtype=np.float32,
     )
-    return 0.5 * A @ B, op_vector1, op_vector2
+    return 0.5 * a @ b, op_vector1, op_vector2

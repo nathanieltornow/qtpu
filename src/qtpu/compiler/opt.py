@@ -6,7 +6,7 @@ import numpy as np
 import cotengra as ctg
 from qiskit.circuit import QuantumCircuit
 
-from qtpu.transforms import wire_cuts_to_moves
+from qtpu.transforms import wire_cuts_to_moves, remove_operations_by_name
 from qtpu.compiler.ir import HybridCircuitIR
 from qtpu.compiler.compress import CompressedIR, compress_2q_gates, compress_qubits
 from qtpu.compiler.util import (
@@ -15,7 +15,6 @@ from qtpu.compiler.util import (
     partition_girvan_newman,
 )
 from qtpu.compiler.success import estimated_error
-from qtpu.helpers import remove_barriers
 
 
 logger = logging.getLogger("qtpu.compiler")
@@ -54,7 +53,8 @@ def optimize(
     if terminate_fn is None and max_overhead == np.inf:
         raise ValueError("No stopping condition provided")
 
-    ir = HybridCircuitIR(remove_barriers(circuit))
+    circuit = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
+    ir = HybridCircuitIR(circuit)
 
     match compress:
         case "2q":

@@ -1,29 +1,27 @@
-import quimb.tensor as qtn
-import quimb as qu
-from qiskit.circuit import (
-    QuantumCircuit,
-    Gate,
-    QuantumRegister,
-    ClassicalRegister,
-    Barrier,
-)
+"""Helper functions for the QTPU module."""
+
+from __future__ import annotations
+
+import operator
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
-def nearest_probability_distribution(quasi_dist) -> dict[int, float]:
-    """
-    Implements the original algorithm for projecting to valid probabilities.
-    This version maintains the exact logic of the provided code.
+def nearest_probability_distribution(quasi_dist: Iterable[float]) -> dict[int, float]:
+    """Adjusts a quasi-probability distribution to the nearest valid probability distribution.
 
     Args:
-        quasi_dist: Array-like of probabilities that sum to 1
-    Returns:
-        dict: Mapping of indices to projected probabilities
-    """
-    # Convert to dictionary with indices
-    probs = {i: p for i, p in enumerate(quasi_dist)}
+        quasi_dist (Iterable[float]): An iterable of quasi-probabilities.
 
-    # Sort by probability value (ascending)
-    sorted_probs = dict(sorted(probs.items(), key=lambda item: item[1]))
+    Returns:
+        dict[int, float]: A dictionary where keys are indices of the original quasi-probabilities
+                          and values are the adjusted probabilities forming a valid distribution.
+    """
+    probs = dict(enumerate(quasi_dist))
+
+    sorted_probs = dict(sorted(probs.items(), key=operator.itemgetter(1)))
 
     num_elems = len(sorted_probs)
     new_probs = {}
@@ -43,97 +41,43 @@ def nearest_probability_distribution(quasi_dist) -> dict[int, float]:
     return new_probs
 
 
-def qiskit_to_quimb(circuit: QuantumCircuit) -> qtn.Circuit:
-    circ = qtn.Circuit(circuit.num_qubits)
-    for instr in circuit:
-        op, qubits = instr.operation, instr.qubits
-        if not isinstance(op, Gate):
-            continue
+# def qiskit_to_quimb(circuit: QuantumCircuit) -> qtn.Circuit:
+#     circ = qtn.Circuit(circuit.num_qubits)
+#     for instr in circuit:
+#         op, qubits = instr.operation, instr.qubits
+#         if not isinstance(op, Gate):
+#             continue
 
-        circ.apply_gate_raw(op.to_matrix(), [circuit.qubits.index(q) for q in qubits])
+#         circ.apply_gate_raw(op.to_matrix(), [circuit.qubits.index(q) for q in qubits])
 
-    return circ
-
-
-def sample_quimb(circuit: QuantumCircuit, shots: int) -> dict[str, int]:
-    circuit.remove_final_measurements()
-
-    tn_circ = qiskit_to_quimb(circuit)
-
-    counts = {}
-    for sample in tn_circ.sample(shots):
-        sample_str = "".join(reversed(sample))
-        counts[sample_str] = counts.get(sample_str, 0) + 1
-    return counts
+#     return circ
 
 
-def expval_quimb(circuit: QuantumCircuit) -> float:
-    tn_circ = qiskit_to_quimb(circuit)
-    Z = qu.pauli("Z")
-    for i in range(circuit.num_qubits - 1):
-        Z = Z & qu.pauli("Z")
-    return tn_circ.local_expectation(Z, range(circuit.num_qubits))
+# def sample_quimb(circuit: QuantumCircuit, shots: int) -> dict[str, int]:
+#     circuit.remove_final_measurements()
+
+#     tn_circ = qiskit_to_quimb(circuit)
+
+#     counts = {}
+#     for sample in tn_circ.sample(shots):
+#         sample_str = "".join(reversed(sample))
+#         counts[sample_str] = counts.get(sample_str, 0) + 1
+#     return counts
 
 
-def compute_Z_expectation(circuit: QuantumCircuit) -> float:
-    from cuquantum import CircuitToEinsum, contract
-    import cupy as cp
-
-    myconverter = CircuitToEinsum(circuit, dtype="complex128", backend=cp)
-    pauli_string = "Z" * circuit.num_qubits
-    expression, operands = myconverter.expectation(pauli_string, lightcone=True)
-    return contract(expression, *operands)
+# def expval_quimb(circuit: QuantumCircuit) -> float:
+#     tn_circ = qiskit_to_quimb(circuit)
+#     Z = qu.pauli("Z")
+#     for i in range(circuit.num_qubits - 1):
+#         Z = Z & qu.pauli("Z")
+#     return tn_circ.local_expectation(Z, range(circuit.num_qubits))
 
 
-def defer_mid_measurements(circuit: QuantumCircuit) -> QuantumCircuit:
-    new_circuit = QuantumCircuit(*circuit.qregs, *circuit.cregs)
+# def compute_Z_expectation(circuit: QuantumCircuit) -> float:
+#     from cuquantum import CircuitToEinsum, contract
+#     import cupy as cp
 
-    final_measures = []
-    qubits = set()
-    for i, instr in enumerate(reversed(circuit)):
-        if instr.operation.name == "measure" and instr.qubits[0] not in qubits:
-            final_measures.append(i)
-        qubits.add(instr.qubits[0])
-        if len(qubits) == circuit.num_qubits:
-            break
-
-    meas_ctr = 0
-    for i, instr in enumerate(circuit):
-        if (
-            instr.operation.name == "measure"
-            and len(circuit) - i - 1 not in final_measures
-        ):
-            new_qr = QuantumRegister(1, name=f"defer_{meas_ctr}")
-            meas_ctr += 1
-            new_circuit.add_register(new_qr)
-            new_circuit.cx(instr.qubits[0], new_qr)
-            new_circuit.measure(new_qr, instr.clbits[0])
-            continue
-
-        if instr.operation.name != "reset":
-            new_circuit.append(instr)
-
-    return new_circuit
-    # return merge_regs(new_circuit)
-
-
-def merge_regs(circuit: QuantumCircuit) -> QuantumCircuit:
-    qreg = QuantumRegister(circuit.num_qubits, name="q")
-    creg = ClassicalRegister(circuit.num_clbits, name="c")
-    new_circuit = QuantumCircuit(qreg, creg)
-    for instr in circuit:
-        new_circuit.append(
-            instr.operation,
-            [qreg[circuit.qubits.index(q)] for q in instr.qubits],
-            [creg[circuit.clbits.index(c)] for c in instr.clbits],
-        )
-    return new_circuit
-
-
-def remove_barriers(circuit: QuantumCircuit) -> QuantumCircuit:
-    new_circuit = QuantumCircuit(*circuit.qregs, *circuit.cregs)
-    for instr in circuit:
-        if isinstance(instr.operation, Barrier):
-            continue
-        new_circuit.append(instr)
-    return new_circuit
+#     myconverter = CircuitToEinsum(circuit, dtype="complex128", backend=cp)
+#     pauli_string = "Z" * circuit.num_qubits
+#     expression, operands = myconverter.expectation(pauli_string, lightcone=True)
+#     return contract(expression, *operands)

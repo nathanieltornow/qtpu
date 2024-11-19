@@ -75,7 +75,6 @@ from qtpu.compiler.compiler import compile_reach_size
 from qtpu.contract import contract
 from qtpu.circuit import circuit_to_hybrid_tn, cuts_to_moves
 from benchmark.util import get_info
-from qtpu.helpers import expval_quimb, sample_quimb
 from benchmark.exec_qtpu import qtpu_execute
 
 
