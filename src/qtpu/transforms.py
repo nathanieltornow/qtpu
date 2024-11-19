@@ -73,7 +73,7 @@ def insert_cuts(
 
         if i in wire_cut_dict:
             circuit.data.insert(
-                i + 1, CircuitInstruction(CutWire(), [gate.qubits[0]], [])
+                i, CircuitInstruction(CutWire(), [gate.qubits[0]], [])
             )
 
     return circuit
@@ -133,6 +133,7 @@ def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
     Returns:
         HybridTensorNetwork: The resulting hybrid tensor network.
     """
+    circuit = wire_cuts_to_moves(circuit)
     circuit = seperate_clbits(circuit)
 
     graph = _qubit_graph(circuit)
