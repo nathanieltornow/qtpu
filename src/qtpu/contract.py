@@ -116,3 +116,33 @@ def sample(tn: qtn.TensorNetwork, num_samples: int = 10) -> list[str]:
         outputs.append(output)
 
     return outputs
+
+
+def get_quasi_probability(tn: qtn.TensorNetwork, bits: int | str) -> float:
+    """Get the quasi-probability of a specific bitstring from a tensor network.
+
+    Parameters:
+        tn (qtn.TensorNetwork): The tensor network to calculate the quasi-probability from.
+        bits (int | str): The bitstring to calculate the quasi-probability for.
+
+    Returns:
+        float: The quasi-probability of the specified bitstring.
+    """
+    if isinstance(bits, int):
+        bits = f"{bits:0{tn.num_outer_inds()}b}"
+
+    outer_inds = sorted(tn.outer_inds())
+    assert all(
+        tn.ind_size(ind) == 2 for ind in outer_inds
+    ), "Outer indices must be qubits-measurement outcomes."
+
+    assert len(bits) == tn.num_outer_inds(), "Bitstring must match number of qubits."
+
+    tn_ = tn.copy()
+    for ind, bit in zip(outer_inds, reversed(bits), strict=False):
+        arr = np.array([1, 0]) if bit == "0" else np.array([0, 1])
+        tn_.add_tensor(qtn.Tensor(arr, inds=[ind]))
+
+    assert len(tn_.outer_inds()) == 0, "Tensor network must be fully contracted."
+
+    return float(tn_.contract(all))

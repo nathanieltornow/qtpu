@@ -7,7 +7,7 @@ import quimb.tensor as qtn
 from qiskit.circuit import Instruction, Parameter, QuantumCircuit
 
 
-class InstructionVector(Instruction):
+class InstructionVector(Instruction): # type: ignore[misc]
     """InstructionVector class represents a vector of one-qubit quantum instructions.
 
     Attributes:
@@ -153,7 +153,7 @@ class CircuitTensor:
         # TODO: might be a unnecessary copy
         return self._circuit.copy().assign_parameters(param_map)
 
-    def param_assignment(self, key: tuple[int, ...]) -> dict[str, int]:
+    def param_assignment(self, key: int | tuple[int, ...]) -> dict[str, int]:
         """Assigns parameters based on the provided key.
 
         Args:

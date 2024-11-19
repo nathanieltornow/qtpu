@@ -6,6 +6,7 @@ from itertools import combinations
 
 import networkx as nx
 import numpy as np
+from numpy.typing import NDArray
 import quimb.tensor as qtn
 from qiskit.circuit import (
     CircuitInstruction,
@@ -93,7 +94,7 @@ def wire_cuts_to_moves(
 
     num_wire_cuts = sum(1 for instr in circuit if isinstance(instr.operation, CutWire))
 
-    qubit_mapping = {}
+    qubit_mapping: dict[Qubit, Qubit] = {}
 
     def _find_qubit(qubit: Qubit) -> Qubit:
         while qubit in qubit_mapping:
@@ -149,13 +150,15 @@ def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
         idx = f"i_{len(qpd_inds) - i - 1}"
 
         param1 = param2 = Parameter(idx)
-        op_vector1, op_vector2 = zip(*gate.operation.basis.maps, strict=False)
+        op_vector1, op_vector2 = [], []
+        for ops1, ops2 in gate.operation.basis.maps:
+            op_vector1.append(list(ops1))
+            op_vector2.append(list(ops2))
 
         ct = qtn.Tensor(gate.operation.basis.coeffs, inds=[idx], tags=["QPD"])
 
         if (
-            qubit_components is not None
-            and qubit_components[gate.qubits[0]] != qubit_components[gate.qubits[1]]
+            qubit_components[gate.qubits[0]] != qubit_components[gate.qubits[1]]
             and gate.label == "cut_move"
         ):
             # override with CutQC-style wire cut if the qubits are in different components
@@ -369,7 +372,7 @@ def _qubit_graph(circuit: QuantumCircuit) -> nx.Graph:
 
 
 def _generate_wire_data() -> (
-    tuple[np.ndarray, list[list[Instruction]], list[list[Instruction]]]
+    tuple[NDArray[np.float32], list[list[Instruction]], list[list[Instruction]]]
 ):
     op_vector1 = [
         [Reset()],
