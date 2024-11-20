@@ -58,7 +58,6 @@ def find_min_cost_trial(
         raise ValueError(msg)
 
     best_index = np.argmin(costs)
-    print(costs[best_index])
     return best_trials[best_index]
 
 

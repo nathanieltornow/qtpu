@@ -151,12 +151,10 @@ def optimize(
             break
 
     sampling_overhead = sampling_overhead_tree(tree)
-    print(sampling_overhead)
 
     if terminate_fn is not None and not terminate_fn(ir, tree):
         sampling_overhead = np.inf
 
-    print(sampling_overhead)
     return ir.cut_circuit(get_leafs(tree)), {
         "sampling_overhead": sampling_overhead,
         "post_overhead": tree.contraction_cost(),
