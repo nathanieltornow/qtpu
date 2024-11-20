@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import quimb.tensor as qtn
 from qiskit.circuit import Instruction, Parameter, QuantumCircuit
 
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
-class InstructionVector(Instruction): # type: ignore[misc]
+
+class InstructionVector(Instruction):  # type: ignore[misc]
     """InstructionVector class represents a vector of one-qubit quantum instructions.
 
     Attributes:
@@ -17,13 +22,18 @@ class InstructionVector(Instruction): # type: ignore[misc]
     """
 
     def __init__(
-        self, instructions_vector: list[list[Instruction]], idx_param: Parameter
+        self,
+        instructions_vector: list[list[Instruction]],
+        idx_param: Parameter,
+        weights: NDArray[np.float32] | None = None,
     ) -> None:
         """Initialize the InstructionVector object with a vector of quantum instructions.
 
         Args:
             instructions_vector (list[list[Instruction]]): A vector of quantum instructions.
             idx_param (Parameter): The parameter used to index the instruction vector.
+            weights (list[float], optional): A list of weights for each instruction in the vector.
+                Defaults to None.
         """
         assert all(
             instr.num_qubits == 1 for instrs in instructions_vector for instr in instrs
@@ -32,6 +42,12 @@ class InstructionVector(Instruction): # type: ignore[misc]
 
         super().__init__("vec", 1, 0, params=(idx_param,))
         self._vector = instructions_vector
+
+        if weights is None:
+            weights = np.ones(len(self), dtype=np.float32)
+
+        assert weights.shape == (len(instructions_vector),)
+        self._weights = weights / np.sum(weights)
 
     @property
     def param(self) -> Parameter:
@@ -50,6 +66,15 @@ class InstructionVector(Instruction): # type: ignore[misc]
             list[list[Instruction]]: The vector of quantum instructions.
         """
         return self._vector
+
+    @property
+    def weights(self) -> NDArray[np.float32]:
+        """Returns the weights of the instructions in the vector.
+
+        Returns:
+            NDArray[np.float32]: The weights of the instructions in the vector.
+        """
+        return self._weights
 
     def __len__(self) -> int:
         """Returns the length of the instruction vector.
@@ -84,6 +109,8 @@ class CircuitTensor:
     ----------
     circuit : QuantumCircuit
         The quantum circuit associated with the tensor.
+    vector_ops : list[InstructionVector]
+        A list of InstructionVector operations in the circuit.
     shape : tuple[int, ...]
         The shape of the tensor, representing the number of parameters for each operation.
     inds : tuple[str, ...]
@@ -105,6 +132,7 @@ class CircuitTensor:
         )
 
         self._circuit = circuit
+        self._vector_ops = [op for _, op in param_to_op]
         self._shape: tuple[int, ...] = tuple(len(op) for _, op in param_to_op)
         self._inds: tuple[str, ...] = tuple(p.name for p, _ in param_to_op)
 
@@ -116,6 +144,15 @@ class CircuitTensor:
             QuantumCircuit: The quantum circuit associated with this instance.
         """
         return self._circuit
+
+    @property
+    def vector_ops(self) -> list[InstructionVector]:
+        """Returns the InstructionVector operations in the circuit.
+
+        Returns:
+            list[InstructionVector]: A list of InstructionVector operations in the circuit.
+        """
+        return self._vector_ops
 
     @property
     def shape(self) -> tuple[int, ...]:
@@ -264,7 +301,7 @@ class HybridTensorNetwork:
 
         Returns:
             qtn.TensorNetwork: A tensor network consisting of dummy quantum tensors
-            and the original classical tensors.
+                and the original classical tensors.
         """
         qt_dummys = [
             qtn.Tensor(np.zeros(qt.shape), inds=qt.inds, tags=["Q"]) for qt in self._qts

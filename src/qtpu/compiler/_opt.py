@@ -14,7 +14,7 @@ from qtpu.compiler._util import (
     get_leafs,
     sampling_overhead_tree,
 )
-from qtpu.transforms import remove_operations_by_name, wire_cuts_to_moves
+from qtpu.transforms import remove_operations_by_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -43,7 +43,7 @@ def optimize(
     parts_decay: float = 0.5,
     super_optimize: str = "auto-hq",
     seed: int | None = None,
-    **partition_opts: Any, # noqa: ANN401
+    **partition_opts: Any,  # noqa: ANN401
 ) -> tuple[QuantumCircuit, dict[str, float]]:
     if terminate_fn is None and max_overhead == np.inf:
         msg = "No stopping condition provided"
@@ -151,11 +151,13 @@ def optimize(
             break
 
     sampling_overhead = sampling_overhead_tree(tree)
+    print(sampling_overhead)
 
     if terminate_fn is not None and not terminate_fn(ir, tree):
         sampling_overhead = np.inf
 
-    return wire_cuts_to_moves(ir.cut_circuit(get_leafs(tree))), {
+    print(sampling_overhead)
+    return ir.cut_circuit(get_leafs(tree)), {
         "sampling_overhead": sampling_overhead,
         "post_overhead": tree.contraction_cost(),
     }

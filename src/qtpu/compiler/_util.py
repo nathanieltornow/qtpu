@@ -33,13 +33,15 @@ def sampling_overhead_tree(tree: ctg.ContractionTree) -> float:
 
 def sampling_overhead_circuit(circuit: QuantumCircuit) -> float:
     circuit = wire_cuts_to_moves(circuit)
-    return float(np.prod(
-        [
-            instr.operation.basis.overhead
-            for instr in circuit
-            if isinstance(instr.operation, TwoQubitQPDGate)
-        ]
-    ))
+    return float(
+        np.prod(
+            [
+                instr.operation.basis.overhead
+                for instr in circuit
+                if isinstance(instr.operation, TwoQubitQPDGate)
+            ]
+        )
+    )
 
 
 # def partition_girvan_newman(

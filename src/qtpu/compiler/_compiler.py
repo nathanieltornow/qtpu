@@ -23,14 +23,12 @@ def find_best_trial(
     costs = np.array([trial.values[0] for trial in best_trials])
     error = np.array([trial.values[1] for trial in best_trials])
 
-    if costs.max() == np.inf:
+    if costs.min() == np.inf:
         msg = (
             "No trial with finite cost found. "
             "This is likely due to the termination condition not being met for any trial."
         )
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     norm_costs = (costs - costs.min()) / (costs.max() - costs.min() + 1e-9)
     norm_success = (error - error.min()) / (error.max() - error.min() + 1e-9)
@@ -42,6 +40,25 @@ def find_best_trial(
     distances = np.linalg.norm(norm_points - ideal_point, axis=1)
     best_index = np.argmin(distances)
 
+    return best_trials[best_index]
+
+
+def find_min_cost_trial(
+    study: optuna.Study,
+) -> FrozenTrial:
+    best_trials = study.best_trials
+
+    costs = np.array([trial.values[0] for trial in best_trials])
+
+    if costs.min() == np.inf:
+        msg = (
+            "No trial with finite cost found. "
+            "This is likely due to the termination condition not being met for any trial."
+        )
+        raise ValueError(msg)
+
+    best_index = np.argmin(costs)
+    print(costs[best_index])
     return best_trials[best_index]
 
 
@@ -72,5 +89,9 @@ def cut(
         n_trials=n_trials,
         show_progress_bar=show_progress_bar,
     )
-    best_trial = find_best_trial(study)
+    if max_overhead == np.inf:
+        best_trial = find_min_cost_trial(study)
+    else:
+        best_trial = find_best_trial(study)
+
     return best_trial.user_attrs["circuit"]

@@ -9,7 +9,7 @@ import quimb.tensor as qtn
 
 from qtpu.evaluators._estimator import ExpvalEvaluator
 from qtpu.helpers import nearest_probability_distribution
-from qtpu.transforms import circuit_to_hybrid_tn, wire_cuts_to_moves
+from qtpu.transforms import circuit_to_hybrid_tn
 
 if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
@@ -70,7 +70,6 @@ def execute(
     Returns:
         qtn.Tensor | float: The result of the circuit execution.
     """
-    circuit = wire_cuts_to_moves(circuit)
     hybrid_tn = circuit_to_hybrid_tn(circuit)
     return contract(hybrid_tn, evaluator)
 

@@ -1,4 +1,3 @@
-import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit_aer.primitives import EstimatorV2
 
