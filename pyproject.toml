@@ -14,6 +14,7 @@ requires-python = ">=3.11"
 dependencies = [
     "cotengra>=0.6.2",
     "kahypar>=1.3.5",
+    "llvmlite>=0.43.0",
     "networkx>=3.4.2",
     "numpy>=2.0.2",
     "optuna>=4.1.0",
