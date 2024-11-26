@@ -823,7 +823,6 @@ source = { editable = "." }
 dependencies = [
     { name = "cotengra" },
     { name = "kahypar" },
-    { name = "llvmlite" },
     { name = "networkx" },
     { name = "numpy" },
     { name = "optuna" },
@@ -843,7 +842,6 @@ dev = [
 requires-dist = [
     { name = "cotengra", specifier = ">=0.6.2" },
     { name = "kahypar", specifier = ">=1.3.5" },
-    { name = "llvmlite", specifier = ">=0.43.0" },
     { name = "networkx", specifier = ">=3.4.2" },
     { name = "numpy", specifier = ">=2.0.2" },
     { name = "optuna", specifier = ">=4.1.0" },
