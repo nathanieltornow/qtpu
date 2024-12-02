@@ -19,10 +19,10 @@ dependencies = [
     "optuna>=4.1.0",
     "qiskit-addon-cutting>=0.9.0",
     "qiskit-aer>=0.15.1",
-    "llvmlite>=0.43.0",
-    "numba>=0.60.0",
     "qiskit>=1.2.4",
     "quimb>=1.8.4",
+    "llvmlite>=0.43.0",
+    "numba>=0.60.0",
 ]
 
 [tool.mypy]
