@@ -57,6 +57,9 @@ class BackendEvaluator(CircuitTensorEvaluator):
             for c in circuits
         ]
 
+        for circ in circuits:
+            print(circ)
+
         num_result_bits = sum(
             1 for c in circuits[0].cregs if c.name != "qpd_measurements"
         )
@@ -82,11 +85,17 @@ class BackendEvaluator(CircuitTensorEvaluator):
             num_shots = sum(counts.values())
             arr = np.ndarray(shape=(2**num_result_bits,))
             for key, value in counts.items():
-                arr[int(key.replace(" ", "")[::-1], 2)] = float(value) / float(num_shots) 
+                arr[int(key.replace(" ", "")[::-1], 2)] = float(value) / float(
+                    num_shots
+                )
             return arr.reshape((2,) * num_result_bits)
 
         counts = self.backend.run(circuits, shots=self.shots).result().get_counts()
+
         counts = [counts] if isinstance(counts, dict) else counts
+
+        for cnt in counts:
+            print(cnt)
 
         counts = [
             prepare_counts(count, get_qpd_reg_len(c))
