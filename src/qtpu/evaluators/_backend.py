@@ -6,7 +6,7 @@ import numpy as np
 import quimb.tensor as qtn
 from qiskit.providers import BackendV2
 
-from qtpu.transforms import decompose_qpd_measures
+from qtpu.transforms import decompose_qpd_measures, squash_cregs
 
 from ._evaluator import CircuitTensorEvaluator
 
@@ -57,12 +57,11 @@ class BackendEvaluator(CircuitTensorEvaluator):
             for c in circuits
         ]
 
-        for circ in circuits:
-            print(circ)
-
         num_result_bits = sum(
             1 for c in circuits[0].cregs if c.name != "qpd_measurements"
         )
+
+        circuits = [squash_cregs(c) for c in circuits]
 
         def get_qpd_reg_len(circuit: QuantumCircuit) -> int:
             if circuit.cregs[-1].name == "qpd_measurements":
@@ -93,9 +92,6 @@ class BackendEvaluator(CircuitTensorEvaluator):
         counts = self.backend.run(circuits, shots=self.shots).result().get_counts()
 
         counts = [counts] if isinstance(counts, dict) else counts
-
-        for cnt in counts:
-            print(cnt)
 
         counts = [
             prepare_counts(count, get_qpd_reg_len(c))

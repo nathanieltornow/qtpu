@@ -72,9 +72,7 @@ def insert_cuts(
             )
 
         if i in wire_cut_dict:
-            circuit.data.insert(
-                i, CircuitInstruction(CutWire(), [gate.qubits[0]], [])
-            )
+            circuit.data.insert(i, CircuitInstruction(CutWire(), [gate.qubits[0]], []))
 
     return circuit
 
@@ -352,12 +350,46 @@ def remove_idle_cregs(circuit: QuantumCircuit) -> QuantumCircuit:
         QuantumCircuit: The circuit with classical registers having at
             least one unused classical bit removed.
     """
+    # For now, we must assume that each classical register has only one bit
+    # TODO: Generalize to classical registers with multiple bits
+    assert all(len(creg) == 1 for creg in circuit.cregs)
+
     dag = circuit_to_dag(circuit)
     idle_bits = list(dag.idle_wires())
     for bit in idle_bits:
         if isinstance(bit, Clbit):
             dag.remove_clbits(bit)
     return dag_to_circuit(dag)
+
+
+def squash_cregs(circuit: QuantumCircuit) -> QuantumCircuit:
+    """Squash all classical registers in a quantum circuit into a single register.
+
+    Args:
+        circuit (QuantumCircuit): The input quantum circuit to be transformed.
+
+    Returns:
+        QuantumCircuit: A new quantum circuit with all classical registers squashed into a single register.
+    """
+
+    circuit = circuit.copy()
+    old_clbits = circuit.clbits.copy()
+
+    sqashed = ClassicalRegister(circuit.num_clbits, "squashed")
+    circuit.add_register(sqashed)
+
+    for i in range(len(circuit.data)):
+        instr = circuit.data[i]
+
+        new_clbits = [sqashed[circuit.clbits.index(clbit)] for clbit in instr.clbits]
+
+        circuit.data[i] = CircuitInstruction(instr.operation, instr.qubits, new_clbits)
+
+    dag = circuit_to_dag(circuit)
+    dag.remove_clbits(*old_clbits)
+    circuit = dag_to_circuit(dag)
+    print(circuit.clbits)
+    return circuit
 
 
 def _qubit_graph(circuit: QuantumCircuit) -> nx.Graph:
