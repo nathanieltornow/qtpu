@@ -388,7 +388,6 @@ def squash_cregs(circuit: QuantumCircuit) -> QuantumCircuit:
     dag = circuit_to_dag(circuit)
     dag.remove_clbits(*old_clbits)
     circuit = dag_to_circuit(dag)
-    print(circuit.clbits)
     return circuit
 
 
