@@ -109,7 +109,9 @@ convention = "google"
 
 [dependency-groups]
 dev = [
+    "jupyter>=1.1.1",
     "mypy>=1.13.0",
+    "pandas>=2.2.3",
     "pytest>=8.3.4",
     "ruff>=0.7.4",
 ]
