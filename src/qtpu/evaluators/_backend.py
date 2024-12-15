@@ -6,7 +6,7 @@ import numpy as np
 import quimb.tensor as qtn
 from qiskit.providers import BackendV2
 
-from qtpu.transforms import decompose_qpd_measures, squash_cregs
+from qtpu.transforms import decompose_qpd_measures, squash_regs
 
 from ._evaluator import CircuitTensorEvaluator
 
@@ -70,7 +70,7 @@ class BackendEvaluator(CircuitTensorEvaluator):
         keys = reversed(
             [creg.name for creg in circuits[0].cregs if creg.name != "qpd_measurements"]
         )
-        circuits = [squash_cregs(c) for c in circuits]
+        circuits = [squash_regs(c) for c in circuits]
 
         counts = self.backend.run(circuits, shots=self.shots).result().get_counts()
         counts = [counts] if isinstance(counts, dict) else counts

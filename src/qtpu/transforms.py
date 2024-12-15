@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from itertools import combinations
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
 import networkx as nx
 import numpy as np
@@ -362,7 +363,7 @@ def remove_idle_cregs(circuit: QuantumCircuit) -> QuantumCircuit:
     return dag_to_circuit(dag)
 
 
-def squash_cregs(circuit: QuantumCircuit) -> QuantumCircuit:
+def squash_regs(circuit: QuantumCircuit) -> QuantumCircuit:
     """Squash all classical registers in a quantum circuit into a single register.
 
     Args:
@@ -372,23 +373,21 @@ def squash_cregs(circuit: QuantumCircuit) -> QuantumCircuit:
         QuantumCircuit: A new quantum circuit with all classical registers squashed into a single register.
     """
 
-    circuit = circuit.copy()
-    old_clbits = circuit.clbits.copy()
+    squashed_qreg = QuantumRegister(circuit.num_qubits, "q_" + str(uuid4())[:4])
+    sqashed_creg = ClassicalRegister(circuit.num_clbits, "c_" + str(uuid4())[:4])
 
-    sqashed = ClassicalRegister(circuit.num_clbits, "squashed")
-    circuit.add_register(sqashed)
+    new_circuit = QuantumCircuit(squashed_qreg, sqashed_creg)
 
-    for i in range(len(circuit.data)):
-        instr = circuit.data[i]
+    for instr in circuit:
+        new_qubits = [
+            squashed_qreg[circuit.qubits.index(qubit)] for qubit in instr.qubits
+        ]
+        new_clbits = [
+            sqashed_creg[circuit.clbits.index(clbit)] for clbit in instr.clbits
+        ]
+        new_circuit.append(instr.operation, new_qubits, new_clbits)
 
-        new_clbits = [sqashed[circuit.clbits.index(clbit)] for clbit in instr.clbits]
-
-        circuit.data[i] = CircuitInstruction(instr.operation, instr.qubits, new_clbits)
-
-    dag = circuit_to_dag(circuit)
-    dag.remove_clbits(*old_clbits)
-    circuit = dag_to_circuit(dag)
-    return circuit
+    return new_circuit
 
 
 def _qubit_graph(circuit: QuantumCircuit) -> nx.Graph:

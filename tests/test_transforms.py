@@ -1,6 +1,6 @@
 import pytest
 from qiskit.circuit import QuantumCircuit, ClassicalRegister, QuantumRegister
-from qtpu.transforms import squash_cregs, seperate_clbits, remove_operations_by_name
+from qtpu.transforms import squash_regs, seperate_clbits, remove_operations_by_name
 
 
 def test_squash_cregs():
@@ -17,11 +17,10 @@ def test_squash_cregs():
     circuit.measure(qreg[1], creg2[1])
 
     # Apply the squash_cregs function
-    squashed_circuit = squash_cregs(circuit)
+    squashed_circuit = squash_regs(circuit)
 
     # Check that the squashed circuit has only one classical register
     assert len(squashed_circuit.cregs) == 1
-    assert squashed_circuit.cregs[0].name == "squashed"
     assert squashed_circuit.cregs[0].size == 4
 
     # Check that the operations are correctly mapped to the new classical register
@@ -31,6 +30,7 @@ def test_squash_cregs():
     # Check that the quantum operations are unchanged
     assert squashed_circuit.data[0].operation.name == "h"
     assert squashed_circuit.data[1].operation.name == "cx"
+
 
 def test_seperate_clbits():
     # Create a quantum circuit with multiple classical registers
