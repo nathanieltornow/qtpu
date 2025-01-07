@@ -27,17 +27,21 @@ class BackendEvaluator(CircuitTensorEvaluator):
         The number of shots to use for sampling.
     """
 
-    def __init__(self, backend: BackendV2, shots: int = 20000) -> None:
+    def __init__(
+        self, backend: BackendV2, shots: int = 20000, individual_jobs: bool = True
+    ) -> None:
         """Initialize the evaluator.
 
         Parameters:
             sampler (BaseSamplerV2 | None, optional): The sampler to use for
                 evaluating the sampling probabilities. If None, a default Aer's SamplerV2 is used.
             shots (int, optional): The number of shots to use for sampling.
+            individual_jobs (bool, optional): Whether to run each circuit in a separate job.
         """
         assert isinstance(backend, BackendV2)
         self.backend = backend
         self.shots = shots
+        self.individual_jobs = individual_jobs
 
     def evaluate(self, circuit_tensor: CircuitTensor) -> qtn.Tensor:
         """Evaluate a single circuit tensor to a classical tensor.
@@ -72,8 +76,14 @@ class BackendEvaluator(CircuitTensorEvaluator):
         )
         circuits = [squash_regs(c) for c in circuits]
 
-        counts = self.backend.run(circuits, shots=self.shots).result().get_counts()
-        counts = [counts] if isinstance(counts, dict) else counts
+        if self.individual_jobs:
+            counts = [
+                self.backend.run(c, shots=self.shots).result().get_counts()
+                for c in circuits
+            ]
+        else:
+            counts = self.backend.run(circuits, shots=self.shots).result().get_counts()
+            counts = [counts] if isinstance(counts, dict) else counts
 
         probs = [_counts_to_probs(count) for count in counts]
         probs = [_prepare_probs(prob, l) for prob, l in zip(probs, qpd_reg_lengths)]
