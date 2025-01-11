@@ -1,3 +1,5 @@
+import pytest
+
 from qiskit.circuit import QuantumCircuit
 from qiskit_aer.primitives import EstimatorV2
 
@@ -37,7 +39,8 @@ def run_comparison(circuit: QuantumCircuit):
     )
 
 
-def test_estimator_integration():
+@pytest.mark.parametrize("execution_number", range(3))
+def test_estimator_integration(execution_number):
     circuit = simple_circuit(4)
     qtpu_res = run_circuit_qtpu(circuit)
     qiskit_res = run_comparison(circuit)
