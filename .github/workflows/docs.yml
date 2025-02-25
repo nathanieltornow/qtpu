@@ -16,18 +16,39 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper versioning with setuptools_scm
+      
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.10'  # Updated to match your requires-python
+      
+      - name: Install Pandoc
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+      
+      - name: Install uv
+        run: |
+          pip install uv
+      
       - name: Install Nox
-        run: pip install nox
+        run: |
+          uv pip install nox
+      
+      - name: Install dependencies with uv
+        run: |
+          uv pip install setuptools wheel setuptools-scm
+          uv pip install -e ".[docs]"
+          uv pip install sphinx nbsphinx ipykernel ipywidgets jupyter
+      
       - name: Build Documentation
         run: nox -s docs -- -b html
+      
       - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/html
+  
   deploy-docs:
     needs: build-docs
     runs-on: ubuntu-latest
@@ -37,4 +58,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v3 
+        uses: actions/deploy-pages@v3
