@@ -1,5 +1,4 @@
 name: Build and Deploy Documentation
-
 on:
   push:
     branches:
@@ -7,44 +6,35 @@ on:
   pull_request:
     branches:
       - main
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 jobs:
   build-docs:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
-
+          python-version: '3.11'
       - name: Install Nox
         run: pip install nox
-
       - name: Build Documentation
         run: nox -s docs -- -b html
-
       - name: Upload GitHub Pages Artifact
-        uses: actions/upload-pages-artifact@v2  # ✅ Updated action
+        uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/html
-
   deploy-docs:
     needs: build-docs
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v3 
