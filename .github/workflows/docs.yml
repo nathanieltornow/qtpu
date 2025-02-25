@@ -37,6 +37,12 @@ jobs:
       - name: Build Documentation
         run: nox -s docs -- -b html
       
+      - name: List build directory contents
+        run: |
+          echo "Checking if docs/_build/html exists:"
+          ls -la docs/_build/ || echo "docs/_build/ directory not found"
+          ls -la docs/_build/html/ || echo "docs/_build/html/ directory not found"
+      
       - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -48,7 +54,10 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write # to deploy to Pages
+      id-token: write # to verify the deployment originates from an appropriate source
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v3
+        uses: actions/deploy-pages@v4
