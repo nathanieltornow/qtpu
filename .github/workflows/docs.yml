@@ -27,21 +27,12 @@ jobs:
       - name: Install Pandoc
         run: sudo apt-get update && sudo apt-get install -y pandoc
       
-      - name: Install uv
+      - name: Install Nox and Dependencies
         run: |
-          pip install uv
-          uv venv --python 3.11
-          source .venv/bin/activate
-      
-      - name: Install Nox
-        run: |
-          uv pip install nox
-      
-      - name: Install dependencies with uv
-        run: |
-          uv pip install setuptools wheel setuptools-scm
-          uv pip install -e ".[docs]"
-          uv pip install sphinx nbsphinx ipykernel ipywidgets jupyter
+          python -m pip install --upgrade pip
+          pip install nox setuptools wheel setuptools-scm
+          pip install -e ".[docs]"
+          pip install sphinx nbsphinx ipykernel ipywidgets jupyter
       
       - name: Build Documentation
         run: nox -s docs -- -b html
