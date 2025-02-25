@@ -33,7 +33,7 @@ jobs:
         run: nox -s docs -- -b html
 
       - name: Upload GitHub Pages Artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v2  # ✅ Updated action
         with:
           path: docs/_build/html
 
