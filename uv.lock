@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version < '3.11'",
@@ -342,7 +343,7 @@ name = "click"
 version = "8.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b9/2e/0090cbf739cee7d23781ad4b89a9894a41538e4fcf4c31dcdd705b78eb8b/click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a", size = 226593 }
 wheels = [
@@ -876,7 +877,7 @@ name = "ipykernel"
 version = "6.29.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "appnope", marker = "platform_system == 'Darwin'" },
+    { name = "appnope", marker = "sys_platform == 'darwin'" },
     { name = "comm" },
     { name = "debugpy" },
     { name = "ipython" },
@@ -2391,31 +2392,25 @@ wheels = [
 
 [[package]]
 name = "qiskit"
-version = "1.2.4"
+version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "dill" },
     { name = "numpy" },
-    { name = "python-dateutil" },
     { name = "rustworkx" },
     { name = "scipy" },
     { name = "stevedore" },
-    { name = "symengine" },
-    { name = "sympy" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/99/2a/c3f63a216b88fd01417b9fcd47512553463c7247575ce06f40b9269b6fba/qiskit-1.2.4.tar.gz", hash = "sha256:3f30b1fc6c66dec240428991da75cc6c35cc75152baff8daf3f8ca71b60684e8", size = 3640923 }
+sdist = { url = "https://files.pythonhosted.org/packages/b9/c9/f8f9ff6332ede3864763d51d4004363e7b7edc48ed99d6e7c2fa7ba295e1/qiskit-2.1.0.tar.gz", hash = "sha256:b25233d547779cbb4ee384548e0c5525599212140ceb371879b735b20df5fc9e", size = 3599786 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/73/5e/c7b34b1862c05e798bce18d632bfec5a4df7f86958659356b333390b827d/qiskit-1.2.4-cp38-abi3-macosx_10_9_universal2.whl", hash = "sha256:1cdabddeed74956ac22db8b11b3479044a305b0895b142198f11a75e745aa079", size = 6841939 },
-    { url = "https://files.pythonhosted.org/packages/52/07/889a5ff9ca2e4f32428836adc51f6764e5c906029138ab877b99e95651c1/qiskit-1.2.4-cp38-abi3-macosx_10_9_x86_64.whl", hash = "sha256:9daad1c3a0608c4a32a03112d0650cc51ced2cab16479703230acedafafa0548", size = 4623509 },
-    { url = "https://files.pythonhosted.org/packages/3f/14/64e86bebb3a98a0bc0cd29cfaeffc7ad5178579e239329e8b21e664863a1/qiskit-1.2.4-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:3394ec724adeb481c02b050ac6e5929ca5e1f91ab94a1d571dadf0c702d6967e", size = 4460750 },
-    { url = "https://files.pythonhosted.org/packages/80/75/7e4aa946c8e11065568a78cc8c6687667bb3376cc704fc16504d9e14bc5d/qiskit-1.2.4-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:124777b0d9caf40932e02d1d2c6be3a12ff058990e6ae55f45a315a9a51da75b", size = 4621828 },
-    { url = "https://files.pythonhosted.org/packages/81/1c/8794ad953a5be69e5ab037f33a2e7fa6a0276d10f8f76c25e9f28b4897ce/qiskit-1.2.4-cp38-abi3-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:2c8d9fa7fdb0cf7727f27a1881cc9f9be7de2b6aaf7cab6861686e1a6e34d6c8", size = 4790612 },
-    { url = "https://files.pythonhosted.org/packages/5b/e6/ef18152dde40386ff6bca4b50907852d47027ad7f4b3cd1b1fb5b108558e/qiskit-1.2.4-cp38-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:3a973089d54f379006df8ae9b0d406e909e02b11a9390b3e2f50aefd5e8070eb", size = 4663037 },
-    { url = "https://files.pythonhosted.org/packages/24/bc/1e44746a9157ca8881c8c978a316e8a1a8b5391d52b06150e0222bab9f76/qiskit-1.2.4-cp38-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:409b43d48e33e5bbc316fd85f44f29a71db2d5ff802affabc5ee355fe9573d7e", size = 5466671 },
-    { url = "https://files.pythonhosted.org/packages/9c/f2/708f8d18d22461a0394aad48232accd8e3e55ff83ad49b8ad14c205603ea/qiskit-1.2.4-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a66303ab4f939080ca0b8c4102040a89417a99f2621978c7bca8b1d5f6c6e103", size = 4751938 },
-    { url = "https://files.pythonhosted.org/packages/75/29/3197fd3fd05c446680d8c9c33fd00916500810347929983c2fbf25f46f04/qiskit-1.2.4-cp38-abi3-win32.whl", hash = "sha256:93aa20398c5ab79adb4baf89a76d034a7c608fcc5bcbbd77355314378583e56a", size = 4436558 },
-    { url = "https://files.pythonhosted.org/packages/25/0c/4952744fb8a6362029afa3dda15603ab4bbd9ac57d98ea4c0c75bdb88bc2/qiskit-1.2.4-cp38-abi3-win_amd64.whl", hash = "sha256:87175e179bbaa3d2e280f14fe90efa77d6d7521d58ee5afd9528ec6716a6d8e6", size = 4588617 },
+    { url = "https://files.pythonhosted.org/packages/c9/95/a2cdd98c89894d0ac5233ff86704a6ad1269145bc74841523043ccb41a78/qiskit-2.1.0-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:da31bc33685722389a30fa26a22c254411b511718c6b05a8033dde53f65f491f", size = 7285006 },
+    { url = "https://files.pythonhosted.org/packages/ab/db/fd85e084c9a806e6a621c48139463ae4db7c16c116614c83fde392547435/qiskit-2.1.0-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:4ebfd5f3dd9ed0d0bb59c192412ee9c51ac639914b1c3c76cf3fb67fe848e4a8", size = 6815397 },
+    { url = "https://files.pythonhosted.org/packages/1b/15/c5ba168d81cd22dd5bf3a19e20625709b423eb825f1b976c9889aeca001d/qiskit-2.1.0-cp39-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:b75b39bcf73e4faf6233911331e1087218242abaf46f48b2c8870174fffaf5e1", size = 7422424 },
+    { url = "https://files.pythonhosted.org/packages/00/7a/1dbd144e75092e38e62676b4c9a1e28a89858bd4ca2d56280f67aef214bb/qiskit-2.1.0-cp39-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:763ea321d168a2e03b9b5710d35a2e71d44bde72fd7bd980437a172b6834b110", size = 7690794 },
+    { url = "https://files.pythonhosted.org/packages/0c/08/010e0394db7aba5b54c731618344abcfb7bfb7666e4f73cd9ce8d9350394/qiskit-2.1.0-cp39-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:3ad89c7c1a15dd5df1ccf4c725d82b2faeae364d58b73eee800b4cd73be9990b", size = 7428714 },
+    { url = "https://files.pythonhosted.org/packages/32/ad/a38f641f5e2cb3c48bbd72a93eb0eaf34e4894ebcd330cb335127b8556f6/qiskit-2.1.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3169a93a8edf0bb791315dcf0dc9d74519f49ec62bcb5d0ac4e5f63717e3982a", size = 7454487 },
+    { url = "https://files.pythonhosted.org/packages/f3/9f/0cee439119c7c457f5cab5580aff3af241bc8bc42ec0f15184c7056b1d64/qiskit-2.1.0-cp39-abi3-win_amd64.whl", hash = "sha256:5755e482392d8c9f9491cde013ce54b2bf30b1c36cfa85c69051259650c7983d", size = 7226834 },
 ]
 
 [package.optional-dependencies]
@@ -2425,11 +2420,12 @@ visualization = [
     { name = "pydot" },
     { name = "pylatexenc" },
     { name = "seaborn" },
+    { name = "sympy" },
 ]
 
 [[package]]
 name = "qiskit-addon-cutting"
-version = "0.9.0"
+version = "0.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
@@ -2439,47 +2435,55 @@ dependencies = [
     { name = "rustworkx" },
     { name = "scipy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3c/0a/36e2a69d7357eaf5e0e03e7c6a0a53ab6b5d1b53b9c3e911f73a0ac63284/qiskit_addon_cutting-0.9.0.tar.gz", hash = "sha256:a5d52aed3e0cd2d8ef100586816061e7681ae247852c3c6dcc43ca4e88011cf5", size = 715619 }
+sdist = { url = "https://files.pythonhosted.org/packages/84/40/424d088b2ec8fd142170c45a77fe16702e50875c61825de369c8aeb0fe80/qiskit_addon_cutting-0.10.0.tar.gz", hash = "sha256:2970680a83224873af93f4a7063d425a323ace58e34d72ecfe043c015983cf52", size = 739689 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ab/a1/d0ab6e7ec16572edf1d31396cc98419ab0add3f38389e08091a406db14d4/qiskit_addon_cutting-0.9.0-py3-none-any.whl", hash = "sha256:fd1f4546d2b1be65b463374aaf330790c769f7fba1603be1edbc6966c0f46de3", size = 100355 },
+    { url = "https://files.pythonhosted.org/packages/52/07/5fc32d7aa666c5f4645127fd51c140b15555a560264e5a4b74d0d9f1497d/qiskit_addon_cutting-0.10.0-py3-none-any.whl", hash = "sha256:2e5e10a95d745addfc0b55e786428566ad31ee4667479d0a0d805a0525c416db", size = 101610 },
 ]
 
 [[package]]
 name = "qiskit-aer"
-version = "0.15.1"
+version = "0.17.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "psutil" },
+    { name = "python-dateutil" },
     { name = "qiskit" },
     { name = "scipy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/37/39/044e35f1da0011fe44a3b2729b347851a452fc85e701b102dbdfbbbf6bd1/qiskit-aer-0.15.1.tar.gz", hash = "sha256:45f320790c9239bbe781a1ee14a329a20ad08878f01746fe405c836d202b2560", size = 6550165 }
+sdist = { url = "https://files.pythonhosted.org/packages/f7/37/40d06dab01752712a8ad903c175f282088f5d92ede2fc558e9b43622ec27/qiskit_aer-0.17.1.tar.gz", hash = "sha256:4de47d5a23e283e6cea44186002ab296212c4d837705c528818fbb6cfd28c185", size = 6551853 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/87/29/34e5590ecb593602a75e6f07957797fd930d69d0543ad3de7fe097af70bf/qiskit_aer-0.15.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:d8c403b4895ac3f00fe55e72473b3f4e4fbc8840f93c75d4a33da5de4230dfef", size = 2468132 },
-    { url = "https://files.pythonhosted.org/packages/b2/e9/7decb0a806b7576a2b6cfb05529df40570b713870f744bea6b0c39ec2ebc/qiskit_aer-0.15.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:0ad6cf30554cde3ae27850082c3673113385a5ee40b387557d306f35576c5d44", size = 2155999 },
-    { url = "https://files.pythonhosted.org/packages/8a/b1/dad4be1c1f2e23d3fafe3325164c91f13bc8f2f49816fa67773dde32bf52/qiskit_aer-0.15.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:02e2af134eb72bf3cde1fd959701655a392a53236d9bb9658278cba520a83aae", size = 6421853 },
-    { url = "https://files.pythonhosted.org/packages/eb/ca/b40163b287015cf464cf4514a3dfe14bc8f63488b57cbd8acbd8b214095d/qiskit_aer-0.15.1-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:5083333de4838da9436ceb76b6f964fb3184a8756561586bde03a4aa5fccf723", size = 7933314 },
-    { url = "https://files.pythonhosted.org/packages/79/85/4422797e0097c679992422406ba73ecaa766572bae5c50750b5142be4050/qiskit_aer-0.15.1-cp310-cp310-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:d42260fad7c81d71a12870f2269a959e1c782bc72ba14c85cf107d87e53a13ce", size = 7884238 },
-    { url = "https://files.pythonhosted.org/packages/46/21/07222b2690dff882fe42870fabf9068f105b863a73382a6d29b9f9c46322/qiskit_aer-0.15.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f07b6f937bde64cb88d037e8805cdd3b6e2985231ac7dd18f27a7af4aa653a2c", size = 12337820 },
-    { url = "https://files.pythonhosted.org/packages/e2/39/f33c8f32a68f073c0bc3a9cb92db2066d2733ee73d361572feab5c8a2401/qiskit_aer-0.15.1-cp310-cp310-win32.whl", hash = "sha256:354dd010928cf2f72a92a133ff906c5d173262e6d25d06bb5823d869e2fded93", size = 6895115 },
-    { url = "https://files.pythonhosted.org/packages/8d/74/f015acab5231f6a93416dd96cb0fb316b1231044eeaa9b51cc60ca21b4d3/qiskit_aer-0.15.1-cp310-cp310-win_amd64.whl", hash = "sha256:3d5948c3f910a3f4b7e997ce8e80ca7376715b1f3556244da0c84bd7d2e4b081", size = 9516934 },
-    { url = "https://files.pythonhosted.org/packages/a5/66/1dd66527afd727d2530e0f634e3ee7b870d753dfdd4bd70403b53c9c4fb6/qiskit_aer-0.15.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:6613f1238fba954e744a16e10c61732765541fde42f17029038d0d96b78ba6ee", size = 2469674 },
-    { url = "https://files.pythonhosted.org/packages/0b/7c/ddb8380c58bbcc56a4fd9e427532885ce49dbb95ecd3d044bdf98ee536fa/qiskit_aer-0.15.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:83198f4a7b9949008297675725e9fec01ba47e9d7eec3f755c3eb720aaf78932", size = 2157425 },
-    { url = "https://files.pythonhosted.org/packages/2c/32/0546057cdc043c25ea87e30219ec281ca2f43723ca9f5b8c21fd71e74760/qiskit_aer-0.15.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:196c8de494ff26195ef6fb40f5c9672b6281ab3fd768dc1f1866e7b3968c4d98", size = 6424933 },
-    { url = "https://files.pythonhosted.org/packages/35/8a/773e0b32d008fd47ee68a2cb20afa3bd4c280826b79d749418b37f975fb8/qiskit_aer-0.15.1-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:334f8b323dd06793b11ad8aa8c7bcd56819e696017ce421db3cdc3c48f9da53e", size = 7933205 },
-    { url = "https://files.pythonhosted.org/packages/ad/e7/625f792de490e14084ddae7e4be06c41127526328728b41e5b72b40d161a/qiskit_aer-0.15.1-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:a4cb7d606808d7b437b783d1d9ded20063ce86e463736b7d6201a93caccf050e", size = 7885508 },
-    { url = "https://files.pythonhosted.org/packages/0c/61/7cb8571a1f767e08511617c8e2ffc8284b1e512a3081807bea54772e58bc/qiskit_aer-0.15.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:aabe19cfe9a93b76801da31e81b12671a301e0873d7eaf077d06c92e11394136", size = 12337954 },
-    { url = "https://files.pythonhosted.org/packages/f9/bb/f714b936b3556ad64be962ffd610cc42547befc3d26dfca352db8ebd77f6/qiskit_aer-0.15.1-cp311-cp311-win32.whl", hash = "sha256:601ee3ad01a2aeef489f146ed0baf62965465b47324786ba88d80a1293740ac2", size = 6896059 },
-    { url = "https://files.pythonhosted.org/packages/a3/4a/f40f4655010b104e4e98a89f13e960fb6f02f2b2ceb6ecf73762bce86d22/qiskit_aer-0.15.1-cp311-cp311-win_amd64.whl", hash = "sha256:8d8685f23b844352a3f8f2991adaba91a43515e8883cd1cbdc654b4c61d104a9", size = 9517615 },
-    { url = "https://files.pythonhosted.org/packages/9f/e6/f2611ada4690bacac3073873865d29eed15244d4f4a76c44a5da3855ac3d/qiskit_aer-0.15.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:df16643006cf25a1ed477a120b6146859f09e8dee09ca720befb3a1febee9546", size = 2475586 },
-    { url = "https://files.pythonhosted.org/packages/7e/45/f35bc0971f7333cfeed6e28dc53d1c8a371f2177474176ce1c9585fa6d7d/qiskit_aer-0.15.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:1d22c96bae21dbe4b97c30785ead2c2b53f897938da49bca6b4ef29d187765a6", size = 2158945 },
-    { url = "https://files.pythonhosted.org/packages/9c/c0/c418189d92f92e713d6e096b9b5ead3b49d956465e7a952795b1763a80b3/qiskit_aer-0.15.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1288fd5c36235f5fedfc228956049e87bdd804cbc2b3a487a4453d9e7e72f420", size = 6420353 },
-    { url = "https://files.pythonhosted.org/packages/99/92/fde09045179e7a5e2bae4185f311fde9ab9ef843440ff4bc69742de59a86/qiskit_aer-0.15.1-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:ca0783607942c724329172e21b53354c9d569420e02dbfd06c407ed588833cf6", size = 7939163 },
-    { url = "https://files.pythonhosted.org/packages/ca/a7/baa91866f9468322ec212508dd5629f15a08a374800dfb75dc25ae409590/qiskit_aer-0.15.1-cp312-cp312-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:cbad79290e4b850dca163b7960769a1a8db6d44abf232ecf0a6ce88740c83ab9", size = 7887094 },
-    { url = "https://files.pythonhosted.org/packages/80/ae/85e51a211b387af4cb7526fac6e7850ec1a7f674e4a16ba623c46dbc61ac/qiskit_aer-0.15.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f2257b4828df8cb3f37e153c220cd72f54a81d89875711efbc3ac2f265e0ae4a", size = 12339245 },
-    { url = "https://files.pythonhosted.org/packages/1a/b4/b171b94f276ca8a853a0fc1acb38515936ca55d09e2118b90c1a9b839fdf/qiskit_aer-0.15.1-cp312-cp312-win32.whl", hash = "sha256:0f8a3f97f1bbeabb7d229879f7a0b6b8709f864fbc13ae78ec1569a65033ea3b", size = 6896779 },
-    { url = "https://files.pythonhosted.org/packages/a7/eb/284cedc9cdeecd139939db70cf875806ca5df977d5af21e6fa09f1d82a8e/qiskit_aer-0.15.1-cp312-cp312-win_amd64.whl", hash = "sha256:af6501808b584b764e959af7a1edb2ef890c9a78f1ce418921dbdf6fd09ce0fc", size = 9519513 },
+    { url = "https://files.pythonhosted.org/packages/c7/9e/ffcb74fb14ac7a36fb6f18e27524b31a7053dec38ed2775412fbf6a7f0b6/qiskit_aer-0.17.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:5592568cf2f050d2be32c0453a998d0e6154f5e1235b887a1bc6ee424aaf877b", size = 2476481 },
+    { url = "https://files.pythonhosted.org/packages/48/d0/325adc02b731d227952ef3615e0f2b1b99953bc53b2c9d4bf3dd3335d7bb/qiskit_aer-0.17.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:26f212601f0d5417e055f05decf5a4816271e9b6b0df10347ca1aa640f15c9f8", size = 2163074 },
+    { url = "https://files.pythonhosted.org/packages/22/40/46f3604ff0c5da5c3599202d1f581ff7a9172505ac2f8f3eda5f7daa8e2b/qiskit_aer-0.17.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7a03fee83c79c11830c816b5eed66e8d0fdb377c7017bb7e10bf77b0ce617d2f", size = 6428765 },
+    { url = "https://files.pythonhosted.org/packages/80/c7/30f8b8c0960be75a5d96a843a0605c45b8f1d60bac91668f7f7c89c4db33/qiskit_aer-0.17.1-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:7637a97c40c60d822457f0b3af79303acd8f7cbdeb1cf21fba771724e4fe6201", size = 7940781 },
+    { url = "https://files.pythonhosted.org/packages/1c/b0/6d75ee63df484dd6125a51bfb5e7365a17ddc57452d24f0bf2856ac92c97/qiskit_aer-0.17.1-cp310-cp310-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:f32abcd33872388cf3735c267901abcb60f3f66584bc401802434b6e03659145", size = 7891560 },
+    { url = "https://files.pythonhosted.org/packages/12/a7/99c08ebed52fdc954b26b18e617ac2de67f0256a4d9b328e1ed6281f29f9/qiskit_aer-0.17.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:85486c7a8796247000c2fa38f19073af81be783bb2b7fb168401d483649d09fc", size = 12347237 },
+    { url = "https://files.pythonhosted.org/packages/ba/d2/fd3b9f444f20368e1a8a2097e2fdfcf2f80cb47bb13457583423ebf39e86/qiskit_aer-0.17.1-cp310-cp310-win32.whl", hash = "sha256:e816a47058f92dc9bcb347f72ed28288cf240b0351db0d63a8900811d2a4c1d6", size = 6899218 },
+    { url = "https://files.pythonhosted.org/packages/43/4d/5dba7a06eaaa71fa17225af8983c3443708c332740ee41eda3a2d8c9402e/qiskit_aer-0.17.1-cp310-cp310-win_amd64.whl", hash = "sha256:bf0bfd91b932eed421f4e86f8dc4a827025325a1b4fc286366725240abc677af", size = 9521666 },
+    { url = "https://files.pythonhosted.org/packages/44/59/a0b94e83d90e7d507a3e92988fc00f98ba6f481c46d606e05d3f943cb7ae/qiskit_aer-0.17.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:3816f225891cc30a66addefed3bf86bb537a579600e6131925fa71b38ba62324", size = 2478177 },
+    { url = "https://files.pythonhosted.org/packages/81/70/4a176bbba854de61c478155528a606ebeece2209cde9fb5ef9009040943a/qiskit_aer-0.17.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:27568479515d5cb24290803149fe369dac1e3bd3e28057cba27dca38f3424db0", size = 2164648 },
+    { url = "https://files.pythonhosted.org/packages/12/3b/9e0a52679e591fe0feb08ab9698e0e0fe9b3c5d373a180acf6b1826aa218/qiskit_aer-0.17.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:dda1b166f822f6846e6c5a2be3e5cd6bf6d767175cda378ef05f4acbe70a5cf5", size = 6430106 },
+    { url = "https://files.pythonhosted.org/packages/84/84/ac27fa6e42f4e4b839ddefe43c00ffb09a742b32f54e46a7f0e84a04f524/qiskit_aer-0.17.1-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:eb1ff2fac1529a2513faf31e08311e3b908a17241d4b312a34fcdc5a965cb9b4", size = 7941548 },
+    { url = "https://files.pythonhosted.org/packages/40/cc/3decc08f7c67b6475298c3960a98f00f2bc72ccd959a5296059154e5432a/qiskit_aer-0.17.1-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:73ac5e973946fc1c77154ec2213fafa821e748bd5dae1866bc465ba9f0617c71", size = 7891652 },
+    { url = "https://files.pythonhosted.org/packages/b3/44/6de695a1aaabab3baf2be7ab420bea0b1a165499a5d2f2c52e304f64628e/qiskit_aer-0.17.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ae4db8490e9d0be1d762f97d48f239d521011ae1ce2a17eef4c37f03327daa2c", size = 12357212 },
+    { url = "https://files.pythonhosted.org/packages/2f/35/d4aaa5e7b6f7f8cd5331fa0f43740ee843e4e1ccff1559066c97898cdfb1/qiskit_aer-0.17.1-cp311-cp311-win32.whl", hash = "sha256:b64435e85efdf78880b0307eedf305b26a26687f8662c1a0ce2260d5919a90f0", size = 6899630 },
+    { url = "https://files.pythonhosted.org/packages/cb/91/19e26a9499f8536e851546e0b08ebdc1e6334f8f3709de163770ed4aabe4/qiskit_aer-0.17.1-cp311-cp311-win_amd64.whl", hash = "sha256:adbb49c16909b52881e9d83e7cd270ebe38110210ad7c709cb91b38438bc696b", size = 9522360 },
+    { url = "https://files.pythonhosted.org/packages/30/04/a367bf585c02a9bb11c1928f6a148119404bf6b115733408ad232c1eeb36/qiskit_aer-0.17.1-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:faaa019be9cb6dede838e8533c4bd58e73e963071edf9ab2db7614d4fb01549e", size = 2478667 },
+    { url = "https://files.pythonhosted.org/packages/60/a3/3bb5c173f0ed9271f377e066e03cd0766f9cbe5ea7b4e81ce885bd77837b/qiskit_aer-0.17.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:16615593945191f361a788aad108ae2f3b698a1433b97ed8ed97b1abc754f600", size = 2166018 },
+    { url = "https://files.pythonhosted.org/packages/8f/1f/4dec986872172dc6330e22a3d3a76762cb7ecead0759b8168dbcd43df0bf/qiskit_aer-0.17.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:46589420f41e091fddda1230adb7ee293cdd59c32a70bcf0efd13d5e885760b1", size = 6432980 },
+    { url = "https://files.pythonhosted.org/packages/15/88/261bc5616a3c5a9f165c66e690c488ef9527bcd289cedf030015b3d9c79b/qiskit_aer-0.17.1-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:a8bd3e4cbbf713bb62542b3bf1f36d3aba51db73cbcf8dd3fd31a28d4895f00d", size = 7944858 },
+    { url = "https://files.pythonhosted.org/packages/b9/26/4f8bc088eb5aae47dfeae02c12f1e52244af6aed2f958979ae3e206b27ec/qiskit_aer-0.17.1-cp312-cp312-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:a8a64cf24d296f55c6c0d2245e07346eaae0d8f7dabcc032468910abde6f45a3", size = 7893820 },
+    { url = "https://files.pythonhosted.org/packages/3b/11/acd5361c2fac5d3147c646c8d9e57628ba73110c4beb7a27fb60cfecc42c/qiskit_aer-0.17.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4201015430d199b4512060c495f54e63dce72397b71f037a7954d2fd2761829f", size = 12353958 },
+    { url = "https://files.pythonhosted.org/packages/9b/f1/d4d5d8940162f96624d6c436bd8c8676dd8cd0320b8479f9af08da84a3fe/qiskit_aer-0.17.1-cp312-cp312-win32.whl", hash = "sha256:454c7b8563b26e827bd475e3095db443a331acd34d61c8e0a142c722f805e1ac", size = 6900658 },
+    { url = "https://files.pythonhosted.org/packages/56/98/fbd68369d23a3d2d0265ded2b64ad267b27bab7bdab6564b6df52335dc07/qiskit_aer-0.17.1-cp312-cp312-win_amd64.whl", hash = "sha256:ea9996841f5a256a4d7e22f8c8d375f5099d1c3069b4bebfb8250ef5773412d6", size = 9524116 },
+    { url = "https://files.pythonhosted.org/packages/66/4b/48a9632a9bd1da013bc2284b9981cb507bf9d8e8000db48368d16bbbe691/qiskit_aer-0.17.1-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:e42b44dc688650c6fc5c26488cd31569e9c0ac6a1e471f62c9ef2b806f2c6e28", size = 2478586 },
+    { url = "https://files.pythonhosted.org/packages/ea/f6/7b2695e51737e902d7c7369fe4f37e93871b91637161057e0f1e34138943/qiskit_aer-0.17.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:f50eaa64c2559a50e272b0f0fb2c793fde63de222e95f51279134348a1cf50a0", size = 2166198 },
+    { url = "https://files.pythonhosted.org/packages/3a/eb/313087f7435d84d0d4de683226be1a890346b157e3def7dd9542412d5879/qiskit_aer-0.17.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4bac894b887a06a812b4a2d5f4af10e47f6fbc0d4f85c35cc79074b624eac13a", size = 6432886 },
+    { url = "https://files.pythonhosted.org/packages/4c/0d/7510036dd3ec271a83128b9d042481f43e106050adf2f9c7ffa6a7ae9cb2/qiskit_aer-0.17.1-cp313-cp313-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:cb2f2e7a45d2904c692cf67bf6d118a7e7f6f05e3141381ac99fe182c9fa6fbc", size = 7944357 },
+    { url = "https://files.pythonhosted.org/packages/28/32/c538d890e1ccf2392ba8d39e430ef23c11a5c00808d69ccff03ee17df9ae/qiskit_aer-0.17.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:bf023d8394ce3241552c88086a06359a4f260af3a4a40c99be00afe3e538b252", size = 12353593 },
+    { url = "https://files.pythonhosted.org/packages/55/fb/d0a80540227909e3508f19d84f67e4b6edd2830822e657863e2353b5b915/qiskit_aer-0.17.1-cp313-cp313-win32.whl", hash = "sha256:491c598bae41300a37df80050b81d5097ca27060e7c4e876b853e30f056d2a07", size = 6900856 },
+    { url = "https://files.pythonhosted.org/packages/f6/f2/0e2260961c721ba0889e3f7fcdd69e5a7a24694b135d7ad5b6fe55e84e16/qiskit_aer-0.17.1-cp313-cp313-win_amd64.whl", hash = "sha256:de793b75f19d762981198d6c770c991a5d4e0d32bc1768416cfa1520e28bdcf8", size = 9524145 },
 ]
 
 [[package]]
@@ -2566,10 +2570,10 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.0.2" },
     { name = "optuna", specifier = ">=4.1.0" },
     { name = "pybtex", marker = "extra == 'docs'", specifier = ">=0.24.0" },
-    { name = "qiskit", specifier = ">=1.2.4" },
+    { name = "qiskit", specifier = ">=2.0.0" },
     { name = "qiskit", extras = ["visualization"], marker = "extra == 'docs'" },
     { name = "qiskit-addon-cutting", specifier = ">=0.9.0" },
-    { name = "qiskit-aer", specifier = ">=0.15.1" },
+    { name = "qiskit-aer", specifier = ">=0.17.1" },
     { name = "quimb", specifier = ">=1.8.4" },
     { name = "setuptools-scm", marker = "extra == 'docs'", specifier = ">=8.1" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.1.0" },
@@ -2582,6 +2586,7 @@ requires-dist = [
     { name = "sphinxcontrib-svg2pdfconverter", marker = "extra == 'docs'", specifier = ">=1.2" },
     { name = "sphinxext-opengraph", marker = "extra == 'docs'", specifier = ">=0.9" },
 ]
+provides-extras = ["docs"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -3238,43 +3243,6 @@ wheels = [
 ]
 
 [[package]]
-name = "symengine"
-version = "0.13.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6b/ff/a2041497a482a0ae585672fe12cc8983c7fc46ce792811b55a067e5e5516/symengine-0.13.0.tar.gz", hash = "sha256:ab83a08897ebf12579702c2b71ba73d4732fb706cc4291d810aedf39c690c14c", size = 114237 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/ed/964f75a2dc5b0e2c97b732f44dfb9c40fe7c0f5e21a1ecc2edff89db3d81/symengine-0.13.0-cp310-cp310-macosx_10_13_x86_64.whl", hash = "sha256:259fd4111c7a70c72bdff5686de1949e8132baeb612eacdaf8837720c6fe449b", size = 25867912 },
-    { url = "https://files.pythonhosted.org/packages/a3/ce/c74dfbaf487a428984644b3cb5e1131c4808f60eab1456f37a107f20b87a/symengine-0.13.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:44f2eb28a1e36db0bbd6679435412f79da9743bf9c1cb3eff25e0c343b7ddd48", size = 22711016 },
-    { url = "https://files.pythonhosted.org/packages/4b/65/df699e2b4c2bbf608394b05d1095d77b3f02569e09960f7840f708c7c5dc/symengine-0.13.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d141712fa14d9138bd19e64b10392f850c68d88cd7db29f1bda33e32d1095559", size = 61000047 },
-    { url = "https://files.pythonhosted.org/packages/ff/a9/623d97da0da9615367484127dd3b5d1049675832fb9a6a3572f2e072bb86/symengine-0.13.0-cp310-cp310-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:830226d933bfcdb93546e4062541627d9a3bc7a178a63fb16c002eb5c5221938", size = 90017189 },
-    { url = "https://files.pythonhosted.org/packages/79/a0/d30329ef1bd2b188cb5bbf6d9394e72fa9f38b33a6caa2128ee187716259/symengine-0.13.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a08090163819a0bbfa97d64bd2d8dac2c5268147ed9c242799d7f7e8728a6f4e", size = 49698796 },
-    { url = "https://files.pythonhosted.org/packages/e8/e3/cf99b6353b46b8d9ff05e8d7d24764c8afed7c46b888eece99c6e04cc295/symengine-0.13.0-cp310-cp310-win_amd64.whl", hash = "sha256:1e435dcd8ed25e4c7c21ab1c0376be910efc7f35da76d532367df27b359f0358", size = 17830331 },
-    { url = "https://files.pythonhosted.org/packages/47/a7/e69cff22c2b169b469faa390f0102fbdefe1dfede893a086454483db0fc3/symengine-0.13.0-cp311-cp311-macosx_10_13_x86_64.whl", hash = "sha256:da0eba7e106095cdce88eb275c8a9d7c4586ad88f229394c53e1184155c00745", size = 25878286 },
-    { url = "https://files.pythonhosted.org/packages/60/40/bb3faf5a3d4cc99cf5252cc3f4f5267568abd4aae6439374623841cc0025/symengine-0.13.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:b0c175f4f895a73a925508af03faf7efd6cad8593256bbdb5346bd996d3ec5c8", size = 22721741 },
-    { url = "https://files.pythonhosted.org/packages/de/da/d6350f60f11abc7ee56fcb6b996deba7b31584b5942a4c5db7d3d4f324dd/symengine-0.13.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e58d1e2abd08381aa0cf24c88c0e8b7f592df92619b51e32d36835fbd2dd6ae8", size = 60999516 },
-    { url = "https://files.pythonhosted.org/packages/d1/ee/db107db7d0557aa8dbc9485741a60dd4f869d3da32180710506f9ba942b9/symengine-0.13.0-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:1db745f2c7a3c5e83510cf4decb43201f43552dfb05ad8af9787c89708be9ede", size = 90019965 },
-    { url = "https://files.pythonhosted.org/packages/8f/f0/0642f5d9681ff26e57c317d0514315cf1b0dfe1bc8f68ee14a13a270d704/symengine-0.13.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b2572c98b09ac284db6ecff63f6170461194dc94c4209afd34c092ec67873d85", size = 49690621 },
-    { url = "https://files.pythonhosted.org/packages/54/85/4300eda41959e3839115b2cb0ddb21818804f5eb129cf92eb9cc55c6efe5/symengine-0.13.0-cp311-cp311-win_amd64.whl", hash = "sha256:12727f02a2919f005aee48e68e0cbb70cf857b19385857b4d985d1c9b075f620", size = 17831939 },
-    { url = "https://files.pythonhosted.org/packages/a1/b2/786d3efb98ae1c8e0a9869d6901f24a6633bd621f9e4e1427c86bff35abb/symengine-0.13.0-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:cf91d24f1bfd6d53228593c7804dd106b71b19674d5afc4fa322d516e1793bdd", size = 25853458 },
-    { url = "https://files.pythonhosted.org/packages/3f/74/78b9e7f17c9b9b345d8ef0dbdefebbfc2c7f00693949c6b5808f8a9e54d8/symengine-0.13.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:c5615b7eb68890917abd390ebb10434a949165f6064741c1a8cc345fee14e855", size = 22713256 },
-    { url = "https://files.pythonhosted.org/packages/1d/a8/69f429946e9a9e63a141dcbe519df8a8c3d56aa75fa8440716871efd8b75/symengine-0.13.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:fb92bdf0890de264abaeacbfbdbd4dd7444b94057bd47958d913b662e549ad8a", size = 60847852 },
-    { url = "https://files.pythonhosted.org/packages/f5/3c/a613d5fa73c1b05eb4f0a4bc2bfa21314d37c89dcdb355da684b5f9bea46/symengine-0.13.0-cp312-cp312-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:7b3bce486fbc0b87970ed1b10ca9d5cafb1fd6b66382fe631261d83592851d7e", size = 89691094 },
-    { url = "https://files.pythonhosted.org/packages/90/9f/5a171a9edff23eb0e33e0a2dca295a8b25fd64491ebe8cf765e489bd2bcd/symengine-0.13.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f7e6bae9cfcdde2775d92fbb0abe3ef04e32f65ebc4c2d164ca33f4da202d4a7", size = 49584342 },
-    { url = "https://files.pythonhosted.org/packages/07/16/a69dffc665e5007a0b4f1500fc401316aa070d109f83bc6887802dce199d/symengine-0.13.0-cp312-cp312-win_amd64.whl", hash = "sha256:bced0a1dbdb94737c299384c85ddbad6944ce8dadc334f7bb8dbbd8f6c965807", size = 17787218 },
-    { url = "https://files.pythonhosted.org/packages/f2/51/36ea8d87b61f34d585d09ff585cdc2ba136c501e0a96e861fe81fd0efa5b/symengine-0.13.0-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:5d34df77971538e4c29f2d8e5ef7f459c2179465e6cdb7dfd48b79b87ecd8f4d", size = 25838153 },
-    { url = "https://files.pythonhosted.org/packages/2a/f7/73cd707633c01760df27d340ac2868788fa0a35034aa09f51f6a289d9a07/symengine-0.13.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:ab2661d9b18867e7c6edbfa7a74b8b0a2a694bd24aa08003dc3214f77cb9d6f2", size = 22706111 },
-    { url = "https://files.pythonhosted.org/packages/bc/e7/a1ddc4cc3f2604b18965342523cddd6160b6406d1ef21b58a2dea1c46312/symengine-0.13.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:53f27b9013878ee4419d8e853664d8ae4b68419e3f4b9b5b7f503d32bf904755", size = 60848269 },
-    { url = "https://files.pythonhosted.org/packages/8a/f5/b127d236a8ccce8b85cec8bcb0221cbb6a4e651d6f5511da925e10714a4c/symengine-0.13.0-cp313-cp313-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:27987f75ce08c64f453e2b9b74fec6ffc5ca418c4deca0b75580979d4a4e242a", size = 89679345 },
-    { url = "https://files.pythonhosted.org/packages/49/d0/b07c71dfb6f7f47f90495d67cb0b2264f94f2fb9380e528fe4fcec4c5cfa/symengine-0.13.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e9ea9410330ea15ed4137d7a0a3c43caccacb71490e18036ce5182d08c93baf8", size = 49582795 },
-    { url = "https://files.pythonhosted.org/packages/de/c6/3ce562ec269b033a738b99aa75729d564bfe465a765a5b5810200924f5c9/symengine-0.13.0-cp313-cp313-win_amd64.whl", hash = "sha256:5031eb7a5c6675d5195bb57f93cc7d9ac5a7a9a826d4ad6f6b2927746ed7e6e6", size = 17786679 },
-    { url = "https://files.pythonhosted.org/packages/ca/0f/02031b4ed54fb088ade94082e4658160333c2d5c6629ca7e567ea5a23720/symengine-0.13.0-cp313-cp313t-macosx_10_13_x86_64.whl", hash = "sha256:ce0e5dfb19943bcf3e44a4485bcac4c5533ba3705c63083494eed0b3bf246076", size = 25795209 },
-    { url = "https://files.pythonhosted.org/packages/34/c0/03e9e34a4e2af73dd786fb966ee3ad7ffa57659e79e4ac390be9e9f6aded/symengine-0.13.0-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:c3b77dc54bf1181f6bd3b3338c4e6e5973a8b0fa20a189d15563ef5626e57b04", size = 22670484 },
-    { url = "https://files.pythonhosted.org/packages/9d/13/66c8510403089ee157f0a8930a2e043e6f4de9ee514c8084adb958934058/symengine-0.13.0-cp313-cp313t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ca7c3f6c168f6f5b06b421833c3d3baae56067a94b671bdffbe09b8e4fefd9be", size = 60739889 },
-    { url = "https://files.pythonhosted.org/packages/70/fe/d0c778204d855257865e713fcbfef11dde34621e07fee439d4d117f43203/symengine-0.13.0-cp313-cp313t-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:847523de682416811bacb3ad11507e663b3522fbb35cd27184757e9956d0eaf0", size = 89405899 },
-    { url = "https://files.pythonhosted.org/packages/66/f6/f546e527caf35b7d0f14dbcea278134d4e46d7431821b9ca9f5ec3388a6a/symengine-0.13.0-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ec2fc1b7d96426463f0c9011e9fb88459d906477c1baa8a996dde6fb2bfa99d4", size = 49474632 },
-]
-
-[[package]]
 name = "sympy"
 version = "1.13.3"
 source = { registry = "https://pypi.org/simple" }
@@ -3383,7 +3351,7 @@ name = "tqdm"
 version = "4.67.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e8/4f/0153c21dc5779a49a0598c445b1978126b1344bab9ee71e53e44877e14e0/tqdm-4.67.0.tar.gz", hash = "sha256:fe5a6f95e6fe0b9755e9469b77b9c3cf850048224ecaa8293d7d2d31f97d869a", size = 169739 }
 wheels = [
