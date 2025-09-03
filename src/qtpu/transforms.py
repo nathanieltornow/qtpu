@@ -372,7 +372,6 @@ def squash_regs(circuit: QuantumCircuit) -> QuantumCircuit:
     Returns:
         QuantumCircuit: A new quantum circuit with all classical registers squashed into a single register.
     """
-
     squashed_qreg = QuantumRegister(circuit.num_qubits, "q_" + str(uuid4())[:4])
     sqashed_creg = ClassicalRegister(circuit.num_clbits, "c_" + str(uuid4())[:4])
 
