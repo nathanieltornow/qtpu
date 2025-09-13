@@ -24,6 +24,7 @@ dependencies = [
     "qiskit-aer>=0.17.1",
     "mitiq>=0.0.0",
     "qiskit-ibm-runtime>=0.40.0",
+    "torch>=2.8.0",
 ]
 
 [project.optional-dependencies]
@@ -140,4 +141,7 @@ dev = [
     "pandas>=2.2.3",
     "pytest>=8.3.4",
     "ruff>=0.7.4",
+]
+exp = [
+    "matplotlib>=3.10.0",
 ]
