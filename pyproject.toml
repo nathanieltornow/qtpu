@@ -24,6 +24,9 @@ dependencies = [
     "qiskit-aer>=0.17.1",
     "mitiq>=0.0.0",
     "qiskit-ibm-runtime>=0.40.0",
+    "benchkit",
+    "mqt-bench>=2.1.0",
+    "jax>=0.6.2",
 ]
 
 [project.optional-dependencies]
@@ -128,6 +131,9 @@ isort.required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.uv.sources]
+benchkit = { git = "https://github.com/nathanieltornow/benchkit.git" }
 
 [dependency-groups]
 bench = [

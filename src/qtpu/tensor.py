@@ -187,8 +187,7 @@ class CircuitTensor:
         assert len(index) == len(self.shape)
 
         param_map = dict(zip(self.inds, index, strict=False))
-        # TODO: might be a unnecessary copy
-        return self._circuit.copy().assign_parameters(param_map)
+        return self._circuit.assign_parameters(param_map)
 
     def param_assignment(self, key: int | tuple[int, ...]) -> dict[str, int]:
         """Assigns parameters based on the provided key.
@@ -228,18 +227,6 @@ class CircuitTensor:
         """
         indices = np.ndindex(self.shape)
         return [self[tuple(idx)] for idx in indices]
-
-    def fuse(self, indices: list[str]) -> None:
-        """Fuse the tensor-indices along the specified indices.
-
-        Parameters:
-        indices (list[str]): A list of indices to fuse.
-
-        Raises:
-        NotImplementedError: This method is not yet implemented.
-        """
-        raise NotImplementedError
-
 
 class HybridTensorNetwork:
     """A class to represent a hybrid tensor network consisting of quantum and classical tensors.
