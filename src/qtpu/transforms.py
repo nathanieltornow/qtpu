@@ -31,7 +31,7 @@ from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit_addon_cutting.instructions import CutWire, Move
 from qiskit_addon_cutting.qpd import QPDMeasure, TwoQubitQPDGate
 
-from qtpu.tensor import CircuitTensor, HybridTensorNetwork, InstructionVector
+from qtpu.tensor import CircuitTensor, HybridTensorNetwork, ISwitch
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -171,14 +171,14 @@ def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
             ct = qtn.Tensor(wire_matrix, inds=[idx + "_0", idx + "_1"], tags=["wire"])
 
         circuit.data[ind] = CircuitInstruction(
-            operation=InstructionVector(op_vector1, param1),
+            operation=ISwitch.from_1q_instructions(param1, op_vector1),
             qubits=[gate.qubits[0]],
             clbits=[],
         )
         circuit.data.insert(
             ind + 1,
             CircuitInstruction(
-                operation=InstructionVector(op_vector2, param2),
+                operation=ISwitch.from_1q_instructions(param2, op_vector2),
                 qubits=[gate.qubits[1]],
                 clbits=[],
             ),

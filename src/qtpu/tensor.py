@@ -9,88 +9,108 @@ import quimb.tensor as qtn
 from qiskit.circuit import Instruction, Parameter, QuantumCircuit
 
 if TYPE_CHECKING:
-    from numpy.typing import NDArray
+    from collections.abc import Callable
 
 
-class InstructionVector(Instruction):  # type: ignore[misc]
-    """InstructionVector class represents a vector of one-qubit quantum instructions.
-
-    Attributes:
-    ----------
-        param (Parameter): The parameter used to index the instruction vector.
-        vector (list[list[Instruction]]): The vector of quantum instructions.
-    """
+class ISwitch(Instruction):
+    """ISwitch instruction for quantum tensors."""
 
     def __init__(
         self,
-        instructions_vector: list[list[Instruction]],
         idx_param: Parameter,
-        weights: NDArray[np.float32] | None = None,
+        num_qubits: int,
+        size: int,
+        selector: Callable[[int], QuantumCircuit],
     ) -> None:
-        """Initialize the InstructionVector object with a vector of quantum instructions.
+        """Initialize the ISwitch instruction.
 
         Args:
-            instructions_vector (list[list[Instruction]]): A vector of quantum instructions.
-            idx_param (Parameter): The parameter used to index the instruction vector.
-            weights (list[float], optional): A list of weights for each instruction in the vector.
-                Defaults to None.
+            idx_param (Parameter): The parameter used to index the ISwitch instruction.
+            num_qubits (int): The number of qubits in the ISwitch instruction.
+            size (int): The size of the ISwitch instruction.
+            selector (Callable[[int], QuantumCircuit]): A function that selects a circuit
+                based on the index parameter.
         """
-        assert all(
-            instr.num_qubits == 1 for instrs in instructions_vector for instr in instrs
-        )
-        assert isinstance(idx_param, Parameter)
+        self._size = size
+        self._selector = selector
+        super().__init__("iswitch", num_qubits, 0, params=(idx_param,))
 
-        super().__init__("vec", 1, 0, params=(idx_param,))
-        self._vector = instructions_vector
+    @property
+    def size(self) -> int:
+        """Returns the size of the ISwitch instruction.
 
-        if weights is None:
-            weights = np.ones(len(self), dtype=np.float32)
-
-        assert weights.shape == (len(instructions_vector),)
-        self._weights = weights / np.sum(weights)
+        Returns:
+            int: The size of the ISwitch instruction.
+        """
+        return self._size
 
     @property
     def param(self) -> Parameter:
-        """Returns the parameter used to index the instruction vector.
+        """Returns the parameter used to index the ISwitch instruction.
 
         Returns:
-            Parameter: The parameter used to index the instruction vector.
+            Parameter: The parameter used to index the ISwitch instruction.
         """
         return self.params[0]
 
-    @property
-    def vector(self) -> list[list[Instruction]]:
-        """Returns the vector of quantum instructions.
-
-        Returns:
-            list[list[Instruction]]: The vector of quantum instructions.
-        """
-        return self._vector
-
-    @property
-    def weights(self) -> NDArray[np.float32]:
-        """Returns the weights of the instructions in the vector.
-
-        Returns:
-            NDArray[np.float32]: The weights of the instructions in the vector.
-        """
-        return self._weights
-
     def __len__(self) -> int:
-        """Returns the length of the instruction vector.
+        """Returns the size of the ISwitch instruction.
 
         Returns:
-            int: The length of the instruction vector.
+            int: The size of the ISwitch instruction.
         """
-        return len(self.vector)
+        return self._size
+
+    @staticmethod
+    def from_1q_instructions(
+        idx_param: Parameter, instructions: list[list[Instruction]]
+    ) -> ISwitch:
+        """Create an ISwitch instruction from a list of instruction lists.
+
+        Args:
+            idx_param (Parameter): The parameter used to index the ISwitch instruction.
+            instructions (list[list[Instruction]]): A list of instruction lists.
+
+        Returns:
+            ISwitch: The created ISwitch instruction.
+
+        Raises:
+            ValueError: If the instruction lists do not have the same number of qubits.
+        """
+        size = len(instructions)
+
+        def _selector(index: int) -> QuantumCircuit:
+            circuit = QuantumCircuit(1)
+            for instr in instructions[index]:
+                circuit.append(instr, (0,), ())
+            return circuit
+
+        return ISwitch(idx_param, 1, size, _selector)
 
     def _define(self) -> None:
-        circuit = QuantumCircuit(1, 0)
         param_value = int(self.params[0])
 
-        for instr in self.vector[param_value]:
-            circuit.append(instr, [0])
-        self.definition = circuit
+        if param_value < 0 or param_value >= self.size:
+            msg = f"Parameter value {param_value} out of bounds for ISwitch of size {self.size}."
+            raise ValueError(msg)
+
+        selected_circuit = self._selector(param_value)
+
+        if selected_circuit.num_qubits != self.num_qubits:
+            msg = (
+                f"Selected circuit has {selected_circuit.num_qubits} qubits, "
+                f"but ISwitch expects {self.num_qubits} qubits."
+            )
+            raise ValueError(msg)
+
+        if selected_circuit.num_clbits != 0:
+            msg = (
+                f"Selected circuit has {selected_circuit.num_clbits} classical bits, "
+                "but ISwitch expects 0 classical bits."
+            )
+            raise ValueError(msg)
+
+        self._definition = selected_circuit
 
 
 class CircuitTensor:
@@ -109,8 +129,6 @@ class CircuitTensor:
     ----------
     circuit : QuantumCircuit
         The quantum circuit associated with the tensor.
-    vector_ops : list[InstructionVector]
-        A list of InstructionVector operations in the circuit.
     shape : tuple[int, ...]
         The shape of the tensor, representing the number of parameters for each operation.
     inds : tuple[str, ...]
@@ -127,12 +145,11 @@ class CircuitTensor:
             {
                 instr.operation.param: instr.operation
                 for instr in circuit
-                if isinstance(instr.operation, InstructionVector)
+                if isinstance(instr.operation, ISwitch)
             }.items()
         )
 
         self._circuit = circuit
-        self._vector_ops = [op for _, op in param_to_op]
         self._shape: tuple[int, ...] = tuple(len(op) for _, op in param_to_op)
         self._inds: tuple[str, ...] = tuple(p.name for p, _ in param_to_op)
 
@@ -144,15 +161,6 @@ class CircuitTensor:
             QuantumCircuit: The quantum circuit associated with this instance.
         """
         return self._circuit
-
-    @property
-    def vector_ops(self) -> list[InstructionVector]:
-        """Returns the InstructionVector operations in the circuit.
-
-        Returns:
-            list[InstructionVector]: A list of InstructionVector operations in the circuit.
-        """
-        return self._vector_ops
 
     @property
     def shape(self) -> tuple[int, ...]:
@@ -189,36 +197,6 @@ class CircuitTensor:
         param_map = dict(zip(self.inds, index, strict=False))
         return self._circuit.assign_parameters(param_map)
 
-    def param_assignment(self, key: int | tuple[int, ...]) -> dict[str, int]:
-        """Assigns parameters based on the provided key.
-
-        Args:
-            key (tuple[int, ...]): A tuple of integers representing the indices to be assigned.
-                                   If a single integer is provided, it will be converted to a tuple.
-
-        Returns:
-            dict[str, int]: A dictionary mapping each index name (as a string) to its corresponding value from the key.
-
-        Raises:
-            AssertionError: If the length of the key does not match the length of the shape attribute.
-        """
-        if isinstance(key, int):
-            key = (key,)
-
-        assert len(key) == len(self.shape)
-
-        return dict(zip(self.inds, key, strict=False))
-
-    def get_param_assignments(self) -> list[dict[str, int]]:
-        """Get parameter assignments for all indices in the tensor's shape.
-
-        Returns:
-            list[dict[str, int]]: A list of dictionaries where each dictionary represents
-                                  the parameter assignments for a specific index in the tensor.
-        """
-        indices = np.ndindex(self.shape)
-        return [self.param_assignment(tuple(idx)) for idx in indices]
-
     def flat(self) -> list[QuantumCircuit]:
         """Returns the circuit tensor as a flat list.
 
@@ -227,6 +205,7 @@ class CircuitTensor:
         """
         indices = np.ndindex(self.shape)
         return [self[tuple(idx)] for idx in indices]
+
 
 class HybridTensorNetwork:
     """A class to represent a hybrid tensor network consisting of quantum and classical tensors.
