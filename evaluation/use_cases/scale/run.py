@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
 
 
-@bk.foreach(circuit_size=[10, 20, 30, 40])
+@bk.foreach(circuit_size=[10, 20, 30, 40, 50])
 @bk.foreach(subcirc_size=[10])
 @bk.foreach(bench=["qnn", "wstate"])
 @bk.foreach(num_samples=[100000])
@@ -62,4 +62,4 @@ def scale_qtpu_bench(
 
 if __name__ == "__main__":
     scale_qac_bench()
-    scale_qtpu_bench()
+    # scale_qtpu_bench()

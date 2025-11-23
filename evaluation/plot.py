@@ -49,7 +49,7 @@ def _plot_memory_comparison(
     )
 
 
-@bk.pplot("scale", custom_rc={"font.family": "sans-serif", "font.sans-serif": ["Helvetica"]})
+@bk.pplot("scale")
 def plot_scale_bench() -> None:
     df = bk.logging.join_logs(
         ["logs/01_scale_qac.jsonl", "logs/01_scale_qtpu.jsonl"]
@@ -88,12 +88,12 @@ def plot_scale_bench() -> None:
     # ----- RUNTIME PLOTS -----
     _plot_runtime_comparison(qnn_df, ax1)
     ax1.set_title("Runtime (QNN)")
-    # ax1.set_yscale("log")
+    ax1.set_yscale("log")
     ax1.set_xlabel("Circuit size")
 
     _plot_runtime_comparison(ws_df, ax2)
     ax2.set_title("Runtime (Wstate)")
-    # ax2.set_yscale("log")
+    ax2.set_yscale("log")
     ax2.set_xlabel("Circuit size")
 
     # ----- MEMORY PLOTS -----

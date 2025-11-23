@@ -63,7 +63,7 @@ def _create_fake_results(circuits: list[QuantumCircuit], shots: int):
     return PrimitiveResult(fake_results)
 
 
-@bk.timeout(600, {"timeout": True})
+@bk.timeout(1200, {"timeout": True})
 def run_qac(
     circuit: QuantumCircuit,
     observables: PauliList,
