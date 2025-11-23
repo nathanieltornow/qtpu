@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 @bk.foreach(circuit_size=[10, 20, 30, 40, 50])
 @bk.foreach(subcirc_size=[10])
 @bk.foreach(bench=["qnn", "wstate"])
-@bk.foreach(num_samples=[100000])
+@bk.foreach(num_samples=[10000])
 @bk.foreach(_repeat=list(range(5)))
 @bk.log("logs/01_scale_qac.jsonl")
 def scale_qac_bench(
