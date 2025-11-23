@@ -60,5 +60,6 @@ def scale_qtpu_bench(
     }
 
 
-scale_qtpu_bench()
-scale_qac_bench()
+if __name__ == "__main__":
+    scale_qac_bench()
+    scale_qtpu_bench()

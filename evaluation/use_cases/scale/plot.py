@@ -21,12 +21,11 @@ def _plot_runtime_comparison(
             "result.qtpu.runtime": "qtpu",
         },
     )
-    bk.plot.line_comparison(
+    bk.plot.bar_comparison(
         ax,
         run_df,
         keys=["qac", "qtpu"],
         group_key="config.circuit_size",
-        error=None
     )
 
 
@@ -41,7 +40,7 @@ def _plot_memory_comparison(
             "result.qtpu.generation_memory": "qtpu",
         },
     )
-    bk.plot.line_comparison(
+    bk.plot.bar_comparison(
         ax,
         mem_df,
         keys=["qac", "qtpu"],
@@ -49,11 +48,9 @@ def _plot_memory_comparison(
     )
 
 
-@bk.pplot("scale", custom_rc={"font.family": "sans-serif", "font.sans-serif": ["Helvetica"]})
+@bk.pplot("scale")
 def plot_scale_bench() -> None:
-    df = bk.logging.join_logs(
-        ["logs/01_scale_qac.jsonl", "logs/01_scale_qtpu.jsonl"]
-    )
+    df = bk.load_log("logs/01_scale.jsonl")
 
     # Compute runtimes
     df["result.qac.runtime"] = (
@@ -71,7 +68,7 @@ def plot_scale_bench() -> None:
     df["result.qac.generation_memory"] /= 1e6
     df["result.qtpu.generation_memory"] /= 1e6
 
-    # df = df[df["config.circuit_size"] > 10]
+    df = df[df["config.circuit_size"] > 10]
 
     # One single row of 4 subplots
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(
@@ -88,12 +85,12 @@ def plot_scale_bench() -> None:
     # ----- RUNTIME PLOTS -----
     _plot_runtime_comparison(qnn_df, ax1)
     ax1.set_title("Runtime (QNN)")
-    # ax1.set_yscale("log")
+    ax1.set_yscale("log")
     ax1.set_xlabel("Circuit size")
 
     _plot_runtime_comparison(ws_df, ax2)
     ax2.set_title("Runtime (Wstate)")
-    # ax2.set_yscale("log")
+    ax2.set_yscale("log")
     ax2.set_xlabel("Circuit size")
 
     # ----- MEMORY PLOTS -----
@@ -109,16 +106,13 @@ def plot_scale_bench() -> None:
 
     # One shared legend above all subplots
     handles, labels = ax1.get_legend_handles_labels()
-    # fig.legend(handles, labels, loc="upper center", ncol=2)
+    fig.legend(handles, labels, loc="upper center", ncol=2)
 
-    # fig.tight_layout(rect=[0, 0, 1, 0.92])  # leave space for legend
+    fig.tight_layout(rect=[0, 0, 1, 0.92])  # leave space for legend
     return fig
 
 
-register_style("qac", PlotStyle(hatch="//", sort_order=1, color=colors()[1]))
-register_style(
-    "qtpu",
-    PlotStyle(hatch="\\\\", sort_order=0, color=colors()[0]),
-)
+register_style("qtpu", PlotStyle(sort_order=0, color=colors()[0]))
+register_style("qac", PlotStyle(sort_order=1, color=colors()[1]))
 
 plot_scale_bench()

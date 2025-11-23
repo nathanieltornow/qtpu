@@ -250,8 +250,8 @@ wheels = [
 
 [[package]]
 name = "benchkit"
-version = "0.1.dev33+g64ea7b830"
-source = { git = "https://github.com/nathanieltornow/benchkit.git#64ea7b830c9b481a0b8561c03b668f6bc7a7e1ad" }
+version = "0.1.dev35+gb50218f47"
+source = { git = "https://github.com/nathanieltornow/benchkit.git#b50218f4749edcd647cb7f82cf0e5a5515391aa5" }
 dependencies = [
     { name = "cloudpickle" },
     { name = "fastparquet" },
