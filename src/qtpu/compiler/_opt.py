@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 import cotengra as ctg
@@ -20,6 +21,9 @@ logger = logging.getLogger("qtpu.compiler")
 
 if True:  # silence Optuna unless debugging
     optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+
+_TRIAL_RESULTS = {}
 
 
 # =============================================================================
@@ -247,7 +251,7 @@ def objective(
     choose_leaf_methods: list[str],
     compression_methods: list[str],
     gamma_q: float = 1.10,
-    gamma_c: float = 100.0,
+    gamma_c: float = 1000.0,
     max_overhead: float = np.inf,
 ) -> tuple[float, float]:
 
@@ -281,9 +285,9 @@ def objective(
         fix_output_nodes=trial.suggest_categorical("fix_output_nodes", ["auto", ""]),
     )
 
-    trial.set_user_attr("ir", ir)
-    trial.set_user_attr("tree", tree)
-
+    # trial.set_user_attr("ir", ir)
+    # trial.set_user_attr("tree", tree)
+    _TRIAL_RESULTS[trial.number] = (ir, tree)
     return quantum_cost(ir, tree), tree.contraction_cost()
 
 
@@ -293,6 +297,8 @@ def objective(
 def hyper_optimize(
     circuit: QuantumCircuit,
     *,
+    gamma_q: float = 1.10,
+    gamma_c: float = 1000.0,
     max_overhead: float = np.inf,
     n_trials: int = 100,
     show_progress_bar: bool = False,
@@ -301,21 +307,44 @@ def hyper_optimize(
     compression_methods = ["none"]
     choose_leaf_methods = ["nodes"]
 
-    study = optuna.create_study(directions=["minimize", "minimize"])
-    study.optimize(
-        lambda trial: objective(
+    optuna.delete_study(study_name="cut_opt", storage="sqlite:///study.db")
+    study = optuna.create_study(
+        storage="sqlite:///study.db",
+        study_name="cut_opt",
+        load_if_exists=True,
+        directions=["minimize", "minimize"],
+    )
+
+    def func(trial):
+        return objective(
             trial,
             circuit=circuit,
             max_overhead=max_overhead,
             choose_leaf_methods=choose_leaf_methods,
             compression_methods=compression_methods,
-        ),
+        )
+
+    study.optimize(
+        func,
         n_trials=n_trials,
+        n_jobs=os.cpu_count(),
         show_progress_bar=show_progress_bar,
     )
+    # study.optimize(
+    #     lambda trial: objective(
+    #         trial,
+    #         circuit=circuit,
+    #         max_overhead=max_overhead,
+    #         choose_leaf_methods=choose_leaf_methods,
+    #         compression_methods=compression_methods,
+    #     ),
+    #     n_trials=n_trials,
+    #     show_progress_bar=show_progress_bar,
+    # )
 
     best_trial = get_best_trial_by_q_improvement(study)
-    best_ir = best_trial.user_attrs["ir"]
-    best_tree = best_trial.user_attrs["tree"]
+    best_ir, best_tree = _TRIAL_RESULTS[best_trial.number]
+    # best_ir = best_trial.user_attrs["ir"]
+    # best_tree = best_trial.user_attrs["tree"]
 
     return best_ir.cut_circuit(get_leafs(best_tree))

@@ -3,6 +3,7 @@ from qiskit.compiler import transpile
 from qiskit.providers import BackendV2
 
 from qtpu.transforms import remove_operations_by_name
+from qtpu.tensor import HybridTensorNetwork
 
 
 def estimate_runtime(
@@ -18,7 +19,6 @@ def estimate_runtime(
     Returns:
         float: The estimated total runtime in seconds for executing all circuits.
     """
-
     circuits = [
         remove_operations_by_name(c, {"qpd_measure", "iswitch"}, inplace=False)
         for c in circuits
@@ -91,4 +91,30 @@ def analyse_circuit(circuit: QuantumCircuit) -> dict[str, float]:
         "num_2q_gates": sum(1 for instr in circuit if instr.operation.num_qubits == 2),
         "depth": circuit.depth(),
         "width": circuit.num_qubits,
+    }
+
+
+def circuit_error(circuit: QuantumCircuit) -> float:
+    error = 0.0
+    for instr in circuit.data:
+        if instr.operation.num_qubits == 2:
+            error += 0.01  # Example error rate for CNOT
+        elif instr.operation.num_qubits == 1:
+            error += 0.001  # Example error rate for single-qubit gates
+    return error
+
+
+def analyze_hybrid_tn(hybrid_tn: HybridTensorNetwork) -> dict[str, float]:
+    subcircuits = hybrid_tn.subcircuits
+    return {
+        "num_qtensors": len(subcircuits),
+        "qtensor_depths": [subcirc.depth() for subcirc in subcircuits],
+        "qtensor_widths": [subcirc.num_qubits for subcirc in subcircuits],
+        "qtensor_errors": [circuit_error(subcirc) for subcirc in subcircuits],
+        "qtensor_num_2q_gates": [
+            sum(1 for instr in subcirc if instr.operation.num_qubits == 2)
+            for subcirc in subcircuits
+        ],
+        "num_ctensors": len(hybrid_tn.classical_tensors),
+        "c_cost": hybrid_tn.to_tensor_network().contraction_cost(optimize="auto"),
     }
