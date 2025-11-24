@@ -118,3 +118,28 @@ def analyze_hybrid_tn(hybrid_tn: HybridTensorNetwork) -> dict[str, float]:
         "num_ctensors": len(hybrid_tn.ctensors),
         "c_cost": hybrid_tn.to_dummy_tn().contraction_cost(optimize="auto"),
     }
+
+
+def create_baseline_data(circuit: QuantumCircuit) -> dict[str, float]:
+    return {
+        "num_1q_gates": sum(1 for instr in circuit if instr.operation.num_qubits == 1),
+        "num_2q_gates": sum(1 for instr in circuit if instr.operation.num_qubits == 2),
+        "depth": circuit.depth(),
+        "width": circuit.num_qubits,
+        "error": circuit_error(circuit),
+    }
+
+
+import pandas as pd
+from mqt.bench import get_benchmark_indep
+
+
+def base_line_df(df: pd.DataFrame) -> pd.DataFrame:
+    for index, row in df.iterrows():
+        circuit_size = row["config.circuit_size"]
+        bench_name = row["config.bench"]
+        circuit = get_benchmark_indep(bench_name, circuit_size)
+        baseline_data = create_baseline_data(circuit)
+        for key, value in baseline_data.items():
+            df.at[index, f"baseline.{key}"] = value
+    return df

@@ -25,14 +25,18 @@ if True:  # silence Optuna unless debugging
 _TRIAL_RESULTS = {}
 
 
-# =============================================================================
-#  Quantum cost = worst-case decompressed node count of any leaf
-# =============================================================================
-def quantum_cost(ir: CompressedIR, tree: ctg.ContractionTree) -> float:
-    leafs = get_leafs(tree)
-    if not leafs:
-        return 0.0
-    return float(max(len(ir.decompress_nodes(leaf)) for leaf in leafs))
+def max_cost_leaf(ir: CompressedIR, tree: ctg.ContractionTree) -> frozenset[int] | None:
+    if len(tree.childless) == 1:
+        return cast(frozenset[int], next(iter(tree.childless)))
+    if not tree.childless:
+        return None
+    return cast(
+        frozenset[int],
+        max(
+            tree.childless,
+            key=lambda x: len(ir.decompress_nodes(x)),
+        ),
+    )
 
 
 # =============================================================================
@@ -106,9 +110,10 @@ def partition_and_contract_subgraph(
     new_subgs = tuple(
         map(ctg.core.node_from_seq, ctg.core.separate(subgraph, membership))
     )
-
+    
     if len(new_subgs) > 1:
         tree.contract_nodes(new_subgs, optimize=super_optimize, check=None)
+    return new_subgs
 
 
 # =============================================================================
@@ -168,21 +173,21 @@ def optimize(
     # Main loop
     # ----------------------------
     while True:
-        q_old = quantum_cost(ir, tree)
-        c_old = max(tree.contraction_cost(), 1)
-
         if tree.is_complete():
             break
-        if c_old >= max_overhead:
+        leaf = max_cost_leaf(ir, tree)
+        if leaf is None:  # tree is complete
             break
 
-        leaf = choose_leaf_fn(ir, tree)
-        if leaf is None:
+        q_old = len(ir.decompress_nodes(leaf))
+        c_old = max(tree.contraction_cost(), 1)
+
+        if c_old >= max_overhead:
             break
 
         tree_before = tree.copy()
 
-        partition_and_contract_subgraph(
+        subgraphs = partition_and_contract_subgraph(
             tree,
             leaf,
             rand_size_dict,
@@ -197,7 +202,10 @@ def optimize(
             super_optimize,
         )
 
-        q_new = quantum_cost(ir, tree)
+        q_new = max(
+            (len(ir.decompress_nodes(sg)) for sg in subgraphs),
+            default=q_old,
+        )
         c_new = tree.contraction_cost()
 
         quantum_ok = q_new <= q_old / gamma_q
@@ -249,8 +257,7 @@ def objective(
     circuit: QuantumCircuit,
     choose_leaf_methods: list[str],
     compression_methods: list[str],
-    gamma_q: float = 1.10,
-    gamma_c: float = 1000.0,
+    max_qubits: int,
     max_overhead: float = np.inf,
 ) -> tuple[float, float]:
 
@@ -258,16 +265,16 @@ def objective(
     compress = trial.suggest_categorical("compress", compression_methods)
     choose_leaf = trial.suggest_categorical("choose_leaf", choose_leaf_methods)
 
-    random_strength = trial.suggest_float("random_strength", 0.01, 10.0)
-    imbalance = trial.suggest_float("imbalance", 0.01, 1.0)
-    imbalance_decay = trial.suggest_float("imbalance_decay", -5, 5)
+    random_strength = trial.suggest_float("random_strength", 0.01, 0.01)
+    imbalance = trial.suggest_float("imbalance", 0.01, 0.01)
+    imbalance_decay = trial.suggest_float("imbalance_decay", 0, 0)
 
     # Use fixed small partitioning (your original code had this)
     parts = trial.suggest_int("parts", 2, 2)
-    parts_decay = trial.suggest_float("parts_decay", 0.0, 1.0)
+    parts_decay = trial.suggest_float("parts_decay", 0.0, 0.0)
 
-    gamma_q = trial.suggest_float("gamma_q", 1.01, 2.0, log=True)
-    gamma_c = trial.suggest_float("gamma_c", 1.0, 2000.0, log=True)
+    gamma_q = trial.suggest_float("gamma_q", 1.7, 1.7)
+    gamma_c = trial.suggest_float("gamma_c", 100, 2000, log=True)
 
     ir, tree = optimize(
         circuit,
@@ -290,7 +297,10 @@ def objective(
     # trial.set_user_attr("ir", ir)
     # trial.set_user_attr("tree", tree)
     _TRIAL_RESULTS[trial.number] = (ir, tree)
-    return quantum_cost(ir, tree), tree.contraction_cost()
+
+    if max(ir.num_qubits(leaf) for leaf in get_leafs(tree)) > max_qubits:
+        return 1e30, 1e30
+    return max(len(ir.decompress_nodes(leaf)) for leaf in get_leafs(tree)), tree.contraction_cost()
 
 
 # =============================================================================
@@ -299,8 +309,7 @@ def objective(
 def hyper_optimize(
     circuit: QuantumCircuit,
     *,
-    gamma_q: float = 1.10,
-    gamma_c: float = 1000.0,
+    max_qubits: int,
     num_threads: int = 1,
     max_overhead: float = np.inf,
     n_trials: int = 100,
@@ -326,8 +335,7 @@ def hyper_optimize(
         return objective(
             trial,
             circuit=circuit,
-            gamma_c=gamma_c,
-            gamma_q=gamma_q,
+            max_qubits=max_qubits,
             max_overhead=max_overhead,
             choose_leaf_methods=choose_leaf_methods,
             compression_methods=compression_methods,
