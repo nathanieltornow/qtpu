@@ -117,7 +117,6 @@ def optimize(
     gamma_q: float = 1.10,  # require ≥10% quantum improvement
     gamma_c: float = 10.0,  # allow ≤10x classical blowup
     max_overhead: float = np.inf,
-    terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
     choose_leaf: str = "nodes",
     compress: str = "none",
     random_strength: float = 0.01,
@@ -127,15 +126,6 @@ def optimize(
     seed: int | None = None,
     **partition_opts: Any,
 ) -> tuple[CompressedIR, ctg.ContractionTree]:
-    """
-    Local greedy TN-cut optimizer with acceptance rules:
-
-        q_new <= q_old / gamma_q     (quantum must improve)
-        c_new <= c_old * gamma_c     (classical must not explode)
-
-    Steps are rolled back if acceptance fails.
-    """
-
     # ----------------------------
     # Prepare circuit
     # ----------------------------
@@ -181,8 +171,6 @@ def optimize(
         if tree.is_complete():
             break
         if c_old >= max_overhead:
-            break
-        if terminate_fn is not None and terminate_fn(ir, tree):
             break
 
         leaf = choose_leaf_fn(ir, tree)
@@ -261,7 +249,6 @@ def objective(
     gamma_q: float = 1.10,
     gamma_c: float = 100.0,
     max_overhead: float = np.inf,
-    terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
 ) -> tuple[float, float]:
 
     # hyperparameters to explore
@@ -281,7 +268,6 @@ def objective(
         gamma_q=gamma_q,
         gamma_c=gamma_c,
         max_overhead=max_overhead,
-        terminate_fn=terminate_fn,
         choose_leaf=choose_leaf,
         compress=compress,
         random_strength=random_strength,
@@ -308,7 +294,6 @@ def hyper_optimize(
     circuit: QuantumCircuit,
     *,
     max_overhead: float = np.inf,
-    terminate_fn: Callable[[CompressedIR, ctg.ContractionTree], bool] | None = None,
     n_trials: int = 100,
     show_progress_bar: bool = False,
 ) -> QuantumCircuit:
@@ -322,7 +307,6 @@ def hyper_optimize(
             trial,
             circuit=circuit,
             max_overhead=max_overhead,
-            terminate_fn=terminate_fn,
             choose_leaf_methods=choose_leaf_methods,
             compression_methods=compression_methods,
         ),
