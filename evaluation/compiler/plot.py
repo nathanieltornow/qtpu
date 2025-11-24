@@ -125,6 +125,8 @@ def plot_compile_time(qtpu_df, qac_df):
     merged_df = merged_df[merged_df["config.max_qubits"] == 30]
     merged_df = merged_df[merged_df["config.num_trials"] == 100]
     merged_df = merged_df[merged_df["config.bench"] == "vqe_su2"]
+    merged_df = merged_df[merged_df["result.qtpu.qtensor_widths"].apply(max) <= 30]
+
 
     merged_df = merged_df[
         merged_df["config.circuit_size"].isin(list(range(10, 110, 30)))
@@ -241,8 +243,9 @@ def plot_pareto_frontiers(qtpu_df, qac_df, bench="vqe_su2"):
 @bk.pplot
 def plot_qcost(qtpu_df, qac_df):
     fig, ax = plt.subplots(figsize=(single_column_width(), 1.7))
-    qtpu_df = compute_efficiency(qtpu_df, "qtpu")
-    qac_df = compute_efficiency(qac_df, "qac")
+
+    prepare_df(qtpu_df, "qtpu")
+    prepare_df(qac_df, "qac")
     # merge on circuit_size
     merged_df = pd.merge(
         qtpu_df,
@@ -250,13 +253,15 @@ def plot_qcost(qtpu_df, qac_df):
         on=["config.circuit_size", "config.bench"],
         suffixes=(".qtpu", ".qac"),
     )
+
     merged_df.rename(
-        columns={"efficiency.qtpu": "qtpu", "efficiency.qac": "qac"},
+        columns={"result.qtpu.q_cost": "qtpu", "result.qac.q_cost": "qac"},
         inplace=True,
     )
-    merged_df = merged_df[merged_df["config.max_qubits"] == 10]
+    merged_df = merged_df[merged_df["config.max_qubits"] == 20]
+    merged_df = merged_df[merged_df["result.qtpu.qtensor_widths"].apply(max) <= 20]
     merged_df = merged_df[merged_df["config.num_trials"] == 100]
-    merged_df = merged_df[merged_df["config.bench"] == "qnn"]
+    merged_df = merged_df[merged_df["config.bench"] == "graphstate"]
 
     merged_df = merged_df[
         merged_df["config.circuit_size"].isin(list(range(10, 110, 30)))
@@ -266,34 +271,12 @@ def plot_qcost(qtpu_df, qac_df):
         ax=ax,
         results=merged_df,
         keys=["qtpu", "qac"],
+        # keys=["result.qtpu.c_cost", "result.qac.c_cost"],
         group_key="config.circuit_size",
         error="std",
     )
-    return fig
+    # ax.set_yscale("log")
 
-
-# ------------------------------------------------------------
-# Combined 2×2 figure
-# ------------------------------------------------------------
-@bk.pplot
-def plot_compiler_results(qtpu_df: pd.DataFrame, qac_df: pd.DataFrame):
-
-    # Prepare DFs
-    qtpu_df = prepare_df(qtpu_df, "qtpu")
-    qac_df = prepare_df(qac_df, "qac")
-
-    # Filter extremely huge c_cost if needed
-    qtpu_df = qtpu_df[qtpu_df["result.qtpu.c_cost"] < 1e5]
-    qac_df = qac_df[qac_df["result.qac.c_cost"] < 1e5]
-
-    fig, axs = plt.subplots(2, 2, figsize=(12, 10))
-
-    plot_pareto(axs[0, 0], qtpu_df, qac_df)
-    plot_width_vs_size(axs[0, 1], qtpu_df, qac_df)
-    plot_error_vs_size(axs[1, 0], qtpu_df, qac_df)
-    plot_compile_time(axs[1, 1], qtpu_df)
-
-    fig.tight_layout()
     return fig
 
 
