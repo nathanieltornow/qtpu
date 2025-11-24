@@ -81,7 +81,7 @@ SIZES = list(range(10, 101, 10))
 
 @bk.foreach(bench=BENCHMARKS)
 @bk.foreach(circuit_size=SIZES)
-@bk.foreach(gamma_q=[1.05, 1.1, 1.2], gamma_c=[500.0, 1000.0, 2000.0])
+@bk.foreach(gamma_q=[1.05, 1.05, 1.05], gamma_c=[500.0, 1000.0, 2000.0])
 @bk.foreach(num_trials=[10, 50, 100], num_threads=[1, 1, 1])
 @bk.log("logs/compile/qtpu.jsonl")
 def compile_qtpu_benchmark(

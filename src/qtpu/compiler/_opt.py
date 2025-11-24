@@ -266,6 +266,9 @@ def objective(
     parts = trial.suggest_int("parts", 2, 2)
     parts_decay = trial.suggest_float("parts_decay", 0.0, 1.0)
 
+    gamma_q = trial.suggest_float("gamma_q", 1.01, 2.0, log=True)
+    gamma_c = trial.suggest_float("gamma_c", 1.0, 2000.0, log=True)
+
     ir, tree = optimize(
         circuit,
         gamma_q=gamma_q,
