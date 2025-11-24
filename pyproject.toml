@@ -22,7 +22,6 @@ dependencies = [
     "llvmlite>=0.43.0",
     "numba>=0.60.0",
     "qiskit-aer>=0.17.1",
-    "mitiq>=0.0.0",
     "qiskit-ibm-runtime>=0.40.0",
     "mqt-bench>=2.1.0",
     "jax>=0.6.2",

@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -465,7 +466,7 @@ name = "click"
 version = "8.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/3d/fa/656b739db8587d7b5dfa22e22ed02566950fbfbcdc20311993483657a5c0/click-8.3.1.tar.gz", hash = "sha256:12ff4785d337a1bb490bb7e9c2b1ee5da3112e94a8622f26a6c77f5d2fc6842a", size = 295065 }
 wheels = [
@@ -1484,7 +1485,7 @@ name = "ipykernel"
 version = "7.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "appnope", marker = "platform_system == 'Darwin'" },
+    { name = "appnope", marker = "sys_platform == 'darwin'" },
     { name = "comm" },
     { name = "debugpy" },
     { name = "ipython", version = "8.37.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -2392,19 +2393,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d7/02/a7fb8b21d4d55ac93cdcde9d3638da5dd0ebdd3a4fed76c7725e10b81cbe/mistune-3.1.4.tar.gz", hash = "sha256:b5a7f801d389f724ec702840c11d8fc48f2b33519102fc7ee739e8177b672164", size = 94588 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7a/f0/8282d9641415e9e33df173516226b404d367a0fc55e1a60424a152913abc/mistune-3.1.4-py3-none-any.whl", hash = "sha256:93691da911e5d9d2e23bc54472892aff676df27a75274962ff9edc210364266d", size = 53481 },
-]
-
-[[package]]
-name = "mitiq"
-version = "0.0.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/32/47/ef00cdf9f7856a19cb5b9dc74bece2954ef7814a3fd2504e6494548e62f6/mitiq-0.0.0.tar.gz", hash = "sha256:19c4589c31c0a71dd00b22282e503c9dc426bf08455c96ebb46d2576d85b4464", size = 2759 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/43/d8/aabe406a6d5e2526b6b3f900865e27cb120332fca19dc656b1cfb5ad045a/mitiq-0.0.0-py3-none-any.whl", hash = "sha256:71f7069ffa825ce063f06e56a0ef0d1385baa14021e810753e3b188376b3b06d", size = 15306 },
 ]
 
 [[package]]
@@ -3847,7 +3835,6 @@ dependencies = [
     { name = "jax", version = "0.8.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "kahypar" },
     { name = "llvmlite" },
-    { name = "mitiq" },
     { name = "mqt-bench" },
     { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "networkx", version = "3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -3910,7 +3897,6 @@ requires-dist = [
     { name = "jax", specifier = ">=0.6.2" },
     { name = "kahypar", specifier = ">=1.3.5" },
     { name = "llvmlite", specifier = ">=0.43.0" },
-    { name = "mitiq", specifier = ">=0.0.0" },
     { name = "mqt-bench", specifier = ">=2.1.0" },
     { name = "nbsphinx", marker = "extra == 'docs'" },
     { name = "networkx", specifier = ">=3.4.2" },
@@ -3934,6 +3920,7 @@ requires-dist = [
     { name = "sphinxcontrib-svg2pdfconverter", marker = "extra == 'docs'", specifier = ">=1.2" },
     { name = "sphinxext-opengraph", marker = "extra == 'docs'", specifier = ">=0.9" },
 ]
+provides-extras = ["docs"]
 
 [package.metadata.requires-dev]
 bench = [{ name = "mqt-bench", specifier = ">=2.0.0" }]
@@ -5121,7 +5108,7 @@ name = "tqdm"
 version = "4.67.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a8/4b/29b4ef32e036bb34e4ab51796dd745cdba7ed47ad142a9f4a1eb8e0c744d/tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2", size = 169737 }
 wheels = [
