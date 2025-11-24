@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import TYPE_CHECKING, Any, cast
-import numpy as np
+
 import cotengra as ctg
+import numpy as np
 import optuna
 
 from qtpu.compiler._compress import CompressedIR, compress_2q_gates, compress_qubits
 from qtpu.compiler._ir import HybridCircuitIR
-from qtpu.compiler._util import get_leafs, sampling_overhead_tree
-from qtpu.compiler._success import estimated_error
+from qtpu.compiler._util import get_leafs
 from qtpu.transforms import remove_operations_by_name
 
 if TYPE_CHECKING:
@@ -299,6 +298,7 @@ def hyper_optimize(
     *,
     gamma_q: float = 1.10,
     gamma_c: float = 1000.0,
+    num_threads: int = 1,
     max_overhead: float = np.inf,
     n_trials: int = 100,
     show_progress_bar: bool = False,
@@ -319,6 +319,8 @@ def hyper_optimize(
         return objective(
             trial,
             circuit=circuit,
+            gamma_c=gamma_c,
+            gamma_q=gamma_q,
             max_overhead=max_overhead,
             choose_leaf_methods=choose_leaf_methods,
             compression_methods=compression_methods,
@@ -327,7 +329,7 @@ def hyper_optimize(
     study.optimize(
         func,
         n_trials=n_trials,
-        n_jobs=os.cpu_count(),
+        n_jobs=num_threads,
         show_progress_bar=show_progress_bar,
     )
     # study.optimize(

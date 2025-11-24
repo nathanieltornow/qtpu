@@ -115,6 +115,6 @@ def analyze_hybrid_tn(hybrid_tn: HybridTensorNetwork) -> dict[str, float]:
             sum(1 for instr in subcirc if instr.operation.num_qubits == 2)
             for subcirc in subcircuits
         ],
-        "num_ctensors": len(hybrid_tn.classical_tensors),
-        "c_cost": hybrid_tn.to_tensor_network().contraction_cost(optimize="auto"),
+        "num_ctensors": len(hybrid_tn.ctensors),
+        "c_cost": hybrid_tn.to_dummy_tn().contraction_cost(optimize="auto"),
     }

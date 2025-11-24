@@ -13,7 +13,7 @@ def run_circuit_qtpu(circuit: QuantumCircuit):
     Z operator applied to all qubits that are measured.
     """
     # cut the circuit into two halves
-    cut_circ = qtpu.cut(circuit, num_qubits=circuit.num_qubits // 2)
+    cut_circ = qtpu.cut(circuit)
 
     # convert the circuit into a hybrid tensor network
     hybrid_tn = qtpu.circuit_to_hybrid_tn(cut_circ)
