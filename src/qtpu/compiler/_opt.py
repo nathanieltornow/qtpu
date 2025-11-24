@@ -307,7 +307,11 @@ def hyper_optimize(
     compression_methods = ["none"]
     choose_leaf_methods = ["nodes"]
 
-    optuna.delete_study(study_name="cut_opt", storage="sqlite:///study.db")
+    try:
+        optuna.delete_study(study_name="cut_opt", storage="sqlite:///study.db")
+    except KeyError:
+        pass
+
     study = optuna.create_study(
         storage="sqlite:///study.db",
         study_name="cut_opt",

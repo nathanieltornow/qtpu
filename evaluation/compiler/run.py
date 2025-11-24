@@ -81,10 +81,8 @@ SIZES = list(range(10, 101, 10))
 
 @bk.foreach(bench=BENCHMARKS)
 @bk.foreach(circuit_size=SIZES)
-@bk.foreach(gamma_q=[1.05, 1.1, 1.2])
-@bk.foreach(gamma_c=[500.0, 1000.0, 2000.0])
-@bk.foreach(num_threads=[os.cpu_count()])
-@bk.foreach(num_trials=[10, 50, 100])
+@bk.foreach(gamma_q=[1.05, 1.1, 1.2], gamma_c=[500.0, 1000.0, 2000.0])
+@bk.foreach(num_trials=[10, 50, 100], num_threads=[1, 1, 1])
 @bk.log("logs/compile/qtpu.jsonl")
 def compile_qtpu_benchmark(
     bench: str,
@@ -118,5 +116,10 @@ def compile_qac_benchmark(bench: str, circuit_size: int, max_qubits: int = 20) -
 
 
 if __name__ == "__main__":
-    compile_qtpu_benchmark()
-    compile_qac_benchmark()
+
+    import sys
+
+    if "qtpu" in sys.argv:
+        compile_qtpu_benchmark()
+    else:
+        compile_qac_benchmark()
