@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
+import os
+from concurrent.futures import ProcessPoolExecutor
 from typing import TYPE_CHECKING, Any, cast
 
 import cotengra as ctg
 import numpy as np
-import optuna
 
 from qtpu.compiler._ir import HybridCircuitIR
 from qtpu.compiler._util import get_leafs
@@ -74,12 +75,6 @@ if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
 
 logger = logging.getLogger("qtpu.compiler")
-
-if True:  # silence Optuna unless debugging
-    optuna.logging.set_verbosity(optuna.logging.WARNING)
-
-
-_TRIAL_RESULTS: dict[int, tuple[HybridCircuitIR, ctg.ContractionTree]] = {}
 
 
 # =============================================================================
@@ -249,141 +244,368 @@ def optimize(
 
 
 # =============================================================================
-#  OPTUNA SELECTION: maximize quantum improvement, minimize classical cost
+#  Parallel Trial Execution (ProcessPoolExecutor)
 # =============================================================================
-def get_best_trial_by_min_quantum_cost(
-    study: optuna.Study, max_sampling_cost: float = np.inf
-) -> optuna.Trial:
-    """Select the trial with minimal quantum cost that satisfies the sampling cost constraint."""
-    trials = [t for t in study.trials if t.values is not None]
-    if not trials:
-        raise ValueError("No completed trials.")
-
-    # Filter trials that satisfy the sampling cost constraint
-    valid_trials = [
-        t
-        for t in trials
-        if t.user_attrs.get("sampling_cost", np.inf) <= max_sampling_cost
-    ]
-
-    if not valid_trials:
-        raise ValueError("No trials satisfy the sampling cost constraint.")
-
-    # Among valid trials, select the one with minimal quantum cost
-    valid_trials.sort(key=lambda t: t.user_attrs.get("quantum_cost"))
-    print("best trial quantum cost:", valid_trials[0].user_attrs.get("quantum_cost"))
-    print("best trial sampling cost:", valid_trials[0].user_attrs.get("sampling_cost"))
-    return valid_trials[0]
+def _sample_params(rng: np.random.Generator) -> dict[str, Any]:
+    """Sample random hyperparameters for a trial."""
+    return {
+        "choose_leaf": rng.choice(["nodes"]),
+        "random_strength": float(rng.uniform(0.01, 0.2)),
+        "imbalance": float(rng.uniform(0.01, 0.3)),
+        "imbalance_decay": float(rng.uniform(0, 1)),
+        "parts": int(rng.integers(2, 4)),  # 2 or 3
+        "parts_decay": float(rng.uniform(0.0, 1.0)),
+        "weight_edges": "log",
+        "mode": rng.choice(["direct", "recursive"]),
+        "objective": rng.choice(["cut", "km1"]),
+        "fix_output_nodes": rng.choice(["auto", ""]),
+    }
 
 
-# =============================================================================
-#  Optuna Objective
-# =============================================================================
-def objective(
-    trial: optuna.Trial,
-    cached_ir: HybridCircuitIR,
-    choose_leaf_methods: list[str],
-    max_sampling_cost: float = np.inf,
-) -> float:
+def _run_trial_in_process(args: tuple) -> dict[str, Any]:
+    """Run a single optimization trial in a separate process.
 
-    # hyperparameters to explore
-    choose_leaf = trial.suggest_categorical("choose_leaf", choose_leaf_methods)
-
-    random_strength = trial.suggest_float("random_strength", 0.01, 0.2)
-    # Low imbalance values (0.01-0.3) produce balanced partitions which is critical
-    # for achieving low quantum cost (max subcircuit width)
-    imbalance = trial.suggest_float("imbalance", 0.01, 0.3)
-    imbalance_decay = trial.suggest_float("imbalance_decay", 0, 1)
-
-    # Use fixed small partitioning
-    parts = trial.suggest_int("parts", 2, 3)
-    parts_decay = trial.suggest_float("parts_decay", 0.0, 1.0)
-
-    ir, tree = optimize(
-        ir=cached_ir,
-        max_sampling_cost=max_sampling_cost,
-        choose_leaf=choose_leaf,
-        random_strength=random_strength,
-        weight_edges=trial.suggest_categorical("weight_edges", ["log"]),
-        imbalance=imbalance,
-        imbalance_decay=imbalance_decay,
-        parts=parts,
-        parts_decay=parts_decay,
-        mode=trial.suggest_categorical("mode", ["direct", "recursive"]),
-        objective=trial.suggest_categorical("objective", ["cut", "km1"]),
-        fix_output_nodes=trial.suggest_categorical("fix_output_nodes", ["auto", ""]),
-    )
-
-    _TRIAL_RESULTS[trial.number] = (ir, tree)
-
-    leafs = get_leafs(tree)
-    sampling_cost = sampling_overhead_tree(tree)
+    This function is designed to be called via ProcessPoolExecutor to bypass
+    the GIL limitation of KaHyPar (which is CPU-bound and doesn't release GIL).
     
-    # Fast computation of quantum cost directly from IR
-    quantum_cost = get_max_subcircuit_width_fast(ir, leafs)
+    Returns intermediate results at each partition step to build Pareto frontier.
+    """
+    circuit, max_sampling_cost, params, trial_id = args
 
-    # Store metrics for later selection
-    trial.set_user_attr("sampling_cost", sampling_cost)
-    trial.set_user_attr("quantum_cost", quantum_cost)
+    # Import inside the process to avoid pickling issues
+    from qtpu.compiler._ir import HybridCircuitIR
+    from qtpu.compiler._util import get_leafs, sampling_overhead_tree
+    from qtpu.transforms import remove_operations_by_name
+    
+    import cotengra as ctg
+    import numpy as np
 
-    # Penalize if exceeds max sampling cost
-    if sampling_cost > max_sampling_cost:
-        return 1e32
+    circuit = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
+    ir = HybridCircuitIR(circuit)
+    
+    choose_leaf_fn = max_nodes_leaf if params["choose_leaf"] == "nodes" else max_qubits_leaf
+    tree = ir.contraction_tree()
 
-    # Minimize quantum cost (primary objective)
-    return quantum_cost
+    # Setup randomization
+    rng = ctg.core.get_rng(None)
+    rand_size_dict = ctg.core.jitter_dict(tree.size_dict.copy(), params["random_strength"], rng)
+
+    # dynamic imbalance logic
+    imbalance = params["imbalance"]
+    imbalance_decay = params["imbalance_decay"]
+    dyn_fix = params.get("fix_output_nodes") == "auto"
+    
+    partition_opts = {
+        "weight_edges": params["weight_edges"],
+        "mode": params["mode"],
+        "objective": params["objective"],
+        "fix_output_nodes": params["fix_output_nodes"],
+    }
+
+    # Collect snapshots at each step for Pareto frontier
+    snapshots = []
+    
+    while True:
+        if tree.is_complete():
+            break
+
+        leaf = choose_leaf_fn(ir, tree)
+        if leaf is None:
+            break
+
+        partition_and_contract_subgraph(
+            tree,
+            leaf,
+            rand_size_dict,
+            rng,
+            params["parts"],
+            params["parts_decay"],
+            True,  # dynamic_imbalance
+            imbalance,
+            imbalance_decay,
+            dyn_fix,
+            partition_opts,
+            "auto-hq",
+        )
+
+        # Record snapshot after each partition
+        leafs = get_leafs(tree)
+        sampling_cost = sampling_overhead_tree(tree)
+        quantum_cost = get_max_subcircuit_width_fast(ir, leafs)
+        
+        # Compute c_cost (contraction cost) and max_error from actual tensor network
+        cut_circuit = ir.cut_circuit(leafs)
+        import qtpu
+        htn = qtpu.circuit_to_hybrid_tn(cut_circuit)
+        c_cost = htn.to_dummy_tn().contraction_cost(optimize="auto")
+        
+        # Compute max_error: sum of gate errors per subcircuit
+        max_error = max(
+            sum(0.01 if inst.operation.num_qubits == 2 else 0.001 
+                for inst in sc.data)
+            for sc in htn.subcircuits
+        )
+        
+        snapshots.append({
+            "sampling_cost": sampling_cost,
+            "quantum_cost": quantum_cost,
+            "c_cost": c_cost,
+            "max_error": max_error,
+        })
+        
+        # Stop if we've exceeded max_sampling_cost
+        if max_sampling_cost is not None and sampling_cost > max_sampling_cost:
+            break
+
+    return {
+        "trial_id": trial_id,
+        "params": params,
+        "snapshots": snapshots,
+    }
 
 
 # =============================================================================
 #  Hyper-Optimization Wrapper
 # =============================================================================
+def _compute_pareto_frontier(points: list[dict], metric: str = "quantum_cost") -> list[dict]:
+    """Compute the Pareto frontier from a set of points.
+    
+    A point is Pareto-optimal if no other point has both lower c_cost and lower quantum_cost.
+    We want to minimize both quantum_cost and c_cost.
+    """
+    if not points:
+        return []
+    
+    # Sort by c_cost, then by quantum_cost
+    sorted_points = sorted(points, key=lambda x: (x["c_cost"], x["quantum_cost"]))
+    
+    frontier = []
+    best_quantum_cost = float('inf')
+    
+    for point in sorted_points:
+        if point["quantum_cost"] < best_quantum_cost:
+            frontier.append(point)
+            best_quantum_cost = point["quantum_cost"]
+    
+    return frontier
+
+
 def hyper_optimize(
     circuit: QuantumCircuit,
     *,
-    max_sampling_cost: float = np.inf,
-    num_threads: int = 1,
+    max_sampling_cost: float | None = None,
+    num_workers: int | None = None,
     n_trials: int = 100,
+    seed: int | None = None,
     show_progress_bar: bool = False,
 ) -> QuantumCircuit:
     """Optimize circuit cutting to minimize quantum cost under a sampling cost constraint.
 
+    Uses ProcessPoolExecutor for true parallelism since KaHyPar (the partitioner)
+    is CPU-bound and doesn't release the Python GIL. This provides significant
+    speedup on multi-core machines.
+
     Args:
         circuit: The quantum circuit to optimize.
-        max_sampling_cost: Maximum allowed sampling cost.
-            Optimization will find the solution with minimal quantum cost
-            that stays under this sampling cost threshold.
-        num_threads: Number of parallel optimization threads.
-        n_trials: Number of Optuna trials to run.
-        show_progress_bar: Whether to show optimization progress.
+        max_sampling_cost: Maximum allowed sampling cost. If None, explores the
+            full Pareto frontier and returns the solution with best quantum cost.
+        num_workers: Number of parallel worker processes. Defaults to min(8, cpu_count).
+        n_trials: Number of optimization trials to run.
+        seed: Random seed for reproducibility.
+        show_progress_bar: Whether to show optimization progress (not yet implemented for parallel).
 
     Returns:
         The cut circuit with minimal quantum cost under the sampling constraint.
     """
-    choose_leaf_methods = ["nodes"]
+    if num_workers is None:
+        num_workers = min(8, os.cpu_count() or 1)
 
-    # Build IR once - this is the expensive part
-    circuit = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
-    cached_ir = HybridCircuitIR(circuit)
+    # Sample hyperparameters for all trials upfront
+    rng = np.random.default_rng(seed)
+    all_params = [_sample_params(rng) for _ in range(n_trials)]
 
-    # Use in-memory storage to avoid database state issues
-    study = optuna.create_study(directions=["minimize"])
+    # Run trials in parallel using ProcessPoolExecutor
+    # This bypasses GIL since each trial runs in a separate process
+    args_list = [
+        (circuit, max_sampling_cost, params, i) for i, params in enumerate(all_params)
+    ]
 
-    def func(trial):
-        return objective(
-            trial,
-            cached_ir=cached_ir,
-            max_sampling_cost=max_sampling_cost,
-            choose_leaf_methods=choose_leaf_methods,
-        )
+    if num_workers > 1:
+        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+            results = list(executor.map(_run_trial_in_process, args_list))
+    else:
+        # Sequential fallback
+        results = [_run_trial_in_process(args) for args in args_list]
 
-    study.optimize(
-        func,
-        n_trials=n_trials,
-        n_jobs=num_threads,
-        show_progress_bar=show_progress_bar,
+    # Collect all snapshots from all trials
+    all_points = []
+    for result in results:
+        for snapshot in result["snapshots"]:
+            all_points.append({
+                "sampling_cost": snapshot["sampling_cost"],
+                "quantum_cost": snapshot["quantum_cost"],
+                "trial_id": result["trial_id"],
+                "params": result["params"],
+            })
+    
+    # Compute Pareto frontier
+    frontier = _compute_pareto_frontier(all_points)
+    
+    if not frontier:
+        raise ValueError("No valid solutions found.")
+    
+    # Select best point based on constraint
+    if max_sampling_cost is not None:
+        valid_points = [p for p in frontier if p["sampling_cost"] <= max_sampling_cost]
+        if not valid_points:
+            raise ValueError(f"No solutions found with sampling_cost <= {max_sampling_cost}")
+        best = min(valid_points, key=lambda x: x["quantum_cost"])
+    else:
+        # No constraint - return solution with best quantum cost
+        best = min(frontier, key=lambda x: x["quantum_cost"])
+    
+    logger.info(
+        f"Best solution: quantum_cost={best['quantum_cost']}, "
+        f"sampling_cost={best['sampling_cost']}"
     )
 
-    best_trial = get_best_trial_by_min_quantum_cost(study, max_sampling_cost)
-    best_ir, best_tree = _TRIAL_RESULTS[best_trial.number]
+    # Re-run the best trial to get the actual cut circuit
+    circuit = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
+    ir = HybridCircuitIR(circuit)
+    ir, tree = optimize(
+        ir=ir,
+        max_sampling_cost=best["sampling_cost"],
+        **best["params"],
+    )
 
-    return best_ir.cut_circuit(get_leafs(best_tree))
+    return ir.cut_circuit(get_leafs(tree))
+
+
+def get_pareto_frontier(
+    circuit: QuantumCircuit,
+    *,
+    max_sampling_cost: float = 100,
+    num_workers: int | None = None,
+    n_trials: int = 100,
+    seed: int | None = None,
+) -> list[dict]:
+    """Find the Pareto frontier of quantum cost vs sampling cost tradeoffs.
+    
+    This explores the space of possible cuts up to max_sampling_cost and returns 
+    all Pareto-optimal solutions, allowing users to choose their preferred tradeoff.
+    
+    Args:
+        circuit: The quantum circuit to optimize.
+        max_sampling_cost: Maximum sampling cost to explore. Defaults to 200.
+        num_workers: Number of parallel worker processes. Defaults to min(8, cpu_count).
+        n_trials: Number of optimization trials to run.
+        seed: Random seed for reproducibility.
+        
+    Returns:
+        List of Pareto-optimal points, each with 'quantum_cost' and 'sampling_cost'.
+    """
+    if num_workers is None:
+        num_workers = min(8, os.cpu_count() or 1)
+
+    rng = np.random.default_rng(seed)
+    all_params = [_sample_params(rng) for _ in range(n_trials)]
+
+    args_list = [
+        (circuit, max_sampling_cost, params, i) for i, params in enumerate(all_params)
+    ]
+
+    if num_workers > 1:
+        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+            results = list(executor.map(_run_trial_in_process, args_list))
+    else:
+        results = [_run_trial_in_process(args) for args in args_list]
+
+    # Add the "no cut" baseline - full circuit with no classical overhead
+    circuit_clean = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
+    no_cut_error = sum(
+        0.01 if inst.operation.num_qubits == 2 else 0.001 
+        for inst in circuit_clean.data
+    )
+    all_points = [{
+        "quantum_cost": circuit_clean.num_qubits,
+        "c_cost": 0,
+        "max_error": no_cut_error,
+        "sampling_cost": 0,
+    }]
+    
+    # Collect all snapshots from optimization trials
+    for result in results:
+        for snapshot in result["snapshots"]:
+            all_points.append({
+                "quantum_cost": snapshot["quantum_cost"],
+                "c_cost": snapshot["c_cost"],
+                "max_error": snapshot["max_error"],
+                "sampling_cost": snapshot["sampling_cost"],
+            })
+    
+    return _compute_pareto_frontier(all_points, metric="quantum_cost")
+
+
+def cut_at_target(
+    circuit: QuantumCircuit,
+    target_quantum_cost: int,
+    num_workers: int | None = None,
+    n_trials: int = 100,
+    seed: int | None = None,
+) -> QuantumCircuit:
+    """Cut circuit to achieve a specific target quantum cost (max subcircuit width).
+    
+    Args:
+        circuit: The quantum circuit to cut.
+        target_quantum_cost: Target max subcircuit width to achieve.
+        num_workers: Number of parallel workers.
+        n_trials: Number of optimization trials.
+        seed: Random seed.
+        
+    Returns:
+        Cut circuit with quantum_cost <= target_quantum_cost.
+    """
+    if num_workers is None:
+        num_workers = min(8, os.cpu_count() or 1)
+
+    rng = np.random.default_rng(seed)
+    all_params = [_sample_params(rng) for _ in range(n_trials)]
+
+    args_list = [
+        (circuit, 200, params, i) for i, params in enumerate(all_params)
+    ]
+
+    if num_workers > 1:
+        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+            results = list(executor.map(_run_trial_in_process, args_list))
+    else:
+        results = [_run_trial_in_process(args) for args in args_list]
+
+    # Find the snapshot that achieves target_quantum_cost with lowest c_cost
+    best_snapshot = None
+    best_c_cost = float('inf')
+    best_params = None
+    
+    for result in results:
+        for snapshot in result["snapshots"]:
+            if snapshot["quantum_cost"] <= target_quantum_cost:
+                if snapshot["c_cost"] < best_c_cost:
+                    best_c_cost = snapshot["c_cost"]
+                    best_snapshot = snapshot
+                    best_params = result["params"]
+    
+    if best_snapshot is None:
+        raise ValueError(f"Could not achieve quantum_cost <= {target_quantum_cost}")
+    
+    # Re-run with best params to get the circuit
+    circuit = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
+    ir = HybridCircuitIR(circuit)
+    
+    # Find the sampling_cost that gives us this quantum_cost
+    ir, tree = optimize(
+        ir=ir,
+        max_sampling_cost=best_snapshot["sampling_cost"],
+        **best_params,
+    )
+
+    return ir.cut_circuit(get_leafs(tree))

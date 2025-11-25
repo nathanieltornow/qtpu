@@ -15,8 +15,8 @@ def run_circuit_qtpu(circuit: QuantumCircuit):
     Returns the expectation value of the circuit of the
     Z operator applied to all qubits that are measured.
     """
-    # cut the circuit into two halves
-    cut_circ = qtpu.cut(circuit, num_qubits=circuit.num_qubits // 2)
+    # cut the circuit to optimize subcircuit size under sampling cost constraint
+    cut_circ = qtpu.cut(circuit, max_sampling_cost=20, n_trials=10, num_workers=1)
 
     # convert the circuit into a hybrid tensor network
     hybrid_tn = qtpu.circuit_to_hybrid_tn(cut_circ)

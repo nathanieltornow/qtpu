@@ -16,7 +16,7 @@ def sample_circuit_qtpu_backend(
     Samples the given circuit using QTPU.
     Returns the counts of the circuit.
     """
-    cut_circ = qtpu.cut(circuit, num_qubits=circuit.num_qubits // 2)
+    cut_circ = qtpu.cut(circuit, max_sampling_cost=20, n_trials=10, num_workers=1)
     hybrid_tn = qtpu.circuit_to_hybrid_tn(cut_circ)
     evaluator = BackendEvaluator(AerSimulator())
     tn = qtpu.evaluate(hybrid_tn, evaluator)

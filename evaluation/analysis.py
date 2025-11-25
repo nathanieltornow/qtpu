@@ -106,6 +106,24 @@ def circuit_error(circuit: QuantumCircuit) -> float:
 
 def analyze_hybrid_tn(hybrid_tn: HybridTensorNetwork) -> dict[str, float]:
     subcircuits = hybrid_tn.subcircuits
+    
+    # Compute sampling overhead from the tensor network
+    # This is the product of dimensions at cut boundaries
+    dummy_tn = hybrid_tn.to_dummy_tn()
+    
+    # Get all indices that appear in multiple tensors (cut indices)
+    from collections import Counter
+    all_indices = []
+    for tensor in dummy_tn.tensors:
+        all_indices.extend(tensor.inds)
+    
+    index_counts = Counter(all_indices)
+    cut_indices = [idx for idx, count in index_counts.items() if count > 1]
+    
+    # Sampling overhead = product of dimensions of cut indices
+    # But we sum for the additive metric used in QTPU
+    sampling_overhead = sum(dummy_tn.ind_size(idx) for idx in cut_indices)
+    
     return {
         "num_qtensors": len(subcircuits),
         "qtensor_depths": [subcirc.depth() for subcirc in subcircuits],
@@ -117,6 +135,7 @@ def analyze_hybrid_tn(hybrid_tn: HybridTensorNetwork) -> dict[str, float]:
         ],
         "num_ctensors": len(hybrid_tn.ctensors),
         "c_cost": hybrid_tn.to_dummy_tn().contraction_cost(optimize="auto"),
+        "sampling_overhead": sampling_overhead,
     }
 
 
