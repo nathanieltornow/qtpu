@@ -22,6 +22,7 @@ def run_circuit_qtpu(circuit: QuantumCircuit):
         print(f"Subcircuit {i}:")
         print(subcirc)
         print("--------------------")
+    exit(0)
 
     # evaluate the hybrid tensor network to a classical tensor network
     tn = qtpu.evaluate(hybrid_tn)
@@ -43,6 +44,10 @@ def run_comparison(circuit: QuantumCircuit):
 
 def main():
     circuit = simple_circuit(4)
+    
+    from mqt.bench import get_benchmark_indep
+    circuit = get_benchmark_indep("wstate", 70)
+    
     qtpu_res = run_circuit_qtpu(circuit)
     qiskit_res = run_comparison(circuit)
     print(f"QTPU result: {qtpu_res}")

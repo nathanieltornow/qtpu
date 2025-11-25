@@ -28,7 +28,7 @@ def sampling_overhead_tree(tree: ctg.ContractionTree) -> float:
         # print(tree.get_legs(node))
 
     # return np.prod([tree.size_dict[ind] for ind in involved_inds])
-    return float(sum(np.log10(tree.size_dict[ind]) for ind in involved_inds))
+    return float(sum(tree.size_dict[ind] for ind in involved_inds))
 
 
 def sampling_overhead_circuit(circuit: QuantumCircuit) -> float:

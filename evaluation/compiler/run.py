@@ -44,8 +44,7 @@ def compile_qac(circuit: QuantumCircuit, max_qubits: int) -> HybridTensorNetwork
 
 def compile_qtpu(
     circuit: QuantumCircuit,
-    gamma_q: float,
-    gamma_c: float,
+    max_sampling_cost: float = 1e6,
     num_threads: int = 1,
     num_trials: int = 1,
 ) -> HybridTensorNetwork:
@@ -61,8 +60,7 @@ def compile_qtpu(
     start = perf_counter()
     cut_circuit = qtpu.cut(
         circuit,
-        gamma_q=gamma_q,
-        gamma_c=gamma_c,
+        max_sampling_cost=max_sampling_cost,
         num_threads=num_threads,
         n_trials=num_trials,
     )
@@ -75,20 +73,19 @@ def compile_qtpu(
     )
 
 
-BENCHMARKS = ["qnn", "graphstate", "wstate", "vqe_su2"]
-SIZES = list(range(10, 101, 10))
+BENCHMARKS = ["wstate", "vqe_su2"]
+SIZES = list(range(100, 211, 20))
 
 
 @bk.foreach(bench=BENCHMARKS)
 @bk.foreach(circuit_size=SIZES)
-@bk.foreach(gamma_q=[1.05, 1.05, 1.05], gamma_c=[500.0, 1000.0, 2000.0])
-@bk.foreach(num_trials=[10, 50, 100], num_threads=[1, 1, 1])
+@bk.foreach(max_sampling_cost=[50, 100, 200])
+@bk.foreach(num_trials=[100], num_threads=[1])
 @bk.log("logs/compile/qtpu.jsonl")
 def compile_qtpu_benchmark(
     bench: str,
     circuit_size: int,
-    gamma_q: float,
-    gamma_c: float,
+    max_sampling_cost: float = 100,
     num_threads: int = 1,
     num_trials: int = 1,
 ) -> dict:
@@ -97,8 +94,7 @@ def compile_qtpu_benchmark(
     )
     return compile_qtpu(
         circuit,
-        gamma_q=gamma_q,
-        gamma_c=gamma_c,
+        max_sampling_cost=max_sampling_cost,
         num_threads=num_threads,
         num_trials=num_trials,
     )
