@@ -1,49 +1,76 @@
 from __future__ import annotations
 
 import logging
-from itertools import combinations
 from typing import TYPE_CHECKING, Any, cast
 
 import cotengra as ctg
-import networkx as nx
 import numpy as np
 import optuna
-from qiskit_addon_cutting.qpd import TwoQubitQPDGate
 
-from qtpu.compiler._compress import CompressedIR, compress_2q_gates, compress_qubits
 from qtpu.compiler._ir import HybridCircuitIR
 from qtpu.compiler._util import get_leafs
-from qtpu.transforms import remove_operations_by_name, wire_cuts_to_moves
+from qtpu.transforms import remove_operations_by_name
 
 from ._util import sampling_overhead_tree
 
 
-def get_max_subcircuit_width(cut_circuit) -> int:
-    """Compute max subcircuit width using qubit graph connected components.
+def get_max_subcircuit_width_fast(ir: HybridCircuitIR, leafs: list[frozenset[int]]) -> int:
+    """Fast computation of max subcircuit width directly from IR structure.
     
-    This matches the logic in transforms.py: qubits are connected if they
-    share a gate that is NOT a TwoQubitQPDGate (i.e., not a cut).
+    For each leaf partition:
+    - Count unique physical qubits
+    - Add 1 for each wire cut (same qubit appearing in different time slices
+      within this partition due to cuts)
+    
+    This avoids generating the full cut circuit.
     """
-    circuit = wire_cuts_to_moves(cut_circuit)
+    max_width = 0
     
-    # Build qubit graph - same logic as _qubit_graph in transforms.py
-    graph = nx.Graph()
-    graph.add_nodes_from(circuit.qubits)
-    for instr in circuit:
-        if instr.operation.name == "barrier" or isinstance(
-            instr.operation, TwoQubitQPDGate
-        ):
-            continue
-        qubits = instr.qubits
-        for qubit1, qubit2 in combinations(qubits, 2):
-            graph.add_edge(qubit1, qubit2)
+    # Build edge lookup: node -> set of connected nodes
+    hg = ir._hypergraph
+    node_neighbors: dict[int, set[int]] = {i: set() for i in range(hg.num_nodes)}
+    for edge_nodes in hg.edges.values():
+        if len(edge_nodes) == 2:
+            u, v = edge_nodes
+            node_neighbors[u].add(v)
+            node_neighbors[v].add(u)
     
-    # Find connected components - each is a subcircuit
-    ccs = list(nx.connected_components(graph))
-    return max(len(cc) for cc in ccs)
+    for leaf in leafs:
+        nodes = set(leaf)
+        
+        # Group nodes by qubit
+        qubit_nodes: dict = {}
+        for node in nodes:
+            info = ir.node_info(node)
+            if info.abs_qubit not in qubit_nodes:
+                qubit_nodes[info.abs_qubit] = []
+            qubit_nodes[info.abs_qubit].append((node, info.op_idx))
+        
+        # For each qubit, count segments (breaks due to wire cuts)
+        width = 0
+        for qubit, nodes_with_time in qubit_nodes.items():
+            # Sort by time
+            nodes_with_time.sort(key=lambda x: x[1])
+            
+            # Count segments - each break due to a cut adds a new "qubit" 
+            segments = 1
+            for i in range(len(nodes_with_time) - 1):
+                node1 = nodes_with_time[i][0]
+                node2 = nodes_with_time[i + 1][0]
+                
+                # Check if there's a direct edge between them
+                if node2 not in node_neighbors[node1]:
+                    # Wire was cut between these nodes
+                    segments += 1
+            
+            width += segments
+        
+        max_width = max(max_width, width)
+    
+    return max_width
+
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
     from qiskit.circuit import QuantumCircuit
 
 logger = logging.getLogger("qtpu.compiler")
@@ -52,38 +79,21 @@ if True:  # silence Optuna unless debugging
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 
-_TRIAL_RESULTS = {}
-
-
-def max_cost_leaf(ir: CompressedIR, tree: ctg.ContractionTree) -> frozenset[int] | None:
-    if len(tree.childless) == 1:
-        return cast(frozenset[int], next(iter(tree.childless)))
-    if not tree.childless:
-        return None
-    return cast(
-        frozenset[int],
-        max(
-            tree.childless,
-            key=lambda x: len(ir.decompress_nodes(x)),
-        ),
-    )
+_TRIAL_RESULTS: dict[int, tuple[HybridCircuitIR, ctg.ContractionTree]] = {}
 
 
 # =============================================================================
 #  Leaf selection strategies
 # =============================================================================
-def max_nodes_leaf(ir: CompressedIR, tree: ctg.ContractionTree):
+def max_nodes_leaf(ir: HybridCircuitIR, tree: ctg.ContractionTree):
     if len(tree.childless) == 1:
         return cast(frozenset[int], next(iter(tree.childless)))
     if not tree.childless:
         return None
-    return cast(
-        frozenset[int],
-        max(tree.childless, key=lambda x: len(ir.decompress_nodes(x))),
-    )
+    return cast(frozenset[int], max(tree.childless, key=len))
 
 
-def max_qubits_leaf(ir: CompressedIR, tree: ctg.ContractionTree):
+def max_qubits_leaf(ir: HybridCircuitIR, tree: ctg.ContractionTree):
     if len(tree.childless) == 1:
         return cast(frozenset[int], next(iter(tree.childless)))
     if not tree.childless:
@@ -150,33 +160,26 @@ def partition_and_contract_subgraph(
 #  OPTIMIZE (partition until max sampling cost or tree complete)
 # =============================================================================
 def optimize(
-    circuit: QuantumCircuit,
+    circuit: QuantumCircuit | None = None,
     *,
+    ir: HybridCircuitIR | None = None,
     max_sampling_cost: float = np.inf,
     choose_leaf: str = "nodes",
-    compress: str = "none",
     random_strength: float = 0.01,
     parts: int = 2,
     parts_decay: float = 0.5,
     super_optimize: str = "auto-hq",
     seed: int | None = None,
     **partition_opts: Any,
-) -> tuple[CompressedIR, ctg.ContractionTree]:
+) -> tuple[HybridCircuitIR, ctg.ContractionTree]:
     # ----------------------------
-    # Prepare circuit
+    # Prepare circuit / use cached IR
     # ----------------------------
-    circuit = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
-    hir = HybridCircuitIR(circuit)
-
-    match compress:
-        case "2q":
-            ir = compress_2q_gates(hir)
-        case "qubits":
-            ir = compress_qubits(hir)
-        case "none":
-            ir = CompressedIR(hir, set())
-        case _:
-            raise ValueError(f"Unknown compression {compress}")
+    if ir is None:
+        if circuit is None:
+            raise ValueError("Either circuit or ir must be provided")
+        circuit = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
+        ir = HybridCircuitIR(circuit)
 
     choose_leaf_fn = max_nodes_leaf if choose_leaf == "nodes" else max_qubits_leaf
     tree = ir.contraction_tree()
@@ -202,7 +205,8 @@ def optimize(
     # Track the best quantum cost found while staying within budget
     # ----------------------------
     best_tree = tree.copy()
-    best_quantum_cost = get_max_subcircuit_width(ir.cut_circuit(get_leafs(tree)))
+    leafs = get_leafs(tree)
+    best_quantum_cost = get_max_subcircuit_width_fast(ir, leafs)
     
     while True:
         if tree.is_complete():
@@ -233,8 +237,9 @@ def optimize(
             # Stop - we've hit the budget limit
             break
         
-        # Track the best quantum cost found within budget
-        current_quantum_cost = get_max_subcircuit_width(ir.cut_circuit(get_leafs(tree)))
+        # Track the best quantum cost found within budget (fast computation)
+        leafs = get_leafs(tree)
+        current_quantum_cost = get_max_subcircuit_width_fast(ir, leafs)
         if current_quantum_cost <= best_quantum_cost:
             best_quantum_cost = current_quantum_cost
             best_tree = tree.copy()
@@ -263,15 +268,6 @@ def get_best_trial_by_min_quantum_cost(
 
     if not valid_trials:
         raise ValueError("No trials satisfy the sampling cost constraint.")
-        # If no trial satisfies the constraint, fall back to the one with lowest sampling cost
-        logger.warning(
-            f"No trial satisfies max_sampling_cost={max_sampling_cost}. "
-            "Selecting trial with lowest sampling cost."
-        )
-        valid_trials = trials
-        # Sort by sampling cost (ascending)
-        valid_trials.sort(key=lambda t: t.user_attrs.get("sampling_cost", np.inf))
-        return valid_trials[0]
 
     # Among valid trials, select the one with minimal quantum cost
     valid_trials.sort(key=lambda t: t.user_attrs.get("quantum_cost"))
@@ -285,14 +281,12 @@ def get_best_trial_by_min_quantum_cost(
 # =============================================================================
 def objective(
     trial: optuna.Trial,
-    circuit: QuantumCircuit,
+    cached_ir: HybridCircuitIR,
     choose_leaf_methods: list[str],
-    compression_methods: list[str],
     max_sampling_cost: float = np.inf,
 ) -> float:
 
     # hyperparameters to explore
-    compress = trial.suggest_categorical("compress", compression_methods)
     choose_leaf = trial.suggest_categorical("choose_leaf", choose_leaf_methods)
 
     random_strength = trial.suggest_float("random_strength", 0.01, 0.2)
@@ -301,15 +295,14 @@ def objective(
     imbalance = trial.suggest_float("imbalance", 0.01, 0.3)
     imbalance_decay = trial.suggest_float("imbalance_decay", 0, 1)
 
-    # Use fixed small partitioning (your original code had this)
+    # Use fixed small partitioning
     parts = trial.suggest_int("parts", 2, 3)
     parts_decay = trial.suggest_float("parts_decay", 0.0, 1.0)
 
     ir, tree = optimize(
-        circuit,
+        ir=cached_ir,
         max_sampling_cost=max_sampling_cost,
         choose_leaf=choose_leaf,
-        compress=compress,
         random_strength=random_strength,
         weight_edges=trial.suggest_categorical("weight_edges", ["log"]),
         imbalance=imbalance,
@@ -326,9 +319,8 @@ def objective(
     leafs = get_leafs(tree)
     sampling_cost = sampling_overhead_tree(tree)
     
-    # Get actual subcircuit width using qubit graph connected components
-    cut_circuit = ir.cut_circuit(leafs)
-    quantum_cost = get_max_subcircuit_width(cut_circuit)
+    # Fast computation of quantum cost directly from IR
+    quantum_cost = get_max_subcircuit_width_fast(ir, leafs)
 
     # Store metrics for later selection
     trial.set_user_attr("sampling_cost", sampling_cost)
@@ -367,28 +359,21 @@ def hyper_optimize(
     Returns:
         The cut circuit with minimal quantum cost under the sampling constraint.
     """
-    compression_methods = ["none"]
     choose_leaf_methods = ["nodes"]
 
-    try:
-        optuna.delete_study(study_name="cut_opt", storage="sqlite:///study.db")
-    except KeyError:
-        pass
+    # Build IR once - this is the expensive part
+    circuit = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
+    cached_ir = HybridCircuitIR(circuit)
 
-    study = optuna.create_study(
-        storage="sqlite:///study.db",
-        study_name="cut_opt",
-        load_if_exists=True,
-        directions=["minimize"],
-    )
+    # Use in-memory storage to avoid database state issues
+    study = optuna.create_study(directions=["minimize"])
 
     def func(trial):
         return objective(
             trial,
-            circuit=circuit,
+            cached_ir=cached_ir,
             max_sampling_cost=max_sampling_cost,
             choose_leaf_methods=choose_leaf_methods,
-            compression_methods=compression_methods,
         )
 
     study.optimize(
