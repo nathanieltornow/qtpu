@@ -182,10 +182,107 @@ def compile_comparison_benchmark(bench: str, circuit_size: int) -> dict:
     }
 
 
+# ============================================================================
+# Scalability Benchmark: How fast can each compiler reach target subcircuit sizes?
+# ============================================================================
+SCALABILITY_BENCHMARKS = ["wstate", "ghz", "qnn"]
+SCALABILITY_SIZES = [20, 30, 40, 50, 60, 70, 80]
+TARGET_FRACTIONS = [2, 3, 4, 5]  # Target 1/2, 1/3, 1/4, 1/5 of original size
+
+
+@bk.foreach(bench=SCALABILITY_BENCHMARKS)
+@bk.foreach(circuit_size=SCALABILITY_SIZES)
+@bk.foreach(target_fraction=TARGET_FRACTIONS)
+@bk.log("logs/compile/scalability.jsonl")
+def compile_scalability_benchmark(bench: str, circuit_size: int, target_fraction: int) -> dict:
+    """Measure compile time to achieve target subcircuit size for QTPU vs QAC.
+    
+    For each (benchmark, size, fraction):
+    - Run QTPU to get a cut with max_width <= circuit_size / fraction
+    - Run QAC with the same constraint
+    - Compare compile times and achieved metrics
+    """
+    from time import perf_counter
+    from qtpu.compiler._opt import cut_at_target
+    
+    target_width = circuit_size // target_fraction
+    
+    circuit = get_benchmark_indep(bench, circuit_size).remove_final_measurements(
+        inplace=False
+    )
+    
+    # Compute baseline
+    baseline_error = sum(
+        0.01 if inst.operation.num_qubits == 2 else 0.001 for inst in circuit.data
+    )
+    
+    result = {
+        "target_width": target_width,
+        "target_fraction": f"1/{target_fraction}",
+        "baseline_error": baseline_error,
+    }
+    
+    # Run QTPU with max_subcircuit_width constraint
+    try:
+        start = perf_counter()
+        cut_circuit = cut_at_target(
+            circuit, 
+            target_quantum_cost=target_width,
+            num_workers=8, 
+            n_trials=50
+        )
+        qtpu_time = perf_counter() - start
+        
+        htn = qtpu.circuit_to_hybrid_tn(cut_circuit)
+        qtpu_metrics = analyze_htn(htn)
+        
+        result["qtpu_compile_time"] = qtpu_time
+        result["qtpu_achieved_width"] = qtpu_metrics["max_width"]
+        result["qtpu_c_cost"] = qtpu_metrics["c_cost"]
+        result["qtpu_max_error"] = qtpu_metrics["max_error"]
+        result["qtpu_success"] = qtpu_metrics["max_width"] <= target_width
+    except Exception as e:
+        result["qtpu_compile_time"] = None
+        result["qtpu_error"] = str(e)
+        result["qtpu_success"] = False
+    
+    # Run QAC with same constraint
+    try:
+        start = perf_counter()
+        cut_circuit, _ = find_cuts(
+            circuit,
+            OptimizationParameters(),
+            DeviceConstraints(qubits_per_subcircuit=target_width),
+        )
+        qc_w_ancilla = cut_wires(cut_circuit)
+        htn = qtpu.circuit_to_hybrid_tn(qc_w_ancilla)
+        qac_time = perf_counter() - start
+        
+        qac_metrics = analyze_htn(htn)
+        
+        result["qac_compile_time"] = qac_time
+        result["qac_achieved_width"] = qac_metrics["max_width"]
+        result["qac_c_cost"] = qac_metrics["c_cost"]
+        result["qac_max_error"] = qac_metrics["max_error"]
+        result["qac_success"] = qac_metrics["max_width"] <= target_width
+    except Exception as e:
+        result["qac_compile_time"] = None
+        result["qac_error"] = str(e)
+        result["qac_success"] = False
+    
+    # Compute speedup if both succeeded
+    if result.get("qtpu_compile_time") and result.get("qac_compile_time"):
+        result["speedup"] = result["qac_compile_time"] / result["qtpu_compile_time"]
+    
+    return result
+
+
 if __name__ == "__main__":
     import sys
 
     if "comparison" in sys.argv:
         compile_comparison_benchmark()
+    elif "scalability" in sys.argv:
+        compile_scalability_benchmark()
     else:
-        print("Usage: python -m evaluation.compiler.run comparison")
+        print("Usage: python -m evaluation.compiler.run [comparison|scalability]")
