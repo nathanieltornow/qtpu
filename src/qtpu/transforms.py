@@ -31,7 +31,7 @@ from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit_addon_cutting.instructions import CutWire, Move
 from qiskit_addon_cutting.qpd import QPDMeasure, TwoQubitQPDGate
 
-from qtpu.tensor import CircuitTensor, HybridTensorNetwork, ISwitch
+from qtpu.tensor import QuantumTensor, HybridTensorNetwork, ISwitch
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -187,7 +187,7 @@ def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
 
     subcircuits = [circuit_on_component(circuit, cc) for cc in ccs]
     subcircuits = [remove_idle_cregs(sc) for sc in subcircuits]
-    qtensors = [CircuitTensor(subcircuit) for subcircuit in subcircuits]
+    qtensors = [QuantumTensor(subcircuit) for subcircuit in subcircuits]
 
     return HybridTensorNetwork(qtensors, ctensors)
 

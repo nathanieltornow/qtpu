@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -10,6 +11,12 @@ from qiskit.circuit import Instruction, Parameter, QuantumCircuit
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+
+@dataclass
+class TensorSpec:
+    shape: tuple[int, ...]
+    inds: tuple[str, ...]
 
 
 class ISwitch(Instruction):
@@ -113,7 +120,7 @@ class ISwitch(Instruction):
         self._definition = selected_circuit
 
 
-class CircuitTensor:
+class QuantumTensor:
     """A class to represent a tensor of quantum circuits.
 
     The tensor property comes from having InstructionVector operations in a quantum circuit.
@@ -207,19 +214,77 @@ class CircuitTensor:
         return [self[tuple(idx)] for idx in indices]
 
 
+class CTensor:
+    """A class to represent a classical tensor.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        The data of the classical tensor.
+    inds : tuple[str, ...]
+        The names of the indices in the tensor.
+
+    Attributes:
+    ----------
+    data : np.ndarray
+        The data of the classical tensor.
+    shape : tuple[int, ...]
+        The shape of the tensor.
+    inds : tuple[str, ...]
+        The names of the indices in the tensor.
+    """
+
+    def __init__(self, data: np.ndarray, inds: tuple[str, ...]) -> None:
+        """Initialize the tensor with given data and indices.
+
+        Args:
+            data (np.ndarray): The data of the classical tensor.
+            inds (tuple[str, ...]): The names of the indices in the tensor.
+        """
+        self._data = data
+        self._inds = inds
+
+    @property
+    def data(self) -> np.ndarray:
+        """Returns the data of the classical tensor.
+
+        Returns:
+            np.ndarray: The data of the classical tensor.
+        """
+        return self._data
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """Returns the shape of the tensor.
+
+        Returns:
+            tuple[int, ...]: A tuple representing the dimensions of the tensor.
+        """
+        return self._data.shape
+
+    @property
+    def inds(self) -> tuple[str, ...]:
+        """Returns the indices of the tensor (quimb-style).
+
+        Returns:
+            tuple[str, ...]: A tuple of strings representing the indices of the tensor.
+        """
+        return self._inds
+
+
 class HybridTensorNetwork:
     """A class to represent a hybrid tensor network consisting of quantum and classical tensors.
 
     Attributes:
     -----------
-    qtensors : list[CircuitTensor]
+    qtensors : list[QuantumTensor]
         A list of quantum circuit tensors.
     ctensors : list[qtn.Tensor]
         A list of classical tensors.
     """
 
     def __init__(
-        self, qtensors: list[CircuitTensor], ctensors: list[qtn.Tensor]
+        self, qtensors: list[QuantumTensor], ctensors: list[qtn.Tensor]
     ) -> None:
         """Initialize the tensor object with quantum and classical tensors.
 
@@ -234,7 +299,7 @@ class HybridTensorNetwork:
         self._cts = ctensors
 
     @property
-    def qtensors(self) -> list[CircuitTensor]:
+    def qtensors(self) -> list[QuantumTensor]:
         """Returns the quantum tensors in the tensor network.
 
         Returns:

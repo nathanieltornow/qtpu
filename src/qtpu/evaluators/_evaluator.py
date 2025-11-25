@@ -6,14 +6,14 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qtpu.tensor import CircuitTensor
+    from qtpu.tensor import QuantumTensor
 
 
 class CircuitTensorEvaluator(abc.ABC):
     """Abstract base class for evaluating circuit tensors."""
 
     @abc.abstractmethod
-    def evaluate(self, circuit_tensor: CircuitTensor) -> qtn.Tensor:
+    def evaluate(self, circuit_tensor: QuantumTensor) -> qtn.Tensor:
         """Evaluate a single circuit tensor to a classical tensor.
 
         Args:
@@ -25,7 +25,7 @@ class CircuitTensorEvaluator(abc.ABC):
         ...
 
     def evaluate_batch(
-        self, circuit_tensors: list[CircuitTensor]
+        self, circuit_tensors: list[QuantumTensor]
     ) -> list[qtn.Tensor]:
         """Evaluate a batch of circuit tensors to classical tensors.
 

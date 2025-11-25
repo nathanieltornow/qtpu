@@ -13,7 +13,7 @@ from qtpu.transforms import decompose_qpd_measures
 from ._evaluator import CircuitTensorEvaluator
 
 if TYPE_CHECKING:
-    from qtpu.tensor import CircuitTensor
+    from qtpu.tensor import QuantumTensor
 
 
 class SamplerEvaluator(CircuitTensorEvaluator):
@@ -42,7 +42,7 @@ class SamplerEvaluator(CircuitTensorEvaluator):
         self.sampler = sampler
         self.shots = shots
 
-    def evaluate(self, circuit_tensor: CircuitTensor) -> qtn.Tensor:
+    def evaluate(self, circuit_tensor: QuantumTensor) -> qtn.Tensor:
         """Evaluate a single circuit tensor to a classical tensor.
 
         Args:

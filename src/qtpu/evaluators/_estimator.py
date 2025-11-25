@@ -14,7 +14,7 @@ from ._evaluator import CircuitTensorEvaluator
 if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
 
-    from qtpu.tensor import CircuitTensor
+    from qtpu.tensor import QuantumTensor
 
 
 class ExpvalEvaluator(CircuitTensorEvaluator):
@@ -39,7 +39,7 @@ class ExpvalEvaluator(CircuitTensorEvaluator):
 
         self.estimator = estimator
 
-    def evaluate(self, circuit_tensor: CircuitTensor) -> qtn.Tensor:
+    def evaluate(self, circuit_tensor: QuantumTensor) -> qtn.Tensor:
         """Evaluate a single circuit tensor to a classical tensor.
 
         Args:

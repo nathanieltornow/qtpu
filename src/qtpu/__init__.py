@@ -15,3 +15,10 @@ __all__ = [
     "get_quasi_probability",
     "sample",
 ]
+
+# Lazy import for torch module (optional dependency)
+def __getattr__(name: str):
+    if name == "torch":
+        from qtpu import torch as torch_module
+        return torch_module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

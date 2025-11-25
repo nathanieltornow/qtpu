@@ -12,7 +12,7 @@ from ._evaluator import CircuitTensorEvaluator
 
 if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
-    from qtpu.tensor import CircuitTensor
+    from qtpu.tensor import QuantumTensor
     from numpy.typing import NDArray
 
 
@@ -43,7 +43,7 @@ class BackendEvaluator(CircuitTensorEvaluator):
         self.shots = shots
         self.individual_jobs = individual_jobs
 
-    def evaluate(self, circuit_tensor: CircuitTensor) -> qtn.Tensor:
+    def evaluate(self, circuit_tensor: QuantumTensor) -> qtn.Tensor:
         """Evaluate a single circuit tensor to a classical tensor.
 
         Args:
