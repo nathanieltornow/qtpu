@@ -12,6 +12,7 @@ def cut(
     circuit: QuantumCircuit,
     max_subcircuit_error: float | None = None,
     max_classical_cost: float | None = None,
+    cost_weight: float | None = None,
     strategy: Literal["best_tradeoff", "min_error", "min_cost"] = "best_tradeoff",
     num_workers: int | None = None,
     n_trials: int = 100,
@@ -28,9 +29,14 @@ def cut(
             finds the solution with lowest classical cost under this constraint.
         max_classical_cost: Maximum allowed classical cost (c_cost). If specified,
             finds the solution with lowest error under this constraint.
+        cost_weight: How much to weight classical cost vs error reduction (λ).
+            Both metrics are normalized to [0, 1] using the Pareto frontier.
+            - λ=0: Only minimize error (equivalent to strategy="min_error")
+            - λ=1: Equal weight to error and classical cost (default for best_tradeoff)
+            - λ>1: Prefer lower classical cost over error reduction
+            The score is: normalized_error + λ * normalized_cost
         strategy: How to select from the Pareto frontier:
-            - "best_tradeoff": Automatically pick the knee of the Pareto curve
-              (best error reduction per classical cost).
+            - "best_tradeoff": Use cost_weight (default λ=1) to balance error vs cost.
             - "min_error": Minimize error regardless of classical cost.
             - "min_cost": Minimize classical cost regardless of error.
         num_workers: Number of parallel worker processes. Defaults to min(8, cpu_count).
@@ -69,8 +75,9 @@ def cut(
         best = min(frontier, key=lambda p: p["max_error"])
     elif strategy == "min_cost":
         best = min(frontier, key=lambda p: p["c_cost"])
-    else:  # "best_tradeoff" - find the knee
-        best = _find_knee(frontier)
+    else:  # "best_tradeoff" - use utility function
+        lam = cost_weight if cost_weight is not None else 1.0
+        best = _select_by_utility(frontier, lam)
     
     # Cut at the target quantum_cost
     return cut_at_target(
@@ -80,6 +87,49 @@ def cut(
         n_trials=n_trials,
         seed=seed,
     )
+
+
+def _select_by_utility(frontier: list[dict], cost_weight: float) -> dict:
+    """Select point from Pareto frontier using utility function.
+    
+    Minimizes: normalized_error + cost_weight * normalized_cost
+    
+    Both error and c_cost are normalized to [0, 1] using the frontier's
+    own min/max values, so cost_weight is interpretable:
+    - cost_weight=0: Only care about error
+    - cost_weight=1: Equal weight (1% error reduction = 1% cost increase)
+    - cost_weight=2: Cost is 2x as important as error
+    
+    Tiebreaker: when scores are equal, prefer lower quantum_cost (smaller subcircuits).
+    
+    Args:
+        frontier: List of Pareto-optimal points with 'max_error', 'c_cost', 'quantum_cost'.
+        cost_weight: How much to weight classical cost (λ).
+        
+    Returns:
+        The point that minimizes the utility function.
+    """
+    if len(frontier) == 1:
+        return frontier[0]
+    
+    # Get normalization bounds from frontier
+    min_error = min(p["max_error"] for p in frontier)
+    max_error = max(p["max_error"] for p in frontier)
+    min_cost = min(p["c_cost"] for p in frontier)
+    max_cost = max(p["c_cost"] for p in frontier)
+    
+    error_range = max_error - min_error if max_error > min_error else 1
+    cost_range = max_cost - min_cost if max_cost > min_cost else 1
+    
+    def score(p):
+        # Normalize both to [0, 1]
+        norm_error = (p["max_error"] - min_error) / error_range
+        norm_cost = (p["c_cost"] - min_cost) / cost_range
+        # Primary score: utility function
+        # Tiebreaker: prefer smaller quantum_cost (add tiny fraction)
+        return (norm_error + cost_weight * norm_cost, p["quantum_cost"])
+    
+    return min(frontier, key=score)
 
 
 def _find_knee(frontier: list[dict]) -> dict:

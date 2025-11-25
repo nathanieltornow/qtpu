@@ -328,29 +328,15 @@ def _run_trial_in_process(args: tuple) -> dict[str, Any]:
             "auto-hq",
         )
 
-        # Record snapshot after each partition
+        # Record snapshot after each partition (fast metrics only)
         leafs = get_leafs(tree)
         sampling_cost = sampling_overhead_tree(tree)
         quantum_cost = get_max_subcircuit_width_fast(ir, leafs)
         
-        # Compute c_cost (contraction cost) and max_error from actual tensor network
-        cut_circuit = ir.cut_circuit(leafs)
-        import qtpu
-        htn = qtpu.circuit_to_hybrid_tn(cut_circuit)
-        c_cost = htn.to_dummy_tn().contraction_cost(optimize="auto")
-        
-        # Compute max_error: sum of gate errors per subcircuit
-        max_error = max(
-            sum(0.01 if inst.operation.num_qubits == 2 else 0.001 
-                for inst in sc.data)
-            for sc in htn.subcircuits
-        )
-        
         snapshots.append({
             "sampling_cost": sampling_cost,
             "quantum_cost": quantum_cost,
-            "c_cost": c_cost,
-            "max_error": max_error,
+            "leafs": [list(leaf) for leaf in leafs],  # Store partition for later
         })
         
         # Stop if we've exceeded max_sampling_cost
@@ -370,14 +356,16 @@ def _run_trial_in_process(args: tuple) -> dict[str, Any]:
 def _compute_pareto_frontier(points: list[dict], metric: str = "quantum_cost") -> list[dict]:
     """Compute the Pareto frontier from a set of points.
     
-    A point is Pareto-optimal if no other point has both lower c_cost and lower quantum_cost.
-    We want to minimize both quantum_cost and c_cost.
+    A point is Pareto-optimal if no other point has both higher sampling_cost 
+    and higher quantum_cost. We want to minimize both.
+    
+    Uses sampling_cost as the "cost" axis since it's available during optimization.
     """
     if not points:
         return []
     
-    # Sort by c_cost, then by quantum_cost
-    sorted_points = sorted(points, key=lambda x: (x["c_cost"], x["quantum_cost"]))
+    # Sort by sampling_cost, then by quantum_cost
+    sorted_points = sorted(points, key=lambda x: (x["sampling_cost"], x["quantum_cost"]))
     
     frontier = []
     best_quantum_cost = float('inf')
@@ -502,8 +490,10 @@ def get_pareto_frontier(
         seed: Random seed for reproducibility.
         
     Returns:
-        List of Pareto-optimal points, each with 'quantum_cost' and 'sampling_cost'.
+        List of Pareto-optimal points, each with 'quantum_cost', 'c_cost', 'max_error'.
     """
+    import qtpu
+    
     if num_workers is None:
         num_workers = min(8, os.cpu_count() or 1)
 
@@ -522,28 +512,60 @@ def get_pareto_frontier(
 
     # Add the "no cut" baseline - full circuit with no classical overhead
     circuit_clean = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
+    ir = HybridCircuitIR(circuit_clean)
     no_cut_error = sum(
         0.01 if inst.operation.num_qubits == 2 else 0.001 
         for inst in circuit_clean.data
     )
+    
     all_points = [{
         "quantum_cost": circuit_clean.num_qubits,
-        "c_cost": 0,
-        "max_error": no_cut_error,
         "sampling_cost": 0,
+        "leafs": None,  # Special marker for no-cut baseline
     }]
     
-    # Collect all snapshots from optimization trials
+    # Collect all snapshots from optimization trials (fast metrics only)
     for result in results:
         for snapshot in result["snapshots"]:
             all_points.append({
                 "quantum_cost": snapshot["quantum_cost"],
-                "c_cost": snapshot["c_cost"],
-                "max_error": snapshot["max_error"],
                 "sampling_cost": snapshot["sampling_cost"],
+                "leafs": snapshot["leafs"],
             })
     
-    return _compute_pareto_frontier(all_points, metric="quantum_cost")
+    # Compute Pareto frontier based on fast metrics (sampling_cost, quantum_cost)
+    frontier_points = _compute_pareto_frontier(all_points, metric="quantum_cost")
+    
+    # Now compute expensive metrics (c_cost, max_error) only for Pareto-optimal points
+    frontier_with_metrics = []
+    for point in frontier_points:
+        if point["leafs"] is None:
+            # No-cut baseline
+            frontier_with_metrics.append({
+                "quantum_cost": point["quantum_cost"],
+                "sampling_cost": point["sampling_cost"],
+                "c_cost": 0,
+                "max_error": no_cut_error,
+            })
+        else:
+            # Compute c_cost and max_error from the stored partition
+            leafs = [frozenset(leaf) for leaf in point["leafs"]]
+            cut_circuit = ir.cut_circuit(leafs)
+            htn = qtpu.circuit_to_hybrid_tn(cut_circuit)
+            c_cost = htn.to_dummy_tn().contraction_cost(optimize="auto")
+            max_error = max(
+                sum(0.01 if inst.operation.num_qubits == 2 else 0.001 
+                    for inst in sc.data)
+                for sc in htn.subcircuits
+            )
+            frontier_with_metrics.append({
+                "quantum_cost": point["quantum_cost"],
+                "sampling_cost": point["sampling_cost"],
+                "c_cost": c_cost,
+                "max_error": max_error,
+            })
+    
+    return frontier_with_metrics
 
 
 def cut_at_target(
@@ -581,16 +603,16 @@ def cut_at_target(
     else:
         results = [_run_trial_in_process(args) for args in args_list]
 
-    # Find the snapshot that achieves target_quantum_cost with lowest c_cost
+    # Find the snapshot that achieves target_quantum_cost with lowest sampling_cost
     best_snapshot = None
-    best_c_cost = float('inf')
+    best_sampling_cost = float('inf')
     best_params = None
     
     for result in results:
         for snapshot in result["snapshots"]:
             if snapshot["quantum_cost"] <= target_quantum_cost:
-                if snapshot["c_cost"] < best_c_cost:
-                    best_c_cost = snapshot["c_cost"]
+                if snapshot["sampling_cost"] < best_sampling_cost:
+                    best_sampling_cost = snapshot["sampling_cost"]
                     best_snapshot = snapshot
                     best_params = result["params"]
     
