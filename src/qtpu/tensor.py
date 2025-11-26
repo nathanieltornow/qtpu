@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import quimb.tensor as qtn
+import torch
 from qiskit.circuit import Instruction, Parameter, QuantumCircuit
 
 if TYPE_CHECKING:
@@ -219,14 +220,14 @@ class CTensor:
 
     Parameters
     ----------
-    data : np.ndarray
+    data : torch.Tensor | np.ndarray
         The data of the classical tensor.
     inds : tuple[str, ...]
         The names of the indices in the tensor.
 
     Attributes:
     ----------
-    data : np.ndarray
+    data : torch.Tensor
         The data of the classical tensor.
     shape : tuple[int, ...]
         The shape of the tensor.
@@ -234,22 +235,32 @@ class CTensor:
         The names of the indices in the tensor.
     """
 
-    def __init__(self, data: np.ndarray, inds: tuple[str, ...]) -> None:
+    def __init__(
+        self,
+        data: torch.Tensor | np.ndarray,
+        inds: tuple[str, ...],
+        dtype: torch.dtype = torch.float64,
+    ) -> None:
         """Initialize the tensor with given data and indices.
 
         Args:
-            data (np.ndarray): The data of the classical tensor.
-            inds (tuple[str, ...]): The names of the indices in the tensor.
+            data: The data of the classical tensor (torch.Tensor or np.ndarray).
+            inds: The names of the indices in the tensor.
+            dtype: The torch dtype for the tensor.
         """
+        if isinstance(data, np.ndarray):
+            data = torch.from_numpy(data).to(dtype)
+        elif not isinstance(data, torch.Tensor):
+            data = torch.tensor(data, dtype=dtype)
         self._data = data
         self._inds = inds
 
     @property
-    def data(self) -> np.ndarray:
+    def data(self) -> torch.Tensor:
         """Returns the data of the classical tensor.
 
         Returns:
-            np.ndarray: The data of the classical tensor.
+            torch.Tensor: The data of the classical tensor.
         """
         return self._data
 
@@ -260,7 +271,7 @@ class CTensor:
         Returns:
             tuple[int, ...]: A tuple representing the dimensions of the tensor.
         """
-        return self._data.shape
+        return tuple(self._data.shape)
 
     @property
     def inds(self) -> tuple[str, ...]:
@@ -270,71 +281,3 @@ class CTensor:
             tuple[str, ...]: A tuple of strings representing the indices of the tensor.
         """
         return self._inds
-
-
-class HybridTensorNetwork:
-    """A class to represent a hybrid tensor network consisting of quantum and classical tensors.
-
-    Attributes:
-    -----------
-    qtensors : list[QuantumTensor]
-        A list of quantum circuit tensors.
-    ctensors : list[qtn.Tensor]
-        A list of classical tensors.
-    """
-
-    def __init__(
-        self, qtensors: list[QuantumTensor], ctensors: list[qtn.Tensor]
-    ) -> None:
-        """Initialize the tensor object with quantum and classical tensors.
-
-        Args:
-            qtensors (list[CircuitTensor]): A list of quantum circuit tensors.
-            ctensors (list[qtn.Tensor]): A list of classical tensors.
-
-        Returns:
-            None.
-        """
-        self._qts = qtensors
-        self._cts = ctensors
-
-    @property
-    def qtensors(self) -> list[QuantumTensor]:
-        """Returns the quantum tensors in the tensor network.
-
-        Returns:
-            list[CircuitTensor]: A list of quantum tensors in the tensor network.
-        """
-        return self._qts
-
-    @property
-    def ctensors(self) -> list[qtn.Tensor]:
-        """Returns the classical tensors in the tensor network.
-
-        Returns:
-            list[qtn.Tensor]: A list of classical tensors in the tensor network.
-        """
-        return self._cts
-
-    @property
-    def subcircuits(self) -> list[QuantumCircuit]:
-        """Returns the circuits corresponding to the quantum tensors.
-
-        Returns:
-            list[QuantumCircuit]: A list of quantum circuits corresponding to the quantum tensors.
-        """
-        return [qt.circuit for qt in self._qts]
-
-    def to_dummy_tn(self) -> qtn.TensorNetwork:
-        """Convert the current object to a dummy classical tensor network.
-
-        To be used for analysis purposes.
-
-        Returns:
-            qtn.TensorNetwork: A tensor network consisting of dummy quantum tensors
-                and the original classical tensors.
-        """
-        qt_dummys = [
-            qtn.Tensor(np.zeros(qt.shape), inds=qt.inds, tags=["Q"]) for qt in self._qts
-        ]
-        return qtn.TensorNetwork(qt_dummys + self._cts)

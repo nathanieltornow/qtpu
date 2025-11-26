@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import networkx as nx
 import numpy as np
-import quimb.tensor as qtn
+import torch
 from qiskit.circuit import (
     CircuitInstruction,
     ClassicalRegister,
@@ -31,7 +31,8 @@ from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit_addon_cutting.instructions import CutWire, Move
 from qiskit_addon_cutting.qpd import QPDMeasure, TwoQubitQPDGate
 
-from qtpu.tensor import QuantumTensor, HybridTensorNetwork, ISwitch
+from qtpu.heinsum import HEinsum
+from qtpu.tensor import CTensor, QuantumTensor, ISwitch
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -123,14 +124,14 @@ def wire_cuts_to_moves(
     return circuit
 
 
-def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
-    """Convert a quantum circuit to a hybrid tensor network.
+def circuit_to_heinsum(circuit: QuantumCircuit) -> HEinsum:
+    """Convert a quantum circuit to a HEinsum specification.
 
     Args:
         circuit (QuantumCircuit): The quantum circuit to be converted.
 
     Returns:
-        HybridTensorNetwork: The resulting hybrid tensor network.
+        HEinsum: The resulting hybrid einsum specification.
     """
     circuit = wire_cuts_to_moves(circuit)
     circuit = seperate_clbits(circuit)
@@ -158,7 +159,12 @@ def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
             op_vector1.append(list(ops1))
             op_vector2.append(list(ops2))
 
-        ct = qtn.Tensor(gate.operation.basis.coeffs, inds=[idx], tags=["QPD"])
+        # Create CTensor with torch tensor
+        coeffs = np.array(gate.operation.basis.coeffs, dtype=np.float64)
+        ct = CTensor(
+            torch.from_numpy(coeffs),
+            inds=(idx,),
+        )
 
         if (
             qubit_components[gate.qubits[0]] != qubit_components[gate.qubits[1]]
@@ -168,7 +174,10 @@ def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
             wire_matrix, op_vector1, op_vector2 = _generate_wire_data()
             param1 = Parameter(idx + "_0")
             param2 = Parameter(idx + "_1")
-            ct = qtn.Tensor(wire_matrix, inds=[idx + "_0", idx + "_1"], tags=["wire"])
+            ct = CTensor(
+                torch.from_numpy(wire_matrix.astype(np.float64)),
+                inds=(idx + "_0", idx + "_1"),
+            )
 
         circuit.data[ind] = CircuitInstruction(
             operation=ISwitch.from_1q_instructions(param1, op_vector1),
@@ -189,7 +198,16 @@ def circuit_to_hybrid_tn(circuit: QuantumCircuit) -> HybridTensorNetwork:
     subcircuits = [remove_idle_cregs(sc) for sc in subcircuits]
     qtensors = [QuantumTensor(subcircuit) for subcircuit in subcircuits]
 
-    return HybridTensorNetwork(qtensors, ctensors)
+    return HEinsum(
+        qtensors=qtensors,
+        ctensors=ctensors,
+        input_tensors=[],
+        output_inds=(),
+    )
+
+
+# Alias for backward compatibility
+circuit_to_hybrid_tn = circuit_to_heinsum
 
 
 def circuit_on_component(circuit: QuantumCircuit, qubits: set[Qubit]) -> QuantumCircuit:

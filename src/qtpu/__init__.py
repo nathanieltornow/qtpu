@@ -3,22 +3,9 @@
 from __future__ import annotations
 
 from .compiler import cut
-from .contract import contract, evaluate, execute, get_quasi_probability, sample
-from .transforms import circuit_to_hybrid_tn
+from .transforms import circuit_to_heinsum
 
 __all__ = [
-    "circuit_to_hybrid_tn",
-    "contract",
+    "circuit_to_heinsum",
     "cut",
-    "evaluate",
-    "execute",
-    "get_quasi_probability",
-    "sample",
 ]
-
-# Lazy import for torch module (optional dependency)
-def __getattr__(name: str):
-    if name == "torch":
-        from qtpu import torch as torch_module
-        return torch_module
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
