@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from concurrent.futures import ProcessPoolExecutor
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, cast
 
 import cotengra as ctg
@@ -15,24 +16,126 @@ if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
 
 
-# =============================================================================
-#  Fast metrics computation
-# =============================================================================
+@dataclass
+class CutPoint:
+    """A single point in the optimization space."""
+
+    c_cost: float  # Classical contraction cost (FLOPs)
+    max_error: float  # Estimated error in largest subcircuit
+    max_size: int  # Max subcircuit width (qubits)
+    sampling_cost: float  # Sum of cut edge weights (QPD overhead)
+    leafs: list[list[int]] | None  # Partition (None = no cut)
+
+
+@dataclass
+class OptimizationResult:
+    """Result of circuit cutting optimization."""
+
+    # All collected snapshots with metrics
+    all_points: list[CutPoint]
+
+    # Pareto-optimal points (c_cost vs max_error)
+    pareto_frontier: list[CutPoint]
+
+    # The IR for reconstructing circuits
+    ir: HybridCircuitIR
+
+    def filter(
+        self,
+        max_size: int | None = None,
+        max_c_cost: float | None = None,
+        max_error: float | None = None,
+    ) -> list[CutPoint]:
+        """Filter Pareto frontier by constraints."""
+        valid = self.pareto_frontier.copy()
+
+        if max_size is not None:
+            valid = [p for p in valid if p.max_size <= max_size]
+        if max_c_cost is not None:
+            valid = [p for p in valid if p.c_cost <= max_c_cost]
+        if max_error is not None:
+            valid = [p for p in valid if p.max_error <= max_error]
+
+        return valid
+
+    def select_best(
+        self,
+        cost_weight: float = 1.0,
+        max_size: int | None = None,
+        max_c_cost: float | None = None,
+    ) -> CutPoint | None:
+        """Select best point using utility function.
+
+        Minimizes: normalized_max_error + cost_weight * normalized_c_cost
+        """
+        valid = self.filter(max_size=max_size, max_c_cost=max_c_cost)
+
+        if not valid:
+            return None
+        if len(valid) == 1:
+            return valid[0]
+
+        min_cost = min(p.c_cost for p in valid)
+        max_cost = max(p.c_cost for p in valid)
+        min_error = min(p.max_error for p in valid)
+        max_error = max(p.max_error for p in valid)
+
+        cost_range = max_cost - min_cost if max_cost > min_cost else 1
+        error_range = max_error - min_error if max_error > min_error else 1
+
+        def score(p):
+            norm_cost = (p.c_cost - min_cost) / cost_range
+            norm_error = (p.max_error - min_error) / error_range
+            return norm_error + cost_weight * norm_cost
+
+        return min(valid, key=score)
+
+    def get_cut_circuit(self, point: CutPoint) -> QuantumCircuit:
+        """Get the cut circuit for a specific point.
+
+        Args:
+            point: A CutPoint from the frontier.
+
+        Returns:
+            The cut quantum circuit.
+        """
+        if point.leafs is None:
+            # No-cut case
+            return self.ir.circuit.copy()
+
+        leafs = [frozenset(leaf) for leaf in point.leafs]
+        return self.ir.cut_circuit(leafs)
+
+    def get_all_cut_circuits(
+        self,
+        max_size: int | None = None,
+        max_c_cost: float | None = None,
+        max_error: float | None = None,
+    ) -> list[tuple[CutPoint, QuantumCircuit]]:
+        """Get all cut circuits from the Pareto frontier.
+
+        Args:
+            max_size: Filter by max subcircuit width.
+            max_c_cost: Filter by max classical cost.
+            max_error: Filter by max error.
+
+        Returns:
+            List of (CutPoint, QuantumCircuit) tuples.
+        """
+        valid = self.filter(
+            max_size=max_size,
+            max_c_cost=max_c_cost,
+            max_error=max_error,
+        )
+        return [(p, self.get_cut_circuit(p)) for p in valid]
+
+
 def get_max_subcircuit_width_fast(
     ir: HybridCircuitIR, leafs: list[frozenset[int]]
 ) -> int:
-    """Fast computation of max subcircuit width directly from IR structure.
-
-    For each leaf partition:
-    - Count unique physical qubits
-    - Add 1 for each wire cut (same qubit appearing in different time slices
-      within this partition due to cuts)
-
-    This avoids generating the full cut circuit.
-    """
+    """Fast computation of max subcircuit width directly from IR structure."""
     max_width = 0
 
-    # Build edge lookup: node -> set of connected nodes
     hg = ir._hypergraph
     node_neighbors: dict[int, set[int]] = {i: set() for i in range(hg.num_nodes)}
     for edge_nodes in hg.edges.values():
@@ -43,8 +146,6 @@ def get_max_subcircuit_width_fast(
 
     for leaf in leafs:
         nodes = set(leaf)
-
-        # Group nodes by qubit
         qubit_nodes: dict = {}
         for node in nodes:
             info = ir.node_info(node)
@@ -52,28 +153,25 @@ def get_max_subcircuit_width_fast(
                 qubit_nodes[info.abs_qubit] = []
             qubit_nodes[info.abs_qubit].append((node, info.op_idx))
 
-        # For each qubit, count segments (breaks due to wire cuts)
         width = 0
         for qubit, nodes_with_time in qubit_nodes.items():
-            # Sort by time
             nodes_with_time.sort(key=lambda x: x[1])
-
-            # Count segments - each break due to a cut adds a new "qubit"
             segments = 1
             for i in range(len(nodes_with_time) - 1):
                 node1 = nodes_with_time[i][0]
                 node2 = nodes_with_time[i + 1][0]
-
-                # Check if there's a direct edge between them
                 if node2 not in node_neighbors[node1]:
-                    # Wire was cut between these nodes
                     segments += 1
-
             width += segments
 
         max_width = max(max_width, width)
 
     return max_width
+
+
+def get_max_subcircuit_nodes(leafs: list[frozenset[int]]) -> int:
+    """Get the maximum number of nodes in any subcircuit."""
+    return max(len(leaf) for leaf in leafs) if leafs else 0
 
 
 # =============================================================================
@@ -88,9 +186,6 @@ def max_qubits_leaf(ir: HybridCircuitIR, tree: ctg.ContractionTree):
     return cast(frozenset[int], max(tree.childless, key=ir.num_qubits))
 
 
-# =============================================================================
-#  Partition & contract helper
-# =============================================================================
 def partition_and_contract_subgraph(
     tree,
     tree_node,
@@ -177,7 +272,6 @@ def _run_trial_in_process(args: tuple) -> dict[str, Any]:
     from qtpu.transforms import remove_operations_by_name
 
     import cotengra as ctg
-    import numpy as np
 
     circuit = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
     ir = HybridCircuitIR(circuit)
@@ -231,12 +325,20 @@ def _run_trial_in_process(args: tuple) -> dict[str, Any]:
         # Record snapshot after each partition (fast metrics only)
         leafs = get_leafs(tree)
         sampling_cost = sampling_overhead_tree(tree)
-        quantum_cost = get_max_subcircuit_width_fast(ir, leafs)
+        size = get_max_subcircuit_width_fast(ir, leafs)
+
+        # Track contraction cost directly from tree
+        # This is the cost of contracting the partitioning tree
+        try:
+            c_cost = tree.contraction_cost()
+        except Exception:
+            c_cost = sampling_cost  # Fallback
 
         snapshots.append(
             {
                 "sampling_cost": sampling_cost,
-                "quantum_cost": quantum_cost,
+                "size": size,
+                "c_cost": c_cost,
                 "leafs": [list(leaf) for leaf in leafs],  # Store partition for later
             }
         )
@@ -255,31 +357,25 @@ def _run_trial_in_process(args: tuple) -> dict[str, Any]:
 # =============================================================================
 #  Hyper-Optimization Wrapper
 # =============================================================================
-def _compute_pareto_frontier(
-    points: list[dict], metric: str = "quantum_cost"
-) -> list[dict]:
-    """Compute the Pareto frontier from a set of points.
+def _compute_pareto_frontier(points: list[CutPoint]) -> list[CutPoint]:
+    """Compute the Pareto frontier on c_cost vs max_error.
 
-    A point is Pareto-optimal if no other point has both higher sampling_cost
-    and higher quantum_cost. We want to minimize both.
-
-    Uses sampling_cost as the "cost" axis since it's available during optimization.
+    A point is Pareto-optimal if no other point has both lower c_cost
+    and lower max_error. We want to minimize both.
     """
     if not points:
         return []
 
-    # Sort by sampling_cost, then by quantum_cost
-    sorted_points = sorted(
-        points, key=lambda x: (x["sampling_cost"], x["quantum_cost"])
-    )
+    # Sort by c_cost (ascending), then by max_error (ascending)
+    sorted_points = sorted(points, key=lambda x: (x.c_cost, x.max_error))
 
     frontier = []
-    best_quantum_cost = float("inf")
+    best_max_error = float("inf")
 
     for point in sorted_points:
-        if point["quantum_cost"] < best_quantum_cost:
+        if point.max_error < best_max_error:
             frontier.append(point)
-            best_quantum_cost = point["quantum_cost"]
+            best_max_error = point.max_error
 
     return frontier
 
@@ -294,12 +390,12 @@ def get_pareto_frontier(
     num_workers: int | None = None,
     n_trials: int = 100,
     seed: int | None = None,
-) -> list[dict]:
-    """Find the Pareto frontier of quantum cost vs classical cost tradeoffs.
+) -> OptimizationResult:
+    """Find the Pareto frontier of c_cost vs max_error tradeoffs.
 
-    Explores the space of possible cuts and returns all Pareto-optimal solutions.
-    Each point includes quantum_cost (max subcircuit width), c_cost (contraction cost),
-    max_error (estimated error), and leafs (partition for reconstruction).
+    Explores the space of possible cuts and returns Pareto-optimal solutions
+    where the frontier is computed on c_cost (contraction cost) vs max_error
+    (estimated error in largest subcircuit).
 
     Args:
         circuit: The quantum circuit to optimize.
@@ -309,13 +405,12 @@ def get_pareto_frontier(
         seed: Random seed for reproducibility.
 
     Returns:
-        List of Pareto-optimal points with keys:
-        - quantum_cost: Max subcircuit width (qubits)
-        - c_cost: Classical contraction cost
-        - max_error: Estimated max subcircuit error
-        - leafs: Partition (for circuit reconstruction)
+        OptimizationResult with:
+        - all_points: All collected optimization snapshots
+        - pareto_frontier: Pareto-optimal points on c_cost vs max_error
+        - ir: HybridCircuitIR for reconstruction
     """
-    import qtpu
+    from qtpu.transforms import circuit_to_heinsum
 
     if num_workers is None:
         num_workers = min(8, os.cpu_count() or 1)
@@ -333,70 +428,60 @@ def get_pareto_frontier(
     else:
         results = [_run_trial_in_process(args) for args in args_list]
 
-    # Add the "no cut" baseline - full circuit with no classical overhead
+    # Setup IR for error computation
     circuit_clean = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
     ir = HybridCircuitIR(circuit_clean)
+
+    # Compute no-cut baseline error
     no_cut_error = sum(
         0.01 if inst.operation.num_qubits == 2 else 0.001 for inst in circuit_clean.data
     )
 
-    all_points = [
-        {
-            "quantum_cost": circuit_clean.num_qubits,
-            "sampling_cost": 0,
-            "leafs": None,  # Special marker for no-cut baseline
-        }
+    # Add the "no cut" baseline
+    all_points: list[CutPoint] = [
+        CutPoint(
+            c_cost=0,  # No cuts = no classical overhead
+            max_error=no_cut_error,
+            max_size=circuit_clean.num_qubits,
+            sampling_cost=0,
+            leafs=None,  # Special marker for no-cut baseline
+        )
     ]
 
-    # Collect all snapshots from optimization trials (fast metrics only)
+    # Collect all snapshots and compute max_error for each
     for result in results:
         for snapshot in result["snapshots"]:
-            all_points.append(
-                {
-                    "quantum_cost": snapshot["quantum_cost"],
-                    "sampling_cost": snapshot["sampling_cost"],
-                    "leafs": snapshot["leafs"],
-                }
-            )
+            leafs = [frozenset(leaf) for leaf in snapshot["leafs"]]
 
-    # Compute Pareto frontier based on fast metrics (sampling_cost, quantum_cost)
-    frontier_points = _compute_pareto_frontier(all_points, metric="quantum_cost")
-
-    # Now compute expensive metrics (c_cost, max_error) only for Pareto-optimal points
-    frontier_with_metrics = []
-    for point in frontier_points:
-        if point["leafs"] is None:
-            # No-cut baseline
-            frontier_with_metrics.append(
-                {
-                    "quantum_cost": point["quantum_cost"],
-                    "sampling_cost": point["sampling_cost"],
-                    "c_cost": 0,
-                    "max_error": no_cut_error,
-                    "leafs": None,  # Include leafs for later use
-                }
-            )
-        else:
-            # Compute c_cost and max_error from the stored partition
-            leafs = [frozenset(leaf) for leaf in point["leafs"]]
-            cut_circuit = ir.cut_circuit(leafs)
-            htn = qtpu.circuit_to_hybrid_tn(cut_circuit)
-            c_cost = htn.to_dummy_tn().contraction_cost(optimize="auto")
-            max_error = max(
-                sum(
-                    0.01 if inst.operation.num_qubits == 2 else 0.001
-                    for inst in sc.data
+            # Compute max_error from subcircuits
+            try:
+                cut_circuit = ir.cut_circuit(leafs)
+                heinsum = circuit_to_heinsum(cut_circuit)
+                max_error = max(
+                    sum(
+                        0.01 if inst.operation.num_qubits == 2 else 0.001
+                        for inst in qt.circuit.data
+                    )
+                    for qt in heinsum.quantum_tensors
                 )
-                for sc in htn.subcircuits
-            )
-            frontier_with_metrics.append(
-                {
-                    "quantum_cost": point["quantum_cost"],
-                    "sampling_cost": point["sampling_cost"],
-                    "c_cost": c_cost,
-                    "max_error": max_error,
-                    "leafs": point["leafs"],  # Include leafs for later use
-                }
+            except Exception:
+                max_error = no_cut_error  # Fallback
+
+            all_points.append(
+                CutPoint(
+                    c_cost=snapshot.get("c_cost", snapshot["sampling_cost"]),
+                    max_error=max_error,
+                    max_size=snapshot["size"],
+                    sampling_cost=snapshot["sampling_cost"],
+                    leafs=snapshot["leafs"],
+                )
             )
 
-    return frontier_with_metrics
+    # Compute Pareto frontier on c_cost vs max_error
+    frontier = _compute_pareto_frontier(all_points)
+
+    return OptimizationResult(
+        all_points=all_points,
+        pareto_frontier=frontier,
+        ir=ir,
+    )

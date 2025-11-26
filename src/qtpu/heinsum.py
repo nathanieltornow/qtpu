@@ -4,36 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import cotengra as ctg
-import numpy as np
-
 from qtpu.tensor import QuantumTensor, TensorSpec, CTensor
 
 if TYPE_CHECKING:
-    from qtpu.evaluators._evaluator import CircuitTensorEvaluator
-    from qtpu.runtime import CompiledHybridKernel
+    from qiskit.circuit import QuantumCircuit
 
 
 class HEinsum:
-    """High-level API for specifying hybrid tensor network contractions.
-
-    Allows users to specify quantum tensors, classical tensors, and input specs,
-    then automatically generates optimized contraction trees.
-
-    Example:
-        >>> qtensor1 = QuantumTensor(circuit1)
-        >>> qtensor2 = QuantumTensor(circuit2)
-        >>> ctensor = CTensor(data, inds=("k", "l"))
-        >>> input_spec = TensorSpec(shape=(4, 5), inds=("l", "m"))
-        >>>
-        >>> heinsum = HEinsum(
-        ...     qtensors=[qtensor1, qtensor2],
-        ...     ctensors=[ctensor],
-        ...     input_tensors=[input_spec],
-        ...     output_inds=("i", "m"),
-        ... )
-        >>>
-    """
+    """High-level API for specifying hybrid tensor network contractions."""
 
     def __init__(
         self,
@@ -136,3 +114,23 @@ class HEinsum:
     def output_inds(self) -> tuple[str, ...]:
         """Output indices."""
         return self._output_inds
+
+    @staticmethod
+    def from_circuit(circuit: QuantumCircuit) -> HEinsum:
+        """Create a HEinsum specification from a quantum circuit.
+
+        This method decomposes the circuit into quantum tensors using
+        the quantum-pseudo-density (QPD) representation.
+
+        Args:
+            circuit: The quantum circuit to convert.
+
+        Returns:
+            HEinsum specification representing the circuit.
+        """
+        return HEinsum(
+            qtensors=[QuantumTensor(circuit)],
+            ctensors=[],
+            input_tensors=[],
+            output_inds=(),
+        )

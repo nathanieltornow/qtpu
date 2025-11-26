@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from qtpu.compiler._opt import get_pareto_frontier
+from qtpu.compiler._opt import get_pareto_frontier, CutPoint
 from qtpu.transforms import remove_operations_by_name
-from qtpu.compiler._ir import HybridCircuitIR
 
 if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
@@ -12,8 +11,8 @@ if TYPE_CHECKING:
 
 def cut(
     circuit: QuantumCircuit,
-    max_qubits: int | None = None,
-    max_classical_cost: float | None = None,
+    max_size: int | None = None,
+    max_c_cost: float | None = None,
     cost_weight: float = 1.0,
     num_workers: int | None = None,
     n_trials: int = 100,
@@ -26,9 +25,9 @@ def cut(
 
     Args:
         circuit: The quantum circuit to cut.
-        max_qubits: Maximum allowed subcircuit width (qubits). Hard constraint.
+        max_size: Maximum allowed subcircuit width (qubits). Hard constraint.
             If None, no qubit constraint is applied.
-        max_classical_cost: Maximum allowed classical cost (c_cost). Hard constraint.
+        max_c_cost: Maximum allowed classical cost. Hard constraint.
             If None, no classical cost constraint is applied.
         cost_weight: How much to weight classical cost vs error reduction (λ).
             Both metrics are normalized to [0, 1] using the Pareto frontier.
@@ -42,64 +41,57 @@ def cut(
 
     Returns:
         The cut circuit optimized according to the cost_weight, subject to constraints.
-        
+
     Examples:
         # Default: balanced tradeoff, no constraints
         cut_circuit = cut(circuit)
-        
+
         # Must fit on 10-qubit device, balanced tradeoff
-        cut_circuit = cut(circuit, max_qubits=10)
-        
+        cut_circuit = cut(circuit, max_size=10)
+
         # Minimize error aggressively, no constraints
         cut_circuit = cut(circuit, cost_weight=0)
-        
+
         # Prefer low classical cost, must fit on 15 qubits
-        cut_circuit = cut(circuit, max_qubits=15, cost_weight=2.0)
+        cut_circuit = cut(circuit, max_size=15, cost_weight=2.0)
     """
     # Get the Pareto frontier
-    frontier = get_pareto_frontier(
+    result = get_pareto_frontier(
         circuit,
         max_sampling_cost=150,  # Explore broadly
         num_workers=num_workers,
         n_trials=n_trials,
         seed=seed,
     )
-    
-    if not frontier:
+
+    if not result.pareto_frontier:
         raise ValueError("No valid solutions found.")
-    
+
     # Apply hard constraints
-    valid = frontier
-    
-    if max_qubits is not None:
-        valid = [p for p in valid if p["quantum_cost"] <= max_qubits]
+    valid = result.pareto_frontier
+
+    if max_size is not None:
+        valid = [p for p in valid if p.max_size <= max_size]
         if not valid:
-            min_achievable = min(p["quantum_cost"] for p in frontier)
+            min_achievable = min(p.max_size for p in result.pareto_frontier)
             raise ValueError(
-                f"No solutions with max_qubits <= {max_qubits}. "
+                f"No solutions with max_size <= {max_size}. "
                 f"Minimum achievable: {min_achievable} qubits."
             )
-    
-    if max_classical_cost is not None:
-        valid = [p for p in valid if p["c_cost"] <= max_classical_cost]
+
+    if max_c_cost is not None:
+        valid = [p for p in valid if p.c_cost <= max_c_cost]
         if not valid:
-            raise ValueError(f"No solutions with c_cost <= {max_classical_cost}")
-    
+            raise ValueError(f"No solutions with c_cost <= {max_c_cost}")
+
     # Select best point using utility function on the valid set
     best = _select_by_utility(valid, cost_weight)
-    
+
     # Use the stored leafs directly (no need to re-run optimization)
-    if best["leafs"] is None:
-        # No-cut case - return original circuit
-        return remove_operations_by_name(circuit, {"barrier"}, inplace=False)
-    
-    circuit_clean = remove_operations_by_name(circuit, {"barrier"}, inplace=False)
-    ir = HybridCircuitIR(circuit_clean)
-    leafs = [frozenset(leaf) for leaf in best["leafs"]]
-    return ir.cut_circuit(leafs)
+    return result.get_cut_circuit(best)
 
 
-def _select_by_utility(frontier: list[dict], cost_weight: float) -> dict:
+def _select_by_utility(frontier: list[CutPoint], cost_weight: float) -> CutPoint:
     """Select point from Pareto frontier using utility function.
     
     Minimizes: normalized_error + cost_weight * normalized_cost
@@ -113,7 +105,7 @@ def _select_by_utility(frontier: list[dict], cost_weight: float) -> dict:
     Tiebreaker: when scores are equal, prefer lower quantum_cost (smaller subcircuits).
     
     Args:
-        frontier: List of Pareto-optimal points with 'max_error', 'c_cost', 'quantum_cost'.
+        frontier: List of Pareto-optimal CutPoints.
         cost_weight: How much to weight classical cost (λ).
         
     Returns:
@@ -123,20 +115,20 @@ def _select_by_utility(frontier: list[dict], cost_weight: float) -> dict:
         return frontier[0]
     
     # Get normalization bounds from frontier
-    min_error = min(p["max_error"] for p in frontier)
-    max_error = max(p["max_error"] for p in frontier)
-    min_cost = min(p["c_cost"] for p in frontier)
-    max_cost = max(p["c_cost"] for p in frontier)
+    min_error = min(p.max_error for p in frontier)
+    max_error = max(p.max_error for p in frontier)
+    min_cost = min(p.c_cost for p in frontier)
+    max_cost = max(p.c_cost for p in frontier)
     
     error_range = max_error - min_error if max_error > min_error else 1
     cost_range = max_cost - min_cost if max_cost > min_cost else 1
     
-    def score(p):
+    def score(p: CutPoint):
         # Normalize both to [0, 1]
-        norm_error = (p["max_error"] - min_error) / error_range
-        norm_cost = (p["c_cost"] - min_cost) / cost_range
+        norm_error = (p.max_error - min_error) / error_range
+        norm_cost = (p.c_cost - min_cost) / cost_range
         # Primary score: utility function
         # Tiebreaker: prefer smaller quantum_cost (add tiny fraction)
-        return (norm_error + cost_weight * norm_cost, p["quantum_cost"])
+        return (norm_error + cost_weight * norm_cost, p.max_size)
     
     return min(frontier, key=score)

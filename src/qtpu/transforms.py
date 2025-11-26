@@ -151,7 +151,7 @@ def circuit_to_heinsum(circuit: QuantumCircuit) -> HEinsum:
     for i, ind in enumerate(reversed(qpd_inds)):
         gate = circuit.data[ind]
 
-        idx = f"i_{len(qpd_inds) - i - 1}"
+        idx = f"{str(uuid4())}_{len(qpd_inds) - i - 1}"
 
         param1 = param2 = Parameter(idx)
         op_vector1, op_vector2 = [], []
