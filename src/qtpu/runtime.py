@@ -1,8 +1,4 @@
-"""Differentiable HEinsum contraction for PyTorch.
-
-Provides a simple `contract` function that users can call from their own
-PyTorch modules with their own learnable parameters.
-"""
+"""Differentiable HEinsum contraction for PyTorch."""
 
 from __future__ import annotations
 
@@ -22,36 +18,7 @@ if TYPE_CHECKING:
 
 
 class HEinsumContractor:
-    """Reusable contractor for HEinsum with JIT compilation support.
-
-    This class wraps an HEinsum and evaluator, providing a simple `contract()`
-    method that can be called with circuit parameters and input tensors.
-
-    Uses cotengra to find optimal contraction paths and supports JIT compilation
-    of the core contraction via torch.compile for maximum performance.
-
-    Example:
-        >>> from qtpu.heinsum import HEinsum
-        >>> from qtpu.torch import HEinsumContractor, QuantumTensorEvaluator
-        >>>
-        >>> # Create and prepare contractor
-        >>> contractor = HEinsumContractor(heinsum)
-        >>> contractor.prepare(jit=True)  # Optimize tree + JIT compile
-        >>>
-        >>> # Use in a custom layer
-        >>> class MyLayer(nn.Module):
-        ...     def __init__(self, heinsum):
-        ...         super().__init__()
-        ...         self.contractor = HEinsumContractor(heinsum)
-        ...         self.contractor.prepare(jit=True)
-        ...         self.theta = nn.Parameter(torch.tensor(0.5))
-        ...
-        ...     def forward(self, x):
-        ...         return self.contractor.contract(
-        ...             input_tensors=[x],
-        ...             circuit_params={"theta": self.theta},
-        ...         )
-    """
+    """Reusable contractor for HEinsum with JIT compilation support."""
 
     def __init__(
         self,
@@ -74,6 +41,10 @@ class HEinsumContractor:
         self._tree: ctg.ContractionTree | None = None
         self._contract_core_jit: Callable | None = None
         self._compiled = False
+        
+        # Quantum tensor cache for fixed (non-parameterized) circuits
+        self._quantum_cache: dict[int, torch.Tensor] = {}
+        self._cache_enabled = True
 
     def prepare(
         self,
@@ -138,6 +109,73 @@ class HEinsumContractor:
 
         self._compiled = True
         return self
+    
+    def precompute_quantum(
+        self,
+        circuit_params: dict[str, torch.Tensor] | None = None,
+    ) -> "HEinsumContractor":
+        """Pre-compute and cache quantum tensor evaluations.
+        
+        Call this once before training when quantum circuits have no trainable
+        parameters (or only some do). Only caches tensors whose parameters are
+        all provided in circuit_params. Tensors with missing/trainable params
+        will be evaluated on each contract() call.
+        
+        Args:
+            circuit_params: Fixed circuit parameters (should not require gradients).
+            
+        Returns:
+            self for chaining.
+            
+        Example:
+            >>> contractor = HEinsumContractor(heinsum)
+            >>> contractor.prepare()
+            >>> contractor.precompute_quantum()  # Cache quantum results
+            >>> 
+            >>> # Now training is fast - no quantum re-evaluation
+            >>> for epoch in range(100):
+            ...     output = contractor.contract(input_tensors=[x], circuit_params={})
+        """
+        if circuit_params is None:
+            circuit_params = {}
+            
+        # Convert params to floats
+        float_params = {
+            k: float(v.detach().cpu()) if isinstance(v, torch.Tensor) else float(v)
+            for k, v in circuit_params.items()
+        }
+        
+        # Evaluate and cache quantum tensors that have all params available
+        self._quantum_cache.clear()
+        for i, qtensor in enumerate(self.heinsum.quantum_tensors):
+            # Get free parameters (circuit params that aren't ISwitch indices)
+            circuit_param_names = {p.name for p in qtensor.circuit.parameters}
+            iswitch_param_names = set(qtensor.inds)
+            free_param_names = circuit_param_names - iswitch_param_names
+            
+            # Check if all free params are provided
+            missing_params = free_param_names - set(float_params.keys())
+            
+            if missing_params:
+                # Skip caching - this tensor has trainable/missing parameters
+                continue
+                
+            result = self.evaluator.evaluate_with_params(qtensor, float_params)
+            self._quantum_cache[i] = result.to(self.dtype)
+            
+        return self
+    
+    def clear_cache(self) -> "HEinsumContractor":
+        """Clear the quantum tensor cache.
+        
+        Call this if you need to re-evaluate quantum tensors with different
+        parameters.
+        
+        Returns:
+            self for chaining.
+        """
+        self._quantum_cache.clear()
+        return self
 
     @property
     def tree(self) -> ctg.ContractionTree | None:
@@ -148,6 +186,16 @@ class HEinsumContractor:
     def compiled(self) -> bool:
         """Whether the contractor has been compiled."""
         return self._compiled
+    
+    @property
+    def quantum_cached(self) -> bool:
+        """Whether all quantum tensors are cached."""
+        return len(self._quantum_cache) == len(self.heinsum.quantum_tensors)
+    
+    @property
+    def num_cached(self) -> int:
+        """Number of quantum tensors that are cached."""
+        return len(self._quantum_cache)
 
     @property
     def nslices(self) -> int:
@@ -165,20 +213,19 @@ class HEinsumContractor:
             input_tensors: Runtime input tensors matching heinsum.input_tensors specs.
             circuit_params: Dict of quantum circuit parameters (rotation angles, etc.).
                 If any require gradients, parameter-shift rule is used.
+                If empty and quantum tensors are cached, uses cached values.
 
         Returns:
             torch.Tensor: The contracted result. Differentiable w.r.t.:
                 - circuit_params (via parameter-shift rule)
                 - input_tensors (via torch autograd)
+                - classical tensor data (via torch autograd)
         """
         if circuit_params is None:
             circuit_params = {}
 
-        # Evaluate quantum tensors
-        quantum_results = []
-        for qtensor in self.heinsum.quantum_tensors:
-            result = _evaluate_quantum_tensor(qtensor, self.evaluator, circuit_params)
-            quantum_results.append(result.to(self.dtype))
+        # Get quantum tensor values (from cache or by evaluation)
+        quantum_results = self._get_quantum_tensors(circuit_params)
 
         # Get classical tensors (already torch.Tensor)
         classical_tensors = [
@@ -205,6 +252,34 @@ class HEinsumContractor:
         else:
             # Fall back to torch.einsum
             return torch.einsum(self.heinsum.einsum_expr, *operands)
+    
+    def _get_quantum_tensors(
+        self,
+        circuit_params: dict[str, torch.Tensor],
+    ) -> list[torch.Tensor]:
+        """Get quantum tensor values, using cache where available."""
+        
+        # Check if any parameters require gradients
+        requires_grad = (
+            any(isinstance(v, torch.Tensor) and v.requires_grad for v in circuit_params.values())
+            if circuit_params
+            else False
+        )
+        
+        # Evaluate quantum tensors, using cache where available
+        quantum_results = []
+        for i, qtensor in enumerate(self.heinsum.quantum_tensors):
+            # Use cache if this tensor is cached
+            if self._cache_enabled and i in self._quantum_cache:
+                result = self._quantum_cache[i]
+            else:
+                # Evaluate this tensor (it has trainable params or wasn't cached)
+                result = _evaluate_quantum_tensor(qtensor, self.evaluator, circuit_params, requires_grad)
+                result = result.to(self.dtype)
+                    
+            quantum_results.append(result)
+            
+        return quantum_results
 
     def _contract_sliced(self, operands: list[torch.Tensor]) -> torch.Tensor:
         """Contract with slicing for large tensor networks.
@@ -241,15 +316,24 @@ def _evaluate_quantum_tensor(
     qtensor: QuantumTensor,
     evaluator: QuantumTensorEvaluator,
     params: dict[str, torch.Tensor],
+    requires_grad: bool | None = None,
 ) -> torch.Tensor:
-    """Evaluate a quantum tensor with optional differentiable parameters."""
+    """Evaluate a quantum tensor with optional differentiable parameters.
+    
+    Args:
+        qtensor: The quantum tensor to evaluate.
+        evaluator: Evaluator for quantum circuits.
+        params: Dict of circuit parameters.
+        requires_grad: Whether gradients are needed. If None, auto-detect.
+    """
 
-    # Check if any parameters require gradients
-    requires_grad = (
-        any(isinstance(v, torch.Tensor) and v.requires_grad for v in params.values())
-        if params
-        else False
-    )
+    # Auto-detect if any parameters require gradients
+    if requires_grad is None:
+        requires_grad = (
+            any(isinstance(v, torch.Tensor) and v.requires_grad for v in params.values())
+            if params
+            else False
+        )
 
     if not requires_grad:
         # No gradients needed - direct evaluation
