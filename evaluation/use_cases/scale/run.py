@@ -67,8 +67,8 @@ def _create_fake_results(circuits: list[QuantumCircuit], shots: int):
     return PrimitiveResult(fake_results)
 
 
-@bk.catch_failures({"failed": True})
-@bk.timeout(1200, {"timeout": True})
+# @bk.catch_failures({"failed": True})
+@bk.timeout(3600, {"timeout": True})
 def run_qac(
     circuit: QuantumCircuit,
     max_qubits: int,
@@ -158,9 +158,8 @@ def run_qtpu(circuit: QuantumCircuit, max_size: int) -> dict[str, float]:
 
 
 CIRCUIT_SIZES = list(range(10, 90, 10))
-BENCHMARKS = ["qnn", "wstate"]
+BENCHMARKS = ["qnn"]
 SUBCIRC_SIZES = [10]
-SAMPLES = [1000, 10000, np.inf]
 
 
 @bk.foreach(circuit_size=CIRCUIT_SIZES)
@@ -177,17 +176,16 @@ def scale_qtpu_bench(
 
 @bk.foreach(circuit_size=CIRCUIT_SIZES)
 @bk.foreach(subcirc_size=SUBCIRC_SIZES)
-@bk.foreach(samples=SAMPLES)
 @bk.foreach(bench=BENCHMARKS)
 @bk.log("logs/scale/qac.jsonl")
 def scale_qac_bench(
-    circuit_size: int, subcirc_size: int, samples: int, bench: str
+    circuit_size: int, subcirc_size: int, bench: str
 ) -> dict[str, float]:
     circuit = get_benchmark_indep(bench, circuit_size=circuit_size, opt_level=3)
     qac_metrics = run_qac(
         circuit,
         max_qubits=subcirc_size,
-        num_samples=samples,
+        num_samples=np.inf,
     )
     return qac_metrics
 
