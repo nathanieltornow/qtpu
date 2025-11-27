@@ -23,8 +23,8 @@ if TYPE_CHECKING:
 import math
 
 
-BENCHMARKS = ["vqe_su2"]
-FRACTIONS = [0.5, 0.75]
+BENCHMARKS = ["qnn", "wstate", "vqe_su2"]
+FRACTIONS = [0.25, 0.5, 0.75]
 CIRCUIT_SIZES = list(range(20, 141, 20))
 
 
