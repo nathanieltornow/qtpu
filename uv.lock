@@ -4056,7 +4056,7 @@ requires-dist = [
     { name = "qiskit", extras = ["visualization"], marker = "extra == 'docs'" },
     { name = "qiskit-addon-cutting", specifier = ">=0.10.0" },
     { name = "qiskit-aer", specifier = ">=0.17.1" },
-    { name = "qiskit-ibm-runtime", specifier = ">=0.40.0" },
+    { name = "qiskit-ibm-runtime", specifier = ">=0.43.1" },
     { name = "quimb", specifier = ">=1.8.4" },
     { name = "setuptools-scm", marker = "extra == 'docs'", specifier = ">=8.1" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.1.0" },

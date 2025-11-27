@@ -1,25 +1,25 @@
 from qiskit.circuit import QuantumCircuit
 from qiskit.compiler import transpile
-from qiskit.providers import BackendV2
+from qiskit_ibm_runtime.fake_provider import FakeMarrakesh
 import cotengra as ctg
 
 from qtpu.transforms import remove_operations_by_name
 from qtpu.heinsum import HEinsum
 
 
-def estimate_runtime(
-    circuits: list[QuantumCircuit], backend: BackendV2, shots: int
-) -> float:
+def estimate_runtime(circuits: list[QuantumCircuit]) -> float:
     """Estimate the total runtime for executing the given circuits on the specified backend.
 
     Parameters:
         circuits (list[QuantumCircuit]): The list of quantum circuits to be executed.
-        backend (BackendV2): The backend on which the circuits will be executed.
         shots (int): The number of shots for each circuit execution.
 
     Returns:
         float: The estimated total runtime in seconds for executing all circuits.
     """
+
+    shots = 1000
+    backend = FakeMarrakesh()
     circuits = [
         remove_operations_by_name(c, {"qpd_measure", "iswitch"}, inplace=False)
         for c in circuits
@@ -50,40 +50,6 @@ def estimate_runtime(
         return t_per_shot * shots
 
     return sum(_runtime(circ) for circ in scheduled_circuits)
-
-
-def estimate_error(circuits: list[QuantumCircuit], backend: BackendV2) -> float:
-    """Estimate the total error for executing the given circuits on the specified backend.
-
-    Parameters:
-        circuits (list[QuantumCircuit]): The list of quantum circuits to be executed.
-        backend (BackendV2): The backend on which the circuits will be executed.
-
-    Returns:
-        float: The estimated total error for executing all circuits.
-    """
-    total_error = 0.0
-
-    for circuit in circuits:
-        transpiled_circuit = transpile(
-            circuit,
-            backend=backend,
-            optimization_level=3,
-            scheduling_method="asap",
-        )
-
-        for instr in transpiled_circuit.data:
-            gate_error = backend.gate_error(instr.operation.name)
-            if gate_error is not None:
-                total_error += gate_error
-
-        # Add measurement errors
-        for qubit in range(transpiled_circuit.num_qubits):
-            meas_error = backend.properties().readout_error(qubit)
-            if meas_error is not None:
-                total_error += meas_error
-
-    return total_error
 
 
 def analyse_circuit(circuit: QuantumCircuit) -> dict[str, float]:

@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
+import cotengra as ctg
+
 from qtpu.tensor import QuantumTensor, TensorSpec, CTensor
 
 if TYPE_CHECKING:
@@ -70,9 +73,7 @@ class HEinsum:
             outputs += ind_to_char[ind]
 
         # Also store char-based size dict for cotengra compatibility
-        self._size_dict = {
-            ind_to_char[ind]: size for ind, size in ind_sizes.items()
-        }
+        self._size_dict = {ind_to_char[ind]: size for ind, size in ind_sizes.items()}
         self._einsum_expr = inputs[:-1] + "->" + outputs
 
     @property
@@ -128,3 +129,51 @@ class HEinsum:
             input_tensors=[],
             output_inds=(),
         )
+
+    def to_dummy_tn(
+        self, seed: int | None = None
+    ) -> tuple[ctg.ContractionTree | None, list[np.ndarray]]:
+        """Create dummy random arrays and contraction tree for benchmarking.
+
+        This creates random numpy arrays matching the shapes of the HEinsum
+        tensors. Useful for measuring classical contraction time without
+        running quantum circuits.
+
+        Args:
+            optimize: Contraction path optimizer (default: "auto-hq").
+            seed: Random seed for reproducibility.
+
+        Returns:
+            A tuple of (arrays, tree) where arrays is a list of random numpy
+            arrays matching the tensor shapes, and tree is the optimized
+            contraction tree from cotengra.
+        """
+
+        if seed is not None:
+            np.random.seed(seed)
+
+        arrays = []
+        inputs = []
+
+        # Collect all tensors (quantum, classical, input)
+        all_tensors = (
+            list(self._qtensors) + list(self._ctensors) + list(self._input_tensors)
+        )
+
+        for tensor in all_tensors:
+            if tensor.shape:
+                data = np.random.randn(*tensor.shape).astype(np.float64)
+            else:
+                # Scalar tensor (empty shape)
+                data = np.array(np.random.randn(), dtype=np.float64)
+            arrays.append(data)
+
+        if len(all_tensors) == 1:
+            return None, arrays
+
+        # Get optimized contraction tree (parallel=False to avoid semaphore leaks)
+        opt = ctg.HyperOptimizer(parallel=False, progbar=False)
+        inputs, outputs = ctg.utils.eq_to_inputs_output(self.einsum_expr)
+        tree = opt.search(inputs, outputs, self.size_dict)
+
+        return tree, arrays
