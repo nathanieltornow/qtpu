@@ -1,9 +1,10 @@
 from qiskit.circuit import QuantumCircuit
 from qiskit.compiler import transpile
 from qiskit.providers import BackendV2
+import cotengra as ctg
 
 from qtpu.transforms import remove_operations_by_name
-from qtpu.tensor import HybridTensorNetwork
+from qtpu.heinsum import HEinsum
 
 
 def estimate_runtime(
@@ -104,26 +105,18 @@ def circuit_error(circuit: QuantumCircuit) -> float:
     return error
 
 
-def analyze_hybrid_tn(hybrid_tn: HybridTensorNetwork) -> dict[str, float]:
-    subcircuits = hybrid_tn.subcircuits
-    
+def analyze_heinsum(hybrid_tn: HEinsum) -> dict[str, float]:
+    subcircuits = [qt.circuit for qt in hybrid_tn.quantum_tensors]
+
     # Compute sampling overhead from the tensor network
     # This is the product of dimensions at cut boundaries
-    dummy_tn = hybrid_tn.to_dummy_tn()
-    
-    # Get all indices that appear in multiple tensors (cut indices)
-    from collections import Counter
-    all_indices = []
-    for tensor in dummy_tn.tensors:
-        all_indices.extend(tensor.inds)
-    
-    index_counts = Counter(all_indices)
-    cut_indices = [idx for idx, count in index_counts.items() if count > 1]
-    
-    # Sampling overhead = product of dimensions of cut indices
-    # But we sum for the additive metric used in QTPU
-    sampling_overhead = sum(dummy_tn.ind_size(idx) for idx in cut_indices)
-    
+
+    opt = ctg.HyperOptimizer()
+
+    inputs, outputs = ctg.utils.eq_to_inputs_output(hybrid_tn.einsum_expr)
+    tree: ctg.ContractionTree = opt.search(inputs, outputs, hybrid_tn.size_dict)
+    c_cost = tree.contraction_cost()
+
     return {
         "num_qtensors": len(subcircuits),
         "qtensor_depths": [subcirc.depth() for subcirc in subcircuits],
@@ -133,32 +126,31 @@ def analyze_hybrid_tn(hybrid_tn: HybridTensorNetwork) -> dict[str, float]:
             sum(1 for instr in subcirc if instr.operation.num_qubits == 2)
             for subcirc in subcircuits
         ],
-        "num_ctensors": len(hybrid_tn.ctensors),
-        "c_cost": hybrid_tn.to_dummy_tn().contraction_cost(optimize="auto"),
-        "sampling_overhead": sampling_overhead,
+        "num_ctensors": len(hybrid_tn.classical_tensors),
+        "c_cost": c_cost,
     }
 
 
-def create_baseline_data(circuit: QuantumCircuit) -> dict[str, float]:
-    return {
-        "num_1q_gates": sum(1 for instr in circuit if instr.operation.num_qubits == 1),
-        "num_2q_gates": sum(1 for instr in circuit if instr.operation.num_qubits == 2),
-        "depth": circuit.depth(),
-        "width": circuit.num_qubits,
-        "error": circuit_error(circuit),
-    }
+# def create_baseline_data(circuit: QuantumCircuit) -> dict[str, float]:
+#     return {
+#         "num_1q_gates": sum(1 for instr in circuit if instr.operation.num_qubits == 1),
+#         "num_2q_gates": sum(1 for instr in circuit if instr.operation.num_qubits == 2),
+#         "depth": circuit.depth(),
+#         "width": circuit.num_qubits,
+#         "error": circuit_error(circuit),
+#     }
 
 
-import pandas as pd
-from mqt.bench import get_benchmark_indep
+# import pandas as pd
+# from mqt.bench import get_benchmark_indep
 
 
-def base_line_df(df: pd.DataFrame) -> pd.DataFrame:
-    for index, row in df.iterrows():
-        circuit_size = row["config.circuit_size"]
-        bench_name = row["config.bench"]
-        circuit = get_benchmark_indep(bench_name, circuit_size)
-        baseline_data = create_baseline_data(circuit)
-        for key, value in baseline_data.items():
-            df.at[index, f"baseline.{key}"] = value
-    return df
+# def base_line_df(df: pd.DataFrame) -> pd.DataFrame:
+#     for index, row in df.iterrows():
+#         circuit_size = row["config.circuit_size"]
+#         bench_name = row["config.bench"]
+#         circuit = get_benchmark_indep(bench_name, circuit_size)
+#         baseline_data = create_baseline_data(circuit)
+#         for key, value in baseline_data.items():
+#             df.at[index, f"baseline.{key}"] = value
+#     return df

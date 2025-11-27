@@ -1,0 +1,100 @@
+% Auto-generated LaTeX tables for QTPU vs QAC comparison
+% Generated from logs/compiler/*.jsonl
+
+
+\begin{table}[t]
+\centering
+\caption{Average Compilation Time (seconds). QTPU returns a Pareto frontier while QAC returns a single solution.}
+\label{tab:compile-time}
+\begin{tabular}{lrrrr}
+\toprule
+ & \multicolumn{3}{c}{Circuit Size (qubits)} & \\
+\cmidrule(lr){2-4}
+Benchmark & 20 & 50 & 100 & Avg \\
+\midrule
+\textbf{QAC} & 2.79 & 13.93 & 36.15 & 17.63 \\
+\textbf{QTPU} & 0.59 & 1.09 & 1.85 & 1.18 \\
+\midrule
+Speedup & 4.7$\times$ & 12.7$\times$ & 19.6$\times$ & \textbf{15.0$\times$} \\
+\bottomrule
+\end{tabular}
+\vspace{1mm}
+\footnotesize{$^*$QAC faster for simple circuits; QTPU provides richer output (Pareto frontier)}
+\end{table}
+
+
+
+\begin{table}[t]
+\centering
+\caption{Compilation Time by Benchmark (seconds, averaged over size fractions)}
+\label{tab:compile-detail}
+\begin{tabular}{llrrr}
+\toprule
+Benchmark & Qubits & QAC & QTPU & Speedup \\
+\midrule
+QNN & 20 & 0.07 & 0.53 & 0.1$\times$ \\
+QNN & 50 & 0.85 & 1.11 & 0.7$\times$ \\
+QNN & 100 & 6.57 & 1.62 & 4.1$\times$ \\
+\midrule
+W-State & 20 & 3.44 & 0.53 & 6.5$\times$ \\
+W-State & 50 & 9.45 & 0.96 & 9.9$\times$ \\
+W-State & 100 & 19.78 & 1.86 & 10.6$\times$ \\
+\midrule
+VQE & 20 & 4.86 & 0.71 & 6.8$\times$ \\
+VQE & 50 & 31.51 & 1.21 & 26.0$\times$ \\
+VQE & 100 & 82.11 & 2.05 & 40.0$\times$ \\
+\midrule
+\textbf{Overall} & -- & 17.63 & 1.18 & \textbf{15.0$\times$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+\begin{table}[t]
+\centering
+\caption{Solution Quality: QTPU achieves lower error at the same subcircuit size constraint. Compared at 50\% subcircuit size fraction.}
+\label{tab:quality}
+\begin{tabular}{llrrrr}
+\toprule
+Benchmark & Qubits & QAC Error & QTPU Error & Reduction \\
+\midrule
+QNN & 20 & 0.111 & 0.004 & 96\% \\
+QNN & 50 & 0.291 & 0.028 & 90\% \\
+QNN & 100 & 0.591 & 0.064 & 89\% \\
+\midrule
+W-State & 20 & 0.202 & 0.040 & 80\% \\
+W-State & 50 & 0.532 & 0.094 & 82\% \\
+W-State & 100 & 1.082 & 0.204 & 81\% \\
+\midrule
+VQE & 20 & 0.313 & 0.078 & 75\% \\
+VQE & 50 & 0.823 & 0.214 & 74\% \\
+VQE & 100 & 1.673 & 0.452 & 73\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+\begin{table}[t]
+\centering
+\caption{QTPU Pareto Frontier Statistics}
+\label{tab:pareto}
+\begin{tabular}{llrrr}
+\toprule
+Benchmark & Qubits & \# Points & Error Range & Size Range \\
+\midrule
+QNN & 20 & 9 & 0.00--0.11 & 1--10 \\
+QNN & 50 & 9 & 0.03--0.29 & 3--25 \\
+QNN & 100 & 14 & 0.06--0.59 & 6--50 \\
+\midrule
+W-State & 20 & 8 & 0.04--0.20 & 3--10 \\
+W-State & 50 & 8 & 0.09--0.53 & 5--25 \\
+W-State & 100 & 10 & 0.20--1.08 & 10--50 \\
+\midrule
+VQE & 20 & 6 & 0.08--0.31 & 3--10 \\
+VQE & 50 & 7 & 0.21--0.82 & 7--25 \\
+VQE & 100 & 7 & 0.45--1.67 & 14--50 \\
+\bottomrule
+\end{tabular}
+\end{table}

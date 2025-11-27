@@ -130,6 +130,37 @@ class OptimizationResult:
         return [(p, self.get_cut_circuit(p)) for p in valid]
 
 
+def get_max_error_from_leafs(ir: HybridCircuitIR, leafs: list[frozenset[int]]) -> float:
+    """Compute max subcircuit error directly from IR and leafs.
+    
+    This avoids the expensive circuit_to_heinsum call by computing error
+    directly from node info.
+    """
+    max_error = 0.0
+    # Access internal circuit directly to avoid copy on each access
+    circuit_data = ir._circuit.data
+    
+    for leaf in leafs:
+        # Get unique operations in this subcircuit
+        op_indices = set()
+        for node in leaf:
+            info = ir.node_info(node)
+            op_indices.add(info.op_idx)
+        
+        # Sum errors for operations in this subcircuit
+        subcircuit_error = 0.0
+        for op_idx in op_indices:
+            instr = circuit_data[op_idx]
+            if instr.operation.num_qubits == 2:
+                subcircuit_error += 0.01
+            elif instr.operation.num_qubits == 1:
+                subcircuit_error += 0.001
+        
+        max_error = max(max_error, subcircuit_error)
+    
+    return max_error
+
+
 def get_max_subcircuit_width_fast(
     ir: HybridCircuitIR, leafs: list[frozenset[int]]
 ) -> int:
@@ -386,7 +417,7 @@ def _compute_pareto_frontier(points: list[CutPoint]) -> list[CutPoint]:
 def get_pareto_frontier(
     circuit: QuantumCircuit,
     *,
-    max_sampling_cost: float = 200,
+    max_sampling_cost: float = 120,
     num_workers: int | None = None,
     n_trials: int = 100,
     seed: int | None = None,
@@ -410,8 +441,6 @@ def get_pareto_frontier(
         - pareto_frontier: Pareto-optimal points on c_cost vs max_error
         - ir: HybridCircuitIR for reconstruction
     """
-    from qtpu.transforms import circuit_to_heinsum
-
     if num_workers is None:
         num_workers = min(8, os.cpu_count() or 1)
 
@@ -448,24 +477,13 @@ def get_pareto_frontier(
         )
     ]
 
-    # Collect all snapshots and compute max_error for each
+    # Collect all snapshots and compute max_error for each (fast path)
     for result in results:
         for snapshot in result["snapshots"]:
             leafs = [frozenset(leaf) for leaf in snapshot["leafs"]]
 
-            # Compute max_error from subcircuits
-            try:
-                cut_circuit = ir.cut_circuit(leafs)
-                heinsum = circuit_to_heinsum(cut_circuit)
-                max_error = max(
-                    sum(
-                        0.01 if inst.operation.num_qubits == 2 else 0.001
-                        for inst in qt.circuit.data
-                    )
-                    for qt in heinsum.quantum_tensors
-                )
-            except Exception:
-                max_error = no_cut_error  # Fallback
+            # Compute max_error directly from IR (fast - no circuit reconstruction)
+            max_error = get_max_error_from_leafs(ir, leafs)
 
             all_points.append(
                 CutPoint(

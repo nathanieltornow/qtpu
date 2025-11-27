@@ -69,9 +69,8 @@ class HEinsum:
                 )
             outputs += ind_to_char[ind]
 
-        self._size_dict = ind_sizes
         # Also store char-based size dict for cotengra compatibility
-        self._char_size_dict = {
+        self._size_dict = {
             ind_to_char[ind]: size for ind, size in ind_sizes.items()
         }
         self._einsum_expr = inputs[:-1] + "->" + outputs
@@ -83,17 +82,12 @@ class HEinsum:
 
     @property
     def size_dict(self) -> dict[str, int]:
-        """Mapping of index names to their sizes."""
-        return self._size_dict
-
-    @property
-    def char_size_dict(self) -> dict[str, int]:
         """Mapping of single-char indices (used in einsum_expr) to their sizes.
 
         This is for cotengra compatibility where einsum expressions use
         single-character indices.
         """
-        return self._char_size_dict
+        return self._size_dict
 
     @property
     def quantum_tensors(self) -> list[QuantumTensor]:

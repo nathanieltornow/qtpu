@@ -94,7 +94,7 @@ class HEinsumContractor:
 
             opt = ctg.HyperOptimizer(**opt_kwargs)
             try:
-                self._tree = opt.search(inputs, output, self.heinsum.char_size_dict)
+                self._tree = opt.search(inputs, output, self.heinsum.size_dict)
             except (KeyError, ValueError):
                 # Optimization failed, fall back to einsum
                 self._tree = None

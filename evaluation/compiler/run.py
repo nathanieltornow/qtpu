@@ -15,274 +15,148 @@ from qiskit_addon_cutting.automated_cut_finding import (
 
 import benchkit as bk
 import qtpu
-from evaluation.analysis import analyze_hybrid_tn
+from evaluation.analysis import analyze_heinsum
 from qtpu.compiler._opt import get_pareto_frontier
-from qtpu.tensor import HybridTensorNetwork
 
 if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
+import math
 
 
-def analyze_htn(htn: HybridTensorNetwork) -> dict:
-    """Analyze a HybridTensorNetwork and return metrics."""
-    max_error = max(
-        sum(0.01 if inst.operation.num_qubits == 2 else 0.001 for inst in sc.data)
-        for sc in htn.subcircuits
-    )
-    c_cost = htn.to_dummy_tn().contraction_cost(optimize="auto")
-    max_width = max(sc.num_qubits for sc in htn.subcircuits)
-    return {
-        "c_cost": c_cost,
-        "max_error": max_error,
-        "max_width": max_width,
-        "num_subcircuits": len(htn.subcircuits),
-    }
+BENCHMARKS = ["vqe_su2"]
+FRACTIONS = [0.5, 0.75]
+CIRCUIT_SIZES = list(range(20, 141, 20))
 
 
 def compile_qac(circuit: QuantumCircuit, max_qubits: int) -> dict | None:
-    """Run QAC and return results, or None if it fails."""
-    try:
-        start = perf_counter()
-        cut_circuit, _ = find_cuts(
-            circuit,
-            OptimizationParameters(),
-            DeviceConstraints(qubits_per_subcircuit=max_qubits),
-        )
-        qc_w_ancilla = cut_wires(cut_circuit)
-        htn = qtpu.circuit_to_hybrid_tn(qc_w_ancilla)
-        compile_time = perf_counter() - start
-        
-        return {"compile_time": compile_time, **analyze_htn(htn)}
-    except Exception as e:
-        print(f"QAC failed: {e}")
-        return None
-
-
-def compile_qtpu_auto(circuit: QuantumCircuit, num_workers: int = 8, n_trials: int = 50) -> dict:
-    """Run QTPU with automatic best_tradeoff selection."""
+    """Run QAC and return a single point with comparable metrics."""
     start = perf_counter()
-    cut_circuit = qtpu.cut(circuit, num_workers=num_workers, n_trials=n_trials)
-    htn = qtpu.circuit_to_hybrid_tn(cut_circuit)
+    cut_circuit, _ = find_cuts(
+        circuit,
+        OptimizationParameters(),
+        DeviceConstraints(qubits_per_subcircuit=max_qubits),
+    )
+    qc_w_ancilla = cut_wires(cut_circuit)
+    heinsum = qtpu.circuit_to_heinsum(qc_w_ancilla)
     compile_time = perf_counter() - start
-    
-    return {"compile_time": compile_time, **analyze_htn(htn)}
 
+    analysis = analyze_heinsum(heinsum)
 
-def compute_efficiency(baseline_error: float, c_cost: float, max_error: float) -> float:
-    """Compute efficiency: error reduction per unit classical cost.
-    
-    Higher is better. Returns error_reduction / log(1 + c_cost) to handle
-    the large range of c_cost values.
-    """
-    import math
-    error_reduction = baseline_error - max_error
-    if c_cost == 0:
-        return float('inf') if error_reduction > 0 else 0
-    return error_reduction / math.log(1 + c_cost)
-
-
-# ============================================================================
-# Benchmark configurations
-# ============================================================================
-BENCHMARKS = ["wstate", "ghz"]
-SIZES = [20, 30]  # Start small since QAC is very slow
-FRACTIONS = [2, 3, 4]  # 1/2, 1/3, 1/4 of circuit size
-
-
-# ============================================================================
-# Comprehensive Comparison: QTPU Pareto frontier vs QAC discrete points
-# The RIGHT comparison: at each c_cost level, who gets lower error?
-# ============================================================================
-@bk.foreach(bench=BENCHMARKS)
-@bk.foreach(circuit_size=SIZES)
-@bk.log("logs/compile/comparison.jsonl")
-def compile_comparison_benchmark(bench: str, circuit_size: int) -> dict:
-    """Compare QTPU's Pareto frontier vs all QAC configurations.
-    
-    The key insight: QTPU provides a continuous Pareto frontier, while QAC
-    only provides discrete points (1/2, 1/3, 1/4, etc.). The fair comparison is:
-    - At each QAC c_cost level, what error does QTPU achieve?
-    - Does QTPU provide useful intermediate points that QAC cannot hit?
-    """
-    from time import perf_counter
-    circuit = get_benchmark_indep(bench, circuit_size).remove_final_measurements(
-        inplace=False
-    )
-
-    # Compute baseline (no cuts)
-    baseline_error = sum(
-        0.01 if inst.operation.num_qubits == 2 else 0.001 for inst in circuit.data
-    )
-
-    # Get QTPU's full Pareto frontier
-    start = perf_counter()
-    frontier = get_pareto_frontier(circuit, max_sampling_cost=200, n_trials=50, num_workers=8)
-    qtpu_compile_time = perf_counter() - start
-    
-    # Sort frontier by c_cost
-    frontier = sorted(frontier, key=lambda p: p["c_cost"])
-
-    # Run QAC at all fractions
-    qac_results = {}
-    for fraction in FRACTIONS:
-        max_qubits = circuit_size // fraction
-        result = compile_qac(circuit, max_qubits=max_qubits)
-        if result is not None:
-            qac_results[f"1/{fraction}"] = result
-
-    # Compare at each QAC c_cost level: what error can QTPU achieve?
-    qtpu_at_qac_costs = {}
-    for qac_key, qac in qac_results.items():
-        qac_c_cost = qac["c_cost"]
-        # Find QTPU point with closest c_cost <= qac_c_cost
-        valid_qtpu = [p for p in frontier if p["c_cost"] <= qac_c_cost]
-        if valid_qtpu:
-            best_qtpu = min(valid_qtpu, key=lambda p: p["max_error"])
-            qtpu_at_qac_costs[qac_key] = {
-                "qtpu_c_cost": best_qtpu["c_cost"],
-                "qtpu_error": best_qtpu["max_error"],
-                "qac_c_cost": qac_c_cost,
-                "qac_error": qac["max_error"],
-                "qtpu_better": best_qtpu["max_error"] <= qac["max_error"],
-                "error_improvement": qac["max_error"] - best_qtpu["max_error"],
-            }
-    
-    # Count wins, ties, losses
-    wins = sum(1 for v in qtpu_at_qac_costs.values() if v["qtpu_error"] < v["qac_error"])
-    ties = sum(1 for v in qtpu_at_qac_costs.values() if abs(v["qtpu_error"] - v["qac_error"]) < 0.001)
-    losses = sum(1 for v in qtpu_at_qac_costs.values() if v["qtpu_error"] > v["qac_error"] + 0.001)
-    
-    # Count QTPU-only points (c_costs that QAC cannot hit)
-    qac_c_costs = set(qac["c_cost"] for qac in qac_results.values())
-    qtpu_only_points = [p for p in frontier if p["c_cost"] not in qac_c_costs and p["c_cost"] > 0]
+    # Compute comparable metrics
+    max_size = max(analysis["qtensor_widths"]) if analysis["qtensor_widths"] else 0
+    max_error = max(analysis["qtensor_errors"]) if analysis["qtensor_errors"] else 0
 
     return {
-        # Baseline
-        "baseline_error": baseline_error,
-        
-        # QTPU Pareto frontier
-        "qtpu_frontier_size": len(frontier),
-        "qtpu_compile_time": qtpu_compile_time,
-        "qtpu_frontier": [{"c_cost": p["c_cost"], "max_error": p["max_error"], "quantum_cost": p["quantum_cost"]} for p in frontier],
-        
-        # QAC discrete points
-        "qac_points": {k: {"c_cost": v["c_cost"], "max_error": v["max_error"], "compile_time": v["compile_time"]} for k, v in qac_results.items()},
-        
-        # Head-to-head at each QAC c_cost level
-        "comparison_at_qac_costs": qtpu_at_qac_costs,
-        
-        # Summary
-        "qtpu_wins": wins,
-        "qtpu_ties": ties,
-        "qtpu_losses": losses,
-        "qtpu_only_points": len(qtpu_only_points),
-        
-        # Verdict: QTPU wins if it matches/beats QAC at all levels AND provides extra points
-        "qtpu_dominates": (losses == 0) and (len(qtpu_only_points) > 0),
+        "compile_time": compile_time,
+        "c_cost": analysis["c_cost"],
+        "max_error": max_error,
+        "max_size": max_size,
+        **analysis,
     }
 
 
-# ============================================================================
-# Scalability Benchmark: How fast can each compiler reach target subcircuit sizes?
-# ============================================================================
-SCALABILITY_BENCHMARKS = ["wstate", "ghz", "qnn"]
-SCALABILITY_SIZES = [20, 30, 40, 50, 60, 70, 80]
-TARGET_FRACTIONS = [2, 3, 4, 5]  # Target 1/2, 1/3, 1/4, 1/5 of original size
+def compile_qtpu_frontier(
+    circuit: QuantumCircuit,
+    num_workers: int = 8,
+    n_trials: int = 50,
+    max_size: int | None = None,
+) -> dict:
+    """Run QTPU and return the full Pareto frontier."""
+    start = perf_counter()
+    opt_result = get_pareto_frontier(
+        circuit,
+        num_workers=num_workers,
+        n_trials=n_trials,
+    )
+    compile_time = perf_counter() - start
+
+    cut_points = opt_result.filter(max_size=max_size)
+
+    # Collect all points with recomputed metrics from HEinsum analysis
+    all_points = []
+    for p in cut_points:
+        cut_circuit = opt_result.get_cut_circuit(p)
+        heinsum = qtpu.circuit_to_heinsum(cut_circuit)
+        analysis = analyze_heinsum(heinsum)
+
+        max_subcircuit_size = (
+            max(analysis["qtensor_widths"]) if analysis["qtensor_widths"] else 0
+        )
+        max_error = max(analysis["qtensor_errors"]) if analysis["qtensor_errors"] else 0
+        c_cost = analysis["c_cost"]
+
+        all_points.append(
+            {
+                "c_cost": c_cost,
+                "max_error": max_error,
+                "max_size": max_subcircuit_size,
+                "sampling_cost": p.sampling_cost,
+            }
+        )
+
+    # Recompute Pareto frontier on the actual HEinsum metrics
+    # Sort by c_cost, then filter to keep only Pareto-optimal points
+    sorted_points = sorted(all_points, key=lambda x: (x["c_cost"], x["max_error"]))
+    pareto_points = []
+    best_error = float("inf")
+    for point in sorted_points:
+        if point["max_error"] < best_error:
+            pareto_points.append(point)
+            best_error = point["max_error"]
+
+    return {
+        "compile_time": compile_time,
+        "pareto_frontier": pareto_points,
+    }
 
 
-@bk.foreach(bench=SCALABILITY_BENCHMARKS)
-@bk.foreach(circuit_size=SCALABILITY_SIZES)
-@bk.foreach(target_fraction=TARGET_FRACTIONS)
-@bk.log("logs/compile/scalability.jsonl")
-def compile_scalability_benchmark(bench: str, circuit_size: int, target_fraction: int) -> dict:
-    """Measure compile time to achieve target subcircuit size for QTPU vs QAC.
-    
-    For each (benchmark, size, fraction):
-    - Run QTPU to get a cut with max_width <= circuit_size / fraction
-    - Run QAC with the same constraint
-    - Compare compile times and achieved metrics
-    """
-    from time import perf_counter
-    from qtpu.compiler._opt import cut_at_target
-    
-    target_width = circuit_size // target_fraction
-    
+@bk.foreach(bench=BENCHMARKS)
+@bk.foreach(circuit_size=CIRCUIT_SIZES)
+@bk.foreach(fraction=FRACTIONS)
+@bk.log("logs/compiler/qac.jsonl")
+def run_qac(bench: str, circuit_size: int, fraction: float) -> dict | None:
+    """Run QAC on the specified benchmark and parameters."""
+    print(f"Running QAC: bench={bench}, size={circuit_size}, fraction={fraction}")
+
+    # Load benchmark circuit
     circuit = get_benchmark_indep(bench, circuit_size).remove_final_measurements(
         inplace=False
     )
-    
-    # Compute baseline
-    baseline_error = sum(
-        0.01 if inst.operation.num_qubits == 2 else 0.001 for inst in circuit.data
+
+    # Determine max qubits per subcircuit
+    max_qubits = max(2, math.ceil(circuit.num_qubits * fraction))
+
+    # Compile with QAC - returns single point
+    results = compile_qac(circuit, max_qubits)
+    return results
+
+
+@bk.foreach(bench=BENCHMARKS)
+@bk.foreach(circuit_size=CIRCUIT_SIZES)
+@bk.foreach(fraction=FRACTIONS)
+@bk.log("logs/compiler/qtpu.jsonl")
+def run_qtpu(bench: str, circuit_size: int, fraction: float) -> dict:
+    """Run QTPU on the specified benchmark and parameters."""
+    print(f"Running QTPU: bench={bench}, size={circuit_size}")
+
+    # Load benchmark circuit
+    circuit = get_benchmark_indep(bench, circuit_size).remove_final_measurements(
+        inplace=False
     )
-    
-    result = {
-        "target_width": target_width,
-        "target_fraction": f"1/{target_fraction}",
-        "baseline_error": baseline_error,
-    }
-    
-    # Run QTPU with max_subcircuit_width constraint
-    try:
-        start = perf_counter()
-        cut_circuit = cut_at_target(
-            circuit, 
-            target_quantum_cost=target_width,
-            num_workers=8, 
-            n_trials=50
-        )
-        qtpu_time = perf_counter() - start
-        
-        htn = qtpu.circuit_to_hybrid_tn(cut_circuit)
-        qtpu_metrics = analyze_htn(htn)
-        
-        result["qtpu_compile_time"] = qtpu_time
-        result["qtpu_achieved_width"] = qtpu_metrics["max_width"]
-        result["qtpu_c_cost"] = qtpu_metrics["c_cost"]
-        result["qtpu_max_error"] = qtpu_metrics["max_error"]
-        result["qtpu_success"] = qtpu_metrics["max_width"] <= target_width
-    except Exception as e:
-        result["qtpu_compile_time"] = None
-        result["qtpu_error"] = str(e)
-        result["qtpu_success"] = False
-    
-    # Run QAC with same constraint
-    try:
-        start = perf_counter()
-        cut_circuit, _ = find_cuts(
-            circuit,
-            OptimizationParameters(),
-            DeviceConstraints(qubits_per_subcircuit=target_width),
-        )
-        qc_w_ancilla = cut_wires(cut_circuit)
-        htn = qtpu.circuit_to_hybrid_tn(qc_w_ancilla)
-        qac_time = perf_counter() - start
-        
-        qac_metrics = analyze_htn(htn)
-        
-        result["qac_compile_time"] = qac_time
-        result["qac_achieved_width"] = qac_metrics["max_width"]
-        result["qac_c_cost"] = qac_metrics["c_cost"]
-        result["qac_max_error"] = qac_metrics["max_error"]
-        result["qac_success"] = qac_metrics["max_width"] <= target_width
-    except Exception as e:
-        result["qac_compile_time"] = None
-        result["qac_error"] = str(e)
-        result["qac_success"] = False
-    
-    # Compute speedup if both succeeded
-    if result.get("qtpu_compile_time") and result.get("qac_compile_time"):
-        result["speedup"] = result["qac_compile_time"] / result["qtpu_compile_time"]
-    
-    return result
+
+    max_size = max(2, math.ceil(circuit.num_qubits * fraction))
+    # Compile with QTPU - returns full Pareto frontier
+    results = compile_qtpu_frontier(circuit, max_size=max_size)
+
+    return results
 
 
 if __name__ == "__main__":
     import sys
 
-    if "comparison" in sys.argv:
-        compile_comparison_benchmark()
-    elif "scalability" in sys.argv:
-        compile_scalability_benchmark()
+    if sys.argv[1] == "qac":
+        run_qac()
+    elif sys.argv[1] == "qtpu":
+        run_qtpu()
     else:
-        print("Usage: python -m evaluation.compiler.run [comparison|scalability]")
+        print("Usage: python run.py [qac|qtpu]")
