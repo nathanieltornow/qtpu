@@ -214,6 +214,74 @@ class QuantumTensor:
         indices = np.ndindex(self.shape)
         return [self[tuple(idx)] for idx in indices]
 
+    @classmethod
+    def from_shape(
+        cls,
+        shape: tuple[int, ...],
+        inds: tuple[str, ...],
+        base_circuit: QuantumCircuit | None = None,
+    ) -> QuantumTensor:
+        """Create a QuantumTensor with the specified shape and indices.
+
+        Creates a quantum circuit with ISwitches to achieve the desired tensor
+        shape. Each index corresponds to an ISwitch with the corresponding
+        dimension.
+
+        Args:
+            shape: The desired shape of the tensor.
+            inds: The index names (must match length of shape).
+            base_circuit: Optional base circuit to use. If None, uses a 10-qubit
+                QNN circuit from mqt.bench as the default.
+
+        Returns:
+            QuantumTensor: A quantum tensor with the specified shape.
+
+        Raises:
+            ValueError: If shape and inds have different lengths.
+
+        Example:
+            >>> qt = QuantumTensor.from_shape((3, 4), ("i", "j"))
+            >>> qt.shape
+            (3, 4)
+            >>> qt.inds
+            ('i', 'j')
+        """
+        if len(shape) != len(inds):
+            raise ValueError(
+                f"Shape and inds must have same length: {len(shape)} vs {len(inds)}"
+            )
+
+        if base_circuit is None:
+            from mqt.bench import get_benchmark_indep
+
+            base_circuit = get_benchmark_indep("qnn", 10)
+
+        num_qubits = base_circuit.num_qubits
+        qc = base_circuit.copy()
+
+        # Add classical register if not present
+        if qc.num_clbits == 0:
+            from qiskit.circuit import ClassicalRegister
+
+            qc.add_register(ClassicalRegister(num_qubits))
+
+        # Add an ISwitch for each index
+        for i, (ind_name, dim) in enumerate(zip(inds, shape, strict=True)):
+            param = Parameter(ind_name)
+
+            def make_identity(k: int) -> QuantumCircuit:
+                """Create an identity circuit (no operation)."""
+                return QuantumCircuit(1)
+
+            iswitch = ISwitch(param, 1, dim, make_identity)
+            qc.append(iswitch, [i % num_qubits])
+
+        # Add measurement if not present
+        if not any(instr.operation.name == "measure" for instr in qc):
+            qc.measure(range(num_qubits), range(num_qubits))
+
+        return cls(qc)
+
 
 class CTensor:
     """A class to represent a classical tensor.

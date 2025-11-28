@@ -758,3 +758,286 @@ def rand_hybrid_star(
         input_tensors=[],
         output_inds=tuple(output_inds),
     )
+
+
+def rand_bounded_heinsum(
+    n_quantum: int,
+    n_classical: int,
+    reg: int = 3,
+    n_out: int = 0,
+    d_min: int = 2,
+    d_max: int = 4,
+    max_tensor_size: int = 1000,
+    seed: int | None = None,
+) -> HEinsum:
+    """Generate a random hybrid tensor network with bounded tensor sizes.
+
+    Creates a HEinsum where quantum tensors are constrained to have at most
+    `max_tensor_size` total elements (product of dimensions). This ensures
+    that quantum circuit sampling remains tractable.
+
+    The algorithm assigns indices to tensors while respecting the size bound
+    for quantum tensors. Classical tensors have no size restriction.
+
+    Args:
+        n_quantum: Number of quantum tensors.
+        n_classical: Number of classical tensors.
+        reg: Average number of indices per tensor.
+        n_out: Number of output (uncontracted) indices.
+        d_min: Minimum dimension size for indices.
+        d_max: Maximum dimension size for indices.
+        max_tensor_size: Maximum total elements per quantum tensor (default: 1000).
+        seed: Random seed for reproducibility.
+
+    Returns:
+        HEinsum: A random hybrid tensor network with bounded quantum tensor sizes.
+
+    Example:
+        >>> heinsum = rand_bounded_heinsum(n_quantum=3, n_classical=2, seed=42)
+        >>> # All quantum tensors have <= 1000 elements
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    n_total = n_quantum + n_classical
+    n_inds = max(1, n_total * reg // 2)
+
+    # Generate index names and sizes
+    ind_names = [f"i{i}" for i in range(n_inds)]
+    ind_sizes = {name: np.random.randint(d_min, d_max + 1) for name in ind_names}
+
+    # Output indices (appear once) vs contraction indices (appear twice)
+    output_ind_names = ind_names[:n_out]
+    contract_ind_names = ind_names[n_out:]
+
+    # Track tensor indices and current sizes
+    # tensor_inds[i] = list of (ind_name, size)
+    tensor_inds: list[list[tuple[str, int]]] = [[] for _ in range(n_total)]
+    tensor_sizes: list[int] = [1] * n_total  # Current product of dimensions
+
+    def can_add_to_tensor(t: int, dim: int) -> bool:
+        """Check if adding dimension to tensor keeps it under size limit."""
+        # Only quantum tensors (indices 0 to n_quantum-1) have size limits
+        if t >= n_quantum:
+            return True
+        return tensor_sizes[t] * dim <= max_tensor_size
+
+    def add_to_tensor(t: int, ind: str, dim: int) -> None:
+        """Add index to tensor and update size tracking."""
+        tensor_inds[t].append((ind, dim))
+        tensor_sizes[t] *= dim
+
+    # Assign output indices (each to one random tensor that can accept it)
+    for ind in output_ind_names:
+        dim = ind_sizes[ind]
+        # Find tensors that can accept this index
+        candidates = [t for t in range(n_total) if can_add_to_tensor(t, dim)]
+        if not candidates:
+            # If no quantum tensor can accept, assign to a classical tensor
+            candidates = list(range(n_quantum, n_total))
+        if candidates:
+            t = np.random.choice(candidates)
+            add_to_tensor(t, ind, dim)
+
+    # Assign contraction indices (each to exactly 2 tensors)
+    for ind in contract_ind_names:
+        dim = ind_sizes[ind]
+
+        # Find pairs of tensors that can both accept this index
+        candidates = [t for t in range(n_total) if can_add_to_tensor(t, dim)]
+
+        if len(candidates) >= 2:
+            tensors = np.random.choice(candidates, size=2, replace=False)
+        elif len(candidates) == 1:
+            # One tensor can accept, find another (prefer classical)
+            t1 = candidates[0]
+            classical_opts = [t for t in range(n_quantum, n_total) if t != t1]
+            if classical_opts:
+                t2 = np.random.choice(classical_opts)
+            else:
+                # Force assign to a quantum tensor (may exceed limit slightly)
+                other_quantum = [t for t in range(n_quantum) if t != t1]
+                t2 = np.random.choice(other_quantum) if other_quantum else t1
+            tensors = [t1, t2]
+        else:
+            # No tensor can accept within limit, assign to classical tensors
+            classical_tensors = list(range(n_quantum, n_total))
+            if len(classical_tensors) >= 2:
+                tensors = np.random.choice(classical_tensors, size=2, replace=False)
+            else:
+                # Fallback: assign to any two different tensors
+                tensors = np.random.choice(n_total, size=2, replace=False)
+
+        for t in tensors:
+            add_to_tensor(t, ind, dim)
+
+    # Ensure each tensor has at least one index
+    for t in range(n_total):
+        if len(tensor_inds[t]) == 0:
+            # Add a small dummy contracted index
+            dummy_ind = f"dummy_{t}"
+            dummy_dim = d_min
+            ind_sizes[dummy_ind] = dummy_dim
+
+            # Find another tensor to share this index
+            other_candidates = [
+                o for o in range(n_total) if o != t and can_add_to_tensor(o, dummy_dim)
+            ]
+            if not other_candidates:
+                other_candidates = [o for o in range(n_total) if o != t]
+
+            other_t = np.random.choice(other_candidates)
+
+            add_to_tensor(t, dummy_ind, dummy_dim)
+            add_to_tensor(other_t, dummy_ind, dummy_dim)
+
+    # Create quantum tensors (first n_quantum)
+    # For quantum tensors, we create simple circuits with ISwitches for each index
+    qtensors = []
+    for t in range(n_quantum):
+        inds = tuple(name for name, _ in tensor_inds[t])
+        shape = tuple(size for _, size in tensor_inds[t])
+
+        # Create a minimal quantum tensor with the required shape
+        qtensor = QuantumTensor.from_shape(shape, inds)
+        qtensors.append(qtensor)
+
+    # Create classical tensors (remaining n_classical)
+    ctensors = []
+    for t in range(n_quantum, n_total):
+        inds = tuple(name for name, _ in tensor_inds[t])
+        shape = tuple(size for _, size in tensor_inds[t])
+        if shape:
+            data = np.random.randn(*shape).astype(np.float64)
+        else:
+            data = np.array(np.random.randn(), dtype=np.float64)
+        ctensors.append(CTensor(data, inds))
+
+    return HEinsum(
+        qtensors=qtensors,
+        ctensors=ctensors,
+        input_tensors=[],
+        output_inds=tuple(output_ind_names),
+    )
+
+
+def rand_regular_heinsum(
+    n_quantum: int,
+    n_classical: int,
+    reg: int = 3,
+    q_bond_dim: int = 2,
+    c_bond_dim: int = 8,
+    seed: int | None = None,
+) -> HEinsum:
+    """Generate a random n-regular hybrid tensor network.
+
+    Creates an n-regular random graph where each tensor has exactly `reg` bonds.
+    Bonds between quantum tensors use small dimensions (q_bond_dim), while
+    bonds involving only classical tensors use larger dimensions (c_bond_dim).
+    This allows scaling classical contraction complexity without affecting
+    quantum tensor sizes.
+
+    Args:
+        n_quantum: Number of quantum tensors.
+        n_classical: Number of classical tensors.
+        reg: Number of bonds per tensor (regularity). Must satisfy
+            n_total * reg being even.
+        q_bond_dim: Bond dimension for edges touching quantum tensors.
+        c_bond_dim: Bond dimension for edges between classical tensors only.
+        seed: Random seed for reproducibility.
+
+    Returns:
+        HEinsum: A random n-regular hybrid tensor network.
+
+    Example:
+        >>> # 5 quantum + 10 classical tensors, 4-regular, small q-bonds, large c-bonds
+        >>> h = rand_regular_heinsum(5, 10, reg=4, q_bond_dim=2, c_bond_dim=32)
+        >>> # Quantum tensors stay small: 2^4 = 16 elements max
+        >>> # Classical contraction cost scales with c_bond_dim
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    n_total = n_quantum + n_classical
+
+    if (n_total * reg) % 2 != 0:
+        raise ValueError(
+            f"n_total * reg must be even for regular graph. "
+            f"Got {n_total} * {reg} = {n_total * reg}"
+        )
+
+    # Generate random regular graph using configuration model
+    # Each tensor has `reg` "half-edges" (stubs)
+    stubs = []
+    for t in range(n_total):
+        stubs.extend([t] * reg)
+
+    # Shuffle and pair up stubs to form edges
+    np.random.shuffle(stubs)
+    edges = []
+    for i in range(0, len(stubs), 2):
+        t1, t2 = stubs[i], stubs[i + 1]
+        edges.append((min(t1, t2), max(t1, t2)))
+
+    # Remove self-loops and multi-edges by resampling if needed
+    # (Simple rejection: just keep valid edges)
+    edge_set = set()
+    valid_edges = []
+    for t1, t2 in edges:
+        if t1 != t2 and (t1, t2) not in edge_set:
+            edge_set.add((t1, t2))
+            valid_edges.append((t1, t2))
+
+    # Build tensor indices from edges
+    tensor_inds: list[list[tuple[str, int]]] = [[] for _ in range(n_total)]
+
+    for idx, (t1, t2) in enumerate(valid_edges):
+        ind_name = f"e{idx}"
+
+        # Determine bond dimension based on whether quantum tensors are involved
+        if t1 < n_quantum or t2 < n_quantum:
+            # At least one quantum tensor - use small bond dim
+            dim = q_bond_dim
+        else:
+            # Both classical - use large bond dim
+            dim = c_bond_dim
+
+        tensor_inds[t1].append((ind_name, dim))
+        tensor_inds[t2].append((ind_name, dim))
+
+    # Create quantum tensors
+    qtensors = []
+    for t in range(n_quantum):
+        inds = tuple(name for name, _ in tensor_inds[t])
+        shape = tuple(size for _, size in tensor_inds[t])
+
+        if not shape:
+            # Tensor with no edges - give it a trivial shape
+            inds = (f"trivial_q{t}",)
+            shape = (1,)
+
+        qtensor = QuantumTensor.from_shape(shape, inds)
+        qtensors.append(qtensor)
+
+    # Create classical tensors
+    ctensors = []
+    for t in range(n_quantum, n_total):
+        inds = tuple(name for name, _ in tensor_inds[t])
+        shape = tuple(size for _, size in tensor_inds[t])
+
+        if not shape:
+            # Tensor with no edges - give it a trivial shape
+            inds = (f"trivial_c{t}",)
+            shape = (1,)
+            data = np.array([1.0], dtype=np.float64)
+        else:
+            data = np.random.randn(*shape).astype(np.float64)
+
+        ctensors.append(CTensor(data, inds))
+
+    return HEinsum(
+        qtensors=qtensors,
+        ctensors=ctensors,
+        input_tensors=[],
+        output_inds=(),
+    )
