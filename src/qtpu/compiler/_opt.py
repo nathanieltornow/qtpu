@@ -276,7 +276,7 @@ def _sample_params(rng: np.random.Generator) -> dict[str, Any]:
     """Sample random hyperparameters for a trial."""
     return {
         "random_strength": float(rng.uniform(0.01, 0.2)),
-        "imbalance": float(rng.uniform(0.01, 0.3)),
+        "imbalance": float(rng.uniform(0.01, 1.5)),
         "imbalance_decay": float(rng.uniform(0, 1)),
         "parts": int(rng.integers(2, 4)),  # 2 or 3
         "parts_decay": float(rng.uniform(0.0, 1.0)),

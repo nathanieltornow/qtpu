@@ -224,35 +224,39 @@ class FakeQPUBackend(QuantumBackend):
         
         start = perf_counter()
         
-        # Get circuits
+        # Get circuits - we only need the first one since all have same structure
         circuits = qtensor.flat()
+        num_circuits = len(circuits)
         
-        # Bind parameters and clean up
-        bound_circuits = []
-        for circuit in circuits:
-            circuit = circuit.decompose()
-            if circuit.parameters and params:
-                circuit_param_names = {p.name for p in circuit.parameters}
-                params_to_bind = {k: v for k, v in params.items() if k in circuit_param_names}
-                if params_to_bind:
-                    circuit = circuit.assign_parameters(params_to_bind)
-            
-            # Remove custom operations for transpilation
-            circuit = remove_operations_by_name(
-                circuit, {"qpd_measure", "iswitch"}, inplace=False
-            )
-            bound_circuits.append(circuit)
+        if num_circuits == 0:
+            return torch.empty(qtensor.shape, dtype=dtype, device=device), 0.0, 0.0
         
-        # Transpile and schedule
+        # Take first circuit as representative
+        circuit = circuits[0].decompose()
+        
+        # Bind parameters
+        if circuit.parameters and params:
+            circuit_param_names = {p.name for p in circuit.parameters}
+            params_to_bind = {k: v for k, v in params.items() if k in circuit_param_names}
+            if params_to_bind:
+                circuit = circuit.assign_parameters(params_to_bind)
+        
+        # Remove custom operations for transpilation
+        circuit = remove_operations_by_name(
+            circuit, {"qpd_measure", "iswitch"}, inplace=False
+        )
+        
+        # Transpile and schedule just the representative circuit
         scheduled = transpile(
-            circuits=bound_circuits,
+            circuits=circuit,
             backend=self._backend,
             optimization_level=self._optimization_level,
             scheduling_method="asap",
         )
         
-        # Estimate QPU time
-        estimated_qpu_time = self._estimate_runtime(scheduled)
+        # Estimate QPU time for one circuit, then multiply by count
+        single_circuit_time = self._estimate_single_circuit_runtime(scheduled)
+        estimated_qpu_time = single_circuit_time * num_circuits
         
         # Return random results (this is fake!)
         result = torch.randn(qtensor.shape, dtype=dtype, device=device)
@@ -260,22 +264,17 @@ class FakeQPUBackend(QuantumBackend):
         eval_time = perf_counter() - start
         return result, eval_time, estimated_qpu_time
     
-    def _estimate_runtime(self, scheduled_circuits: list) -> float:
-        """Estimate total QPU runtime from scheduled circuits."""
-        total_time = 0.0
-        
+    def _estimate_single_circuit_runtime(self, scheduled_circuit) -> float:
+        """Estimate QPU runtime for a single scheduled circuit."""
         # Typical values for superconducting qubits
         t_init = 100e-6  # Reset/initialization time
         t_latency = 20e-6  # Classical control latency
         
-        for circuit in scheduled_circuits:
-            if circuit.duration is None:
-                # Fallback for circuits without duration info
-                t_sched = 1e-6 * circuit.depth()
-            else:
-                t_sched = circuit.duration * self._dt
-            
-            t_per_shot = t_init + t_sched + t_latency
-            total_time += t_per_shot * self._shots
+        if scheduled_circuit.duration is None:
+            # Fallback for circuits without duration info
+            t_sched = 1e-6 * scheduled_circuit.depth()
+        else:
+            t_sched = scheduled_circuit.duration * self._dt
         
-        return total_time
+        t_per_shot = t_init + t_sched + t_latency
+        return t_per_shot * self._shots
