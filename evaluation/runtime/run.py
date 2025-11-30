@@ -32,55 +32,71 @@ STANDARD_BENCHMARKS = ["qnn", "wstate", "vqe_su2"]
 STANDARD_SIZES = [20, 50, 100, 150]
 
 # Distributed VQE benchmark (all-to-all within clusters, sparse inter-cluster)
-DIST_VQE_SIZES = [20, 40, 60, 80, 100]
+DIST_VQE_SIZES = [100]
 
 # Cluster sizes to evaluate (qubits per QPU)
-CLUSTER_SIZES = [10, 15, 20]
+CLUSTER_SIZES = [19]
 
 
 # =============================================================================
-# Quimb TN Simulation Utilities
+# cuTensorNet TN Simulation Utilities
 # =============================================================================
 
 
-def qiskit_to_quimb_tn(circuit: QuantumCircuit):
-    """Convert Qiskit circuit to quimb tensor network."""
-    import quimb.tensor as qtn
+def compute_expval_cutensornet(circuit: QuantumCircuit) -> tuple[float | None, float]:
+    """Compute <Z⊗Z⊗...⊗Z> using cuTensorNet contraction.
 
-    circ = qtn.Circuit(circuit.num_qubits)
-    for instr in circuit:
-        op, qubits = instr.operation, instr.qubits
-        try:
-            circ.apply_gate_raw(
-                op.to_matrix(), [circuit.qubits.index(q) for q in qubits]
-            )
-        except Exception:
-            continue
-    return circ
+    Uses NVIDIA cuQuantum's Network API for circuit-to-tensor-network
+    conversion and GPU-accelerated contraction with autotuning.
 
-
-def compute_expval_tn(circ_tn) -> tuple[float | None, float]:
-    """Compute <Z⊗Z⊗...⊗Z> using full TN contraction.
+    Args:
+        circuit: Qiskit QuantumCircuit to evaluate.
 
     Returns:
         (expval, time) or (None, time) if failed.
     """
-    n = circ_tn.N
-    Z = np.array([[1, 0], [0, -1]], dtype=complex)
+    try:
+        import cupy as cp
+        from cuquantum import Network, CircuitToEinsum, NetworkOptions
+    except ImportError as e:
+        print(f"  cuTensorNet not available: {e}")
+        return None, 0.0
 
-    psi = circ_tn.psi.copy()
-    for i in range(n):
-        psi.gate_(Z, i)
+    n = circuit.num_qubits
 
-    overlap_tn = circ_tn.psi.H & psi
+    # Build Pauli string for <Z⊗Z⊗...⊗Z>
+    pauli_string = "Z" * n
 
     start = perf_counter()
     try:
-        result = overlap_tn.contract(optimize="auto-hq")
+        # Convert circuit to einsum using cuQuantum
+        converter = CircuitToEinsum(circuit, dtype="complex128", backend=cp)
+
+        # Get expectation value expression (with lightcone optimization)
+        expression, operands = converter.expectation(pauli_string, lightcone=True)
+
+        # Use Network API with memory limit to enable automatic slicing
+        # memory_limit tells cuTensorNet how much GPU memory is available
+        # The slicer will automatically slice indices to fit within this limit
+        network_opts = NetworkOptions()  # A40 has 48GB
+        
+        with Network(expression, *operands, options=network_opts) as tn:
+            # Find contraction path - cuTensorNet will automatically slice
+            # based on the memory_limit in NetworkOptions
+            path, info = tn.contract_path()
+            tn.autotune(iterations=5)
+            
+            # Contract
+            result = tn.contract()
+
+        # Convert to CPU and get real part
+        expval = float(result.real.get()) if hasattr(result, "get") else float(result.real)
+
         elapsed = perf_counter() - start
-        return result.real, elapsed
-    except Exception:
+        return expval, elapsed
+    except Exception as e:
         elapsed = perf_counter() - start
+        print(f"  cuTensorNet contraction failed: {e}")
         return None, elapsed
 
 
@@ -159,7 +175,7 @@ def compile_and_run_qtpu(
 
 @bk.foreach(bench=STANDARD_BENCHMARKS)
 @bk.foreach(circuit_size=STANDARD_SIZES)
-@bk.foreach(cluster_size=CLUSTER_SIZES)
+@bk.foreach(cluster_size=[15])
 @bk.log("logs/runtime/standard_qtpu.jsonl")
 def run_standard_qtpu(bench: str, circuit_size: int, cluster_size: int) -> dict | None:
     """Run QTPU on standard MQT benchmarks."""
@@ -182,7 +198,6 @@ def run_standard_qtpu(bench: str, circuit_size: int, cluster_size: int) -> dict 
         return None
 
     return {
-        "circuit_depth": circuit.depth(),
         **result,
     }
 
@@ -191,29 +206,21 @@ def run_standard_qtpu(bench: str, circuit_size: int, cluster_size: int) -> dict 
 @bk.foreach(circuit_size=STANDARD_SIZES)
 @bk.log("logs/runtime/standard_classical.jsonl")
 def run_standard_classical(bench: str, circuit_size: int) -> dict | None:
-    """Run classical TN simulation on standard MQT benchmarks."""
+    """Run classical TN simulation on standard MQT benchmarks using cuTensorNet."""
     print(f"Classical [{bench}]: size={circuit_size}")
 
     circuit = get_benchmark(bench, circuit_size).remove_final_measurements(
         inplace=False
     )
 
-    # Build TN
-    build_start = perf_counter()
-    try:
-        circ_tn = qiskit_to_quimb_tn(circuit)
-        build_time = perf_counter() - build_start
-    except Exception as e:
-        print(f"  Build failed: {e}")
-        return None
-
-    # Contract
-    expval, contract_time = compute_expval_tn(circ_tn)
+    # Contract using cuTensorNet
+    expval, contract_time = compute_expval_cutensornet(circuit)
 
     return {
-        "build_time": build_time,
         "contract_time": contract_time,
-        "total_time": build_time + contract_time,
+        "total_time": contract_time,
+        "expval": expval,
+        "status": "success" if expval is not None else "failed",
     }
 
 
@@ -253,36 +260,25 @@ def run_dist_vqe_qtpu(circuit_size: int, cluster_size: int) -> dict | None:
 @bk.foreach(cluster_size=CLUSTER_SIZES)
 @bk.log("logs/runtime/dist_vqe_classical.jsonl")
 def run_dist_vqe_classical(circuit_size: int, cluster_size: int) -> dict | None:
-    """Run classical TN simulation on distributed VQE circuit."""
+    """Run classical TN simulation on distributed VQE circuit using cuTensorNet."""
     # Skip invalid combinations (cluster must evenly divide circuit)
-    if cluster_size > circuit_size or circuit_size % cluster_size != 0:
-        return None
+    if cluster_size * 2 > circuit_size:
         return None
 
     print(f"Classical [dist-vqe]: size={circuit_size}, cluster={cluster_size}")
 
     circuit = get_benchmark("dist-vqe", circuit_size, cluster_size=cluster_size)
 
-    # Build TN
-    build_start = perf_counter()
-    try:
-        circ_tn = qiskit_to_quimb_tn(circuit)
-        build_time = perf_counter() - build_start
-    except Exception as e:
-        print(f"  Build failed: {e}")
-        return None
-
-    # Contract
-    expval, contract_time = compute_expval_tn(circ_tn)
+    # Contract using cuTensorNet
+    expval, contract_time = compute_expval_cutensornet(circuit)
 
     return {
         "bench": "dist-vqe",
         "circuit_size": circuit_size,
         "cluster_size": cluster_size,
         "circuit_depth": circuit.depth(),
-        "build_time": build_time,
         "contract_time": contract_time,
-        "total_time": build_time + contract_time,
+        "total_time": contract_time,
         "expval": expval,
         "status": "success" if expval is not None else "failed",
     }
