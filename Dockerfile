@@ -1,14 +1,26 @@
-ARG ARCH=x86_64
+FROM nvidia/cuda:12.4.0-runtime-ubuntu22.04
 
-# Use cuQuantum appliance as base image
-FROM nvcr.io/nvidia/cuquantum-appliance:24.03-${ARCH}
+# Install Python and basics
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip python3-venv git curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# cuquantums aer-simulator is very slow for mid-circuit measurments
-# RUN pip uninstall -y qiskit-aer
+# Install uv
+RUN pip3 install uv
 
-# Install dependencies
-# RUN pip install qiskit-aer "jax[cuda12]" numpy networkx quimb kahypar scipy optuna
-RUN pip install numpy networkx quimb kahypar scipy optuna
+# Set working directory
+WORKDIR /app
 
+# Copy project files
+COPY pyproject.toml uv.lock ./
+COPY src ./src/
+COPY evaluation ./evaluation/
+COPY README.md ./
 
-ENV PYTHONPATH "${PYTHONPATH}:/home/cuquantum/qtpu"
+# Install the package with all dependencies + GPU libraries
+# cupy-cuda12x: GPU array library
+# cuquantum-python-cu12: NVIDIA cuQuantum for GPU-accelerated tensor network contractions
+RUN uv sync && uv pip install cupy-cuda12x cuquantum-python-cu12
+
+# Use the venv python
+ENV PATH="/app/.venv/bin:$PATH"

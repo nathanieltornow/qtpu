@@ -113,7 +113,7 @@ def get_benchmark(
             num_qubits=circuit_size,
             qubits_per_cluster=cluster_size,
             layers=3,
-            inter_cluster_gates=3,
+            inter_cluster_gates=1,
             seed=42,
         )
     else:
