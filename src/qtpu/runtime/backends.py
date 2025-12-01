@@ -15,6 +15,14 @@ if TYPE_CHECKING:
     from qtpu.tensor import QuantumTensor
 
 
+# Check if CUDA-Q is available
+try:
+    import cudaq
+    CUDAQ_AVAILABLE = True
+except ImportError:
+    CUDAQ_AVAILABLE = False
+
+
 class QuantumBackend(ABC):
     """Abstract base class for quantum tensor evaluation backends.
     
@@ -278,3 +286,101 @@ class FakeQPUBackend(QuantumBackend):
         
         t_per_shot = t_init + t_sched + t_latency
         return t_per_shot * self._shots
+
+
+class CudaQBackend(QuantumBackend):
+    """CUDA-Q backend for fast quantum tensor evaluation.
+    
+    Uses NVIDIA CUDA-Q for JIT-compiled quantum circuit simulation.
+    Caches compiled kernels per-qtensor for fast repeated evaluation.
+    
+    Requires cuda-quantum to be installed:
+        pip install cuda-quantum-cu12  # For CUDA 12
+    
+    Args:
+        target: CUDA-Q target backend. Options include:
+            - "qpp-cpu" (default): CPU simulation with OpenMP
+            - "nvidia": GPU simulation (requires NVIDIA GPU)
+            - "nvidia-fp64": GPU with double precision
+            - "nvidia-mqpu": Multi-GPU simulation
+            - "tensornet": Tensor network simulation
+        
+    Example:
+        >>> backend = CudaQBackend(target="nvidia")  # Use GPU
+        >>> result, eval_time, _ = backend.evaluate(qtensor, {}, torch.float64, device)
+        
+    Note:
+        The first evaluation of a qtensor includes JIT compilation overhead.
+        Subsequent evaluations of the same qtensor reuse the cached kernel.
+    """
+    
+    def __init__(self, target: str = "qpp-cpu"):
+        if not CUDAQ_AVAILABLE:
+            raise ImportError(
+                "CUDA-Q is not installed. Install with: pip install cuda-quantum-cu12"
+            )
+        self._target = target
+        self._target_set = False
+        # Per-qtensor cache: qtensor_id -> (compute_func, free_param_names)
+        self._kernel_cache: dict[int, tuple[callable, list[str]]] = {}
+    
+    @property
+    def name(self) -> str:
+        return f"cudaq-{self._target}"
+    
+    @property
+    def target(self) -> str:
+        """The CUDA-Q target backend."""
+        return self._target
+    
+    def _ensure_target(self):
+        """Set the CUDA-Q target if not already set."""
+        if not self._target_set:
+            current_target = cudaq.get_target().name
+            if current_target != self._target:
+                try:
+                    cudaq.set_target(self._target)
+                except Exception:
+                    pass  # Target may not be available
+            self._target_set = True
+    
+    def _get_kernel(self, qtensor: "QuantumTensor") -> tuple[callable, list[str]]:
+        """Get or compile the kernel for a qtensor."""
+        qtensor_id = id(qtensor)
+        
+        if qtensor_id not in self._kernel_cache:
+            from qtpu.runtime.cudaq_converter import get_compiled_kernel
+            compute_func, free_param_names = get_compiled_kernel(qtensor)
+            self._kernel_cache[qtensor_id] = (compute_func, free_param_names)
+        
+        return self._kernel_cache[qtensor_id]
+    
+    def evaluate(
+        self,
+        qtensor: "QuantumTensor",
+        params: dict[str, float],
+        dtype: torch.dtype,
+        device: torch.device,
+    ) -> tuple[torch.Tensor, float, float]:
+        from qtpu.runtime.cudaq_converter import _execute_compiled_kernel, _sanitize_param_name
+        
+        start = perf_counter()
+        
+        # Ensure target is set (only done once)
+        self._ensure_target()
+        
+        # Get cached kernel (compiles on first call)
+        compute_func, free_param_names = self._get_kernel(qtensor)
+        
+        # Execute the kernel
+        result_np = _execute_compiled_kernel(compute_func, free_param_names, params)
+        
+        # Convert to torch tensor
+        result = torch.tensor(result_np, dtype=dtype, device=device)
+        
+        eval_time = perf_counter() - start
+        return result, eval_time, 0.0
+    
+    def clear_cache(self):
+        """Clear the compiled kernel cache."""
+        self._kernel_cache.clear()

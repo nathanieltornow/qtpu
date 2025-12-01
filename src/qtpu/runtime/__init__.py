@@ -2,7 +2,7 @@
 
 This module provides a clean, extensible runtime for hybrid tensor network
 contraction with support for:
-- Multiple quantum backends (simulator, fake QPU timing estimation, real QPU)
+- Multiple quantum backends (simulator, fake QPU timing estimation, CUDA-Q, real QPU)
 - Detailed timing breakdowns for evaluation
 - GPU acceleration via PyTorch
 - JIT compilation for maximum performance
@@ -17,6 +17,10 @@ Example:
     >>> # Execute with timing breakdown
     >>> result, timing = runtime.execute(input_tensors=[x])
     >>> print(f"Quantum: {timing.quantum_time:.3f}s, Classical: {timing.classical_time:.3f}s")
+    
+    >>> # Or use CUDA-Q for GPU-accelerated quantum simulation
+    >>> runtime = HEinsumRuntime(heinsum, backend="cudaq-nvidia")
+    >>> result, timing = runtime.execute(input_tensors=[x])
 """
 
 from qtpu.runtime.timing import (
@@ -27,6 +31,7 @@ from qtpu.runtime.backends import (
     QuantumBackend,
     SimulatorBackend,
     FakeQPUBackend,
+    CUDAQ_AVAILABLE,
 )
 from qtpu.runtime.device import (
     Device,
@@ -36,6 +41,12 @@ from qtpu.runtime.executor import (
     HEinsumRuntime,
     HEinsumContractor,
 )
+
+# Conditionally import CudaQBackend
+if CUDAQ_AVAILABLE:
+    from qtpu.runtime.backends import CudaQBackend
+else:
+    CudaQBackend = None
 
 # Legacy aliases
 QuantumTensorEvaluator = SimulatorBackend
@@ -48,6 +59,8 @@ __all__ = [
     "QuantumBackend",
     "SimulatorBackend",
     "FakeQPUBackend",
+    "CudaQBackend",
+    "CUDAQ_AVAILABLE",
     "QuantumTensorEvaluator",  # Legacy alias
     # Device
     "Device",

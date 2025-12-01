@@ -10,7 +10,9 @@ import numpy as np
 import torch
 from torch.autograd import Function
 
-from qtpu.runtime.backends import QuantumBackend, SimulatorBackend, FakeQPUBackend
+from qtpu.runtime.backends import QuantumBackend, SimulatorBackend, FakeQPUBackend, CUDAQ_AVAILABLE
+if CUDAQ_AVAILABLE:
+    from qtpu.runtime.backends import CudaQBackend
 from qtpu.runtime.device import get_device, Device
 from qtpu.runtime.timing import TimingBreakdown
 
@@ -146,8 +148,22 @@ class HEinsumRuntime:
             return SimulatorBackend()
         elif name == "fake_qpu":
             return FakeQPUBackend()
+        elif name == "cudaq" or name.startswith("cudaq-"):
+            if not CUDAQ_AVAILABLE:
+                raise ImportError(
+                    "CUDA-Q is not installed. Install with: pip install cuda-quantum-cu12"
+                )
+            # Extract target from name like "cudaq-nvidia" or use default
+            if name == "cudaq":
+                target = "qpp-cpu"
+            else:
+                target = name.split("-", 1)[1]
+            return CudaQBackend(target=target)
         else:
-            raise ValueError(f"Unknown backend: {name}. Use 'simulator' or 'fake_qpu'.")
+            raise ValueError(
+                f"Unknown backend: {name}. "
+                f"Use 'simulator', 'fake_qpu', 'cudaq', or 'cudaq-<target>'."
+            )
     
     # -------------------------------------------------------------------------
     # Preparation
