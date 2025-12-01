@@ -10,15 +10,17 @@ import numpy as np
 import torch
 from torch.autograd import Function
 
-from qtpu.runtime.backends import QuantumBackend, SimulatorBackend, FakeQPUBackend, CUDAQ_AVAILABLE
-if CUDAQ_AVAILABLE:
-    from qtpu.runtime.backends import CudaQBackend
+from qtpu.runtime.backends import (
+    QuantumBackend,
+    SimulatorBackend,
+    FakeQPUBackend,
+    CudaQBackend,
+)
 from qtpu.runtime.device import get_device, Device
 from qtpu.runtime.timing import TimingBreakdown
 
 if TYPE_CHECKING:
-    from qtpu.heinsum import HEinsum
-    from qtpu.core.tensor import QuantumTensor
+    from qtpu.core import HEinsum, QuantumTensor
 
 
 class _QuantumTensorFunction(Function):
@@ -149,10 +151,6 @@ class HEinsumRuntime:
         elif name == "fake_qpu":
             return FakeQPUBackend()
         elif name == "cudaq" or name.startswith("cudaq-"):
-            if not CUDAQ_AVAILABLE:
-                raise ImportError(
-                    "CUDA-Q is not installed. Install with: pip install cuda-quantum-cu12"
-                )
             # Extract target from name like "cudaq-nvidia" or use default
             if name == "cudaq":
                 target = "qpp-cpu"

@@ -31,8 +31,7 @@ from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit_addon_cutting.instructions import CutWire, Move
 from qiskit_addon_cutting.qpd import QPDMeasure, TwoQubitQPDGate
 
-from qtpu.heinsum import HEinsum
-from qtpu.core.tensor import CTensor, QuantumTensor, ISwitch
+from qtpu.core import CTensor, QuantumTensor, ISwitch, HEinsum, TensorSpec
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from qtpu.compiler._opt import get_pareto_frontier, CutPoint
+from qtpu.compiler.opt._opt import get_pareto_frontier, CutPoint
 from qtpu.transforms import remove_operations_by_name
 
 if TYPE_CHECKING:

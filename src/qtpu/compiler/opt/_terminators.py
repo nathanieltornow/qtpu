@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from qtpu.compiler._util import get_leafs
+from qtpu.compiler.opt._util import get_leafs
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     import cotengra as ctg
 
-    from qtpu.compiler._compress import CompressedIR
+    from qtpu.compiler.opt._compress import CompressedIR
 
 
 def reach_num_qubits(

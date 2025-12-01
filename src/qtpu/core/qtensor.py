@@ -1,4 +1,4 @@
-"""QuantumTensor and CompiledQuantumTensor classes."""
+"""QuantumTensor class for representing tensors of quantum circuits."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from qiskit.circuit import QuantumCircuit, Parameter
 from qtpu.core.iswitch import ISwitch
 
 if TYPE_CHECKING:
-    pass
+    from qtpu.compiler.codegen import CompiledQuantumTensor
 
 
 class QuantumTensor:
@@ -106,40 +106,29 @@ class QuantumTensor:
         indices = np.ndindex(self.shape)
         return [self[tuple(idx)] for idx in indices]
 
-    def compile(self, backend: str = "cudaq") -> "CompiledQuantumTensor":
+    def compile(self) -> "CompiledQuantumTensor":
         """Compile this quantum tensor for fast repeated evaluation.
 
-        Compiles the quantum circuit to a native representation that can be
-        executed efficiently. The compiled tensor caches the kernel, so the
-        first call includes JIT compilation overhead but subsequent calls
-        are fast.
-
-        Args:
-            backend: Compilation backend. Currently supported:
-                - "cudaq": NVIDIA CUDA-Q (requires cuda-quantum package)
+        Compiles the quantum circuit to CUDA-Q for efficient execution.
+        The compiled tensor caches the kernel, so the first call includes
+        JIT compilation overhead but subsequent calls are fast.
 
         Returns:
             CompiledQuantumTensor: A compiled tensor with a fast __call__ method.
 
-        Raises:
-            ValueError: If the backend is not supported.
-
         Example:
             >>> qtensor = QuantumTensor(circuit)
-            >>> compiled = qtensor.compile("cudaq")
-            >>> 
+            >>> compiled = qtensor.compile()
+            >>>
             >>> # First call includes compilation
             >>> result = compiled()  # shape matches qtensor.shape
-            >>> 
+            >>>
             >>> # Subsequent calls are fast (kernel cached)
             >>> result = compiled(theta=0.5, phi=1.2)  # with parameters
         """
-        if backend == "cudaq":
-            return CompiledQuantumTensor(self, backend="cudaq")
-        else:
-            raise ValueError(
-                f"Unknown backend: {backend}. Supported: 'cudaq'"
-            )
+        from qtpu.compiler.codegen import CompiledQuantumTensor
+
+        return CompiledQuantumTensor(self)
 
     @classmethod
     def from_shape(
@@ -208,128 +197,3 @@ class QuantumTensor:
             qc.measure(range(num_qubits), range(num_qubits))
 
         return cls(qc)
-
-
-class CompiledQuantumTensor:
-    """A compiled quantum tensor for fast repeated evaluation.
-
-    This class wraps a QuantumTensor with a compiled backend (e.g., CUDA-Q)
-    for efficient repeated execution. The kernel is JIT-compiled on first
-    use and cached for subsequent calls.
-
-    The compiled tensor is callable and returns a numpy array matching
-    the original tensor's shape.
-
-    Attributes:
-        qtensor: The original QuantumTensor.
-        shape: Shape of the output tensor.
-        inds: Index names of the output tensor.
-        backend: The compilation backend used.
-
-    Example:
-        >>> compiled = qtensor.compile("cudaq")
-        >>> result = compiled()  # Returns np.ndarray with shape qtensor.shape
-        >>> result = compiled(theta=0.5)  # Pass rotation parameters
-    """
-
-    def __init__(self, qtensor: QuantumTensor, backend: str = "cudaq"):
-        """Initialize a compiled quantum tensor.
-
-        Args:
-            qtensor: The QuantumTensor to compile.
-            backend: Compilation backend ("cudaq").
-        """
-        self._qtensor = qtensor
-        self._backend = backend
-        self._compiled_fn: callable | None = None
-        self._free_param_names: list[str] = []
-
-    @property
-    def qtensor(self) -> QuantumTensor:
-        """The original QuantumTensor."""
-        return self._qtensor
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """Shape of the output tensor."""
-        return self._qtensor.shape
-
-    @property
-    def inds(self) -> tuple[str, ...]:
-        """Index names of the output tensor."""
-        return self._qtensor.inds
-
-    @property
-    def backend(self) -> str:
-        """The compilation backend."""
-        return self._backend
-
-    @property
-    def is_compiled(self) -> bool:
-        """Whether the kernel has been compiled."""
-        return self._compiled_fn is not None
-
-    def _ensure_compiled(self) -> None:
-        """Compile the kernel if not already compiled."""
-        if self._compiled_fn is not None:
-            return
-
-        if self._backend == "cudaq":
-            from qtpu.runtime.cudaq_converter import compile_cudaq_kernel
-            _, self._compiled_fn, self._free_param_names = compile_cudaq_kernel(
-                self._qtensor.circuit, self._qtensor.shape
-            )
-        else:
-            raise ValueError(f"Unknown backend: {self._backend}")
-
-    def __call__(self, **params: float) -> np.ndarray:
-        """Evaluate the compiled quantum tensor.
-
-        Args:
-            **params: Values for free parameters (rotation angles, etc.).
-                ISwitch parameters are handled internally.
-
-        Returns:
-            np.ndarray: Result tensor with shape matching self.shape.
-
-        Example:
-            >>> result = compiled()  # No free parameters
-            >>> result = compiled(theta=0.5, phi=1.2)  # With parameters
-        """
-        self._ensure_compiled()
-
-        # Build kwargs for the compiled function
-        kwargs = {}
-        for name in self._free_param_names:
-            if name in params:
-                kwargs[name] = params[name]
-            else:
-                # Try to find parameter with original name (e.g., 'theta[0]' vs 'theta_0')
-                from qtpu.runtime.cudaq_converter import _sanitize_param_name
-                for orig_name, val in params.items():
-                    if _sanitize_param_name(orig_name) == name:
-                        kwargs[name] = val
-                        break
-                else:
-                    if name not in kwargs:
-                        raise ValueError(
-                            f"Missing parameter: '{name}'. "
-                            f"Required: {self._free_param_names}"
-                        )
-
-        if kwargs:
-            return self._compiled_fn(**kwargs)
-        else:
-            return self._compiled_fn()
-
-    def clear_cache(self) -> None:
-        """Clear the compiled kernel cache, forcing recompilation on next call."""
-        self._compiled_fn = None
-        self._free_param_names = []
-
-    def __repr__(self) -> str:
-        status = "compiled" if self.is_compiled else "not compiled"
-        return (
-            f"CompiledQuantumTensor(shape={self.shape}, "
-            f"backend='{self._backend}', {status})"
-        )

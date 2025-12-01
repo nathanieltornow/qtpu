@@ -31,7 +31,7 @@ from qtpu.runtime.backends import (
     QuantumBackend,
     SimulatorBackend,
     FakeQPUBackend,
-    CUDAQ_AVAILABLE,
+    CudaQBackend,
 )
 from qtpu.runtime.device import (
     Device,
@@ -41,13 +41,6 @@ from qtpu.runtime.executor import (
     HEinsumRuntime,
     HEinsumContractor,
 )
-
-# Conditionally import CudaQBackend
-if CUDAQ_AVAILABLE:
-    from qtpu.runtime.backends import CudaQBackend
-else:
-    CudaQBackend = None
-
 # Legacy aliases
 QuantumTensorEvaluator = SimulatorBackend
 
@@ -60,7 +53,6 @@ __all__ = [
     "SimulatorBackend",
     "FakeQPUBackend",
     "CudaQBackend",
-    "CUDAQ_AVAILABLE",
     "QuantumTensorEvaluator",  # Legacy alias
     # Device
     "Device",
