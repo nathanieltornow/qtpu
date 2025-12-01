@@ -18,7 +18,7 @@ from qtpu.runtime.timing import TimingBreakdown
 
 if TYPE_CHECKING:
     from qtpu.heinsum import HEinsum
-    from qtpu.tensor import QuantumTensor
+    from qtpu.core.tensor import QuantumTensor
 
 
 class _QuantumTensorFunction(Function):

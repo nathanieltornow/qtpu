@@ -11,7 +11,7 @@ from torch.autograd import Function
 if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
     from qiskit.primitives import BaseEstimatorV2
-    from qtpu.tensor import QuantumTensor
+    from qtpu.core.tensor import QuantumTensor
 
 
 class QuantumTensorFunction(Function):

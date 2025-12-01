@@ -32,7 +32,7 @@ from qiskit_addon_cutting.instructions import CutWire, Move
 from qiskit_addon_cutting.qpd import QPDMeasure, TwoQubitQPDGate
 
 from qtpu.heinsum import HEinsum
-from qtpu.tensor import CTensor, QuantumTensor, ISwitch
+from qtpu.core.tensor import CTensor, QuantumTensor, ISwitch
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray

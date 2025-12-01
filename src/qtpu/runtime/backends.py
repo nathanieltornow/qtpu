@@ -12,7 +12,7 @@ import torch
 if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
     from qiskit.primitives import BaseEstimatorV2
-    from qtpu.tensor import QuantumTensor
+    from qtpu.core.tensor import QuantumTensor
 
 
 # Check if CUDA-Q is available
@@ -350,7 +350,9 @@ class CudaQBackend(QuantumBackend):
         
         if qtensor_id not in self._kernel_cache:
             from qtpu.runtime.cudaq_converter import get_compiled_kernel
-            compute_func, free_param_names = get_compiled_kernel(qtensor)
+            compute_func, free_param_names = get_compiled_kernel(
+                qtensor.circuit, qtensor.shape
+            )
             self._kernel_cache[qtensor_id] = (compute_func, free_param_names)
         
         return self._kernel_cache[qtensor_id]
@@ -362,7 +364,7 @@ class CudaQBackend(QuantumBackend):
         dtype: torch.dtype,
         device: torch.device,
     ) -> tuple[torch.Tensor, float, float]:
-        from qtpu.runtime.cudaq_converter import _execute_compiled_kernel, _sanitize_param_name
+        from qtpu.runtime.cudaq_converter import execute_compiled_kernel
         
         start = perf_counter()
         
@@ -373,7 +375,7 @@ class CudaQBackend(QuantumBackend):
         compute_func, free_param_names = self._get_kernel(qtensor)
         
         # Execute the kernel
-        result_np = _execute_compiled_kernel(compute_func, free_param_names, params)
+        result_np = execute_compiled_kernel(compute_func, free_param_names, params)
         
         # Convert to torch tensor
         result = torch.tensor(result_np, dtype=dtype, device=device)

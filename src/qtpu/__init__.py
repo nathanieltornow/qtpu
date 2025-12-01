@@ -4,6 +4,14 @@ from __future__ import annotations
 
 from .compiler import cut
 from .transforms import circuit_to_heinsum
+from .core import (
+    QuantumTensor,
+    ISwitch,
+    CTensor,
+    TensorSpec,
+    HEinsum,
+    rand_regular_heinsum,
+)
 from .runtime import (
     HEinsumRuntime,
     HEinsumContractor,  # Backward compatibility
@@ -20,6 +28,13 @@ __all__ = [
     # Core
     "circuit_to_heinsum",
     "cut",
+    # Tensor
+    "QuantumTensor",
+    "ISwitch",
+    "CTensor",
+    "TensorSpec",
+    "HEinsum",
+    "rand_regular_heinsum",
     # Runtime
     "HEinsumRuntime",
     "HEinsumContractor",

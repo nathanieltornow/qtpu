@@ -1,7 +1,7 @@
-"""Convert QTPU QuantumTensor to CUDA-Q kernel code.
+"""Convert quantum circuits with ISwitches to CUDA-Q kernel code.
 
-This generates CUDA-Q Python kernel code from a QuantumTensor,
-where ISwitches become conditional statements (if/elif chains)
+This generates CUDA-Q Python kernel code from circuits containing ISwitch
+instructions, where ISwitches become conditional statements (if/elif chains)
 over the parameter indices.
 
 The generated kernel can be:
@@ -11,16 +11,18 @@ The generated kernel can be:
 
 This bridges QTPU's declarative tensor notation with CUDA-Q's
 imperative kernel programming model.
+
+Note: This module uses duck-typing for ISwitch detection to avoid
+circular imports with tensor.py. An ISwitch is detected by checking
+for the 'iswitch' instruction name.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 import numpy as np
 
-if TYPE_CHECKING:
-    from qtpu.tensor import QuantumTensor, ISwitch
+from qiskit.circuit import QuantumCircuit
 
 
 @dataclass
@@ -222,22 +224,28 @@ def _sanitize_param_name(name: str) -> str:
 
 
 def quantum_tensor_to_cudaq(
-    qtensor: "QuantumTensor",
+    circuit: QuantumCircuit,
+    shape: tuple[int, ...],
     kernel_name: str = "qtpu_kernel",
     param_values: dict[str, float] | None = None,
 ) -> str:
     """Generate complete CUDA-Q program that computes the full tensor.
 
+    The key speedup over SimulatorBackend: the kernel is compiled ONCE by CUDA-Q's
+    JIT compiler, then executed N times with different integer parameters. This
+    avoids regenerating circuit objects for each batch element.
+
     This generates a program that:
-    1. Defines the kernel with if/elif for ISwitches (handles arbitrary sub-circuits)
+    1. Defines the kernel with if statements for ISwitches (handles arbitrary sub-circuits)
     2. Computes Z⊗Z⊗...⊗Z expectation for all parameter combinations
-    3. Returns a numpy array matching qtensor.shape
+    3. Returns a numpy array matching the given shape
 
     The generated code uses cudaq.observe() with spin operators to compute
     expectation values, matching QTPU's behavior.
 
     Args:
-        qtensor: The QuantumTensor to convert.
+        circuit: The QuantumCircuit containing ISwitch instructions.
+        shape: The output tensor shape (from QuantumTensor.shape).
         kernel_name: Name for the generated kernel function.
         param_values: Values for free parameters (non-ISwitch). If None,
             free parameters become kernel arguments that can be passed
@@ -248,9 +256,7 @@ def quantum_tensor_to_cudaq(
         String containing complete executable CUDA-Q Python code.
     """
     from qiskit.circuit import Parameter
-    from qtpu.tensor import ISwitch
 
-    circuit = qtensor.circuit
     n_qubits = circuit.num_qubits
     param_values = param_values or {}
 
@@ -274,11 +280,15 @@ def quantum_tensor_to_cudaq(
         measured_qubits = list(range(n_qubits))
 
     # Collect ISwitch parameter info (these become int args)
+    # Use duck-typing: check for 'iswitch' instruction name
+    def _is_iswitch(op) -> bool:
+        return op.name == "iswitch"
+
     iswitch_params = {}  # param_name -> size (ordered)
     iswitch_instances = []  # Keep track of ISwitches for sub-circuit scanning
     iswitch_qubit_mapping = {}  # iswitch_id -> list of qubit indices in main circuit
     for instr in circuit:
-        if isinstance(instr.operation, ISwitch):
+        if _is_iswitch(instr.operation):
             iswitch = instr.operation
             iswitch_instances.append(iswitch)
             qubits = [circuit.qubits.index(q) for q in instr.qubits]
@@ -398,7 +408,7 @@ def quantum_tensor_to_cudaq(
             # QPD measures in the main circuit (outside ISwitches) are skipped
             # They should be handled via deferred measurement if needed
             continue
-        elif isinstance(op, ISwitch):
+        elif _is_iswitch(op):
             # Generate independent if statements for ISwitch
             # (Using if instead of elif avoids AST recursion depth issues)
             iswitch = op
@@ -496,69 +506,84 @@ def quantum_tensor_to_cudaq(
     else:
         lines.append(f"def compute_tensor() -> np.ndarray:")
 
-    lines.append(
-        f'    """Compute expectation values for all parameter combinations using async parallelism."""'
-    )
-    lines.append(f"    shape = {qtensor.shape}")
-    lines.append(f"    result = np.zeros(shape, dtype=np.float64)")
-    lines.append("")
-
-    # Generate async parallel execution
+    # Use CUDA-Q broadcasting - pass list of parameter values, get all results in one call
     iswitch_param_names_sanitized = [
         _sanitize_param_name(name) for name in iswitch_params.keys()
     ]
-    
+
+    lines.append(
+        f'    """Compute expectation values using CUDA-Q broadcasting."""'
+    )
+    lines.append(f"    shape = {shape}")
+    lines.append("")
+
     if len(iswitch_params) == 1:
-        # Single ISwitch - use simple async pattern
+        # Single ISwitch - use broadcasting with list of values
         param_name = iswitch_param_names_sanitized[0]
         size = list(iswitch_params.values())[0]
         
-        all_kernel_args_template = iswitch_param_names_sanitized + free_params_sanitized
-        args_template = ", ".join(all_kernel_args_template)
-        
-        lines.append(f"    # Launch all observe calls asynchronously")
-        lines.append(f"    futures = []")
-        lines.append(f"    for {param_name} in range({size}):")
-        lines.append(f"        futures.append(cudaq.observe_async({kernel_name}, hamiltonian, {args_template}))")
+        lines.append(f"    # Build parameter arrays for broadcasting")
+        lines.append(f"    {param_name}_values = list(range({size}))")
         lines.append("")
-        lines.append(f"    # Collect results")
-        lines.append(f"    for {param_name}, future in enumerate(futures):")
-        lines.append(f"        result[{param_name}] = future.get().expectation()")
+        
+        # Build args list for observe call
+        all_kernel_args = [f"{param_name}_values"] + free_params_sanitized
+        args = ", ".join(all_kernel_args)
+        
+        lines.append(f"    # Use CUDA-Q broadcasting - single call evaluates all batch elements")
+        lines.append(f"    results = cudaq.observe({kernel_name}, hamiltonian, {args})")
+        lines.append("")
+        lines.append(f"    # Extract expectation values")
+        lines.append(f"    result = np.array([r.expectation() for r in results], dtype=np.float64)")
+        lines.append(f"    return result.reshape(shape)")
     
     elif len(iswitch_params) > 1:
-        # Multiple ISwitches - use nested async with flat list
-        lines.append(f"    # Launch all observe calls asynchronously")
-        lines.append(f"    futures = []")
-        lines.append(f"    indices = []")
+        # Multiple ISwitches - use itertools.product for all combinations
+        lines.append(f"    import itertools")
+        lines.append("")
+        lines.append(f"    # Build parameter arrays for broadcasting")
         
-        indent = "    "
+        range_vars = []
         for orig_name, size in iswitch_params.items():
             sanitized = _sanitize_param_name(orig_name)
-            lines.append(f"{indent}for {sanitized} in range({size}):")
-            indent += "    "
-        
-        all_kernel_args = iswitch_param_names_sanitized + free_params_sanitized
-        args = ", ".join(all_kernel_args)
-        idx_tuple = ", ".join(iswitch_param_names_sanitized)
-        lines.append(f"{indent}futures.append(cudaq.observe_async({kernel_name}, hamiltonian, {args}))")
-        lines.append(f"{indent}indices.append(({idx_tuple}))")
+            lines.append(f"    {sanitized}_range = list(range({size}))")
+            range_vars.append(f"{sanitized}_range")
         
         lines.append("")
-        lines.append(f"    # Collect results")
-        lines.append(f"    for idx, future in zip(indices, futures):")
-        lines.append(f"        result[idx] = future.get().expectation()")
+        lines.append(f"    # Generate all parameter combinations")
+        ranges_str = ", ".join(range_vars)
+        lines.append(f"    all_combos = list(itertools.product({ranges_str}))")
+        lines.append("")
+        
+        # Create separate lists for each parameter
+        for i, orig_name in enumerate(iswitch_params.keys()):
+            sanitized = _sanitize_param_name(orig_name)
+            lines.append(f"    {sanitized}_values = [c[{i}] for c in all_combos]")
+        
+        lines.append("")
+        
+        # Build args list for observe call
+        param_value_vars = [f"{_sanitize_param_name(name)}_values" for name in iswitch_params.keys()]
+        all_kernel_args = param_value_vars + free_params_sanitized
+        args = ", ".join(all_kernel_args)
+        
+        lines.append(f"    # Use CUDA-Q broadcasting - single call evaluates all combinations")
+        lines.append(f"    results = cudaq.observe({kernel_name}, hamiltonian, {args})")
+        lines.append("")
+        lines.append(f"    # Extract expectation values and reshape to tensor")
+        lines.append(f"    result = np.array([r.expectation() for r in results], dtype=np.float64)")
+        lines.append(f"    return result.reshape(shape)")
     
     else:
         # No ISwitches - single call
+        lines.append(f"    result = np.zeros(shape, dtype=np.float64)")
         all_kernel_args = free_params_sanitized
         if all_kernel_args:
             args = ", ".join(all_kernel_args)
             lines.append(f"    result[()] = cudaq.observe({kernel_name}, hamiltonian, {args}).expectation()")
         else:
             lines.append(f"    result[()] = cudaq.observe({kernel_name}, hamiltonian).expectation()")
-
-    lines.append("")
-    lines.append("    return result")
+        lines.append(f"    return result")
 
     # Main block with argparse for free params
     lines.append("")
@@ -634,19 +659,20 @@ def run_quantum_tensor_cudaq(
     qtensor: "QuantumTensor",
     param_values: dict[str, float] | None = None,
 ) -> np.ndarray:
-    """Compile and execute a QuantumTensor using CUDA-Q.
+    """Compile and execute a circuit with ISwitches using CUDA-Q.
 
     Requires CUDA-Q to be installed.
 
     Args:
-        qtensor: The QuantumTensor to evaluate.
+        circuit: The QuantumCircuit containing ISwitch instructions.
+        shape: The output tensor shape.
         param_values: Values for free parameters (non-ISwitch params).
 
     Returns:
-        numpy array with shape matching qtensor.shape containing Z expectations.
+        numpy array with the given shape containing Z expectations.
     """
     param_values = param_values or {}
-    _, compute_func, free_param_names = compile_cudaq_kernel(qtensor)
+    _, compute_func, free_param_names = compile_cudaq_kernel(circuit, shape)
     return _execute_compiled_kernel(compute_func, free_param_names, param_values)
 
 
@@ -682,15 +708,17 @@ _temp_files: list[str] = []  # Track temp files for cleanup
 
 
 def compile_cudaq_kernel(
-    qtensor: "QuantumTensor",
+    circuit: QuantumCircuit,
+    shape: tuple[int, ...],
 ) -> tuple[object, callable, list[str]]:
-    """Compile a CUDA-Q kernel for a QuantumTensor and cache it.
+    """Compile a CUDA-Q kernel for a circuit with ISwitches and cache it.
     
     Uses importlib to load from a temp file (required by cudaq.kernel decorator
     which needs source code access). The module is cached for fast reuse.
     
     Args:
-        qtensor: The QuantumTensor to compile.
+        circuit: The QuantumCircuit containing ISwitch instructions.
+        shape: The output tensor shape.
         
     Returns:
         Tuple of (module, compute_func, free_param_names) where:
@@ -701,14 +729,14 @@ def compile_cudaq_kernel(
     import tempfile
     import importlib.util
     
-    # Use id of the qtensor as cache key
-    cache_key = id(qtensor)
+    # Use id of the circuit as cache key
+    cache_key = id(circuit)
     
     if cache_key in _compiled_kernel_cache:
         return _compiled_kernel_cache[cache_key][:3]
     
     # Generate the code without baked-in param values
-    code = quantum_tensor_to_cudaq(qtensor, param_values=None)
+    code = quantum_tensor_to_cudaq(circuit, shape, param_values=None)
     
     # Remove the main block (everything after if __name__)
     lines = code.split("\n")
@@ -748,19 +776,21 @@ def compile_cudaq_kernel(
 
 
 def get_compiled_kernel(
-    qtensor: "QuantumTensor",
+    circuit: QuantumCircuit,
+    shape: tuple[int, ...],
 ) -> tuple[callable, list[str]]:
-    """Get the compiled compute_tensor function for a QuantumTensor.
+    """Get the compiled compute_tensor function for a circuit.
     
     This compiles the kernel if not already cached.
     
     Args:
-        qtensor: The QuantumTensor to compile.
+        circuit: The QuantumCircuit containing ISwitch instructions.
+        shape: The output tensor shape.
         
     Returns:
         Tuple of (compute_func, free_param_names)
     """
-    _, compute_func, free_param_names = compile_cudaq_kernel(qtensor)
+    _, compute_func, free_param_names = compile_cudaq_kernel(circuit, shape)
     return compute_func, free_param_names
 
 
@@ -779,7 +809,8 @@ def clear_kernel_cache():
 
 
 def run_compiled_kernel(
-    qtensor: "QuantumTensor",
+    circuit: QuantumCircuit,
+    shape: tuple[int, ...],
     param_values: dict[str, float] | None = None,
 ) -> np.ndarray:
     """Run a compiled CUDA-Q kernel with the given parameters.
@@ -788,26 +819,35 @@ def run_compiled_kernel(
     Subsequent calls reuse the cached kernel (fast).
     
     Args:
-        qtensor: The QuantumTensor to evaluate.
+        circuit: The QuantumCircuit containing ISwitch instructions.
+        shape: The output tensor shape.
         param_values: Values for free parameters.
         
     Returns:
-        numpy array with shape matching qtensor.shape.
+        numpy array with the given shape.
     """
-    _, compute_func, free_param_names = compile_cudaq_kernel(qtensor)
+    _, compute_func, free_param_names = compile_cudaq_kernel(circuit, shape)
     return _execute_compiled_kernel(compute_func, free_param_names, param_values or {})
 
 
-def _run_cudaq_importlib(
-    qtensor: "QuantumTensor",
+def execute_compiled_kernel(
+    compute_func: callable,
+    free_param_names: list[str],
     param_values: dict[str, float],
 ) -> np.ndarray:
-    """Execute CUDA-Q kernel in-memory.
-
-    Uses caching for fast repeated evaluations.
-    First call includes JIT compilation overhead.
+    """Execute a pre-compiled compute_tensor function with parameters.
+    
+    This is the public version of _execute_compiled_kernel.
+    
+    Args:
+        compute_func: The compiled compute_tensor function.
+        free_param_names: List of parameter names the function expects.
+        param_values: Dict mapping parameter names to values.
+        
+    Returns:
+        numpy array result.
     """
-    return run_compiled_kernel(qtensor, param_values)
+    return _execute_compiled_kernel(compute_func, free_param_names, param_values)
 
 
 # =============================================================================
@@ -820,7 +860,7 @@ if __name__ == "__main__":
     sys.path.insert(0, "/home/nate/qtpu/src")
 
     from qiskit.circuit import QuantumCircuit, Parameter
-    from qtpu.tensor import QuantumTensor, ISwitch
+    from qtpu.core.tensor import QuantumTensor, ISwitch
 
     print("=" * 70)
     print("QuantumTensor to CUDA-Q Converter")

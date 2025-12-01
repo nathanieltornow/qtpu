@@ -4,9 +4,10 @@ from dataclasses import dataclass
 from itertools import product
 from typing import TYPE_CHECKING
 
-from qtpu.compiler._opt import get_pareto_frontier, CutPoint
 from qtpu.transforms import circuit_to_heinsum
-from qtpu.heinsum import HEinsum
+from qtpu.core.heinsum import HEinsum
+
+from ._opt import get_pareto_frontier, CutPoint
 
 if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
@@ -183,11 +184,11 @@ def optimize(
 
     Example:
         result = optimize(heinsum)
-        
+
         # Get all Pareto-optimal HEinsums
         for point, opt_heinsum in result.get_all_heinsums():
             print(f"c_cost={point.c_cost:.2e}, error={point.max_error:.3f}")
-        
+
         # Select best with constraint
         best = result.select_best(max_size=10, cost_weight=1.0)
         opt_heinsum = result.get_heinsum(best)
@@ -216,19 +217,20 @@ def optimize(
                 leafs=None,  # No cut needed
             )
             # Create a minimal result that just returns the original
-            from qtpu.compiler._ir import HybridCircuitIR
             from qtpu.transforms import remove_operations_by_name
-            
-            clean_circuit = remove_operations_by_name(qt.circuit, {"barrier"}, inplace=False)
-            
+
+            clean_circuit = remove_operations_by_name(
+                qt.circuit, {"barrier"}, inplace=False
+            )
+
             class DummyOptResult:
                 pareto_frontier = [dummy_point]
                 ir = None
                 _circuit = clean_circuit
-                
+
                 def get_cut_circuit(self, point):
                     return self._circuit
-            
+
             tensor_results.append((i, DummyOptResult()))
         else:
             # Raw circuit - optimize it
