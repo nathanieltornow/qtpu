@@ -81,6 +81,39 @@ class QuantumBackend(ABC):
         """
         ...
 
+    def sample(
+        self,
+        qtensor: "QuantumTensor",
+        indices: list[tuple[int, ...]],
+        params: dict[str, float],
+    ) -> list[tuple[tuple[int, ...], float]]:
+        """Sample specific indices from a quantum tensor.
+
+        This is used for approximate Monte Carlo contraction, where only
+        a subset of tensor elements are needed.
+
+        Default implementation evaluates the full tensor and extracts indices.
+        Backends that support efficient partial evaluation (like CudaQ) should
+        override this method.
+
+        Args:
+            qtensor: The quantum tensor to sample.
+            indices: List of index tuples to evaluate.
+            params: Circuit parameters (rotation angles, etc.).
+
+        Returns:
+            List of (index_tuple, expectation_value) pairs.
+        """
+        # Default: evaluate full tensor and extract
+        result, _, _ = self.evaluate(qtensor, params, torch.float64, torch.device("cpu"))
+        result_np = result.numpy()
+        
+        samples = []
+        for idx in indices:
+            val = float(result_np[idx])
+            samples.append((idx, val))
+        return samples
+
 
 class SimulatorBackend(QuantumBackend):
     """Statevector/density matrix simulation backend using Qiskit Aer.
@@ -161,18 +194,40 @@ class SimulatorBackend(QuantumBackend):
         return result, eval_time, 0.0
 
     def _get_z_observable(self, circuit: "QuantumCircuit") -> str:
-        """Get Z observable string for measured qubits."""
+        """Get Z observable string for measured qubits.
+        
+        Rules:
+        - Qubits with a measure gate → Z (we want the expectation)
+        - Qubits whose last operation is reset → I (traced out, wire cut prep side)
+        - Other qubits → Z (default)
+        """
+        n_qubits = circuit.num_qubits
+        
+        # Track measured qubits and last operation per qubit
         measured = set()
+        last_op = {}  # qubit_idx -> last operation name
+        
         for instr in circuit:
-            if instr.operation.name == "measure":
-                measured.add(circuit.qubits.index(instr.qubits[0]))
-
-        if not measured:
-            return "Z" * circuit.num_qubits
-
-        obs = ["I"] * circuit.num_qubits
-        for q in measured:
-            obs[q] = "Z"
+            op_name = instr.operation.name
+            for qubit in instr.qubits:
+                q_idx = circuit.qubits.index(qubit)
+                last_op[q_idx] = op_name
+                if op_name == "measure":
+                    measured.add(q_idx)
+        
+        # Build observable
+        obs = []
+        for q in range(n_qubits):
+            if q in measured:
+                # Qubit is measured → use Z
+                obs.append("Z")
+            elif last_op.get(q) == "reset":
+                # Qubit's last op is reset → traced out, use I
+                obs.append("I")
+            else:
+                # Default to Z
+                obs.append("Z")
+        
         return "".join(reversed(obs))
 
 
@@ -695,6 +750,41 @@ class CudaQBackend(QuantumBackend):
         result = torch.tensor(result_np, dtype=dtype, device=device)
 
         return result, exec_time, 0.0
+
+    def sample(
+        self,
+        qtensor: "QuantumTensor",
+        indices: list[tuple[int, ...]],
+        params: dict[str, float],
+    ) -> list[tuple[tuple[int, ...], float]]:
+        """Sample specific indices from a quantum tensor.
+
+        Uses the compiled sample_tensor function for efficient evaluation
+        of only the specified indices (via CUDA-Q broadcasting).
+
+        Args:
+            qtensor: The quantum tensor to sample.
+            indices: List of index tuples to evaluate.
+            params: Circuit parameters (rotation angles, etc.).
+
+        Returns:
+            List of (index_tuple, expectation_value) pairs.
+        """
+        qtensor_id = id(qtensor)
+        
+        # Ensure target is set
+        self._ensure_target()
+
+        # Get compiled tensor (compile if needed)
+        if qtensor_id not in self._compiled_cache:
+            compile_start = perf_counter()
+            self._compiled_cache[qtensor_id] = qtensor.compile(warmup=self._warmup)
+            self._compilation_times[qtensor_id] = perf_counter() - compile_start
+        
+        compiled = self._compiled_cache[qtensor_id]
+
+        # Use the sample method with explicit indices
+        return compiled.sample(indices=indices, **params)
 
     def clear_cache(self):
         """Clear the compiled tensor cache."""

@@ -78,6 +78,11 @@ def extract_gate_info(
             # Skip adding as a gate - will be handled separately
             continue
 
+        # Skip reset operations - they are handled implicitly in wire cut decomposition
+        # by only measuring ancilla qubits, not the main qubit after reset
+        if name == "reset":
+            continue
+
         # Map Qiskit gate names to CUDA-Q
         name_map = {
             "h": "h",
@@ -88,6 +93,8 @@ def extract_gate_info(
             "t": "t",
             "sdg": "s.adj",
             "tdg": "t.adj",
+            "sx": "rx",  # sqrt(X) = rx(pi/2)
+            "sxdg": "rx",  # sqrt(X)^dag = rx(-pi/2)
             "rx": "rx",
             "ry": "ry",
             "rz": "rz",
@@ -99,7 +106,26 @@ def extract_gate_info(
         if name in name_map:
             cudaq_name = name_map[name]
 
-            if name in ("cx", "cz"):
+            # Handle sx and sxdg: they become rx(pi/2) and rx(-pi/2)
+            if name == "sx":
+                import math
+                gates.append(
+                    CudaQGate(
+                        name="rx",
+                        qubits=qubits,
+                        params=[math.pi / 2],
+                    )
+                )
+            elif name == "sxdg":
+                import math
+                gates.append(
+                    CudaQGate(
+                        name="rx",
+                        qubits=qubits,
+                        params=[-math.pi / 2],
+                    )
+                )
+            elif name in ("cx", "cz"):
                 # Control gate
                 gates.append(
                     CudaQGate(
@@ -324,6 +350,27 @@ def quantum_tensor_to_cudaq(
         ancilla_offset[id(iswitch)] = offset
         offset += max_qpd_measures_per_iswitch[id(iswitch)]
 
+    # Track which main qubits should be traced out (I observable)
+    # A qubit should use I if it has an ISwitch where ALL variants end with reset
+    # This is the wire cut prep side scenario
+    traced_out_qubits = set()
+    for iswitch in iswitch_instances:
+        qubits = iswitch_qubit_mapping[id(iswitch)]
+        # Check if ALL variants end with reset
+        all_end_with_reset = True
+        for i in range(iswitch.size):
+            sub_circuit = iswitch._selector(i)
+            if sub_circuit.data:
+                last_op = sub_circuit.data[-1].operation.name.lower()
+                if last_op != "reset":
+                    all_end_with_reset = False
+                    break
+            else:
+                all_end_with_reset = False
+                break
+        if all_end_with_reset:
+            traced_out_qubits.update(qubits)
+
     # Find ALL parameters including those in ISwitch sub-circuits
     all_param_names = {p.name for p in circuit.parameters}
 
@@ -472,25 +519,55 @@ def quantum_tensor_to_cudaq(
 
     # Build Z observable for measured qubits AND ancilla qubits
     # Ancilla qubits hold the deferred QPD measurement outcomes
+    # Main qubits that are traced out (wire cut prep side) use I observable
     lines.append("")
 
-    # Collect all qubits that should be in the observable
-    observable_qubits = list(measured_qubits)
+    # Build observable: Z for measured/active qubits, I for traced out qubits
+    observable_qubits = []
+    
+    # Add main qubits that are NOT traced out
+    for q in measured_qubits:
+        if q not in traced_out_qubits:
+            observable_qubits.append(q)
 
-    # Add ancilla qubits (they hold deferred measurement results)
+    # Add ancilla qubits (they hold deferred measurement results from QPD measures)
     if total_ancillas > 0:
         ancilla_qubits = list(range(n_qubits, n_total_qubits))
         observable_qubits.extend(ancilla_qubits)
-        lines.append(
-            f"# Z⊗Z⊗...⊗Z observable on measured qubits ({measured_qubits}) and ancillas ({ancilla_qubits})"
-        )
+        
+        if traced_out_qubits:
+            lines.append(
+                f"# Z observable on active qubits + ancillas, I on traced-out qubits {sorted(traced_out_qubits)}"
+            )
+        else:
+            lines.append(
+                f"# Z⊗Z⊗...⊗Z observable on measured qubits ({measured_qubits}) and ancillas ({ancilla_qubits})"
+            )
     else:
-        lines.append("# Z⊗Z⊗...⊗Z observable on measured qubits")
+        if traced_out_qubits:
+            lines.append(
+                f"# Z observable on active qubits, I on traced-out qubits {sorted(traced_out_qubits)}"
+            )
+        else:
+            lines.append("# Z⊗Z⊗...⊗Z observable on measured qubits")
 
-    if len(observable_qubits) == 1:
-        lines.append(f"hamiltonian = spin.z({observable_qubits[0]})")
+    # Build observable: Z for active qubits, I for traced-out qubits
+    # All qubits must be in the observable for CudaQ
+    all_obs_qubits = sorted(set(observable_qubits) | traced_out_qubits)
+    
+    if len(all_obs_qubits) == 1:
+        q = all_obs_qubits[0]
+        if q in traced_out_qubits:
+            lines.append(f"hamiltonian = spin.i({q})")
+        else:
+            lines.append(f"hamiltonian = spin.z({q})")
     else:
-        obs_parts = [f"spin.z({q})" for q in observable_qubits]
+        obs_parts = []
+        for q in all_obs_qubits:
+            if q in traced_out_qubits:
+                obs_parts.append(f"spin.i({q})")
+            else:
+                obs_parts.append(f"spin.z({q})")
         lines.append(f"hamiltonian = {' * '.join(obs_parts)}")
 
     lines.append("")
@@ -598,6 +675,107 @@ def quantum_tensor_to_cudaq(
                 f"    result[()] = cudaq.observe({kernel_name}, hamiltonian).expectation()"
             )
         lines.append(f"    return result")
+
+    # Generate sample_tensor function for sampling from index space
+    lines.append("")
+    lines.append("")
+
+    # Function signature includes num_samples OR indices, plus free params
+    if free_params_sanitized:
+        func_args = ", ".join(f"{name}: float" for name in free_params_sanitized)
+        lines.append(f"def sample_tensor(num_samples: int | None = None, indices: list[tuple[int, ...]] | None = None, {func_args}) -> list[tuple[tuple[int, ...], float]]:")
+    else:
+        lines.append(f"def sample_tensor(num_samples: int | None = None, indices: list[tuple[int, ...]] | None = None) -> list[tuple[tuple[int, ...], float]]:")
+
+    lines.append(f'    """Sample from the index space and compute expectation values.')
+    lines.append(f'    ')
+    lines.append(f'    Instead of computing the full tensor, this samples indices from the index space')
+    lines.append(f'    and only evaluates those using CUDA-Q broadcasting.')
+    lines.append(f'    ')
+    lines.append(f'    Either provide num_samples (for random sampling) or indices (for explicit indices).')
+    lines.append(f'    ')
+    lines.append(f'    Args:')
+    lines.append(f'        num_samples: Number of random indices to sample. Mutually exclusive with indices.')
+    lines.append(f'        indices: Explicit list of index tuples to evaluate. Mutually exclusive with num_samples.')
+    if free_params_sanitized:
+        for name in free_params_sanitized:
+            lines.append(f'        {name}: Value for parameter {name}.')
+    lines.append(f'    ')
+    lines.append(f'    Returns:')
+    lines.append(f'        List of (index_tuple, expectation_value) pairs.')
+    lines.append(f'    """')
+    lines.append(f"    shape = {shape}")
+    lines.append("")
+    lines.append(f"    # Validate arguments")
+    lines.append(f"    if num_samples is None and indices is None:")
+    lines.append(f"        raise ValueError('Must provide either num_samples or indices')")
+    lines.append(f"    if num_samples is not None and indices is not None:")
+    lines.append(f"        raise ValueError('Cannot provide both num_samples and indices')")
+    lines.append("")
+
+    if len(iswitch_params) == 0:
+        # No ISwitches - just return single value
+        lines.append(f"    # No ISwitch parameters - single value")
+        if free_params_sanitized:
+            args = ", ".join(free_params_sanitized)
+            lines.append(f"    val = cudaq.observe({kernel_name}, hamiltonian, {args}).expectation()")
+        else:
+            lines.append(f"    val = cudaq.observe({kernel_name}, hamiltonian).expectation()")
+        lines.append(f"    n = num_samples if num_samples is not None else len(indices)")
+        lines.append(f"    return [((), val)] * n")
+    elif len(iswitch_params) == 1:
+        # Single ISwitch - sample from one dimension
+        param_name = iswitch_param_names_sanitized[0]
+        size = list(iswitch_params.values())[0]
+
+        lines.append(f"    # Get indices to evaluate")
+        lines.append(f"    if indices is not None:")
+        lines.append(f"        sampled_indices = [idx[0] if isinstance(idx, tuple) else idx for idx in indices]")
+        lines.append(f"    else:")
+        lines.append(f"        sampled_indices = [np.random.randint(0, {size}) for _ in range(num_samples)]")
+        lines.append("")
+        lines.append(f"    # Use CUDA-Q broadcasting for all indices")
+        
+        all_kernel_args = ["sampled_indices"] + free_params_sanitized
+        args = ", ".join(all_kernel_args)
+        lines.append(f"    results = cudaq.observe({kernel_name}, hamiltonian, {args})")
+        lines.append("")
+        lines.append(f"    # Build result list of (index_tuple, value) pairs")
+        lines.append(f"    return [((idx,), r.expectation()) for idx, r in zip(sampled_indices, results)]")
+    else:
+        # Multiple ISwitches - sample from multi-dimensional space
+        lines.append(f"    # Get indices to evaluate")
+        lines.append(f"    if indices is not None:")
+        lines.append(f"        sampled_indices = [tuple(idx) for idx in indices]")
+        lines.append(f"    else:")
+        lines.append(f"        sampled_indices = []")
+        lines.append(f"        for _ in range(num_samples):")
+        
+        # Build tuple of random indices
+        rand_parts = []
+        for orig_name, size in iswitch_params.items():
+            rand_parts.append(f"np.random.randint(0, {size})")
+        lines.append(f"            sampled_indices.append(({', '.join(rand_parts)},))")
+        lines.append("")
+        
+        # Create separate lists for each parameter dimension
+        for i, orig_name in enumerate(iswitch_params.keys()):
+            sanitized = _sanitize_param_name(orig_name)
+            lines.append(f"    {sanitized}_values = [idx[{i}] for idx in sampled_indices]")
+        lines.append("")
+        
+        # Build args for observe call
+        param_value_vars = [
+            f"{_sanitize_param_name(name)}_values" for name in iswitch_params.keys()
+        ]
+        all_kernel_args = param_value_vars + free_params_sanitized
+        args = ", ".join(all_kernel_args)
+        
+        lines.append(f"    # Use CUDA-Q broadcasting for all indices")
+        lines.append(f"    results = cudaq.observe({kernel_name}, hamiltonian, {args})")
+        lines.append("")
+        lines.append(f"    # Build result list of (index_tuple, value) pairs")
+        lines.append(f"    return [(idx, r.expectation()) for idx, r in zip(sampled_indices, results)]")
 
     # Generate warmup_jit function - calls kernel once with minimal input to trigger JIT
     lines.append("")
@@ -709,15 +887,16 @@ def run_quantum_tensor_cudaq(
     Requires CUDA-Q to be installed.
 
     Args:
-        circuit: The QuantumCircuit containing ISwitch instructions.
-        shape: The output tensor shape.
+        qtensor: The QuantumTensor to compile and execute.
         param_values: Values for free parameters (non-ISwitch params).
 
     Returns:
         numpy array with the given shape containing Z expectations.
     """
     param_values = param_values or {}
-    _, compute_func, free_param_names = compile_cudaq_kernel(circuit, shape)
+    _, compute_func, free_param_names = compile_cudaq_kernel(
+        qtensor.circuit, qtensor.shape
+    )
     return _execute_compiled_kernel(compute_func, free_param_names, param_values)
 
 
@@ -768,6 +947,7 @@ def compile_cudaq_kernel(
     Returns:
         Tuple of (module, compute_func, free_param_names) where:
         - module: The loaded module containing the CUDA-Q kernel
+            (also has sample_tensor and warmup_jit functions)
         - compute_func: The compute_tensor function
         - free_param_names: List of free parameter names (sanitized) that need values
     """
@@ -943,6 +1123,7 @@ class CompiledQuantumTensor:
         
         self._qtensor = qtensor
         self._compiled_fn: callable | None = None
+        self._sample_fn: callable | None = None
         self._warmup_fn: callable | None = None
         self._free_param_names: list[str] = []
         self._jit_warmup_done: bool = False
@@ -1012,7 +1193,8 @@ class CompiledQuantumTensor:
             self._qtensor.circuit, self._qtensor.shape
         )
         
-        # Get warmup_jit function if available
+        # Get sample_tensor and warmup_jit functions if available
+        self._sample_fn = getattr(module, 'sample_tensor', None)
         self._warmup_fn = getattr(module, 'warmup_jit', None)
 
     def __call__(self, **params: float) -> np.ndarray:
@@ -1065,10 +1247,87 @@ class CompiledQuantumTensor:
         """
         return self(**params)
 
+    def sample(
+        self,
+        num_samples: int | None = None,
+        indices: list[tuple[int, ...]] | None = None,
+        **params: float,
+    ) -> list[tuple[tuple[int, ...], float]]:
+        """Sample from the index space and compute expectation values.
+
+        Instead of computing the full tensor (which requires evaluating all
+        index combinations), this samples indices from the index space
+        and only evaluates those using CUDA-Q broadcasting. This is useful
+        for large tensors where computing all elements is expensive.
+
+        Either provide num_samples (for random sampling) or indices (for explicit
+        index tuples to evaluate).
+
+        Args:
+            num_samples: Number of random index assignments to sample.
+                Mutually exclusive with indices.
+            indices: Explicit list of index tuples to evaluate.
+                Mutually exclusive with num_samples.
+                E.g., [(0, 1), (2, 3), (1, 0)] for a 2D tensor.
+            **params: Values for free parameters (rotation angles, etc.).
+
+        Returns:
+            List of (index_tuple, expectation_value) pairs, where:
+            - index_tuple: The index assignment (e.g., (0, 2, 1) for
+              a 3-dimensional tensor)
+            - expectation_value: The computed Z⊗Z⊗...⊗Z expectation for
+              that index assignment
+
+        Example:
+            >>> compiled = qtensor.compile("cudaq")
+            >>> # Sample 100 random index assignments
+            >>> samples = compiled.sample(num_samples=100)
+            >>> for idx, val in samples[:5]:
+            ...     print(f"Index {idx}: {val:.4f}")
+            Index (0,): 0.7071
+            Index (2,): -0.5000
+            Index (1,): 0.0000
+            ...
+            >>> # Evaluate specific indices
+            >>> samples = compiled.sample(indices=[(0,), (1,), (2,), (3,)])
+            >>> # With free parameters
+            >>> samples = compiled.sample(num_samples=50, theta=0.5, phi=1.2)
+        """
+        self._ensure_compiled()
+
+        if self._sample_fn is None:
+            raise RuntimeError(
+                "Sample function not available. This may happen if the kernel "
+                "was compiled with an older version of the code generator."
+            )
+
+        # Build kwargs for the sample function
+        kwargs = {}
+        for name in self._free_param_names:
+            if name in params:
+                kwargs[name] = params[name]
+            else:
+                # Try to find parameter with original name (e.g., 'theta[0]' vs 'theta_0')
+                for orig_name, val in params.items():
+                    if _sanitize_param_name(orig_name) == name:
+                        kwargs[name] = val
+                        break
+                else:
+                    if name not in kwargs:
+                        raise ValueError(
+                            f"Missing parameter: '{name}'. "
+                            f"Required: {self._free_param_names}"
+                        )
+
+        return self._sample_fn(num_samples=num_samples, indices=indices, **kwargs)
+
     def clear_cache(self) -> None:
         """Clear the compiled kernel cache, forcing recompilation on next call."""
         self._compiled_fn = None
+        self._sample_fn = None
+        self._warmup_fn = None
         self._free_param_names = []
+        self._jit_warmup_done = False
 
     def __repr__(self) -> str:
         status = "compiled" if self.is_compiled else "not compiled"
