@@ -313,11 +313,14 @@ class CudaQBackend(QuantumBackend):
         Subsequent evaluations of the same qtensor reuse the cached kernel.
     """
 
-    def __init__(self, target: str = "qpp-cpu"):
+    def __init__(self, target: str = "qpp-cpu", warmup: bool = True):
         self._target = target
         self._target_set = False
         # Per-qtensor cache: qtensor_id -> CompiledQuantumTensor
         self._compiled_cache: dict[int, "CompiledQuantumTensor"] = {}
+        # Track compilation times
+        self._compilation_times: dict[int, float] = {}
+        self._warmup = warmup
 
     @property
     def name(self) -> str:
@@ -327,6 +330,11 @@ class CudaQBackend(QuantumBackend):
     def target(self) -> str:
         """The CUDA-Q target backend."""
         return self._target
+
+    @property
+    def total_compilation_time(self) -> float:
+        """Total time spent compiling quantum tensors."""
+        return sum(self._compilation_times.values())
 
     def _ensure_target(self):
         """Set the CUDA-Q target if not already set."""
@@ -339,14 +347,25 @@ class CudaQBackend(QuantumBackend):
                     pass  # Target may not be available
             self._target_set = True
 
-    def _get_compiled(self, qtensor: "QuantumTensor") -> "CompiledQuantumTensor":
-        """Get or create the compiled tensor for a qtensor."""
+    def _get_compiled(
+        self, qtensor: "QuantumTensor"
+    ) -> tuple["CompiledQuantumTensor", float]:
+        """Get or create the compiled tensor for a qtensor.
+
+        Returns:
+            Tuple of (compiled_tensor, compilation_time).
+            compilation_time is 0 if tensor was already cached.
+        """
         qtensor_id = id(qtensor)
+        compile_time = 0.0
 
         if qtensor_id not in self._compiled_cache:
-            self._compiled_cache[qtensor_id] = qtensor.compile()
+            compile_start = perf_counter()
+            self._compiled_cache[qtensor_id] = qtensor.compile(warmup=self._warmup)
+            compile_time = perf_counter() - compile_start
+            self._compilation_times[qtensor_id] = compile_time
 
-        return self._compiled_cache[qtensor_id]
+        return self._compiled_cache[qtensor_id], compile_time
 
     def evaluate(
         self,
@@ -354,24 +373,34 @@ class CudaQBackend(QuantumBackend):
         params: dict[str, float],
         dtype: torch.dtype,
         device: torch.device,
-    ) -> tuple[torch.Tensor, float, float]:
+    ) -> tuple[torch.Tensor, float, float, float]:
+        """Evaluate a quantum tensor.
+
+        Returns:
+            Tuple of (result, eval_time, qpu_time, compile_time).
+            compile_time is 0 if tensor was already compiled.
+        """
         start = perf_counter()
 
         # Ensure target is set (only done once)
         self._ensure_target()
 
         # Get cached compiled tensor (compiles on first call)
-        compiled = self._get_compiled(qtensor)
+        compiled, compile_time = self._get_compiled(qtensor)
 
         # Execute the compiled tensor
+        exec_start = perf_counter()
         result_np = compiled(**params)
+        exec_time = perf_counter() - exec_start
 
         # Convert to torch tensor
         result = torch.tensor(result_np, dtype=dtype, device=device)
 
-        eval_time = perf_counter() - start
-        return result, eval_time, 0.0
+        total_time = perf_counter() - start
+        # Return: result, total_eval_time (excluding compile), qpu_time, compile_time
+        return result, exec_time, 0.0, compile_time
 
     def clear_cache(self):
         """Clear the compiled tensor cache."""
         self._compiled_cache.clear()
+        self._compilation_times.clear()

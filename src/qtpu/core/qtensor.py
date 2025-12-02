@@ -106,7 +106,7 @@ class QuantumTensor:
         indices = np.ndindex(self.shape)
         return [self[tuple(idx)] for idx in indices]
 
-    def compile(self) -> "CompiledQuantumTensor":
+    def compile(self, warmup: bool = True) -> "CompiledQuantumTensor":
         """Compile this quantum tensor for fast repeated evaluation.
 
         Compiles the quantum circuit to CUDA-Q for efficient execution.
@@ -128,7 +128,7 @@ class QuantumTensor:
         """
         from qtpu.compiler.codegen import CompiledQuantumTensor
 
-        return CompiledQuantumTensor(self)
+        return CompiledQuantumTensor(self, warmup=warmup)
 
     @classmethod
     def from_shape(

@@ -188,8 +188,18 @@ class HEinsumRuntime:
         Returns:
             self for chaining.
         """
+        total_start = perf_counter()
+        
+        # Track preprocessing timing
+        self._prep_timing = TimingBreakdown(
+            device=str(self.device),
+            backend=self._backend.name if hasattr(self._backend, 'name') else str(type(self._backend).__name__),
+        )
+        
         inputs, output = ctg.utils.eq_to_inputs_output(self.heinsum.einsum_expr)
         
+        # Optimization phase
+        opt_start = perf_counter()
         if optimize and len(inputs) > 1:
             opt_kwargs = opt_kwargs or {}
             opt_kwargs.setdefault("on_trial_error", "ignore")
@@ -201,6 +211,7 @@ class HEinsumRuntime:
                 self._tree = opt.search(inputs, output, self.heinsum.size_dict)
             except (KeyError, ValueError):
                 self._tree = None
+        self._prep_timing.optimization_time = perf_counter() - opt_start
         
         # Build contraction function
         if self._tree is not None:
@@ -216,6 +227,15 @@ class HEinsumRuntime:
         else:
             expr = self.heinsum.einsum_expr
             self._contract_fn = lambda arrays: torch.einsum(expr, *arrays)
+        
+        self._prep_timing.total_time = perf_counter() - total_start
+        self._prepared = True
+        return self
+    
+    @property
+    def prep_timing(self) -> TimingBreakdown | None:
+        """Get the preprocessing timing from prepare()."""
+        return getattr(self, '_prep_timing', None)
         
         self._prepared = True
         return self
@@ -299,11 +319,12 @@ class HEinsumRuntime:
         total_start = perf_counter()
         
         # Evaluate quantum tensors
-        quantum_results, q_eval_time, q_qpu_time, n_circuits = self._eval_quantum(
+        quantum_results, q_eval_time, q_qpu_time, q_compile_time, n_circuits = self._eval_quantum(
             circuit_params
         )
         timing.quantum_eval_time = q_eval_time
         timing.quantum_estimated_qpu_time = q_qpu_time
+        timing.circuit_compilation_time = q_compile_time
         timing.num_circuits = n_circuits
         
         # Prepare classical tensors
@@ -334,11 +355,11 @@ class HEinsumRuntime:
     def _eval_quantum(
         self,
         params: dict[str, torch.Tensor],
-    ) -> tuple[list[torch.Tensor], float, float, int]:
+    ) -> tuple[list[torch.Tensor], float, float, float, int]:
         """Evaluate all quantum tensors.
         
         Returns:
-            Tuple of (results, eval_time, estimated_qpu_time, num_circuits)
+            Tuple of (results, eval_time, estimated_qpu_time, compile_time, num_circuits)
         """
         requires_grad = any(
             isinstance(v, torch.Tensor) and v.requires_grad
@@ -353,6 +374,7 @@ class HEinsumRuntime:
         results = []
         total_eval_time = 0.0
         total_qpu_time = 0.0
+        total_compile_time = 0.0
         total_circuits = 0
         
         for i, qtensor in enumerate(self.heinsum.quantum_tensors):
@@ -371,15 +393,23 @@ class HEinsumRuntime:
                 results.append(result)
                 total_circuits += int(np.prod(qtensor.shape)) if qtensor.shape else 1
             else:
-                result, eval_time, qpu_time = self._backend.evaluate(
+                # Backend.evaluate returns (result, eval_time, qpu_time) or 
+                # (result, eval_time, qpu_time, compile_time) for CudaQ
+                eval_result = self._backend.evaluate(
                     qtensor, float_params, self.dtype, self.device
                 )
+                if len(eval_result) == 4:
+                    result, eval_time, qpu_time, compile_time = eval_result
+                    total_compile_time += compile_time
+                else:
+                    result, eval_time, qpu_time = eval_result
+                    
                 results.append(result)
                 total_eval_time += eval_time
                 total_qpu_time += qpu_time
                 total_circuits += int(np.prod(qtensor.shape)) if qtensor.shape else 1
         
-        return results, total_eval_time, total_qpu_time, total_circuits
+        return results, total_eval_time, total_qpu_time, total_compile_time, total_circuits
     
     def _contract_sliced(self, operands: list[torch.Tensor]) -> torch.Tensor:
         """Contract with slicing for large tensor networks."""

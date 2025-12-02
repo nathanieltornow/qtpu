@@ -599,6 +599,37 @@ def quantum_tensor_to_cudaq(
             )
         lines.append(f"    return result")
 
+    # Generate warmup_jit function - calls kernel once with minimal input to trigger JIT
+    lines.append("")
+    lines.append("")
+    
+    # Build warmup function signature (same as compute_tensor)
+    if free_params_sanitized:
+        func_args = ", ".join(f"{name}: float = 0.0" for name in free_params_sanitized)
+        lines.append(f"def warmup_jit({func_args}) -> None:")
+    else:
+        lines.append(f"def warmup_jit() -> None:")
+    
+    lines.append(f'    """Trigger CUDA-Q JIT compilation with a single kernel call.')
+    lines.append(f'    ')
+    lines.append(f'    This runs the kernel once with minimal input (index 0) to force')
+    lines.append(f'    JIT compilation. Subsequent calls to compute_tensor will be fast.')
+    lines.append(f'    """')
+    
+    # Generate single kernel call with index 0 for each ISwitch parameter
+    if iswitch_param_names_sanitized:
+        # Call with first index for each ISwitch param
+        warmup_args = ["0"] * len(iswitch_param_names_sanitized) + free_params_sanitized
+        warmup_args_str = ", ".join(warmup_args)
+        lines.append(f"    _ = cudaq.observe({kernel_name}, hamiltonian, {warmup_args_str}).expectation()")
+    else:
+        # No ISwitches - just call once
+        if free_params_sanitized:
+            warmup_args_str = ", ".join(free_params_sanitized)
+            lines.append(f"    _ = cudaq.observe({kernel_name}, hamiltonian, {warmup_args_str}).expectation()")
+        else:
+            lines.append(f"    _ = cudaq.observe({kernel_name}, hamiltonian).expectation()")
+
     # Main block with argparse for free params
     lines.append("")
     lines.append("")
@@ -899,17 +930,53 @@ class CompiledQuantumTensor:
         >>> result = compiled(theta=0.5)  # Pass rotation parameters
     """
 
-    def __init__(self, qtensor: "QuantumTensor"):
+    def __init__(self, qtensor: "QuantumTensor", warmup: bool = True):
         """Initialize a compiled quantum tensor.
 
         Args:
             qtensor: The QuantumTensor to compile.
+            warmup: If True, run a warmup execution to trigger JIT compilation
+                during initialization. This moves the JIT overhead to compile
+                time rather than first execution time.
         """
         from qtpu.core.qtensor import QuantumTensor
         
         self._qtensor = qtensor
         self._compiled_fn: callable | None = None
+        self._warmup_fn: callable | None = None
         self._free_param_names: list[str] = []
+        self._jit_warmup_done: bool = False
+        
+        # Compile immediately
+        self._ensure_compiled()
+        
+        # Optionally run warmup to trigger CUDA-Q JIT compilation
+        if warmup:
+            self._warmup()
+
+    def _warmup(self) -> None:
+        """Run a warmup execution to trigger CUDA-Q JIT compilation.
+        
+        This calls the kernel once with index 0 (not full broadcast).
+        The result is discarded - this just warms up the JIT.
+        """
+        if self._jit_warmup_done:
+            return
+        
+        if self._warmup_fn is None:
+            return
+        
+        try:
+            if self._free_param_names:
+                # Provide dummy values for free parameters
+                kwargs = {name: 0.0 for name in self._free_param_names}
+                self._warmup_fn(**kwargs)
+            else:
+                self._warmup_fn()
+            self._jit_warmup_done = True
+        except Exception:
+            # If warmup fails, we'll just pay JIT cost on first real call
+            pass
 
     @property
     def qtensor(self) -> QuantumTensor:
@@ -930,15 +997,23 @@ class CompiledQuantumTensor:
     def is_compiled(self) -> bool:
         """Whether the kernel has been compiled."""
         return self._compiled_fn is not None
+    
+    @property
+    def is_jit_warmed(self) -> bool:
+        """Whether JIT warmup has been done."""
+        return self._jit_warmup_done
 
     def _ensure_compiled(self) -> None:
         """Compile the kernel if not already compiled."""
         if self._compiled_fn is not None:
             return
 
-        _, self._compiled_fn, self._free_param_names = compile_cudaq_kernel(
+        module, self._compiled_fn, self._free_param_names = compile_cudaq_kernel(
             self._qtensor.circuit, self._qtensor.shape
         )
+        
+        # Get warmup_jit function if available
+        self._warmup_fn = getattr(module, 'warmup_jit', None)
 
     def __call__(self, **params: float) -> np.ndarray:
         """Evaluate the compiled quantum tensor.
