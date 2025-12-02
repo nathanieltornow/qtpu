@@ -19,8 +19,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from qiskit.circuit import QuantumCircuit, Parameter
 
-from qtpu.heinsum import HEinsum
-from qtpu.tensor import QuantumTensor, TensorSpec, ISwitch, CTensor
+from qtpu.core import HEinsum, QuantumTensor, TensorSpec, ISwitch, CTensor
 from qtpu.runtime import HEinsumContractor
 
 
