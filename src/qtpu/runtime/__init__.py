@@ -21,6 +21,12 @@ Example:
     >>> # Or use CUDA-Q for GPU-accelerated quantum simulation
     >>> runtime = HEinsumRuntime(heinsum, backend="cudaq-nvidia")
     >>> result, timing = runtime.execute(input_tensors=[x])
+    
+    >>> # Hybrid: CudaQ JIT compilation + Fake QPU timing estimation
+    >>> runtime = HEinsumRuntime(heinsum, backend="fake_qpu_cudaq-nvidia")
+    >>> result, timing = runtime.execute(input_tensors=[x])
+    >>> # timing.quantum_eval_time = actual CudaQ simulation time
+    >>> # timing.quantum_estimated_qpu_time = estimated real QPU time
 """
 
 from qtpu.runtime.timing import (
@@ -31,6 +37,7 @@ from qtpu.runtime.backends import (
     QuantumBackend,
     SimulatorBackend,
     FakeQPUBackend,
+    FakeQPUCudaQBackend,
     CudaQBackend,
 )
 from qtpu.runtime.device import (
@@ -52,6 +59,7 @@ __all__ = [
     "QuantumBackend",
     "SimulatorBackend",
     "FakeQPUBackend",
+    "FakeQPUCudaQBackend",
     "CudaQBackend",
     "QuantumTensorEvaluator",  # Legacy alias
     # Device
