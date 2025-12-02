@@ -17,8 +17,8 @@ from qiskit.circuit import QuantumCircuit
 import benchkit as bk
 import qtpu
 from qtpu.runtime import HEinsumRuntime, FakeQPUBackend
-from qtpu.heinsum import HEinsum
-from qtpu.optimize import optimize, OptimizationParameters
+from qtpu.core import HEinsum
+from qtpu.compiler.opt.optimize import optimize, OptimizationParameters
 
 from evaluation.benchmarks import get_benchmark
 

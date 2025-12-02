@@ -26,8 +26,7 @@ from qiskit.circuit.library import IGate, XGate, YGate, ZGate
 
 import benchkit as bk
 
-from qtpu.tensor import ISwitch, QuantumTensor, CTensor
-from qtpu.heinsum import HEinsum
+from qtpu.core import ISwitch, QuantumTensor, CTensor, HEinsum
 
 if TYPE_CHECKING:
     pass

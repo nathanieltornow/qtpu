@@ -17,7 +17,7 @@ import benchkit as bk
 import qtpu
 from evaluation.analysis import analyze_heinsum
 from evaluation.benchmarks import get_benchmark
-from qtpu.compiler._opt import get_pareto_frontier
+from qtpu.compiler.opt._opt import get_pareto_frontier
 
 if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit

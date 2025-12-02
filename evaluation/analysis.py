@@ -4,7 +4,7 @@ from qiskit_ibm_runtime.fake_provider import FakeMarrakesh
 import cotengra as ctg
 
 from qtpu.transforms import remove_operations_by_name
-from qtpu.heinsum import HEinsum
+from qtpu.core import HEinsum
 
 
 def estimate_runtime(circuits: list[QuantumCircuit]) -> float:
