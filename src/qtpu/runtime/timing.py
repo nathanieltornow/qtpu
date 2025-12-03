@@ -105,8 +105,6 @@ class TimingBreakdown:
             # Classical
             "classical_contraction_time": self.classical_contraction_time,
             "data_transfer_time": self.data_transfer_time,
-            # Memory
-            "peak_memory_bytes": self.peak_memory_bytes,
             # Code size
             "total_code_lines": self.total_code_lines,
             # Totals

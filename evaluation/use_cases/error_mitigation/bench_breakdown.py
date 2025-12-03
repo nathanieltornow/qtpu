@@ -1,20 +1,19 @@
 """
-Error Mitigation Benchmark: End-to-End Timing & Memory Breakdown
-================================================================
+Error Mitigation Benchmark: End-to-End Timing & Code Complexity Breakdown
+=========================================================================
 
 Compares Naive, Batch (Mitiq-style), and QTPU approaches for error mitigation.
 
 Metrics:
-- Preparation time (generation + compilation)
+- Preparation time (generation + compilation + CUDA-Q codegen)
 - Quantum execution time (estimated for real QPU)
 - Classical postprocessing time
-- Peak memory during preparation
+- Total code lines generated (measure of compilation complexity)
 """
 
 from __future__ import annotations
 
 import gc
-import tracemalloc
 from time import perf_counter
 
 import numpy as np
@@ -25,8 +24,9 @@ from qiskit.circuit.library import IGate, XGate, YGate, ZGate
 import benchkit as bk
 
 from evaluation.analysis import estimate_runtime
+from qtpu.compiler.codegen import quantum_tensor_to_cudaq
 from qtpu.core import ISwitch, QuantumTensor
-from qtpu.runtime.backends import FakeQPUCudaQBackend
+from qtpu.runtime import CudaQBackend
 
 
 PAULIS = [IGate(), XGate(), YGate(), ZGate()]
@@ -90,51 +90,48 @@ def run_naive(
     num_pec: int,
     num_samples: int,
 ) -> dict:
-    """Naive approach: generate circuits one at a time, estimate QPU runtime."""
+    """Naive approach: generate circuits one at a time, with CUDA-Q codegen."""
     gc.collect()
 
     pec_indices = get_pec_gate_indices(circuit, num_pec)
     rng = np.random.default_rng(42)
 
-    # Track memory during preparation (first circuit only for naive)
-    tracemalloc.start()
     prep_start = perf_counter()
+    total_code_lines = 0
 
-    # Build first circuit to measure prep time
-    pec_combo = rng.integers(0, 4, size=len(pec_indices))
-    first_circuit = generate_pec_circuit(circuit, pec_indices, pec_combo)
-    first_transpiled = transpile(first_circuit, optimization_level=0)
-
-    preparation_time = perf_counter() - prep_start
-    _, peak_memory = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
-
-    # Generate all remaining circuits for QPU time estimation
-    gen_start = perf_counter()
-    all_circuits = [first_transpiled]
-    for _ in range(num_samples - 1):
+    # Generate all circuits sequentially (naive pattern)
+    all_circuits = []
+    for i in range(num_samples):
         pec_combo = rng.integers(0, 4, size=len(pec_indices))
         new_circuit = generate_pec_circuit(circuit, pec_indices, pec_combo)
-        all_circuits.append(transpile(new_circuit, optimization_level=0))
-    generation_time = perf_counter() - gen_start
+        transpiled = transpile(new_circuit, optimization_level=0)
+        all_circuits.append(transpiled)
+        
+        # Generate CUDA-Q code for this circuit (scalar output, like HEinsum baseline)
+        _, num_lines = quantum_tensor_to_cudaq(
+            transpiled,
+            shape=(),
+            kernel_name=f"kernel_naive_{i}",
+        )
+        total_code_lines += num_lines
+
+    preparation_time = perf_counter() - prep_start
 
     # Estimate QPU runtime using analysis module
     quantum_time = estimate_runtime(all_circuits)
 
     # Classical postprocessing (simulated - just the mean computation)
     postproc_start = perf_counter()
-    # Simulate result values (in reality these come from QPU)
     result_values = rng.normal(0.0, 0.5, size=num_samples)
     result_value = float(np.mean(result_values))
     classical_time = perf_counter() - postproc_start
 
     return {
         "preparation_time": preparation_time,
-        "generation_time": generation_time,
         "quantum_time": quantum_time,
         "classical_time": classical_time,
-        "total_time": preparation_time + generation_time + quantum_time + classical_time,
-        "peak_memory": peak_memory,
+        "total_time": preparation_time + quantum_time + classical_time,
+        "total_code_lines": total_code_lines,
         "result_value": result_value,
         "num_circuits": num_samples,
     }
@@ -150,14 +147,12 @@ def run_batch(
     num_pec: int,
     num_samples: int,
 ) -> dict:
-    """Batch approach: generate all circuits upfront, estimate QPU runtime."""
+    """Batch approach: generate all circuits upfront, with CUDA-Q codegen."""
     gc.collect()
 
     pec_indices = get_pec_gate_indices(circuit, num_pec)
     rng = np.random.default_rng(42)
 
-    # Track memory during preparation
-    tracemalloc.start()
     prep_start = perf_counter()
 
     # Generate all circuits
@@ -170,27 +165,33 @@ def run_batch(
     # Transpile all
     transpiled_circuits = [transpile(c, optimization_level=0) for c in circuits]
 
+    # Generate CUDA-Q code for all circuits (batched)
+    total_code_lines = 0
+    for i, tc in enumerate(transpiled_circuits):
+        _, num_lines = quantum_tensor_to_cudaq(
+            tc,
+            shape=(),
+            kernel_name=f"kernel_batch_{i}",
+        )
+        total_code_lines += num_lines
+
     preparation_time = perf_counter() - prep_start
-    _, peak_memory = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
 
     # Estimate QPU runtime using analysis module
     quantum_time = estimate_runtime(transpiled_circuits)
 
     # Classical postprocessing
     postproc_start = perf_counter()
-    # Simulate result values (in reality these come from QPU)
     result_values = rng.normal(0.0, 0.5, size=num_samples)
     result_value = float(np.mean(result_values))
     classical_time = perf_counter() - postproc_start
 
     return {
         "preparation_time": preparation_time,
-        "generation_time": 0.0,  # Included in preparation
         "quantum_time": quantum_time,
         "classical_time": classical_time,
         "total_time": preparation_time + quantum_time + classical_time,
-        "peak_memory": peak_memory,
+        "total_code_lines": total_code_lines,
         "result_value": result_value,
         "num_circuits": num_samples,
     }
@@ -218,13 +219,11 @@ def run_qtpu(
     num_pec: int,
     num_samples: int,
 ) -> dict:
-    """QTPU approach: QuantumTensor with FakeQPUCudaQBackend."""
+    """QTPU approach: QuantumTensor with CudaQBackend sampling."""
     gc.collect()
 
     pec_indices = get_pec_gate_indices(circuit, num_pec)
 
-    # Track memory during preparation
-    tracemalloc.start()
     prep_start = perf_counter()
 
     # Build circuit with ISwitches
@@ -242,34 +241,25 @@ def run_qtpu(
     # Create QuantumTensor
     qtensor = QuantumTensor(em_circuit)
 
-    # Create FakeQPUCudaQBackend and prepare
-    backend = FakeQPUCudaQBackend(
-        backend_name="FakeMarrakesh",
+    # Create CudaQBackend (simulate=False for benchmarking, estimate_qpu_time=True)
+    backend = CudaQBackend(
         target="qpp-cpu",
-        shots=1000,
-        optimization_level=3,
-        warmup=True,
+        simulate=False,
+        estimate_qpu_time=True,
     )
     backend.prepare([qtensor])
 
     preparation_time = perf_counter() - prep_start
-    _, peak_memory = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
+    total_code_lines = backend.total_code_lines
 
-    # Get the compiled tensor
-    compiled = backend._compiled_cache[id(qtensor)]
-
-    # Sample (quantum execution)
-    exec_start = perf_counter()
-    samples = compiled.sample(num_samples)
-    quantum_time = perf_counter() - exec_start
-
-    # Get estimated QPU time from backend (this is for ALL circuits in the tensor)
-    # Scale it by the fraction of circuits actually sampled
-    num_circuits_represented = int(np.prod(qtensor.shape)) if qtensor.shape else 1
-    full_qpu_time = backend._qpu_time_cache.get(id(qtensor), 0.0)
-    # QTPU only runs num_samples circuits, not all num_circuits_represented
-    estimated_qpu_time = full_qpu_time * (num_samples / num_circuits_represented)
+    # Sample random indices from the quantum tensor
+    rng = np.random.default_rng(42)
+    indices = [tuple(rng.integers(0, s) for s in qtensor.shape) for _ in range(num_samples)]
+    
+    # Sample using backend (returns samples, eval_time, estimated_qpu_time)
+    samples, quantum_time, estimated_qpu_time = backend.sample(
+        qtensor, indices, params={},
+    )
 
     # Classical postprocessing
     postproc_start = perf_counter()
@@ -277,16 +267,19 @@ def run_qtpu(
     result_value = float(np.mean(values))
     classical_time = perf_counter() - postproc_start
 
+    # Number of circuits represented by the tensor (4^num_pec)
+    num_circuits_represented = int(np.prod(qtensor.shape)) if qtensor.shape else 1
+
     return {
         "preparation_time": preparation_time,
-        "generation_time": 0.0,  # Included in preparation
         "quantum_time": quantum_time,
         "estimated_qpu_time": estimated_qpu_time,
         "classical_time": classical_time,
         "total_time": preparation_time + quantum_time + classical_time,
-        "peak_memory": peak_memory,
+        "total_code_lines": total_code_lines,
         "result_value": result_value,
         "num_circuits_represented": num_circuits_represented,
+        "num_samples": num_samples,
     }
 
 

@@ -106,6 +106,21 @@ class QuantumTensor:
         indices = np.ndindex(self.shape)
         return [self[tuple(idx)] for idx in indices]
 
+    def get_one(self) -> QuantumCircuit:
+        """Returns a single representative circuit from the tensor.
+        
+        Returns the circuit at index (0, 0, ..., 0), which is useful for
+        estimating properties (like QPU time) that are similar across all
+        circuits in the tensor.
+        
+        Returns:
+            QuantumCircuit: A single circuit from the tensor.
+        """
+        if not self.shape:
+            return self._circuit
+        index = tuple(0 for _ in self.shape)
+        return self[index]
+
     def compile(self, warmup: bool = True) -> "CompiledQuantumTensor":
         """Compile this quantum tensor for fast repeated evaluation.
 

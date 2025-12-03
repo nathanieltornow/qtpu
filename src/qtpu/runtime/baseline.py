@@ -14,11 +14,9 @@ Both approaches include CUDA-Q code generation for fair comparison.
 
 from __future__ import annotations
 
-from itertools import product
 from time import perf_counter
 from typing import TYPE_CHECKING
 
-import numpy as np
 import torch
 
 from qtpu.compiler.codegen import quantum_tensor_to_cudaq
@@ -27,6 +25,99 @@ from qtpu.runtime.timing import TimingBreakdown
 if TYPE_CHECKING:
     from qiskit import QuantumCircuit
     from qtpu.core import HEinsum, QuantumTensor
+
+
+# Lazy-loaded QPU time estimation components
+_fake_backend = None
+_dt = None
+
+
+def _get_fake_backend():
+    """Lazily initialize the fake backend for timing estimation."""
+    global _fake_backend, _dt
+    if _fake_backend is None:
+        from qiskit_ibm_runtime.fake_provider import FakeMarrakesh
+        _fake_backend = FakeMarrakesh()
+        _dt = _fake_backend.configuration().dt
+    return _fake_backend, _dt
+
+
+def estimate_qpu_time_single(
+    circuit: "QuantumCircuit",
+    shots: int = 1000,
+    optimization_level: int = 3,
+) -> float:
+    """Estimate QPU execution time for a single circuit.
+    
+    Uses Qiskit's transpiler with ASAP scheduling on FakeMarrakesh
+    to estimate realistic QPU execution time.
+    
+    Args:
+        circuit: A quantum circuit to estimate time for.
+        shots: Number of shots per circuit.
+        optimization_level: Transpilation optimization level.
+        
+    Returns:
+        Estimated QPU time in seconds for one circuit.
+    """
+    from qiskit.compiler import transpile
+    from qtpu.transforms import remove_operations_by_name
+    
+    fake_backend, dt = _get_fake_backend()
+    
+    # Remove custom operations that can't be transpiled
+    clean_circuit = remove_operations_by_name(
+        circuit, {"qpd_measure", "iswitch"}, inplace=False
+    )
+    
+    # Transpile with scheduling
+    scheduled = transpile(
+        circuits=clean_circuit,
+        backend=fake_backend,
+        optimization_level=optimization_level,
+        scheduling_method="asap",
+    )
+    
+    # Typical values for superconducting qubits
+    t_init = 100e-6  # Reset/initialization time
+    t_latency = 20e-6  # Classical control latency
+    
+    if scheduled.duration is None:
+        # Fallback for circuits without duration info
+        t_sched = 1e-6 * scheduled.depth()
+    else:
+        t_sched = scheduled.duration * dt
+    
+    t_per_shot = t_init + t_sched + t_latency
+    return t_per_shot * shots
+
+
+def estimate_qpu_time(
+    circuits: list["QuantumCircuit"],
+    shots: int = 1000,
+    optimization_level: int = 3,
+) -> float:
+    """Estimate QPU execution time for a list of circuits.
+    
+    Estimates time for the first circuit and multiplies by the number
+    of circuits, since circuits in a tensor are structurally similar.
+    
+    Args:
+        circuits: List of quantum circuits to estimate time for.
+        shots: Number of shots per circuit.
+        optimization_level: Transpilation optimization level.
+        
+    Returns:
+        Total estimated QPU time in seconds.
+    """
+    if not circuits:
+        return 0.0
+    
+    # Estimate time for first circuit and multiply
+    single_time = estimate_qpu_time_single(
+        circuits[0], shots=shots, optimization_level=optimization_level
+    )
+    return single_time * len(circuits)
 
 
 def _expand_iswitch_circuits(qtensor: "QuantumTensor") -> list["QuantumCircuit"]:
@@ -126,6 +217,9 @@ def run_naive(
     # In a real execution, each circuit would be run on QPU
     timing.num_circuits = len(all_circuits)
     
+    # Estimate QPU execution time using Qiskit scheduling
+    timing.quantum_estimated_qpu_time = estimate_qpu_time(all_circuits)
+    
     # Classical contraction (use dummy quantum results)
     contract_start = perf_counter()
     
@@ -224,6 +318,9 @@ def run_batch(
     timing.total_code_lines = total_code_lines
     timing.num_circuits = len(all_circuits)
     
+    # Estimate QPU execution time using Qiskit scheduling
+    timing.quantum_estimated_qpu_time = estimate_qpu_time(all_circuits)
+    
     # Classical contraction (use dummy quantum results)
     contract_start = perf_counter()
     
@@ -312,16 +409,16 @@ def compare_execution_strategies(
     print("Running naive baseline...")
     _, timing = run_naive(heinsum, input_tensors, circuit_params)
     results["naive"] = timing
-    print(f"  Circuits: {timing.num_circuits}, Compile time: {timing.circuit_compilation_time:.3f}s")
+    print(f"  Circuits: {timing.num_circuits}, Prep time: {timing.circuit_compilation_time:.3f}s, Est. QPU: {timing.quantum_estimated_qpu_time:.3f}s")
     
     print("Running batch baseline...")
     _, timing = run_batch(heinsum, input_tensors, circuit_params)
     results["batch"] = timing
-    print(f"  Circuits: {timing.num_circuits}, Compile time: {timing.circuit_compilation_time:.3f}s")
+    print(f"  Circuits: {timing.num_circuits}, Prep time: {timing.circuit_compilation_time:.3f}s, Est. QPU: {timing.quantum_estimated_qpu_time:.3f}s")
     
     print("Running HEinsum (optimized)...")
     _, timing = run_heinsum(heinsum, input_tensors, circuit_params)
     results["heinsum"] = timing
-    print(f"  Circuits: {timing.num_circuits}, Compile time: {timing.circuit_compilation_time:.3f}s")
+    print(f"  Circuits: {timing.num_circuits}, Prep time: {timing.circuit_compilation_time:.3f}s, Est. QPU: {timing.quantum_estimated_qpu_time:.3f}s")
     
     return results

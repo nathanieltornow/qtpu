@@ -23,7 +23,6 @@ Metrics tracked:
 - Preparation time (CPU): Circuit generation + CUDA-Q code generation
 - Quantum time (QPU): Estimated QPU execution time
 - Classical time (GPU/CPU): Post-processing and tensor contraction
-- Peak memory (bytes): Memory footprint during preparation
 
 Sweeps:
 - Circuit sizes (qubits): 20, 50, 100
@@ -177,9 +176,10 @@ def bench_naive(circuit_size: int, feature_dim: int, batch_size: int) -> dict | 
         
         return {
             "preparation_time": timing.circuit_compilation_time,
+            "quantum_time": timing.quantum_estimated_qpu_time,
             "num_circuits": timing.num_circuits,
+            "total_code_lines": timing.total_code_lines,
             "classical_time": timing.classical_contraction_time,
-            "peak_memory_bytes": timing.peak_memory_bytes,
             "total_time": timing.total_time,
             "num_support": NUM_SUPPORT,
             "num_layers": NUM_LAYERS,
@@ -210,6 +210,7 @@ def bench_batch(circuit_size: int, feature_dim: int, batch_size: int) -> dict | 
         
         return {
             "preparation_time": timing.circuit_compilation_time,
+            "quantum_time": timing.quantum_estimated_qpu_time,
             "num_circuits": timing.num_circuits,
             "total_code_lines": timing.total_code_lines,
             "classical_time": timing.classical_contraction_time,
