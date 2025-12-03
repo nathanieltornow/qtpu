@@ -63,7 +63,7 @@ class HEinsumOptimizationResult:
         cost_weight: float = 1.0,
         max_size: int | None = None,
         max_c_cost: float | None = None,
-    ) -> HEinsumCutPoint | None:
+    ) -> HEinsum | None:
         """Select best point using utility function.
 
         Minimizes: normalized_max_error + cost_weight * normalized_c_cost
@@ -73,7 +73,7 @@ class HEinsumOptimizationResult:
         if not valid:
             return None
         if len(valid) == 1:
-            return valid[0]
+            return self.get_heinsum(valid[0])
 
         min_cost = min(p.c_cost for p in valid)
         max_cost = max(p.c_cost for p in valid)
@@ -88,7 +88,7 @@ class HEinsumOptimizationResult:
             norm_error = (p.max_error - min_error) / error_range
             return norm_error + cost_weight * norm_cost
 
-        return min(valid, key=score)
+        return self.get_heinsum(min(valid, key=score))
 
     def get_heinsum(self, point: HEinsumCutPoint) -> HEinsum:
         """Reconstruct HEinsum from a cut point.

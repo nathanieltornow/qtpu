@@ -680,10 +680,11 @@ def quantum_tensor_to_cudaq(
     lines.append("")
     lines.append("")
 
-    # Function signature includes num_samples OR indices, plus free params
+    # Function signature: required params first, then optional params
+    # This avoids "non-default argument follows default argument" syntax error
     if free_params_sanitized:
         func_args = ", ".join(f"{name}: float" for name in free_params_sanitized)
-        lines.append(f"def sample_tensor(num_samples: int | None = None, indices: list[tuple[int, ...]] | None = None, {func_args}) -> list[tuple[tuple[int, ...], float]]:")
+        lines.append(f"def sample_tensor({func_args}, num_samples: int | None = None, indices: list[tuple[int, ...]] | None = None) -> list[tuple[tuple[int, ...], float]]:")
     else:
         lines.append(f"def sample_tensor(num_samples: int | None = None, indices: list[tuple[int, ...]] | None = None) -> list[tuple[tuple[int, ...], float]]:")
 
@@ -842,7 +843,8 @@ def quantum_tensor_to_cudaq(
     lines.append("    np.save(args.output, tensor)")
     lines.append("    print(f'Saved to: {args.output}')")
 
-    return "\n".join(lines)
+    code = "\n".join(lines)
+    return code, len(lines)
 
 
 # Alias for backward compatibility
@@ -934,7 +936,7 @@ _temp_files: list[str] = []  # Track temp files for cleanup
 def compile_cudaq_kernel(
     circuit: QuantumCircuit,
     shape: tuple[int, ...],
-) -> tuple[object, callable, list[str]]:
+) -> tuple[object, callable, list[str], int]:
     """Compile a CUDA-Q kernel for a circuit with ISwitches and cache it.
 
     Uses importlib to load from a temp file (required by cudaq.kernel decorator
@@ -945,11 +947,12 @@ def compile_cudaq_kernel(
         shape: The output tensor shape.
 
     Returns:
-        Tuple of (module, compute_func, free_param_names) where:
+        Tuple of (module, compute_func, free_param_names, num_code_lines) where:
         - module: The loaded module containing the CUDA-Q kernel
             (also has sample_tensor and warmup_jit functions)
         - compute_func: The compute_tensor function
         - free_param_names: List of free parameter names (sanitized) that need values
+        - num_code_lines: Number of lines in the generated code
     """
     import tempfile
     import importlib.util
@@ -958,10 +961,11 @@ def compile_cudaq_kernel(
     cache_key = id(circuit)
 
     if cache_key in _compiled_kernel_cache:
-        return _compiled_kernel_cache[cache_key][:3]
+        return _compiled_kernel_cache[cache_key][:4]
 
-    # Generate the code without baked-in param values
-    code = quantum_tensor_to_cudaq(circuit, shape, param_values=None)
+    # Generate the code with a unique kernel name to avoid CUDA-Q global registry conflicts
+    kernel_name = f"qtpu_kernel_{cache_key}"
+    code, num_code_lines = quantum_tensor_to_cudaq(circuit, shape, kernel_name=kernel_name, param_values=None)
 
     # Remove the main block (everything after if __name__)
     lines = code.split("\n")
@@ -1001,10 +1005,11 @@ def compile_cudaq_kernel(
         module,
         compute_func,
         free_param_names,
+        num_code_lines,
         temp_path,
     )
 
-    return module, compute_func, free_param_names
+    return module, compute_func, free_param_names, num_code_lines
 
 
 def get_compiled_kernel(
@@ -1127,6 +1132,7 @@ class CompiledQuantumTensor:
         self._warmup_fn: callable | None = None
         self._free_param_names: list[str] = []
         self._jit_warmup_done: bool = False
+        self._num_code_lines: int = 0
         
         # Compile immediately
         self._ensure_compiled()
@@ -1184,12 +1190,17 @@ class CompiledQuantumTensor:
         """Whether JIT warmup has been done."""
         return self._jit_warmup_done
 
+    @property
+    def num_code_lines(self) -> int:
+        """Number of lines in the generated CUDA-Q code."""
+        return self._num_code_lines
+
     def _ensure_compiled(self) -> None:
         """Compile the kernel if not already compiled."""
         if self._compiled_fn is not None:
             return
 
-        module, self._compiled_fn, self._free_param_names = compile_cudaq_kernel(
+        module, self._compiled_fn, self._free_param_names, self._num_code_lines = compile_cudaq_kernel(
             self._qtensor.circuit, self._qtensor.shape
         )
         

@@ -15,8 +15,6 @@ from .core import (
 from .runtime import (
     HEinsumRuntime,
     HEinsumContractor,  # Backward compatibility
-    SimulatorBackend,
-    FakeQPUBackend,
     QuantumBackend,
     TimingBreakdown,
     AggregateTimingStats,
@@ -38,8 +36,6 @@ __all__ = [
     # Runtime
     "HEinsumRuntime",
     "HEinsumContractor",
-    "SimulatorBackend",
-    "FakeQPUBackend",
     "QuantumBackend",
     "TimingBreakdown",
     "AggregateTimingStats",

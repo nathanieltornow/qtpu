@@ -1,31 +1,23 @@
-"""Differentiable HEinsum contraction runtime with multiple backend support.
+"""Differentiable HEinsum contraction runtime.
 
-This module provides a clean, extensible runtime for hybrid tensor network
-contraction with support for:
-- Multiple quantum backends (simulator, fake QPU timing estimation, CUDA-Q, real QPU)
+This module provides a clean runtime for hybrid tensor network contraction:
+- CUDA-Q backend with optional simulation and QPU time estimation
 - Detailed timing breakdowns for evaluation
 - GPU acceleration via PyTorch
 - JIT compilation for maximum performance
 
 Example:
-    >>> from qtpu.runtime import HEinsumRuntime, FakeQPUBackend
+    >>> from qtpu.runtime import HEinsumRuntime, CudaQBackend
     >>> 
-    >>> # Create runtime with fake QPU (estimates timing, returns random results)
-    >>> runtime = HEinsumRuntime(heinsum, backend="fake_qpu")
-    >>> runtime.prepare(jit=True)
+    >>> # Full simulation mode
+    >>> runtime = HEinsumRuntime(heinsum, backend="cudaq")
+    >>> runtime.prepare()
+    >>> result, timing = runtime.execute(input_tensors=[x])
     >>> 
-    >>> # Execute with timing breakdown
+    >>> # Benchmarking mode (no simulation, just timing estimation)
+    >>> backend = CudaQBackend(simulate=False, estimate_qpu_time=True)
+    >>> runtime = HEinsumRuntime(heinsum, backend=backend)
     >>> result, timing = runtime.execute(input_tensors=[x])
-    >>> print(f"Quantum: {timing.quantum_time:.3f}s, Classical: {timing.classical_time:.3f}s")
-    
-    >>> # Or use CUDA-Q for GPU-accelerated quantum simulation
-    >>> runtime = HEinsumRuntime(heinsum, backend="cudaq-nvidia")
-    >>> result, timing = runtime.execute(input_tensors=[x])
-    
-    >>> # Hybrid: CudaQ JIT compilation + Fake QPU timing estimation
-    >>> runtime = HEinsumRuntime(heinsum, backend="fake_qpu_cudaq-nvidia")
-    >>> result, timing = runtime.execute(input_tensors=[x])
-    >>> # timing.quantum_eval_time = actual CudaQ simulation time
     >>> # timing.quantum_estimated_qpu_time = estimated real QPU time
 """
 
@@ -35,9 +27,6 @@ from qtpu.runtime.timing import (
 )
 from qtpu.runtime.backends import (
     QuantumBackend,
-    SimulatorBackend,
-    FakeQPUBackend,
-    FakeQPUCudaQBackend,
     CudaQBackend,
 )
 from qtpu.runtime.device import (
@@ -48,8 +37,12 @@ from qtpu.runtime.executor import (
     HEinsumRuntime,
     HEinsumContractor,
 )
-# Legacy aliases
-QuantumTensorEvaluator = SimulatorBackend
+from qtpu.runtime.baseline import (
+    run_naive,
+    run_batch,
+    run_heinsum,
+    compare_execution_strategies,
+)
 
 __all__ = [
     # Timing
@@ -57,15 +50,16 @@ __all__ = [
     "AggregateTimingStats",
     # Backends
     "QuantumBackend",
-    "SimulatorBackend",
-    "FakeQPUBackend",
-    "FakeQPUCudaQBackend",
     "CudaQBackend",
-    "QuantumTensorEvaluator",  # Legacy alias
     # Device
     "Device",
     "get_device",
     # Executor
     "HEinsumRuntime",
     "HEinsumContractor",
+    # Baseline execution strategies
+    "run_naive",
+    "run_batch",
+    "run_heinsum",
+    "compare_execution_strategies",
 ]

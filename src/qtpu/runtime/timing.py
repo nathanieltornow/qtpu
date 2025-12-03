@@ -44,6 +44,12 @@ class TimingBreakdown:
     classical_contraction_time: float = 0.0
     data_transfer_time: float = 0.0
     
+    # Memory
+    peak_memory_bytes: int = 0
+    
+    # Code size (for codegen comparison)
+    total_code_lines: int = 0
+    
     # Total
     total_time: float = 0.0
     
@@ -99,6 +105,10 @@ class TimingBreakdown:
             # Classical
             "classical_contraction_time": self.classical_contraction_time,
             "data_transfer_time": self.data_transfer_time,
+            # Memory
+            "peak_memory_bytes": self.peak_memory_bytes,
+            # Code size
+            "total_code_lines": self.total_code_lines,
             # Totals
             "execution_time": self.execution_time,
             "total_time": self.total_time,

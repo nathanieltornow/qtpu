@@ -1,4 +1,4 @@
-"""Quantum tensor evaluation backends."""
+"""Quantum tensor evaluation backend using CUDA-Q."""
 
 from __future__ import annotations
 
@@ -11,27 +11,12 @@ import torch
 import cudaq
 
 if TYPE_CHECKING:
-    from qiskit.circuit import QuantumCircuit
-    from qiskit.primitives import BaseEstimatorV2
     from qtpu.core import QuantumTensor
     from qtpu.compiler.codegen import CompiledQuantumTensor
 
 
 class QuantumBackend(ABC):
-    """Abstract base class for quantum tensor evaluation backends.
-
-    Subclass this to create custom backends (e.g., for real QPU hardware).
-
-    Example:
-        >>> class MyCloudBackend(QuantumBackend):
-        ...     @property
-        ...     def name(self) -> str:
-        ...         return "my_cloud"
-        ...
-        ...     def evaluate(self, qtensor, params, dtype, device):
-        ...         # Submit to cloud, wait for results
-        ...         ...
-    """
+    """Abstract base class for quantum tensor evaluation backends."""
 
     @property
     @abstractmethod
@@ -39,22 +24,12 @@ class QuantumBackend(ABC):
         """Backend name for logging."""
         ...
 
-    def prepare(
-        self,
-        qtensors: list["QuantumTensor"],
-    ) -> float:
+    def prepare(self, qtensors: list["QuantumTensor"]) -> float:
         """Prepare the backend for evaluating the given quantum tensors.
         
-        This is called during HEinsumRuntime.prepare() and allows backends
-        to pre-compile circuits, estimate QPU times, etc.
-        
-        Args:
-            qtensors: List of quantum tensors that will be evaluated.
-            
         Returns:
             Total preparation/compilation time in seconds.
         """
-        # Default implementation: no preparation needed
         return 0.0
 
     @abstractmethod
@@ -67,342 +42,60 @@ class QuantumBackend(ABC):
     ) -> tuple[torch.Tensor, float, float]:
         """Evaluate a quantum tensor.
 
-        Args:
-            qtensor: The quantum tensor to evaluate.
-            params: Circuit parameters (rotation angles, etc.).
-            dtype: Output tensor dtype.
-            device: Output tensor device.
-
         Returns:
-            Tuple of:
-            - result: Evaluated tensor with shape qtensor.shape
-            - eval_time: Wall-clock evaluation time in seconds
-            - estimated_qpu_time: Estimated real QPU time (0 for pure simulators)
+            Tuple of (result, eval_time, estimated_qpu_time).
         """
         ...
 
-    def sample(
-        self,
-        qtensor: "QuantumTensor",
-        indices: list[tuple[int, ...]],
-        params: dict[str, float],
-    ) -> list[tuple[tuple[int, ...], float]]:
-        """Sample specific indices from a quantum tensor.
 
-        This is used for approximate Monte Carlo contraction, where only
-        a subset of tensor elements are needed.
+class CudaQBackend(QuantumBackend):
+    """CUDA-Q backend for quantum tensor evaluation.
 
-        Default implementation evaluates the full tensor and extracts indices.
-        Backends that support efficient partial evaluation (like CudaQ) should
-        override this method.
-
-        Args:
-            qtensor: The quantum tensor to sample.
-            indices: List of index tuples to evaluate.
-            params: Circuit parameters (rotation angles, etc.).
-
-        Returns:
-            List of (index_tuple, expectation_value) pairs.
-        """
-        # Default: evaluate full tensor and extract
-        result, _, _ = self.evaluate(qtensor, params, torch.float64, torch.device("cpu"))
-        result_np = result.numpy()
-        
-        samples = []
-        for idx in indices:
-            val = float(result_np[idx])
-            samples.append((idx, val))
-        return samples
-
-
-class SimulatorBackend(QuantumBackend):
-    """Statevector/density matrix simulation backend using Qiskit Aer.
-
-    This backend provides exact simulation of quantum circuits, suitable for
-    development and small-scale testing.
+    Uses NVIDIA CUDA-Q for JIT-compiled quantum circuit simulation.
+    Optionally estimates QPU execution time using Qiskit scheduling.
 
     Args:
-        estimator: Qiskit estimator primitive. If None, uses Aer EstimatorV2.
-
-    Example:
-        >>> backend = SimulatorBackend()
-        >>> result, eval_time, _ = backend.evaluate(qtensor, {}, torch.float64, torch.device("cpu"))
-    """
-
-    def __init__(self, estimator: "BaseEstimatorV2 | None" = None):
-        if estimator is None:
-            from qiskit_aer.primitives import EstimatorV2
-
-            estimator = EstimatorV2()
-        self._estimator = estimator
-
-    @property
-    def name(self) -> str:
-        return "simulator"
-
-    def evaluate(
-        self,
-        qtensor: "QuantumTensor",
-        params: dict[str, float],
-        dtype: torch.dtype,
-        device: torch.device,
-    ) -> tuple[torch.Tensor, float, float]:
-        from qtpu.transforms import decompose_qpd_measures, remove_operations_by_name
-
-        start = perf_counter()
-
-        circuits = qtensor.flat()
-        bound_circuits = []
-        observables = []
-
-        for circuit in circuits:
-            circuit = circuit.decompose()
-
-            # Bind parameters
-            if circuit.parameters and params:
-                circuit_param_names = {p.name for p in circuit.parameters}
-                params_to_bind = {
-                    k: v for k, v in params.items() if k in circuit_param_names
-                }
-                if params_to_bind:
-                    circuit = circuit.assign_parameters(params_to_bind)
-
-            # Handle QPD measures
-            circuit = decompose_qpd_measures(circuit, defer=True, inplace=True)
-            circuit = circuit.decompose()
-
-            # Get observable
-            obs = self._get_z_observable(circuit)
-
-            # Remove measurements for estimator
-            circuit = circuit.remove_final_measurements(inplace=False)
-            remove_operations_by_name(circuit, {"reset"})
-
-            bound_circuits.append(circuit)
-            observables.append(obs)
-
-        # Run estimator
-        jobs = list(zip(bound_circuits, observables))
-        results = self._estimator.run(jobs).result()
-        expvals = [r.data.evs for r in results]
-
-        # Reshape and convert
-        data = np.array(expvals).reshape(qtensor.shape)
-        result = torch.tensor(data, dtype=dtype, device=device)
-
-        eval_time = perf_counter() - start
-        return result, eval_time, 0.0
-
-    def _get_z_observable(self, circuit: "QuantumCircuit") -> str:
-        """Get Z observable string for measured qubits.
-        
-        Rules:
-        - Qubits with a measure gate → Z (we want the expectation)
-        - Qubits whose last operation is reset → I (traced out, wire cut prep side)
-        - Other qubits → Z (default)
-        """
-        n_qubits = circuit.num_qubits
-        
-        # Track measured qubits and last operation per qubit
-        measured = set()
-        last_op = {}  # qubit_idx -> last operation name
-        
-        for instr in circuit:
-            op_name = instr.operation.name
-            for qubit in instr.qubits:
-                q_idx = circuit.qubits.index(qubit)
-                last_op[q_idx] = op_name
-                if op_name == "measure":
-                    measured.add(q_idx)
-        
-        # Build observable
-        obs = []
-        for q in range(n_qubits):
-            if q in measured:
-                # Qubit is measured → use Z
-                obs.append("Z")
-            elif last_op.get(q) == "reset":
-                # Qubit's last op is reset → traced out, use I
-                obs.append("I")
-            else:
-                # Default to Z
-                obs.append("Z")
-        
-        return "".join(reversed(obs))
-
-
-class FakeQPUBackend(QuantumBackend):
-    """Fake QPU backend that estimates timing and returns random results.
-
-    This backend:
-    - Transpiles circuits to a real backend topology
-    - Schedules circuits to estimate actual QPU execution time
-    - Returns random results (for timing evaluation only)
-
-    Useful for scalability studies without running actual quantum hardware.
-
-    Args:
-        backend_name: Name of the fake backend (e.g., "FakeMarrakesh", "FakeTorino").
+        target: CUDA-Q target backend. Options include:
+            - "qpp-cpu" (default): CPU simulation with OpenMP
+            - "nvidia": GPU simulation (requires NVIDIA GPU)
+            - "nvidia-fp64": GPU with double precision
+        simulate: If True, run actual quantum simulation.
+            If False, skip execution and return random results (for benchmarking).
+        estimate_qpu_time: If True, estimate QPU execution time using Qiskit.
+        backend_name: Fake backend name for QPU time estimation (e.g., "FakeMarrakesh").
         shots: Number of shots for time estimation.
         optimization_level: Transpilation optimization level (0-3).
 
     Example:
-        >>> backend = FakeQPUBackend("FakeMarrakesh", shots=1000)
-        >>> result, eval_time, qpu_time = backend.evaluate(qtensor, {}, torch.float64, device)
-        >>> print(f"Estimated QPU time: {qpu_time:.3f}s")
+        >>> # Full simulation
+        >>> backend = CudaQBackend(target="nvidia")
+        >>> 
+        >>> # Benchmarking mode (no simulation, just timing estimation)
+        >>> backend = CudaQBackend(simulate=False, estimate_qpu_time=True)
+        >>> 
+        >>> # Fast mode (no simulation, no QPU estimation)
+        >>> backend = CudaQBackend(simulate=False, estimate_qpu_time=False)
     """
 
     def __init__(
         self,
-        backend_name: str = "FakeMarrakesh",
-        shots: int = 1000,
-        optimization_level: int = 3,
-    ):
-        self._shots = shots
-        self._optimization_level = optimization_level
-        self._backend = self._get_backend(backend_name)
-        self._dt = self._backend.configuration().dt
-        self._backend_name = backend_name
-
-    def _get_backend(self, name: str):
-        """Get fake backend by name."""
-        from qiskit_ibm_runtime import fake_provider
-
-        backend_class = getattr(fake_provider, name, None)
-        if backend_class is None:
-            raise ValueError(
-                f"Unknown fake backend: {name}. "
-                f"Available: FakeMarrakesh, FakeTorino, FakeBrisbane, etc."
-            )
-        return backend_class()
-
-    @property
-    def name(self) -> str:
-        return "fake_qpu"
-
-    @property
-    def backend_name(self) -> str:
-        """Name of the underlying fake backend."""
-        return self._backend_name
-
-    @property
-    def shots(self) -> int:
-        """Number of shots used for timing estimation."""
-        return self._shots
-
-    def evaluate(
-        self,
-        qtensor: "QuantumTensor",
-        params: dict[str, float],
-        dtype: torch.dtype,
-        device: torch.device,
-    ) -> tuple[torch.Tensor, float, float]:
-        from qiskit.compiler import transpile
-        from qtpu.transforms import remove_operations_by_name
-
-        start = perf_counter()
-
-        # Get circuits - we only need the first one since all have same structure
-        circuits = qtensor.flat()
-        num_circuits = len(circuits)
-
-        if num_circuits == 0:
-            return torch.empty(qtensor.shape, dtype=dtype, device=device), 0.0, 0.0
-
-        # Take first circuit as representative
-        circuit = circuits[0].decompose()
-
-        # Bind parameters
-        if circuit.parameters and params:
-            circuit_param_names = {p.name for p in circuit.parameters}
-            params_to_bind = {
-                k: v for k, v in params.items() if k in circuit_param_names
-            }
-            if params_to_bind:
-                circuit = circuit.assign_parameters(params_to_bind)
-
-        # Remove custom operations for transpilation
-        circuit = remove_operations_by_name(
-            circuit, {"qpd_measure", "iswitch"}, inplace=False
-        )
-
-        # Transpile and schedule just the representative circuit
-        scheduled = transpile(
-            circuits=circuit,
-            backend=self._backend,
-            optimization_level=self._optimization_level,
-            scheduling_method="asap",
-        )
-
-        # Estimate QPU time for one circuit, then multiply by count
-        single_circuit_time = self._estimate_single_circuit_runtime(scheduled)
-        estimated_qpu_time = single_circuit_time * num_circuits
-
-        # Return random results (this is fake!)
-        result = torch.randn(qtensor.shape, dtype=dtype, device=device)
-
-        eval_time = perf_counter() - start
-        return result, eval_time, estimated_qpu_time
-
-    def _estimate_single_circuit_runtime(self, scheduled_circuit) -> float:
-        """Estimate QPU runtime for a single scheduled circuit."""
-        # Typical values for superconducting qubits
-        t_init = 100e-6  # Reset/initialization time
-        t_latency = 20e-6  # Classical control latency
-
-        if scheduled_circuit.duration is None:
-            # Fallback for circuits without duration info
-            t_sched = 1e-6 * scheduled_circuit.depth()
-        else:
-            t_sched = scheduled_circuit.duration * self._dt
-
-        t_per_shot = t_init + t_sched + t_latency
-        return t_per_shot * self._shots
-
-
-class FakeQPUCudaQBackend(QuantumBackend):
-    """Hybrid backend: CudaQ JIT compilation + Fake QPU timing estimation.
-
-    This backend combines the best of both worlds:
-    - Uses CudaQ JIT compilation for fast, accurate circuit simulation
-    - Estimates realistic QPU execution time using Qiskit scheduling
-
-    This is useful for benchmarking where you want:
-    - Fast execution (via CudaQ JIT)
-    - Realistic QPU time estimates (via Qiskit scheduling on fake backends)
-
-    The recommended workflow is:
-    1. Create the backend
-    2. Call prepare() with quantum tensors (compiles circuits, estimates QPU times)
-    3. Call evaluate() for fast execution
-
-    Args:
-        backend_name: Name of the fake backend for timing (e.g., "FakeMarrakesh").
-        target: CUDA-Q target for simulation.
-        shots: Number of shots for time estimation.
-        optimization_level: Transpilation optimization level (0-3).
-        warmup: Whether to warmup CudaQ JIT on first compile.
-
-    Example:
-        >>> backend = FakeQPUCudaQBackend("FakeMarrakesh", target="nvidia")
-        >>> backend.prepare(qtensors)  # Compile all circuits upfront
-        >>> result, eval_time, qpu_time = backend.evaluate(qtensor, {}, ...)
-    """
-
-    def __init__(
-        self,
-        backend_name: str = "FakeMarrakesh",
         target: str = "qpp-cpu",
+        simulate: bool = True,
+        estimate_qpu_time: bool = True,
+        backend_name: str = "FakeMarrakesh",
         shots: int = 1000,
         optimization_level: int = 3,
-        warmup: bool = True,
     ):
-        self._backend_name = backend_name
         self._target = target
+        self._simulate = simulate
+        self._estimate_qpu_time = estimate_qpu_time
+        self._backend_name = backend_name
         self._shots = shots
         self._optimization_level = optimization_level
-        self._warmup = warmup
         self._target_set = False
+
+        # Warmup only if we're actually simulating
+        self._warmup = simulate
 
         # Lazy-load fake backend (only when needed for timing)
         self._fake_backend = None
@@ -432,7 +125,8 @@ class FakeQPUCudaQBackend(QuantumBackend):
 
     @property
     def name(self) -> str:
-        return f"fake_qpu_cudaq-{self._target}"
+        mode = "sim" if self._simulate else "nosim"
+        return f"cudaq-{self._target}-{mode}"
 
     @property
     def target(self) -> str:
@@ -440,19 +134,19 @@ class FakeQPUCudaQBackend(QuantumBackend):
         return self._target
 
     @property
-    def backend_name(self) -> str:
-        """Name of the underlying fake backend for timing."""
-        return self._backend_name
-
-    @property
-    def shots(self) -> int:
-        """Number of shots used for timing estimation."""
-        return self._shots
+    def simulate(self) -> bool:
+        """Whether actual simulation is enabled."""
+        return self._simulate
 
     @property
     def total_compilation_time(self) -> float:
         """Total time spent compiling quantum tensors."""
         return sum(self._compilation_times.values())
+
+    @property
+    def total_code_lines(self) -> int:
+        """Total number of code lines in all compiled quantum tensors."""
+        return sum(compiled.num_code_lines for compiled in self._compiled_cache.values())
 
     def _ensure_target(self):
         """Set the CUDA-Q target if not already set."""
@@ -465,22 +159,14 @@ class FakeQPUCudaQBackend(QuantumBackend):
                     pass  # Target may not be available
             self._target_set = True
 
-    def prepare(
-        self,
-        qtensors: list["QuantumTensor"],
-    ) -> float:
-        """Prepare the backend by compiling all quantum tensors and estimating QPU times.
-        
-        This does all the heavy lifting upfront:
-        1. Sets the CudaQ target
-        2. Compiles each quantum tensor to CudaQ kernels
-        3. Estimates QPU execution time for each tensor
+    def prepare(self, qtensors: list["QuantumTensor"]) -> float:
+        """Prepare the backend by compiling all quantum tensors.
         
         Args:
             qtensors: List of quantum tensors to prepare.
             
         Returns:
-            Total preparation time in seconds.
+            Total compilation time in seconds.
         """
         start = perf_counter()
         
@@ -495,18 +181,14 @@ class FakeQPUCudaQBackend(QuantumBackend):
                 compile_start = perf_counter()
                 self._compiled_cache[qtensor_id] = qtensor.compile(warmup=self._warmup)
                 self._compilation_times[qtensor_id] = perf_counter() - compile_start
-            
-            # Estimate QPU time if not already cached
-            if qtensor_id not in self._qpu_time_cache:
-                self._estimate_qpu_time(qtensor, {})
         
         return perf_counter() - start
 
-    def _estimate_qpu_time(self, qtensor: "QuantumTensor", params: dict[str, float]) -> float:
-        """Estimate QPU time for a quantum tensor using Qiskit scheduling.
+    def _estimate_qpu_time_for_qtensor(self, qtensor: "QuantumTensor", params: dict[str, float]) -> float:
+        """Estimate QPU time for a quantum tensor using Qiskit scheduling."""
+        if not self._estimate_qpu_time:
+            return 0.0
 
-        This is cached per-qtensor since the circuit structure doesn't change.
-        """
         qtensor_id = id(qtensor)
 
         if qtensor_id in self._qpu_time_cache:
@@ -580,195 +262,8 @@ class FakeQPUCudaQBackend(QuantumBackend):
     ) -> tuple[torch.Tensor, float, float]:
         """Evaluate a quantum tensor.
 
-        If prepare() was called, this is fast (uses cached compiled tensor).
-        If not, compilation happens on first call (slower).
-
         Returns:
             Tuple of (result, eval_time, estimated_qpu_time).
-        """
-        qtensor_id = id(qtensor)
-        
-        # Ensure target is set
-        self._ensure_target()
-
-        # Get compiled tensor (compile if needed - but should be cached from prepare())
-        if qtensor_id not in self._compiled_cache:
-            compile_start = perf_counter()
-            self._compiled_cache[qtensor_id] = qtensor.compile(warmup=self._warmup)
-            self._compilation_times[qtensor_id] = perf_counter() - compile_start
-        
-        compiled = self._compiled_cache[qtensor_id]
-
-        # Get QPU time estimate (should be cached from prepare())
-        estimated_qpu_time = self._estimate_qpu_time(qtensor, params)
-
-        # Execute the compiled tensor with CudaQ
-        exec_start = perf_counter()
-        result_np = compiled(**params)
-        exec_time = perf_counter() - exec_start
-
-        # Convert to torch tensor
-        result = torch.tensor(result_np, dtype=dtype, device=device)
-
-        return result, exec_time, estimated_qpu_time
-
-    def clear_cache(self):
-        """Clear all caches (compiled tensors and QPU time estimates)."""
-        self._compiled_cache.clear()
-        self._compilation_times.clear()
-        self._qpu_time_cache.clear()
-
-
-class CudaQBackend(QuantumBackend):
-    """CUDA-Q backend for fast quantum tensor evaluation.
-
-    Uses NVIDIA CUDA-Q for JIT-compiled quantum circuit simulation.
-    Caches compiled tensors per-qtensor for fast repeated evaluation.
-
-    Requires cuda-quantum to be installed:
-        pip install cuda-quantum-cu12  # For CUDA 12
-
-    Args:
-        target: CUDA-Q target backend. Options include:
-            - "qpp-cpu" (default): CPU simulation with OpenMP
-            - "nvidia": GPU simulation (requires NVIDIA GPU)
-            - "nvidia-fp64": GPU with double precision
-            - "nvidia-mqpu": Multi-GPU simulation
-            - "tensornet": Tensor network simulation
-        warmup: Whether to run a warmup execution after compilation.
-
-    Example:
-        >>> backend = CudaQBackend(target="nvidia")
-        >>> backend.prepare(qtensors)  # Compile all circuits upfront
-        >>> result, eval_time, _ = backend.evaluate(qtensor, {}, torch.float64, device)
-
-    Note:
-        Call prepare() before evaluate() for best performance.
-        If not called, compilation happens on first evaluate() call.
-    """
-
-    def __init__(self, target: str = "qpp-cpu", warmup: bool = True):
-        self._target = target
-        self._target_set = False
-        # Per-qtensor cache: qtensor_id -> CompiledQuantumTensor
-        self._compiled_cache: dict[int, "CompiledQuantumTensor"] = {}
-        # Track compilation times
-        self._compilation_times: dict[int, float] = {}
-        self._warmup = warmup
-
-    @property
-    def name(self) -> str:
-        return f"cudaq-{self._target}"
-
-    @property
-    def target(self) -> str:
-        """The CUDA-Q target backend."""
-        return self._target
-
-    @property
-    def total_compilation_time(self) -> float:
-        """Total time spent compiling quantum tensors."""
-        return sum(self._compilation_times.values())
-
-    def _ensure_target(self):
-        """Set the CUDA-Q target if not already set."""
-        if not self._target_set:
-            current_target = cudaq.get_target().name
-            if current_target != self._target:
-                try:
-                    cudaq.set_target(self._target)
-                except Exception:
-                    pass  # Target may not be available
-            self._target_set = True
-
-    def prepare(
-        self,
-        qtensors: list["QuantumTensor"],
-    ) -> float:
-        """Prepare the backend by compiling all quantum tensors.
-        
-        This compiles each quantum tensor to CudaQ kernels upfront,
-        so that evaluate() calls are fast.
-        
-        Args:
-            qtensors: List of quantum tensors to compile.
-            
-        Returns:
-            Total compilation time in seconds.
-        """
-        start = perf_counter()
-        
-        # Ensure CudaQ target is set
-        self._ensure_target()
-        
-        for qtensor in qtensors:
-            qtensor_id = id(qtensor)
-            
-            # Compile if not already cached
-            if qtensor_id not in self._compiled_cache:
-                compile_start = perf_counter()
-                self._compiled_cache[qtensor_id] = qtensor.compile(warmup=self._warmup)
-                self._compilation_times[qtensor_id] = perf_counter() - compile_start
-        
-        return perf_counter() - start
-
-    def evaluate(
-        self,
-        qtensor: "QuantumTensor",
-        params: dict[str, float],
-        dtype: torch.dtype,
-        device: torch.device,
-    ) -> tuple[torch.Tensor, float, float]:
-        """Evaluate a quantum tensor.
-
-        If prepare() was called, this is fast (uses cached compiled tensor).
-        If not, compilation happens on first call.
-
-        Returns:
-            Tuple of (result, eval_time, qpu_time).
-            qpu_time is always 0 for this simulator backend.
-        """
-        qtensor_id = id(qtensor)
-        
-        # Ensure target is set
-        self._ensure_target()
-
-        # Get compiled tensor (compile if needed - but should be cached from prepare())
-        if qtensor_id not in self._compiled_cache:
-            compile_start = perf_counter()
-            self._compiled_cache[qtensor_id] = qtensor.compile(warmup=self._warmup)
-            self._compilation_times[qtensor_id] = perf_counter() - compile_start
-        
-        compiled = self._compiled_cache[qtensor_id]
-
-        # Execute the compiled tensor
-        exec_start = perf_counter()
-        result_np = compiled(**params)
-        exec_time = perf_counter() - exec_start
-
-        # Convert to torch tensor
-        result = torch.tensor(result_np, dtype=dtype, device=device)
-
-        return result, exec_time, 0.0
-
-    def sample(
-        self,
-        qtensor: "QuantumTensor",
-        indices: list[tuple[int, ...]],
-        params: dict[str, float],
-    ) -> list[tuple[tuple[int, ...], float]]:
-        """Sample specific indices from a quantum tensor.
-
-        Uses the compiled sample_tensor function for efficient evaluation
-        of only the specified indices (via CUDA-Q broadcasting).
-
-        Args:
-            qtensor: The quantum tensor to sample.
-            indices: List of index tuples to evaluate.
-            params: Circuit parameters (rotation angles, etc.).
-
-        Returns:
-            List of (index_tuple, expectation_value) pairs.
         """
         qtensor_id = id(qtensor)
         
@@ -783,10 +278,106 @@ class CudaQBackend(QuantumBackend):
         
         compiled = self._compiled_cache[qtensor_id]
 
-        # Use the sample method with explicit indices
-        return compiled.sample(indices=indices, **params)
+        # Get QPU time estimate if enabled
+        estimated_qpu_time = self._estimate_qpu_time_for_qtensor(qtensor, params)
+
+        # Skip actual execution if not simulating
+        if not self._simulate:
+            result = torch.randn(qtensor.shape, dtype=dtype, device=device)
+            return result, 0.0, estimated_qpu_time
+
+        # Execute the compiled tensor with CudaQ
+        exec_start = perf_counter()
+        result_np = compiled(**params)
+        exec_time = perf_counter() - exec_start
+
+        # Convert to torch tensor
+        result = torch.tensor(result_np, dtype=dtype, device=device)
+
+        return result, exec_time, estimated_qpu_time
+
+    def sample(
+        self,
+        qtensor: "QuantumTensor",
+        indices: list[tuple[int, ...]],
+        params: dict[str, float],
+        dtype: torch.dtype = torch.float64,
+        device: torch.device | None = None,
+    ) -> tuple[list[tuple[tuple[int, ...], float]], float, float]:
+        """Sample specific indices from a quantum tensor.
+        
+        Args:
+            qtensor: The quantum tensor to sample from.
+            indices: List of index tuples to sample.
+            params: Parameter values for the circuit.
+            dtype: Data type for results (used if not simulating).
+            device: Device for results (used if not simulating).
+            
+        Returns:
+            Tuple of (samples, eval_time, estimated_qpu_time) where:
+            - samples: List of (index, value) tuples
+            - eval_time: Wall-clock execution time
+            - estimated_qpu_time: Estimated QPU time for sampling these indices
+        """
+        qtensor_id = id(qtensor)
+        
+        self._ensure_target()
+
+        if qtensor_id not in self._compiled_cache:
+            compile_start = perf_counter()
+            self._compiled_cache[qtensor_id] = qtensor.compile(warmup=self._warmup)
+            self._compilation_times[qtensor_id] = perf_counter() - compile_start
+        
+        compiled = self._compiled_cache[qtensor_id]
+        
+        # Estimate QPU time for sampling (proportional to number of indices)
+        estimated_qpu_time = self._estimate_qpu_time_for_sampling(qtensor, params, len(indices))
+        
+        # Skip actual execution if not simulating
+        if not self._simulate:
+            # Return random values for each index
+            samples = [(idx, np.random.randn()) for idx in indices]
+            return samples, 0.0, estimated_qpu_time
+        
+        # Execute sampling
+        exec_start = perf_counter()
+        samples = compiled.sample(indices=indices, **params)
+        exec_time = perf_counter() - exec_start
+        
+        return samples, exec_time, estimated_qpu_time
+
+    def _estimate_qpu_time_for_sampling(
+        self, 
+        qtensor: "QuantumTensor", 
+        params: dict[str, float],
+        num_samples: int
+    ) -> float:
+        """Estimate QPU time for sampling a specific number of indices.
+        
+        Unlike full evaluation which runs all indices, sampling only runs
+        the specified number of circuits.
+        """
+        if not self._estimate_qpu_time:
+            return 0.0
+        
+        qtensor_id = id(qtensor)
+        
+        # Get single circuit time (cached per qtensor)
+        if qtensor_id not in self._qpu_time_cache:
+            # Force computation of the cache entry via full estimation
+            _ = self._estimate_qpu_time_for_qtensor(qtensor, params)
+        
+        # Get total time for full tensor and compute per-circuit time
+        full_num_circuits = int(np.prod(qtensor.shape)) if qtensor.shape else 1
+        if qtensor_id in self._qpu_time_cache and full_num_circuits > 0:
+            full_time = self._qpu_time_cache[qtensor_id]
+            per_circuit_time = full_time / full_num_circuits
+            return per_circuit_time * num_samples
+        
+        return 0.0
 
     def clear_cache(self):
-        """Clear the compiled tensor cache."""
+        """Clear all caches."""
         self._compiled_cache.clear()
         self._compilation_times.clear()
+        self._qpu_time_cache.clear()
