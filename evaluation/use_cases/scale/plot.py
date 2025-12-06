@@ -99,8 +99,8 @@ def plot_runtime_scalability(ax, qtpu_df: pd.DataFrame, qac_df: pd.DataFrame, be
         ax.legend(loc="upper left")
     
     ax.set_xlabel("Circuit Size ")
-    ax.set_ylabel("Total Runtime [s]")
-    ax.set_title(r"\textbf{(a) Runtime} (lower is better $\downarrow$)")
+    ax.set_ylabel("Total Runtime [s]\n(lower is better)")
+    ax.set_title(r"\textbf{(a) Runtime}")
     ax.set_yscale("log")
     ax.grid(True, alpha=0.3, axis="y")
     ax.set_xticks(x)
@@ -169,8 +169,8 @@ def plot_memory_scalability(ax, qtpu_df: pd.DataFrame, qac_df: pd.DataFrame, ben
     )
 
     ax.set_xlabel("Circuit Size ")
-    ax.set_ylabel("Circuits Generated")
-    ax.set_title(r"\textbf{(b) Compilation Overhead} (lower is better $\downarrow$)")
+    ax.set_ylabel("Circuits Generated\n(lower is better)")
+    ax.set_title(r"\textbf{(b) Compilation Overhead}")
     ax.set_yscale("log")
     ax.legend(loc="upper left")
     ax.grid(True, alpha=0.3, axis="y")
@@ -240,8 +240,8 @@ def plot_postprocessing_cost(ax, qtpu_df: pd.DataFrame, qac_df: pd.DataFrame, be
     )
 
     ax.set_xlabel("Circuit Size ")
-    ax.set_ylabel("Class. Cost [FLOPs]")
-    ax.set_title(r"\textbf{(c) Classical Cost} (lower is better $\downarrow$)")
+    ax.set_ylabel("Class. Cost [FLOPs]\n(lower is better)")
+    ax.set_title(r"\textbf{(c) Classical Cost}")
     ax.set_yscale("log")
     ax.legend(loc="upper left")
     ax.grid(True, alpha=0.3, axis="y")
@@ -260,7 +260,7 @@ def plot_scale_comparison(qtpu_df: pd.DataFrame, qac_df: pd.DataFrame, bench: st
     Returns:
         A BenchKit Plot object comparing the two approaches.
     """
-    fig, axes = plt.subplots(1, 3, figsize=(double_column_width(), 1.6))
+    fig, axes = plt.subplots(1, 3, figsize=(double_column_width(), 1.3))
 
     plot_runtime_scalability(axes[0], qtpu_df, qac_df, bench)
     plot_memory_scalability(axes[1], qtpu_df, qac_df, bench)

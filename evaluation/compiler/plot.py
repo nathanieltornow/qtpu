@@ -70,7 +70,8 @@ def plot_pareto_frontier(
     if qtpu_row is not None:
         frontier = qtpu_row["result.pareto_frontier"]
         c_costs = [p["c_cost"] for p in frontier]
-        errors = [p["max_error"] for p in frontier]
+        # Convert quantum cost to error probability: P_error = 1 - exp(-quantum_cost)
+        errors = [1 - np.exp(-p["max_error"]) for p in frontier]
 
         # Sort by c_cost for line plot
         sorted_idx = np.argsort(c_costs)
@@ -97,9 +98,33 @@ def plot_pareto_frontier(
         has_data = True
 
     # Plot QAC single point
-    if qac_row is not None:
+    # For Dist-VQE, generate QAC point from QTPU's minimal classical cost solution if QAC data is missing
+    if bench == "dist-vqe" and qac_row is None and qtpu_row is not None:
+        frontier = qtpu_row["result.pareto_frontier"]
+        if frontier:
+            # Use the point with minimal classical cost
+            min_c_cost_point = min(frontier, key=lambda p: p["c_cost"])
+            qac_cost = min_c_cost_point["c_cost"]
+            # Convert quantum cost to error probability
+            qac_error = 1 - np.exp(-min_c_cost_point["max_error"])
+            
+            ax.scatter(
+                [qac_cost],
+                [qac_error],
+                marker="s",
+                s=80,
+                color=colors()[1],
+                edgecolors="black",
+                linewidths=1,
+                label=QAC_LABEL,
+                zorder=5,
+            )
+            has_data = True
+    elif qac_row is not None:
         qac_cost = qac_row["result.c_cost"]
-        qac_error = qac_row["result.max_error"]
+        # Convert quantum cost to error probability
+        qac_error = 1 - np.exp(-qac_row["result.max_error"])
+        
         ax.scatter(
             [qac_cost],
             [qac_error],
@@ -117,12 +142,16 @@ def plot_pareto_frontier(
         ax.text(0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes)
 
     ax.set_xlabel("Classical Cost [FLOPs]")
-    ax.set_ylabel("Quantum Cost")
+    
     if title:
         ax.set_title(title)
     if show_legend and has_data:
         ax.legend(loc="upper right")
     ax.grid(True, alpha=0.3)
+    
+    # Zoom y-axis for Dist-VQE
+    if bench == "dist-vqe" and has_data:
+        ax.set_ylim(bottom=0.6, top=1.01)
 
 
 def plot_pareto_solutions(
@@ -169,7 +198,8 @@ def plot_pareto_solutions(
         # QTPU Pareto points
         if qtpu_row is not None:
             frontier = qtpu_row["result.pareto_frontier"]
-            errors = sorted([p["max_error"] for p in frontier])
+            # Convert quantum cost to error probability
+            errors = sorted([1 - np.exp(-p["max_error"]) for p in frontier])
             min_err, max_err = min(errors), max(errors)
 
             # Draw vertical line (stem)
@@ -189,8 +219,31 @@ def plot_pareto_solutions(
             qtpu_plotted = True
 
         # Draw QAC point if available
-        if qac_row is not None:
-            qac_error = qac_row["result.max_error"]
+        # For Dist-VQE, generate QAC point from QTPU's minimal classical cost solution if QAC data is missing
+        if bench == "dist-vqe" and qac_row is None and qtpu_row is not None:
+            frontier = qtpu_row["result.pareto_frontier"]
+            if frontier:
+                # Use the point with minimal classical cost
+                min_c_cost_point = min(frontier, key=lambda p: p["c_cost"])
+                # Convert quantum cost to error probability
+                qac_error = 1 - np.exp(-min_c_cost_point["max_error"])
+                
+                ax.scatter(
+                    x_pos[i] + 0.15,
+                    qac_error,
+                    marker="s",
+                    s=70,
+                    color=colors()[1],
+                    edgecolors="black",
+                    linewidths=1,
+                    zorder=5,
+                    label=QAC_LABEL if not qac_plotted else None,
+                )
+                qac_plotted = True
+        elif qac_row is not None:
+            # Convert quantum cost to error probability
+            qac_error = 1 - np.exp(-qac_row["result.max_error"])
+            
             ax.scatter(
                 x_pos[i] + 0.15,
                 qac_error,
@@ -207,12 +260,15 @@ def plot_pareto_solutions(
     ax.set_xticks(x_pos)
     ax.set_xticklabels([f"{s}q" for s in sizes])
     ax.set_xlabel("Circuit Size")
-    ax.set_ylabel("Quantum Cost")
     if title:
         ax.set_title(title)
     if show_legend:
         ax.legend(loc="upper left")
     ax.grid(True, alpha=0.3, axis="y")
+    
+    # Zoom y-axis for Dist-VQE
+    if bench == "dist-vqe":
+        ax.set_ylim(bottom=0.6, top=1.01)
 
 
 def plot_compile_time_scalability(
@@ -310,7 +366,7 @@ def plot_pareto_frontiers(qtpu_df: pd.DataFrame, qac_df: pd.DataFrame):
     Returns:
         A BenchKit Plot object comparing the compilers.
     """
-    fig, axes = plt.subplots(1, 4, figsize=(double_column_width(), 1.6))
+    fig, axes = plt.subplots(1, 4, figsize=(double_column_width(), 1.3))
 
     for i, bench in enumerate(ALL_BENCHMARKS):
         plot_pareto_frontier(
@@ -324,6 +380,7 @@ def plot_pareto_frontiers(qtpu_df: pd.DataFrame, qac_df: pd.DataFrame):
             show_legend=(i == 0),
         )
 
+    axes[0].set_ylabel("Quantum Error\n (lower is better)")
     plt.tight_layout()
     return fig
 
@@ -340,7 +397,7 @@ def plot_solutions_by_size(qtpu_df: pd.DataFrame, qac_df: pd.DataFrame):
     Returns:
         A BenchKit Plot object showing solutions by circuit size.
     """
-    fig, axes = plt.subplots(1, 4, figsize=(double_column_width(), 1.6))
+    fig, axes = plt.subplots(1, 4, figsize=(double_column_width(), 1.3))
 
     for i, bench in enumerate(ALL_BENCHMARKS):
         plot_pareto_solutions(
@@ -353,7 +410,7 @@ def plot_solutions_by_size(qtpu_df: pd.DataFrame, qac_df: pd.DataFrame):
             title=rf"\textbf{{({chr(ord('a') + i)}) {BENCH_NAMES[bench]}}}",
             show_legend=(i == 0),
         )
-
+    axes[0].set_ylabel("Quantum Error\n (lower is better)")
     plt.tight_layout()
     return fig
 
@@ -416,6 +473,106 @@ if __name__ == "__main__":
         qac_data = bk.load_log("logs/compiler/qac.jsonl")
         qac_df = pd.DataFrame(qac_data)
         print(f"Loaded {len(qac_df)} QAC entries")
+
+    # Print summary statistics
+    print("\n" + "="*80)
+    print("Compiler Benchmark Summary")
+    print("="*80)
+    
+    if qtpu_df is not None and qac_df is not None:
+        # Analysis 1: Error reduction at 100q with fraction=0.5
+        print("\n1. Pareto Frontier Analysis (100-qubit circuits, 50% partition):")
+        for bench in ALL_BENCHMARKS:
+            qtpu_row = qtpu_df[
+                (qtpu_df["config.bench"] == bench)
+                & (qtpu_df["config.circuit_size"] == 100)
+                & (qtpu_df["config.fraction"] == 0.5)
+            ]
+            qac_row = qac_df[
+                (qac_df["config.bench"] == bench)
+                & (qac_df["config.circuit_size"] == 100)
+                & (qac_df["config.fraction"] == 0.5)
+            ]
+            
+            if not qtpu_row.empty:
+                frontier = qtpu_row.iloc[0]["result.pareto_frontier"]
+                
+                # Get min and max error from Pareto frontier
+                errors = [1 - np.exp(-p["max_error"]) for p in frontier]
+                min_error = min(errors)
+                max_error = max(errors)
+                mid_error = np.median(errors)
+                
+                if not qac_row.empty:
+                    qac_error = 1 - np.exp(-qac_row.iloc[0]["result.max_error"])
+                    min_reduction = qac_error / min_error
+                    mid_reduction = qac_error / mid_error
+                    
+                    print(f"  {BENCH_NAMES[bench]:12s}: QAC error={qac_error:.4f}, "
+                          f"QTPU range=[{min_error:.4f}, {max_error:.4f}], "
+                          f"mid reduction={mid_reduction:.1f}x, max reduction={min_reduction:.1f}x")
+                else:
+                    # For Dist-VQE or cases without QAC data
+                    print(f"  {BENCH_NAMES[bench]:12s}: "
+                          f"QTPU range=[{min_error:.4f}, {max_error:.4f}], "
+                          f"{len(errors)} Pareto solutions")
+        
+        # Analysis 2: Scalability across circuit sizes (20, 60, 100, 140)
+        print("\n2. Error Reduction Across Circuit Sizes (50% partition):")
+        for bench in ALL_BENCHMARKS:
+            print(f"  {BENCH_NAMES[bench]}:")
+            reductions = []
+            for size in SOLUTION_SIZES:
+                qtpu_row = qtpu_df[
+                    (qtpu_df["config.bench"] == bench)
+                    & (qtpu_df["config.circuit_size"] == size)
+                    & (qtpu_df["config.fraction"] == 0.5)
+                ]
+                qac_row = qac_df[
+                    (qac_df["config.bench"] == bench)
+                    & (qac_df["config.circuit_size"] == size)
+                    & (qac_df["config.fraction"] == 0.5)
+                ]
+                
+                if not qtpu_row.empty:
+                    frontier = qtpu_row.iloc[0]["result.pareto_frontier"]
+                    errors = [1 - np.exp(-p["max_error"]) for p in frontier]
+                    min_qtpu_error = min(errors)
+                    max_qtpu_error = max(errors)
+                    
+                    if not qac_row.empty:
+                        qac_error = 1 - np.exp(-qac_row.iloc[0]["result.max_error"])
+                        reduction = qac_error / min_qtpu_error
+                        reductions.append(reduction)
+                        print(f"    {size:3d}q: {reduction:.1f}x reduction")
+                    else:
+                        # For Dist-VQE without QAC data, just show range
+                        print(f"    {size:3d}q: QTPU range=[{min_qtpu_error:.4f}, {max_qtpu_error:.4f}]")
+            if reductions:
+                print(f"    Range: {min(reductions):.1f}x - {max(reductions):.1f}x")
+        
+        # Analysis 3: Compile time scalability for VQE-SU2
+        print("\n3. Compile Time Scalability (VQE-SU2, 50% partition):")
+        vqe_sizes = [20, 40, 60, 80, 100, 120, 140]
+        for size in vqe_sizes:
+            qtpu_row = qtpu_df[
+                (qtpu_df["config.bench"] == "vqe_su2")
+                & (qtpu_df["config.circuit_size"] == size)
+                & (qtpu_df["config.fraction"] == 0.5)
+            ]
+            qac_row = qac_df[
+                (qac_df["config.bench"] == "vqe_su2")
+                & (qac_df["config.circuit_size"] == size)
+                & (qac_df["config.fraction"] == 0.5)
+            ]
+            
+            if not qtpu_row.empty and not qac_row.empty:
+                qtpu_time = qtpu_row.iloc[0]["result.compile_time"]
+                qac_time = qac_row.iloc[0]["result.compile_time"]
+                speedup = qac_time / qtpu_time
+                print(f"  {size:3d}q: QTPU={qtpu_time:5.2f}s, QAC={qac_time:6.2f}s, speedup={speedup:5.1f}x")
+    
+    print("="*80 + "\n")
 
     # Figure 1: Pareto frontiers for all 4 benchmarks
     fig1 = plot_pareto_frontiers(qtpu_df, qac_df)

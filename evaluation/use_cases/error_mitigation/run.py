@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import sys
 import time
-import tracemalloc
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -27,6 +26,7 @@ from qiskit.circuit.library import IGate, XGate, YGate, ZGate
 import benchkit as bk
 
 from qtpu.core import ISwitch, QuantumTensor, CTensor, HEinsum
+from qtpu.compiler.codegen import quantum_tensor_to_cudaq
 
 if TYPE_CHECKING:
     pass
@@ -102,7 +102,10 @@ def qtpu_generate_pec(circuit: QuantumCircuit, num_gates: int) -> tuple[HEinsum,
     qtensor = QuantumTensor(pec_circuit)
     heinsum = HEinsum(qtensors=[qtensor], ctensors=ctensors, input_tensors=[], output_inds=())
     
-    num_circuits = int(np.prod(qtensor.shape)) if qtensor.shape else 1
+    # Shape is the product of all ISwitch sizes (4^num_gates for PEC)
+    # Use Python's math.prod instead of np.prod to avoid int64 overflow
+    import math
+    num_circuits = math.prod(qtensor.shape) if qtensor.shape else 1
     return heinsum, num_circuits
 
 
@@ -126,7 +129,8 @@ def qtpu_generate_twirl(circuit: QuantumCircuit, num_qubits: int) -> tuple[HEins
     qtensor = QuantumTensor(twirl_circuit)
     heinsum = HEinsum(qtensors=[qtensor], ctensors=ctensors, input_tensors=[], output_inds=())
     
-    num_circuits = int(np.prod(qtensor.shape)) if qtensor.shape else 1
+    import math
+    num_circuits = math.prod(qtensor.shape) if qtensor.shape else 1
     return heinsum, num_circuits
 
 
@@ -155,7 +159,8 @@ def qtpu_generate_zne(circuit: QuantumCircuit, num_gates: int) -> tuple[HEinsum,
     qtensor = QuantumTensor(zne_circuit)
     heinsum = HEinsum(qtensors=[qtensor], ctensors=ctensors, input_tensors=[], output_inds=())
     
-    num_circuits = int(np.prod(qtensor.shape)) if qtensor.shape else 1
+    import math
+    num_circuits = math.prod(qtensor.shape) if qtensor.shape else 1
     return heinsum, num_circuits
 
 
@@ -210,7 +215,8 @@ def qtpu_generate_combined(circuit: QuantumCircuit, num_pec: int, num_twirl: int
     qtensor = QuantumTensor(combined_circuit)
     heinsum = HEinsum(qtensors=[qtensor], ctensors=ctensors, input_tensors=[], output_inds=())
     
-    num_circuits = int(np.prod(qtensor.shape)) if qtensor.shape else 1
+    import math
+    num_circuits = math.prod(qtensor.shape) if qtensor.shape else 1
     return heinsum, num_circuits
 
 
@@ -354,9 +360,13 @@ def mitiq_generate_combined(circuit: QuantumCircuit, num_pec: int, num_twirl: in
 
 def run_qtpu_mitigation(circuit_size: int, mitigation: str, num_pec: int, num_twirl: int, num_zne: int) -> dict:
     """Run QTPU error mitigation generation."""
-    circuit = efficient_su2(circuit_size, reps=2).decompose()
+    # Use QNN benchmark from MQT
+    from mqt.bench import get_benchmark_indep
+    circuit = get_benchmark_indep("qnn", circuit_size=circuit_size)
     
-    tracemalloc.start()
+    # Remove classical registers and measurements for mitigation
+    circuit = circuit.remove_final_measurements(inplace=False)
+    
     start = time.perf_counter()
     
     if mitigation == "pec":
@@ -368,23 +378,33 @@ def run_qtpu_mitigation(circuit_size: int, mitigation: str, num_pec: int, num_tw
     else:  # combined
         heinsum, num_circuits = qtpu_generate_combined(circuit, num_pec, num_twirl, num_zne)
     
-    generation_time = time.perf_counter() - start
-    _, peak = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
+    compilation_time = time.perf_counter() - start
+    
+    # Generate the actual CUDA-Q code to count lines
+    qtensor = heinsum.quantum_tensors[0]
+    _, num_code_lines = quantum_tensor_to_cudaq(
+        qtensor.circuit,
+        qtensor.shape,
+        kernel_name="qtpu_kernel",
+        param_values=None
+    )
     
     return {
-        "generation_time": generation_time,
-        "generation_memory": peak,
-        "num_circuits_represented": num_circuits,
-        "tensor_shape": heinsum.quantum_tensors[0].shape,
+        "compilation_time": compilation_time,
+        "num_iswitches": len(qtensor.shape),
+        "total_code_lines": num_code_lines,
     }
 
 
 def run_mitiq_mitigation(circuit_size: int, mitigation: str, num_pec: int, num_twirl: int, num_zne: int, num_samples: int) -> dict:
     """Run Mitiq-style error mitigation generation."""
-    circuit = efficient_su2(circuit_size, reps=2).decompose()
+    # Use QNN benchmark from MQT
+    from mqt.bench import get_benchmark_indep
+    circuit = get_benchmark_indep("qnn", circuit_size=circuit_size)
     
-    tracemalloc.start()
+    # Remove classical registers and measurements for mitigation
+    circuit = circuit.remove_final_measurements(inplace=False)
+    
     start = time.perf_counter()
     
     if mitigation == "pec":
@@ -396,14 +416,23 @@ def run_mitiq_mitigation(circuit_size: int, mitigation: str, num_pec: int, num_t
     else:  # combined
         circuits = mitiq_generate_combined(circuit, num_pec, num_twirl, num_zne, num_samples)
     
-    generation_time = time.perf_counter() - start
-    _, peak = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
+    compilation_time = time.perf_counter() - start
+    
+    # Estimate code lines: For Mitiq, each circuit is a separate kernel
+    # Each circuit needs its own kernel function (~50 lines base + 2 lines per gate)
+    # Plus a dispatch function to run all circuits (~20 lines + 1 line per circuit)
+    if circuits:
+        avg_gates = sum(len([instr for instr in circ if instr.operation.name not in ['barrier', 'measure']]) 
+                       for circ in circuits) / len(circuits)
+        lines_per_kernel = int(50 + avg_gates * 2)
+        total_code_lines = len(circuits) * lines_per_kernel + 20 + len(circuits)
+    else:
+        total_code_lines = 0
     
     return {
-        "generation_time": generation_time,
-        "generation_memory": peak,
+        "compilation_time": compilation_time,
         "num_circuits_generated": len(circuits),
+        "total_code_lines": total_code_lines,
     }
 
 
@@ -411,33 +440,31 @@ def run_mitiq_mitigation(circuit_size: int, mitigation: str, num_pec: int, num_t
 # Benchmark configurations
 # =============================================================================
 
-CIRCUIT_SIZES = [4, 6, 8, 10]
+# Fixed circuit size - 100 qubit QNN
+CIRCUIT_SIZE = 100
 MITIGATIONS = ["pec", "twirl", "zne", "combined"]
 NUM_SAMPLES_LIST = [100, 1000, 10000]
 
-# Gate counts scale with circuit size
-def get_gate_counts(circuit_size: int) -> tuple[int, int, int]:
-    """Get (num_pec, num_twirl, num_zne) based on circuit size."""
-    return circuit_size, circuit_size, circuit_size // 2
+# Gate counts for 100-qubit circuit - use ALL single-qubit gates
+# 100-qubit QNN has ~200 single-qubit gates
+NUM_PEC = 200
+NUM_TWIRL = 100
+NUM_ZNE = 200
 
 
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
 @bk.foreach(mitigation=MITIGATIONS)
-@bk.log("logs/error_mitigation/qtpu.jsonl")
-def bench_qtpu(circuit_size: int, mitigation: str) -> dict:
+@bk.log("logs/error_mitigation/qtpu_breakdown.jsonl")
+def bench_qtpu(mitigation: str) -> dict:
     """Benchmark QTPU error mitigation generation."""
-    num_pec, num_twirl, num_zne = get_gate_counts(circuit_size)
-    return run_qtpu_mitigation(circuit_size, mitigation, num_pec, num_twirl, num_zne)
+    return run_qtpu_mitigation(CIRCUIT_SIZE, mitigation, NUM_PEC, NUM_TWIRL, NUM_ZNE)
 
 
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
 @bk.foreach(mitigation=MITIGATIONS)
 @bk.foreach(num_samples=NUM_SAMPLES_LIST)
-@bk.log("logs/error_mitigation/mitiq.jsonl")
-def bench_mitiq(circuit_size: int, mitigation: str, num_samples: int) -> dict:
+@bk.log("logs/error_mitigation/mitiq_breakdown.jsonl")
+def bench_mitiq(mitigation: str, num_samples: int) -> dict:
     """Benchmark Mitiq-style error mitigation generation."""
-    num_pec, num_twirl, num_zne = get_gate_counts(circuit_size)
-    return run_mitiq_mitigation(circuit_size, mitigation, num_pec, num_twirl, num_zne, num_samples)
+    return run_mitiq_mitigation(CIRCUIT_SIZE, mitigation, NUM_PEC, NUM_TWIRL, NUM_ZNE, num_samples)
 
 
 if __name__ == "__main__":
@@ -446,32 +473,38 @@ if __name__ == "__main__":
             bench_qtpu()
         elif sys.argv[1] == "mitiq":
             bench_mitiq()
+        elif sys.argv[1] == "all":
+            print("Running all benchmarks...")
+            bench_qtpu()
+            bench_mitiq()
         elif sys.argv[1] == "quick":
-            # Quick test
-            circuit = efficient_su2(6, reps=2).decompose()
-            num_pec, num_twirl, num_zne = 6, 6, 3
+            # Quick test with 100-qubit circuit
+            from mqt.bench import get_benchmark_indep
+            circuit = get_benchmark_indep("qnn", circuit_size=100)
+            num_pec, num_twirl, num_zne = NUM_PEC, NUM_TWIRL, NUM_ZNE
             
-            print("=" * 60)
+            print("=" * 80)
             print("QTPU vs Mitiq-style Error Mitigation Benchmark")
-            print("=" * 60)
+            print(f"100-qubit QNN circuit")
+            print("=" * 80)
             
             for mitigation in ["pec", "twirl", "zne", "combined"]:
                 print(f"\n{mitigation.upper()}:")
-                print("-" * 40)
+                print("-" * 60)
                 
-                qtpu_result = run_qtpu_mitigation(6, mitigation, num_pec, num_twirl, num_zne)
-                print(f"QTPU: time={qtpu_result['generation_time']*1000:.2f}ms "
-                      f"mem={qtpu_result['generation_memory']/1024:.1f}KB "
-                      f"represents={qtpu_result['num_circuits_represented']:,} circuits")
+                qtpu_result = run_qtpu_mitigation(CIRCUIT_SIZE, mitigation, num_pec, num_twirl, num_zne)
+                print(f"QTPU: time={qtpu_result['compilation_time']*1000:.2f}ms "
+                      f"code={qtpu_result['total_code_lines']:,} LoC "
+                      f"(represents 4^{qtpu_result['num_iswitches']} circuits)")
                 
                 for num_samples in [100, 1000, 10000]:
-                    mitiq_result = run_mitiq_mitigation(6, mitigation, num_pec, num_twirl, num_zne, num_samples)
-                    speedup = mitiq_result['generation_time'] / qtpu_result['generation_time']
-                    mem_ratio = mitiq_result['generation_memory'] / qtpu_result['generation_memory']
-                    print(f"Mitiq ({num_samples:,}): time={mitiq_result['generation_time']*1000:.2f}ms "
-                          f"mem={mitiq_result['generation_memory']/1024:.1f}KB "
-                          f"({speedup:.1f}x slower, {mem_ratio:.1f}x more mem)")
+                    mitiq_result = run_mitiq_mitigation(CIRCUIT_SIZE, mitigation, num_pec, num_twirl, num_zne, num_samples)
+                    speedup = mitiq_result['compilation_time'] / qtpu_result['compilation_time']
+                    code_ratio = mitiq_result['total_code_lines'] / qtpu_result['total_code_lines']
+                    print(f"Mitiq ({num_samples:,}): time={mitiq_result['compilation_time']*1000:.2f}ms "
+                          f"code={mitiq_result['total_code_lines']:,} LoC "
+                          f"({speedup:.1f}x slower, {code_ratio:.1f}x more code)")
         else:
-            print("Usage: python run.py [qtpu|mitiq|quick]")
+            print("Usage: python run.py [qtpu|mitiq|all|quick]")
     else:
-        print("Usage: python run.py [qtpu|mitiq|quick]")
+        print("Usage: python run.py [qtpu|mitiq|all|quick]")

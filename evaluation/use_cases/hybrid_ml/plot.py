@@ -118,11 +118,11 @@ def plot_preparation_speedup(
            color=colors()[5], edgecolor="black", linewidth=0.5, hatch=HATCHES["batch"])
 
     ax.set_xlabel("Circuit Size")
-    ax.set_ylabel("Compilation Time [s]")
-    ax.set_title(r"\textbf{(a) Compilation by Circuit Size}" + "\n" + r"\textit{lower is better $\downarrow$}", fontsize=8)
+    ax.set_ylabel("Compile Time [s]\n(lower is better)")
+    ax.set_title(r"\textbf{(a) Time by Size}")
     ax.set_xticks(x)
     ax.set_xticklabels([f"{s}q" for s in circuit_sizes])
-    ax.legend(loc="upper left", fontsize=6)
+    ax.legend(loc="upper left")
     ax.grid(True, alpha=0.3, axis="y")
 
 
@@ -183,21 +183,21 @@ def plot_compilation_scalability(
            color=colors()[5], edgecolor="black", linewidth=0.5, hatch=HATCHES["batch"])
 
     ax.set_xlabel("Batch Size")
-    ax.set_ylabel("Compilation Time [s]")
-    ax.set_title(r"\textbf{(b) Compilation by Batch Size}" + "\n" + r"\textit{lower is better $\downarrow$}", fontsize=8)
+    ax.set_ylabel("Compile Time [s]\n(lower is better)")
+    ax.set_title(r"\textbf{(b) Time by Batch}")
     ax.set_xticks(x)
     ax.set_xticklabels([f"{bs}" for bs in batch_sizes])
-    ax.legend(loc="upper left", fontsize=6)
+    # ax.legend(loc="upper left")
     ax.grid(True, alpha=0.3, axis="y")
 
 
-def plot_code_reduction(
+def plot_code_reduction_by_circuit_size(
     ax,
     batch_df: pd.DataFrame,
     heinsum_df: pd.DataFrame,
     batch_size: int = 100,
 ):
-    """Plot code reduction - show both absolute and reduction factor."""
+    """Plot code reduction by circuit size."""
     
     def filter_and_sort(df):
         if df.empty:
@@ -237,11 +237,72 @@ def plot_code_reduction(
            color=colors()[5], edgecolor="black", linewidth=0.5, hatch=HATCHES["batch"])
 
     ax.set_xlabel("Circuit Size")
-    ax.set_ylabel("Generated Code Lines")
-    ax.set_title(r"\textbf{(c) Code Reduction}" + "\n" + r"\textit{fewer is better $\downarrow$}", fontsize=8)
+    ax.set_ylabel("Code Size [LoC]\n(fewer is better)")
+    ax.set_title(r"\textbf{(c) Code by Size}")
     ax.set_xticks(x)
     ax.set_xticklabels([f"{s}q" for s in circuit_sizes])
-    ax.legend(loc="upper left", fontsize=6)
+    # ax.legend(loc="upper left")
+    ax.set_yscale("log")
+    ax.grid(True, alpha=0.3, axis="y")
+
+
+def plot_code_reduction_by_batch_size(
+    ax,
+    batch_df: pd.DataFrame,
+    heinsum_df: pd.DataFrame,
+    circuit_size: int = 100,
+):
+    """Plot code reduction by batch size."""
+    
+    def filter_data(df):
+        if df.empty:
+            return pd.DataFrame()
+        filtered = df[df["circuit_size"] == circuit_size].sort_values("batch_size")
+        return filtered
+    
+    batch_filt = filter_data(batch_df)
+    heinsum_filt = filter_data(heinsum_df)
+
+    batch_sizes = []
+    for df in [batch_filt, heinsum_filt]:
+        if not df.empty:
+            batch_sizes = sorted([bs for bs in df["batch_size"].unique() if bs != 10])
+            break
+
+    if len(batch_sizes) == 0:
+        ax.text(0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes)
+        return
+
+    x = np.arange(len(batch_sizes))
+    width = 0.35
+
+    batch_code = []
+    heinsum_code = []
+    
+    for bs in batch_sizes:
+        if bs in batch_filt["batch_size"].values and "total_code_lines" in batch_filt.columns:
+            row = batch_filt[batch_filt["batch_size"] == bs].iloc[0]
+            batch_code.append(row["total_code_lines"])
+        else:
+            batch_code.append(0)
+            
+        if bs in heinsum_filt["batch_size"].values and "total_code_lines" in heinsum_filt.columns:
+            row = heinsum_filt[heinsum_filt["batch_size"] == bs].iloc[0]
+            heinsum_code.append(row["total_code_lines"])
+        else:
+            heinsum_code.append(0)
+
+    ax.bar(x - width/2, heinsum_code, width, label=QTPU_LABEL,
+           color=colors()[0], edgecolor="black", linewidth=0.5, hatch=HATCHES["heinsum"])
+    ax.bar(x + width/2, batch_code, width, label=BATCH_LABEL,
+           color=colors()[5], edgecolor="black", linewidth=0.5, hatch=HATCHES["batch"])
+
+    ax.set_xlabel("Batch Size")
+    ax.set_ylabel("Code Size [LoC]\n(fewer is better)")
+    ax.set_title(r"\textbf{(d) Code by Batch}")
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{bs}" for bs in batch_sizes])
+    # ax.legend(loc="upper left")
     ax.set_yscale("log")
     ax.grid(True, alpha=0.3, axis="y")
 
@@ -255,10 +316,11 @@ def plot_hybrid_ml_benchmark(
 ):
     """Main hybrid ML benchmark figure highlighting key benefits.
     
-    Creates a 1x3 grid showing:
+    Creates a 1x4 grid showing:
     - (a) Preparation time speedup by circuit size
-    - (b) Code reduction by circuit size
-    - (c) Compilation time scalability with batch size
+    - (b) Compilation time scalability with batch size
+    - (c) Code reduction by circuit size
+    - (d) Code reduction by batch size
 
     Args:
         batch_df: DataFrame with batch benchmark results.
@@ -269,13 +331,17 @@ def plot_hybrid_ml_benchmark(
     Returns:
         A BenchKit Plot object.
     """
-    fig, axes = plt.subplots(1, 3, figsize=(double_column_width(), 1.8))
+    fig, axes = plt.subplots(1, 4, figsize=(double_column_width(), 1.3))
 
     plot_preparation_speedup(axes[0], batch_df, heinsum_df, batch_size, feature_dim)
     plot_compilation_scalability(axes[1], batch_df, heinsum_df, 100, feature_dim)
-    plot_code_reduction(axes[2], batch_df, heinsum_df, batch_size)
+    plot_code_reduction_by_circuit_size(axes[2], batch_df, heinsum_df, batch_size)
+    plot_code_reduction_by_batch_size(axes[3], batch_df, heinsum_df, 100)
 
     plt.tight_layout()
+    # Tighter spacing between pairs that share y-axis
+    plt.subplots_adjust(wspace=0.25)
+    
     return fig
 
 
@@ -294,14 +360,13 @@ if __name__ == "__main__":
 
     # Print comprehensive metrics across all configurations
     if not batch_df.empty and not heinsum_df.empty:
-        print("\n" + "="*70)
+        print("\n" + "="*80)
         print("HYBRID ML BENCHMARK SUMMARY")
-        print("="*70)
+        print("="*80)
         
         # Calculate metrics across all matching pairs
         prep_speedups = []
         code_reductions = []
-        total_speedups = []
         
         for _, batch_row in batch_df.iterrows():
             heinsum_match = heinsum_df[
@@ -318,30 +383,56 @@ if __name__ == "__main__":
                 
                 if heinsum_row['total_code_lines'] > 0:
                     code_reductions.append(batch_row['total_code_lines'] / heinsum_row['total_code_lines'])
-                
-                # Calculate correct total time: prep + quantum
-                batch_total = batch_row['preparation_time'] + batch_row['quantum_time']
-                heinsum_total = heinsum_row['preparation_time'] + heinsum_row['quantum_time']
-                if heinsum_total > 0:
-                    total_speedups.append(batch_total / heinsum_total)
         
         # Print summary statistics
-        print("\nCompilation Time Speedup:")
-        print(f"  Average: {np.mean(prep_speedups):.2f}x")
+        print("\n(a) Compile Time Speedup (by Circuit Size):")
+        print(f"  Average: {np.mean(prep_speedups):.2f}x faster with qTPU")
         print(f"  Median:  {np.median(prep_speedups):.2f}x")
         print(f"  Range:   {np.min(prep_speedups):.2f}x - {np.max(prep_speedups):.2f}x")
         
-        print("\nCode Size Reduction:")
-        print(f"  Average: {np.mean(code_reductions):.1f}x")
+        print("\n(b) Compile Time Scalability (by Batch Size):")
+        # Get data at circuit_size=100 across different batch sizes
+        batch_100 = batch_df[batch_df['circuit_size'] == 100].groupby('batch_size').first().reset_index().sort_values('batch_size')
+        heinsum_100 = heinsum_df[heinsum_df['circuit_size'] == 100].groupby('batch_size').first().reset_index().sort_values('batch_size')
+        common_batch_sizes = []
+        if not batch_100.empty and not heinsum_100.empty:
+            # Only compare matching batch sizes
+            common_batch_sizes_set = set(batch_100['batch_size'].values) & set(heinsum_100['batch_size'].values)
+            if common_batch_sizes_set:
+                common_batch_sizes = sorted(common_batch_sizes_set)
+                batch_filtered = batch_100[batch_100['batch_size'].isin(common_batch_sizes)].sort_values('batch_size')
+                heinsum_filtered = heinsum_100[heinsum_100['batch_size'].isin(common_batch_sizes)].sort_values('batch_size')
+                
+                batch_times = batch_filtered['preparation_time'].values
+                heinsum_times = heinsum_filtered['preparation_time'].values
+                print(f"  At 100q, batch sizes {common_batch_sizes[0]}-{common_batch_sizes[-1]}:")
+                print(f"    Batch method: {batch_times[0]:.3f}s - {batch_times[-1]:.3f}s")
+                print(f"    qTPU method:  {heinsum_times[0]:.3f}s - {heinsum_times[-1]:.3f}s")
+                speedups_by_batch = batch_times / heinsum_times
+                print(f"    Speedup: {np.min(speedups_by_batch):.1f}x - {np.max(speedups_by_batch):.1f}x")
+        
+        print("\n(c) Code Size Reduction (by Circuit Size):")
+        print(f"  Average: {np.mean(code_reductions):.1f}x smaller with qTPU")
         print(f"  Median:  {np.median(code_reductions):.1f}x")
-        print(f"  Up to:   {np.max(code_reductions):.1f}x")
+        print(f"  Up to:   {np.max(code_reductions):.1f}x reduction")
         
-        print("\nEnd-to-End Speedup:")
-        print(f"  Average: {np.mean(total_speedups):.2f}x")
-        print(f"  Median:  {np.median(total_speedups):.2f}x")
-        print(f"  Up to:   {np.max(total_speedups):.2f}x")
+        print("\n(d) Code Size Scalability (by Batch Size):")
+        # Get data at circuit_size=100 across different batch sizes
+        if not batch_100.empty and not heinsum_100.empty and 'total_code_lines' in batch_100.columns:
+            # Only compare matching batch sizes (reuse common_batch_sizes from above)
+            if common_batch_sizes:
+                batch_filtered = batch_100[batch_100['batch_size'].isin(common_batch_sizes)].sort_values('batch_size')
+                heinsum_filtered = heinsum_100[heinsum_100['batch_size'].isin(common_batch_sizes)].sort_values('batch_size')
+                
+                batch_code = batch_filtered['total_code_lines'].values
+                heinsum_code = heinsum_filtered['total_code_lines'].values
+                print(f"  At 100q, batch sizes {common_batch_sizes[0]}-{common_batch_sizes[-1]}:")
+                print(f"    Batch method: {batch_code[0]:.0f} - {batch_code[-1]:.0f} LoC")
+                print(f"    qTPU method:  {heinsum_code[0]:.0f} - {heinsum_code[-1]:.0f} LoC")
+                reductions_by_batch = batch_code / heinsum_code
+                print(f"    Reduction: {np.min(reductions_by_batch):.1f}x - {np.max(reductions_by_batch):.1f}x")
         
-        print("="*70 + "\n")
+        print("\n" + "="*80 + "\n")
 
     # Generate main figure
     if not batch_df.empty or not heinsum_df.empty:

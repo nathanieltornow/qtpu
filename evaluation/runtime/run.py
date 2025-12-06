@@ -16,7 +16,6 @@ from qiskit.circuit import QuantumCircuit
 
 import benchkit as bk
 import qtpu
-from qtpu.runtime import HEinsumRuntime, FakeQPUBackend
 from qtpu.core import HEinsum
 from qtpu.compiler.opt.optimize import optimize, OptimizationParameters
 
@@ -29,13 +28,13 @@ from evaluation.benchmarks import get_benchmark
 
 # Standard MQT benchmarks (linear connectivity, easy for classical)
 STANDARD_BENCHMARKS = ["qnn", "wstate", "vqe_su2"]
-STANDARD_SIZES = [20, 50, 100, 150]
+STANDARD_SIZES = [40, 60, 80, 100]
 
 # Distributed VQE benchmark (all-to-all within clusters, sparse inter-cluster)
 DIST_VQE_SIZES = [100]
 
 # Cluster sizes to evaluate (qubits per QPU)
-CLUSTER_SIZES = [19]
+CLUSTER_SIZES = [14]
 
 
 # =============================================================================
@@ -118,6 +117,8 @@ def compile_and_run_qtpu(
     Returns:
         Dict with timing breakdown and circuit statistics.
     """
+    from qtpu.runtime.baseline import run_heinsum
+    
     # Compile
     compile_start = perf_counter()
     try:
@@ -125,31 +126,24 @@ def compile_and_run_qtpu(
         heinsum = HEinsum.from_circuit(circuit)
         opt_result = optimize(
             heinsum,
-            params=OptimizationParameters(num_workers=8, n_trials=50),
+            params=OptimizationParameters(num_workers=8, n_trials=150),
         )
 
-        # Select best point (balances cost and error)
-        cut_point = opt_result.select_best(
+        # Select best HEinsum (balances cost and error)
+        heinsum = opt_result.select_best(
             max_size=max_subcircuit_size, cost_weight=1000
         )
-        if cut_point is None:
+        if heinsum is None:
             print(f"  No valid cut point selected")
             return None
 
-        # Get optimized HEinsum
-        heinsum = opt_result.get_heinsum(cut_point)
     except Exception as e:
         print(f"  Compile failed: {e}")
         return None
     compile_time = perf_counter() - compile_start
 
-    # Create runtime with FakeQPU backend
-    backend = FakeQPUBackend(shots=1000)
-    runtime = HEinsumRuntime(heinsum, backend=backend, device="cpu")
-    runtime.prepare(optimize=True)
-
-    # Execute
-    _, timing = runtime.execute()
+    # Execute using the baseline run_heinsum function
+    _, timing = run_heinsum(heinsum, skip_execution=True)
 
     return {
         # Timing breakdown
@@ -160,11 +154,6 @@ def compile_and_run_qtpu(
         "num_subcircuits": timing.num_circuits,
         "num_quantum_tensors": len(heinsum.quantum_tensors),
         "num_classical_tensors": len(heinsum.classical_tensors),
-        "contraction_cost": runtime.contraction_cost,
-        # Cut point metrics
-        "cut_c_cost": cut_point.c_cost,
-        "cut_max_error": cut_point.max_error,
-        "cut_max_size": cut_point.max_size,
     }
 
 
