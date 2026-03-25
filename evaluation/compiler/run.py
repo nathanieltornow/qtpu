@@ -1,4 +1,5 @@
 import os
+import math
 from time import perf_counter
 from typing import TYPE_CHECKING
 
@@ -13,15 +14,14 @@ from qiskit_addon_cutting.automated_cut_finding import (
     find_cuts,
 )
 
-import benchkit as bk
 import qtpu
 from evaluation.analysis import analyze_heinsum
 from evaluation.benchmarks import get_benchmark
+from evaluation.utils import log_result
 from qtpu.compiler.opt._opt import get_pareto_frontier
 
 if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
-import math
 
 
 BENCHMARKS = ["qnn", "wstate", "vqe_su2", "dist-vqe"]
@@ -111,10 +111,6 @@ def compile_qtpu_frontier(
     }
 
 
-@bk.foreach(bench=BENCHMARKS)
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
-@bk.foreach(fraction=FRACTIONS)
-@bk.log("logs/compiler/qac.jsonl")
 def run_qac(bench: str, circuit_size: int, fraction: float) -> dict | None:
     """Run QAC on the specified benchmark and parameters."""
     print(f"Running QAC: bench={bench}, size={circuit_size}, fraction={fraction}")
@@ -123,7 +119,7 @@ def run_qac(bench: str, circuit_size: int, fraction: float) -> dict | None:
     circuit = get_benchmark(
         bench, circuit_size=circuit_size, cluster_size=int(circuit_size * fraction)
     ).remove_final_measurements(inplace=False)
-    
+
     # Determine max qubits per subcircuit
     max_qubits = max(2, math.ceil(circuit.num_qubits * fraction))
 
@@ -132,10 +128,6 @@ def run_qac(bench: str, circuit_size: int, fraction: float) -> dict | None:
     return results
 
 
-@bk.foreach(bench=BENCHMARKS)
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
-@bk.foreach(fraction=FRACTIONS)
-@bk.log("logs/compiler/qtpu.jsonl")
 def run_qtpu(bench: str, circuit_size: int, fraction: float) -> dict:
     """Run QTPU on the specified benchmark and parameters."""
     print(f"Running QTPU: bench={bench}, size={circuit_size}")
@@ -152,10 +144,9 @@ def run_qtpu(bench: str, circuit_size: int, fraction: float) -> dict:
     return results
 
 
-if __name__ == "__main__":
+def main():
     import sys
     import subprocess
-    import os
 
     if len(sys.argv) < 2:
         print("Usage: python run.py [qac|qtpu] [benchmark]")
@@ -177,23 +168,33 @@ if __name__ == "__main__":
                 cwd=os.getcwd(),
             )
             processes.append((bench, p))
-        
+
         print(f"\nStarted {len(processes)} parallel processes. Waiting for completion...")
         for bench, p in processes:
             p.wait()
             print(f"  {bench}: {'done' if p.returncode == 0 else 'failed'}")
         print("All benchmarks complete.")
     elif cmd == "qac":
-        if bench_filter:
-            run_qac(bench=bench_filter)
-        else:
-            run_qac()
+        benchmarks = [bench_filter] if bench_filter else BENCHMARKS
+        for bench in benchmarks:
+            for circuit_size in CIRCUIT_SIZES:
+                for fraction in FRACTIONS:
+                    config = {"bench": bench, "circuit_size": circuit_size, "fraction": fraction}
+                    result = run_qac(bench, circuit_size, fraction)
+                    log_result("logs/compiler/qac.jsonl", config=config, result=result)
     elif cmd == "qtpu":
-        if bench_filter:
-            run_qtpu(bench=bench_filter)
-        else:
-            run_qtpu()
+        benchmarks = [bench_filter] if bench_filter else BENCHMARKS
+        for bench in benchmarks:
+            for circuit_size in CIRCUIT_SIZES:
+                for fraction in FRACTIONS:
+                    config = {"bench": bench, "circuit_size": circuit_size, "fraction": fraction}
+                    result = run_qtpu(bench, circuit_size, fraction)
+                    log_result("logs/compiler/qtpu.jsonl", config=config, result=result)
     else:
         print("Usage: python run.py [qac|qtpu] [benchmark]")
         print("       python run.py [qac|qtpu] --parallel")
         print("Benchmarks: qnn, wstate, vqe_su2, dist-vqe, or omit for all")
+
+
+if __name__ == "__main__":
+    main()

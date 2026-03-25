@@ -34,7 +34,7 @@ from qiskit.circuit import Parameter, ClassicalRegister
 from qiskit.primitives import StatevectorEstimator
 from qiskit.quantum_info import SparsePauliOp
 
-import benchkit as bk
+from evaluation.utils import log_result
 
 from qtpu import HEinsum, QuantumTensor, CTensor, ISwitch, HEinsumContractor
 
@@ -526,13 +526,10 @@ def run_comparison(
 
 
 # =============================================================================
-# BenchKit Logging
+# Benchmark Logging
 # =============================================================================
 
 
-@bk.foreach(num_qubits=NUM_QUBITS_LIST)
-@bk.foreach(num_support=NUM_SUPPORT_LIST)
-@bk.log("logs/hybrid_ml/kernel_naive.jsonl")
 def bench_naive(num_qubits: int, num_support: int) -> dict | None:
     """Benchmark naive approach."""
     print(f"Naive: qubits={num_qubits}, support={num_support}")
@@ -555,9 +552,6 @@ def bench_naive(num_qubits: int, num_support: int) -> dict | None:
         return None
 
 
-@bk.foreach(num_qubits=NUM_QUBITS_LIST)
-@bk.foreach(num_support=NUM_SUPPORT_LIST)
-@bk.log("logs/hybrid_ml/kernel_batch.jsonl")
 def bench_batch(num_qubits: int, num_support: int) -> dict | None:
     """Benchmark batch approach."""
     print(f"Batch: qubits={num_qubits}, support={num_support}")
@@ -580,9 +574,6 @@ def bench_batch(num_qubits: int, num_support: int) -> dict | None:
         return None
 
 
-@bk.foreach(num_qubits=NUM_QUBITS_LIST)
-@bk.foreach(num_support=NUM_SUPPORT_LIST)
-@bk.log("logs/hybrid_ml/kernel_heinsum.jsonl")
 def bench_heinsum(num_qubits: int, num_support: int) -> dict | None:
     """Benchmark HEinsum approach."""
     print(f"HEinsum: qubits={num_qubits}, support={num_support}")
@@ -633,20 +624,28 @@ Commands:
     
     cmd = sys.argv[1]
     
+    def _run_sweep(bench_fn, log_path):
+        for num_qubits in NUM_QUBITS_LIST:
+            for num_support in NUM_SUPPORT_LIST:
+                config = {"num_qubits": num_qubits, "num_support": num_support}
+                print(f"  Config: {config}")
+                result = bench_fn(num_qubits, num_support)
+                log_result(log_path, config, result)
+
     if cmd == "quick":
         run_comparison(num_qubits=4, num_support=10, num_epochs=30)
     elif cmd == "compare":
         run_comparison(num_qubits=4, num_support=20, num_epochs=50)
     elif cmd == "naive":
-        bench_naive()
+        _run_sweep(bench_naive, "logs/hybrid_ml/kernel_naive.jsonl")
     elif cmd == "batch":
-        bench_batch()
+        _run_sweep(bench_batch, "logs/hybrid_ml/kernel_batch.jsonl")
     elif cmd == "heinsum":
-        bench_heinsum()
+        _run_sweep(bench_heinsum, "logs/hybrid_ml/kernel_heinsum.jsonl")
     elif cmd == "all":
-        bench_naive()
-        bench_batch()
-        bench_heinsum()
+        _run_sweep(bench_naive, "logs/hybrid_ml/kernel_naive.jsonl")
+        _run_sweep(bench_batch, "logs/hybrid_ml/kernel_batch.jsonl")
+        _run_sweep(bench_heinsum, "logs/hybrid_ml/kernel_heinsum.jsonl")
     else:
         print(f"Unknown command: {cmd}")
         print(usage)

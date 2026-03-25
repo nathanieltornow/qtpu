@@ -27,7 +27,7 @@ from sklearn.datasets import make_moons, make_circles, load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-import benchkit as bk
+from evaluation.utils import log_result
 
 from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter, ClassicalRegister
@@ -279,10 +279,6 @@ def train_qtpu(
 # =============================================================================
 
 
-@bk.foreach(dataset=DATASETS)
-@bk.foreach(n_qubits=NUM_QUBITS_LIST)
-@bk.foreach(n_layers=NUM_LAYERS_LIST)
-@bk.log("logs/hybrid_ml/qtpu_training_demo.jsonl")
 def bench_training(dataset: str, n_qubits: int, n_layers: int) -> dict | None:
     """Benchmark QTPU training."""
     print(f"\n{'='*60}")
@@ -418,8 +414,14 @@ Configuration:
     cmd = sys.argv[1]
     
     if cmd == "run":
-        bench_training()
-        
+        for dataset in DATASETS:
+            for n_qubits in NUM_QUBITS_LIST:
+                for n_layers in NUM_LAYERS_LIST:
+                    config = {"dataset": dataset, "n_qubits": n_qubits, "n_layers": n_layers}
+                    print(f"  Config: {config}")
+                    result = bench_training(dataset, n_qubits, n_layers)
+                    log_result("logs/hybrid_ml/qtpu_training_demo.jsonl", config, result)
+
     elif cmd == "quick":
         print("Quick training demo...")
         results = []

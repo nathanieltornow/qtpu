@@ -6,14 +6,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from benchkit.plot.config import (
+from evaluation.utils import (
     PlotStyle,
     colors,
     single_column_width,
     register_style,
+    load_results,
 )
-
-import benchkit as bk
 
 QTPU_LABEL = r"\textsc{qTPU}"
 MITIQ_LABEL = r"\textsc{Mitiq}"
@@ -135,7 +134,6 @@ def plot_code_lines(ax, qtpu_df: pd.DataFrame, mitiq_df: pd.DataFrame):
     ax.set_xticklabels(labels)
 
 
-@bk.pplot
 def plot_error_mitigation_comparison(qtpu_df: pd.DataFrame, mitiq_df: pd.DataFrame):
     """Plot error mitigation comparison between QTPU and Mitiq-style.
 
@@ -143,7 +141,7 @@ def plot_error_mitigation_comparison(qtpu_df: pd.DataFrame, mitiq_df: pd.DataFra
         qtpu_df: DataFrame with QTPU benchmark results.
         mitiq_df: DataFrame with Mitiq-style benchmark results.
     Returns:
-        A BenchKit Plot object comparing the two approaches.
+        A matplotlib Figure object comparing the two approaches.
     """
     fig, axes = plt.subplots(1, 2, figsize=(single_column_width(), 1.3))
 
@@ -162,8 +160,8 @@ if __name__ == "__main__":
     register_style("mitiq", PlotStyle(color=colors()[2], hatch="o"))
 
     # Load data
-    qtpu_df = bk.load_log("logs/error_mitigation/qtpu_breakdown.jsonl")
-    mitiq_df = bk.load_log("logs/error_mitigation/mitiq_breakdown.jsonl")
+    qtpu_df = load_results("logs/error_mitigation/qtpu_breakdown.jsonl")
+    mitiq_df = load_results("logs/error_mitigation/mitiq_breakdown.jsonl")
 
     # Filter to only new data with 'mitigation' config
     qtpu_df = qtpu_df[qtpu_df["config.mitigation"].notna()]

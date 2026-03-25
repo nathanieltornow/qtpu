@@ -3,14 +3,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from benchkit.plot.config import (
+from evaluation.utils import (
     PlotStyle,
     colors,
     double_column_width,
     register_style,
+    load_results,
 )
-
-import benchkit as bk
 
 QTPU_LABEL = r"\textsc{qTPU}"
 QAC_LABEL = r"\textsc{QAC}"
@@ -249,7 +248,6 @@ def plot_postprocessing_cost(ax, qtpu_df: pd.DataFrame, qac_df: pd.DataFrame, be
     ax.set_xticklabels([f"{s}q" for s in valid_sizes])
 
 
-@bk.pplot
 def plot_scale_comparison(qtpu_df: pd.DataFrame, qac_df: pd.DataFrame, bench: str = "qnn"):
     """Plot scalability comparison between QTPU and QAC.
 
@@ -258,7 +256,7 @@ def plot_scale_comparison(qtpu_df: pd.DataFrame, qac_df: pd.DataFrame, bench: st
         qac_df: DataFrame with QAC benchmark results.
         bench: Benchmark name to plot (default: "qnn").
     Returns:
-        A BenchKit Plot object comparing the two approaches.
+        A matplotlib Figure object comparing the two approaches.
     """
     fig, axes = plt.subplots(1, 3, figsize=(double_column_width(), 1.3))
 
@@ -278,18 +276,8 @@ if __name__ == "__main__":
     register_style("qac", PlotStyle(color=colors()[1], hatch="\\\\"))
 
     # Load data
-    qtpu_data = bk.load_log("logs/scale/qtpu.jsonl")
-    qac_data = bk.load_log("logs/scale/qac.jsonl")
-
-    if isinstance(qtpu_data, pd.DataFrame):
-        qtpu_df = qtpu_data
-    else:
-        qtpu_df = pd.json_normalize(qtpu_data)
-
-    if isinstance(qac_data, pd.DataFrame):
-        qac_df = qac_data
-    else:
-        qac_df = pd.json_normalize(qac_data) if qac_data else pd.DataFrame()
+    qtpu_df = load_results("logs/scale/qtpu.jsonl")
+    qac_df = load_results("logs/scale/qac.jsonl")
 
     if qtpu_df.empty:
         print("No QTPU data found")

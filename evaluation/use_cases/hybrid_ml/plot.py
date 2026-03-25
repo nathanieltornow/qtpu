@@ -19,13 +19,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-import benchkit as bk
-from benchkit.plot.config import (
+from evaluation.utils import (
     PlotStyle,
     colors,
     single_column_width,
     double_column_width,
     register_style,
+    load_results,
 )
 
 
@@ -40,10 +40,10 @@ def load_and_prepare_data(
     batch_path: str, heinsum_path: str
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Load JSONL logs and convert to DataFrames."""
-    batch_df = bk.load_log(batch_path) if os.path.exists(batch_path) else pd.DataFrame()
-    heinsum_df = bk.load_log(heinsum_path) if os.path.exists(heinsum_path) else pd.DataFrame()
+    batch_df = load_results(batch_path) if os.path.exists(batch_path) else pd.DataFrame()
+    heinsum_df = load_results(heinsum_path) if os.path.exists(heinsum_path) else pd.DataFrame()
 
-    # Rename columns for convenience (benchkit uses config.* and result.* prefixes)
+    # Rename columns for convenience (JSONL logs use config.* and result.* prefixes)
     def rename_cols(df: pd.DataFrame) -> pd.DataFrame:
         if df.empty:
             return df
@@ -307,7 +307,6 @@ def plot_code_reduction_by_batch_size(
     ax.grid(True, alpha=0.3, axis="y")
 
 
-@bk.pplot
 def plot_hybrid_ml_benchmark(
     batch_df: pd.DataFrame,
     heinsum_df: pd.DataFrame,
@@ -329,7 +328,7 @@ def plot_hybrid_ml_benchmark(
         feature_dim: Feature dimension for filtering.
         
     Returns:
-        A BenchKit Plot object.
+        A matplotlib Figure object.
     """
     fig, axes = plt.subplots(1, 4, figsize=(double_column_width(), 1.3))
 

@@ -18,13 +18,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-import benchkit as bk
-from benchkit.plot.config import (
+from evaluation.utils import (
     PlotStyle,
     colors,
     single_column_width,
     double_column_width,
     register_style,
+    load_results,
 )
 
 
@@ -37,11 +37,11 @@ def load_and_prepare_data(
     naive_path: str, batch_path: str, qtpu_path: str
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Load JSONL logs and convert to DataFrames."""
-    naive_df = bk.load_log(naive_path) if os.path.exists(naive_path) else pd.DataFrame()
-    batch_df = bk.load_log(batch_path) if os.path.exists(batch_path) else pd.DataFrame()
-    qtpu_df = bk.load_log(qtpu_path) if os.path.exists(qtpu_path) else pd.DataFrame()
+    naive_df = load_results(naive_path) if os.path.exists(naive_path) else pd.DataFrame()
+    batch_df = load_results(batch_path) if os.path.exists(batch_path) else pd.DataFrame()
+    qtpu_df = load_results(qtpu_path) if os.path.exists(qtpu_path) else pd.DataFrame()
 
-    # Rename columns for convenience (benchkit uses config.* and result.* prefixes)
+    # Rename columns for convenience (JSONL logs use config.* and result.* prefixes)
     def rename_cols(df: pd.DataFrame) -> pd.DataFrame:
         if df.empty:
             return df
@@ -292,7 +292,6 @@ def plot_memory_usage(
     ax.grid(True, alpha=0.3, axis="y")
 
 
-@bk.pplot
 def plot_error_mitigation_breakdown(
     naive_df: pd.DataFrame,
     batch_df: pd.DataFrame,
@@ -314,7 +313,7 @@ def plot_error_mitigation_breakdown(
         sample_size: Number of samples for filtering.
         circuit_size: Circuit size for time breakdown plot.
     Returns:
-        A BenchKit Plot object comparing the three approaches.
+        A matplotlib Figure object comparing the three approaches.
     """
     fig, axes = plt.subplots(1, 3, figsize=(double_column_width(), 1.6))
 

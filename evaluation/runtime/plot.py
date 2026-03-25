@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-import benchkit as bk
-from benchkit.plot.config import (
+from evaluation.utils import (
+    load_results,
     double_column_width,
     single_column_width,
     colors,
@@ -39,7 +39,7 @@ STANDARD_BENCHMARKS = ["qnn", "wstate", "vqe_su2"]
 DEFAULT_CLUSTER_SIZE = 15
 
 # QPU counts for scalability analysis
-QPU_COUNTS = [1, 2, 4, 8, 16, 32]
+QPU_COUNTS = [1, 2, 4, 8, 16]
 
 # Circuit sizes
 CIRCUIT_SIZES = [20, 50, 100, 150]
@@ -55,7 +55,7 @@ HATCHES = ['', '///', '...', 'xxx']
 
 def load_standard_qtpu() -> pd.DataFrame:
     """Load and preprocess standard QTPU benchmark data."""
-    df = bk.load_log("logs/runtime/standard_qtpu.jsonl")
+    df = load_results("logs/runtime/standard_qtpu.jsonl")
     # Filter out failed runs (where result is NaN or compile_time is missing)
     df = df[df["result.compile_time"].notna()]
     return df
@@ -63,13 +63,13 @@ def load_standard_qtpu() -> pd.DataFrame:
 
 def load_standard_classical() -> pd.DataFrame:
     """Load and preprocess standard classical benchmark data."""
-    df = bk.load_log("logs/runtime/standard_classical.jsonl")
+    df = load_results("logs/runtime/standard_classical.jsonl")
     return df
 
 
 def load_dist_vqe_qtpu() -> pd.DataFrame:
     """Load and preprocess distributed VQE QTPU benchmark data."""
-    df = bk.load_log("logs/runtime/dist_vqe_qtpu.jsonl")
+    df = load_results("logs/runtime/dist_vqe_qtpu.jsonl")
     # Filter out failed runs
     df = df[df["result.compile_time"].notna()]
     return df
@@ -77,13 +77,13 @@ def load_dist_vqe_qtpu() -> pd.DataFrame:
 
 def load_dist_vqe_classical() -> pd.DataFrame:
     """Load and preprocess distributed VQE classical benchmark data."""
-    df = bk.load_log("logs/runtime/dist_vqe_classical.jsonl")
+    df = load_results("logs/runtime/dist_vqe_classical.jsonl")
     return df
 
 
 def compute_parallel_runtime(row: pd.Series, num_qpus: int) -> float:
     """Compute total runtime with N parallel QPUs.
-    
+
     The quantum workload is embarrassingly parallel:
     - quantum_time is the sequential time (all subcircuits run one after another)
     - With N QPUs, quantum portion takes quantum_time / N
@@ -92,7 +92,7 @@ def compute_parallel_runtime(row: pd.Series, num_qpus: int) -> float:
     compile_time = row["result.compile_time"]
     quantum_time_seq = row["result.quantum_time"]
     classical_time = row["result.classical_contraction_time"]
-    
+
     quantum_time_parallel = quantum_time_seq / num_qpus
     return compile_time + quantum_time_parallel + classical_time
 
@@ -113,7 +113,7 @@ def plot_e2e_runtime_by_benchmark(
     show_legend: bool = True,
 ):
     """Plot end-to-end runtime vs circuit size for multiple benchmarks.
-    
+
     Args:
         ax: Matplotlib axis.
         qtpu_df: DataFrame with QTPU results.
@@ -182,7 +182,7 @@ def plot_runtime_by_qpu_count(
     show_legend: bool = True,
 ):
     """Plot runtime vs number of QPUs for 100q benchmarks.
-    
+
     Args:
         ax: Matplotlib axis.
         qtpu_df: DataFrame with QTPU results.
@@ -246,7 +246,7 @@ def plot_dist_vqe_by_cluster_size(
     show_legend: bool = True,
 ):
     """Plot dist-VQE runtime for different cluster sizes with fixed QPU count.
-    
+
     Args:
         ax: Matplotlib axis.
         dist_qtpu_df: DataFrame with dist-VQE QTPU results.
@@ -299,28 +299,26 @@ def plot_dist_vqe_by_cluster_size(
 # =============================================================================
 
 
-@bk.pplot
 def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dist_classical_df: pd.DataFrame = None):
-    """Main runtime analysis figure (1 row, 4 columns) with bar charts.
-    
-    Creates a 1x4 grid showing superscalability:
+    """Main runtime analysis figure (1 row, 3 columns) with bar charts.
+
+    Creates a 1x3 grid showing superscalability:
     - (a) Runtime by circuit size (1 QPU baseline)
-    - (b) Runtime breakdown (percentage) sharing y-axis with (a)
-    - (c) Speedup by number of QPUs (showing near-linear scaling)
-    - (d) Runtime by cluster size (dist-VQE) comparing QTPU vs cuTensorNet
+    - (b) Speedup by number of QPUs (showing near-linear scaling)
+    - (c) Runtime by cluster size (dist-VQE) comparing QTPU vs cuTensorNet
 
     Args:
         qtpu_df: DataFrame with standard QTPU results.
         dist_qtpu_df: DataFrame with dist-VQE QTPU results.
         dist_classical_df: DataFrame with dist-VQE classical (cuTensorNet) results.
     Returns:
-        A BenchKit Plot object.
+        A matplotlib Figure.
     """
     # Create figure with 3 subplots
     fig, axes = plt.subplots(1, 3, figsize=(double_column_width(), 1.4))
-    
+
     bar_width = 0.2
-    
+
     # ==========================================================================
     # (a) Runtime by Circuit Size (1 QPU) - bar chart with exponential reference
     # ==========================================================================
@@ -328,7 +326,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
     sizes_a = [40, 60, 80, 100]
     x_a = np.arange(len(sizes_a))
     bar_width_a = 0.2
-    
+
     benchmark_idx = 0
     # Standard benchmarks
     for bench in STANDARD_BENCHMARKS:
@@ -338,7 +336,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
         ].copy()
         if bench_df.empty:
             continue
-        
+
         runtimes = []
         for size in sizes_a:
             row = bench_df[bench_df["config.circuit_size"] == size]
@@ -346,12 +344,12 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
                 runtimes.append(compute_parallel_runtime(row.iloc[0], 1))
             else:
                 runtimes.append(np.nan)
-        
+
         # Filter out NaN values
         valid_indices = [i for i, r in enumerate(runtimes) if not np.isnan(r)]
         valid_runtimes = [runtimes[i] for i in valid_indices]
         valid_x = x_a[valid_indices] + (benchmark_idx - 1.5) * bar_width_a
-        
+
         axes[0].bar(
             valid_x,
             valid_runtimes,
@@ -363,7 +361,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
             hatch=HATCHES[benchmark_idx % len(HATCHES)],
         )
         benchmark_idx += 1
-    
+
     # Dist-VQE (cluster_size=15) - only has 100q and 150q
     dist_df = dist_qtpu_df[dist_qtpu_df["config.cluster_size"] == 15].copy()
     if not dist_df.empty:
@@ -374,11 +372,11 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
                 runtimes.append(compute_parallel_runtime(row.iloc[0], 1))
             else:
                 runtimes.append(np.nan)
-        
+
         valid_indices = [i for i, r in enumerate(runtimes) if not np.isnan(r)]
         valid_runtimes = [runtimes[i] for i in valid_indices]
         valid_x = x_a[valid_indices] + (benchmark_idx - 1.5) * bar_width_a
-        
+
         axes[0].bar(
             valid_x,
             valid_runtimes,
@@ -389,7 +387,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
             linewidth=0.5,
             hatch=HATCHES[benchmark_idx % len(HATCHES)],
         )
-    
+
     axes[0].set_xlabel("Circuit Size (qubits)")
     axes[0].set_ylabel("Runtime [s]")
     axes[0].set_xticks(x_a)
@@ -397,14 +395,14 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
     axes[0].set_title(r"\textbf{(a) Runtime Scaling}", fontsize=9)
     axes[0].set_yscale("log")
     axes[0].grid(True, alpha=0.3, axis="y")
-    
+
     # ==========================================================================
     # (b) Speedup by Number of QPUs - bar chart showing near-linear scaling
     # ==========================================================================
     qpu_counts = [1, 2, 4, 8, 16]  # Only up to 16 QPUs
     x_b = np.arange(len(qpu_counts))
     circuit_size = 100
-    
+
     # Collect data for all benchmarks at 100q
     benchmark_data = []
     for bench in STANDARD_BENCHMARKS:
@@ -415,7 +413,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
         ]
         if not row.empty:
             benchmark_data.append((bench, row.iloc[0]))
-    
+
     # Dist-VQE at 100q
     dist_row = dist_qtpu_df[
         (dist_qtpu_df["config.circuit_size"] == 100)
@@ -423,11 +421,11 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
     ]
     if not dist_row.empty:
         benchmark_data.append(("dist-vqe", dist_row.iloc[0]))
-    
+
     for i, (bench, row) in enumerate(benchmark_data):
         runtime_1 = compute_parallel_runtime(row, 1)
         speedups = [runtime_1 / compute_parallel_runtime(row, n) for n in qpu_counts]
-        
+
         offset = (i - len(benchmark_data)/2 + 0.5) * bar_width
         axes[1].bar(
             x_b + offset,
@@ -439,7 +437,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
             linewidth=0.5,
             hatch=HATCHES[i % len(HATCHES)],
         )
-    
+
     axes[1].set_xlabel("Number of QPUs")
     axes[1].set_ylabel(r"Speedup [$\times$]")
     axes[1].set_xticks(x_b)
@@ -447,15 +445,15 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
     axes[1].set_title(r"\textbf{(b) Speedup}", fontsize=9)
     axes[1].set_ylim(0, max(qpu_counts) * 1.1)
     axes[1].grid(True, alpha=0.3, axis="y")
-    
+
     # Add ideal linear scaling line (after other plots so it appears last in legend)
     axes[1].plot(x_b, qpu_counts, "k--", linewidth=1.5, label="Linear", zorder=10)
-    
+
     # Create a single shared legend below both (a) and (b)
     handles, labels = axes[1].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.35, -0.05), 
+    fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.35, -0.05),
               fontsize=6, ncol=5, frameon=True)
-    
+
     # ==========================================================================
     # (c) Runtime by Cluster Size (Dist-VQE, 100q) - QTPU vs cuTensorNet
     # ==========================================================================
@@ -464,7 +462,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
     x_c = np.arange(len(cluster_sizes))
     num_qpus = 4
     bar_width_c = 0.35
-    
+
     # Get QTPU runtime for each cluster size at 100q (with 4 QPUs)
     qtpu_runtimes = []
     for cs in cluster_sizes:
@@ -476,7 +474,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
             qtpu_runtimes.append(compute_parallel_runtime(row.iloc[0], num_qpus))
         else:
             qtpu_runtimes.append(0)
-    
+
     # Get classical (cuTensorNet) runtime for each cluster size at 100q
     classical_runtimes = []
     classical_oom = []  # Track which ones failed with OOM
@@ -499,7 +497,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
             else:
                 classical_runtimes.append(0)
                 classical_oom.append(False)
-    
+
     # Plot QTPU bars
     axes[2].bar(
         x_c - bar_width_c/2,
@@ -511,7 +509,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
         linewidth=0.5,
         hatch=HATCHES[0],
     )
-    
+
     # Plot classical bars (if available)
     if dist_classical_df is not None and classical_runtimes:
         # Plot successful bars
@@ -526,7 +524,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
             linewidth=0.5,
             hatch=HATCHES[1],
         )
-        
+
         # Add OOM markers for failed bars
         for i, (cs, oom) in enumerate(zip(cluster_sizes, classical_oom)):
             if oom:
@@ -544,7 +542,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
                 axes[2].annotate('OOM', xy=(x_c[i] + bar_width_c/2, max_y * 0.45),
                                ha='center', va='center', fontsize=5, fontweight='bold',
                                color='red', rotation=90)
-    
+
     axes[2].set_xlabel("Cluster Size")
     axes[2].set_ylabel("Runtime [s]")
     axes[2].set_xticks(x_c)
@@ -553,14 +551,14 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
     axes[2].legend(loc="upper left", fontsize=6)
     axes[2].grid(True, alpha=0.3, axis="y")
     axes[2].set_yscale("log")
-    
+
     # ==========================================================================
     # Print summary statistics
     # ==========================================================================
     print("\n" + "="*80)
     print("RUNTIME ANALYSIS SUMMARY")
     print("="*80)
-    
+
     # (a) Runtime scaling summary
     print("\n(a) Runtime Scaling (1 QPU, 100q):")
     print("-" * 80)
@@ -573,7 +571,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
         if not row.empty:
             runtime = compute_parallel_runtime(row.iloc[0], 1)
             print(f"  {BENCH_NAMES.get(bench, bench):<10} {runtime:>8.2f}s")
-    
+
     # Dist-VQE
     dist_row = dist_qtpu_df[
         (dist_qtpu_df["config.circuit_size"] == 100)
@@ -582,7 +580,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
     if not dist_row.empty:
         runtime = compute_parallel_runtime(dist_row.iloc[0], 1)
         print(f"  {BENCH_NAMES.get('dist-vqe', 'Dist-VQE'):<10} {runtime:>8.2f}s")
-    
+
     # (b) Speedup analysis
     print("\n(b) Speedup Analysis (100q, W-State as example):")
     print("-" * 80)
@@ -601,13 +599,13 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
             speedup = runtime_1 / runtime_n
             efficiency = speedup / n * 100
             print(f"  {n:<8} {runtime_n:<12.2f} {speedup:<10.2f}x {efficiency:<12.1f}%")
-    
+
     # Runtime breakdown
     print("\n(c) Runtime Breakdown (100q, cluster_size=15):")
     print("-" * 80)
     print(f"{'Benchmark':<12} {'Compile':<10} {'Quantum':<10} {'Classical':<12} {'Quantum %':<12}")
     print("-" * 80)
-    
+
     for bench in STANDARD_BENCHMARKS:
         row = qtpu_df[
             (qtpu_df["config.bench"] == bench)
@@ -622,32 +620,32 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
             total = ct + qt + cct
             qpct = qt / total * 100
             print(f"{BENCH_NAMES.get(bench, bench):<12} {ct:<10.3f} {qt:<10.2f} {cct:<12.4f} {qpct:<12.1f}")
-    
+
     # Classical vs QTPU comparison
     if dist_classical_df is not None and not dist_classical_df.empty:
         print("\n(d) QTPU vs Classical (Dist-VQE, 100q, 4 QPUs):")
         print("-" * 80)
         print(f"{'Cluster':<10} {'QTPU [s]':<12} {'Classical [s]':<15} {'Speedup':<12} {'Status':<10}")
         print("-" * 80)
-        
+
         for cs in sorted(dist_qtpu_df["config.cluster_size"].unique()):
             if cs >= 20 or cs == 15:
                 continue
-                
+
             qtpu_row = dist_qtpu_df[
                 (dist_qtpu_df["config.circuit_size"] == 100)
                 & (dist_qtpu_df["config.cluster_size"] == cs)
             ]
-            
+
             if not qtpu_row.empty:
                 qtpu_time = compute_parallel_runtime(qtpu_row.iloc[0], 4)
-                
+
                 classical_row = dist_classical_df[
                     (dist_classical_df["config.circuit_size"] == 100)
                     & (dist_classical_df["config.cluster_size"] == cs)
                     & (dist_classical_df["result.status"].notna())
                 ]
-                
+
                 if not classical_row.empty:
                     r = classical_row.iloc[0]
                     if r["result.status"] == "success":
@@ -658,7 +656,7 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
                         print(f"{int(cs)}q{'':<6} {qtpu_time:<12.2f} {'OOM':<15} {'-':<12} {'OOM':<10}")
                 else:
                     print(f"{int(cs)}q{'':<6} {qtpu_time:<12.2f} {'N/A':<15} {'-':<12} {'No data':<10}")
-    
+
     print("\n" + "="*80 + "\n")
     plt.tight_layout(pad=0.5, w_pad=1.0, h_pad=0.5)
     return fig

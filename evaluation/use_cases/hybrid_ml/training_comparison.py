@@ -33,7 +33,7 @@ from sklearn.datasets import make_moons
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-import benchkit as bk
+from evaluation.utils import log_result
 
 # PennyLane imports
 import pennylane as qml
@@ -414,10 +414,6 @@ def run_qtpu(
 # =============================================================================
 
 
-@bk.foreach(n_qubits=NUM_QUBITS_LIST)
-@bk.foreach(n_layers=NUM_LAYERS_LIST)
-@bk.foreach(n_epochs=NUM_EPOCHS_LIST)
-@bk.log("logs/hybrid_ml/pennylane_training.jsonl")
 def bench_pennylane(n_qubits: int, n_layers: int, n_epochs: int) -> dict | None:
     """Benchmark PennyLane training."""
     print(f"PennyLane: qubits={n_qubits}, layers={n_layers}, epochs={n_epochs}")
@@ -437,10 +433,6 @@ def bench_pennylane(n_qubits: int, n_layers: int, n_epochs: int) -> dict | None:
         return None
 
 
-@bk.foreach(n_qubits=NUM_QUBITS_LIST)
-@bk.foreach(n_layers=NUM_LAYERS_LIST)
-@bk.foreach(n_epochs=NUM_EPOCHS_LIST)
-@bk.log("logs/hybrid_ml/qtpu_training.jsonl")
 def bench_qtpu(n_qubits: int, n_layers: int, n_epochs: int) -> dict | None:
     """Benchmark QTPU training."""
     print(f"QTPU: qubits={n_qubits}, layers={n_layers}, epochs={n_epochs}")
@@ -499,14 +491,23 @@ Configuration:
     
     cmd = sys.argv[1]
     
+    def _run_sweep(bench_fn, log_path):
+        for n_qubits in NUM_QUBITS_LIST:
+            for n_layers in NUM_LAYERS_LIST:
+                for n_epochs in NUM_EPOCHS_LIST:
+                    config = {"n_qubits": n_qubits, "n_layers": n_layers, "n_epochs": n_epochs}
+                    print(f"  Config: {config}")
+                    result = bench_fn(n_qubits, n_layers, n_epochs)
+                    log_result(log_path, config, result)
+
     if cmd == "pennylane":
-        bench_pennylane()
+        _run_sweep(bench_pennylane, "logs/hybrid_ml/pennylane_training.jsonl")
     elif cmd == "qtpu":
-        bench_qtpu()
+        _run_sweep(bench_qtpu, "logs/hybrid_ml/qtpu_training.jsonl")
     elif cmd == "all":
         print("Running all benchmarks...")
-        bench_pennylane()
-        bench_qtpu()
+        _run_sweep(bench_pennylane, "logs/hybrid_ml/pennylane_training.jsonl")
+        _run_sweep(bench_qtpu, "logs/hybrid_ml/qtpu_training.jsonl")
     elif cmd == "quick":
         # Quick test with minimal config
         print("Quick test...")

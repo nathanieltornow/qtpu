@@ -37,7 +37,7 @@ import torch
 from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter, ClassicalRegister
 
-import benchkit as bk
+from evaluation.utils import log_result
 
 from qtpu.core import HEinsum, QuantumTensor, CTensor, ISwitch
 from qtpu.runtime.baseline import run_naive, run_batch, run_heinsum
@@ -153,14 +153,10 @@ def build_heinsum(
 
 
 # =============================================================================
-# Benchmark Functions with BenchKit Logging
+# Benchmark Functions
 # =============================================================================
 
 
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
-@bk.foreach(feature_dim=FEATURE_DIMS)
-@bk.foreach(batch_size=BATCH_SIZES)
-@bk.log("logs/hybrid_ml/naive_breakdown.jsonl")
 def bench_naive(circuit_size: int, feature_dim: int, batch_size: int) -> dict | None:
     """Benchmark naive (sequential) approach."""
     print(f"Naive: qubits={circuit_size}, features={feature_dim}, batch={batch_size}")
@@ -191,10 +187,6 @@ def bench_naive(circuit_size: int, feature_dim: int, batch_size: int) -> dict | 
         return None
 
 
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
-@bk.foreach(feature_dim=FEATURE_DIMS)
-@bk.foreach(batch_size=BATCH_SIZES)
-@bk.log("logs/hybrid_ml/batch_breakdown.jsonl")
 def bench_batch(circuit_size: int, feature_dim: int, batch_size: int) -> dict | None:
     """Benchmark batch approach."""
     print(f"Batch: qubits={circuit_size}, features={feature_dim}, batch={batch_size}")
@@ -225,10 +217,6 @@ def bench_batch(circuit_size: int, feature_dim: int, batch_size: int) -> dict | 
         return None
 
 
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
-@bk.foreach(feature_dim=FEATURE_DIMS)
-@bk.foreach(batch_size=BATCH_SIZES)
-@bk.log("logs/hybrid_ml/heinsum_breakdown.jsonl")
 def bench_heinsum(circuit_size: int, feature_dim: int, batch_size: int) -> dict | None:
     """Benchmark HEinsum (QTPU) approach."""
     print(f"HEinsum: qubits={circuit_size}, features={feature_dim}, batch={batch_size}")
@@ -304,17 +292,26 @@ Configuration:
 
     cmd = sys.argv[1]
 
+    def _run_sweep(bench_fn, log_path):
+        for circuit_size in CIRCUIT_SIZES:
+            for feature_dim in FEATURE_DIMS:
+                for batch_size in BATCH_SIZES:
+                    config = {"circuit_size": circuit_size, "feature_dim": feature_dim, "batch_size": batch_size}
+                    print(f"  Config: {config}")
+                    result = bench_fn(circuit_size, feature_dim, batch_size)
+                    log_result(log_path, config, result)
+
     if cmd == "naive":
-        bench_naive()
+        _run_sweep(bench_naive, "logs/hybrid_ml/naive_breakdown.jsonl")
     elif cmd == "batch":
-        bench_batch()
+        _run_sweep(bench_batch, "logs/hybrid_ml/batch_breakdown.jsonl")
     elif cmd == "heinsum":
-        bench_heinsum()
+        _run_sweep(bench_heinsum, "logs/hybrid_ml/heinsum_breakdown.jsonl")
     elif cmd == "all":
         print("Running all benchmarks...")
-        bench_naive()
-        bench_batch()
-        bench_heinsum()
+        _run_sweep(bench_naive, "logs/hybrid_ml/naive_breakdown.jsonl")
+        _run_sweep(bench_batch, "logs/hybrid_ml/batch_breakdown.jsonl")
+        _run_sweep(bench_heinsum, "logs/hybrid_ml/heinsum_breakdown.jsonl")
     else:
         print(f"Unknown command: {cmd}")
         print(usage)

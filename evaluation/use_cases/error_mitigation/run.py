@@ -23,7 +23,7 @@ from qiskit.circuit import Parameter, QuantumCircuit
 from qiskit.circuit.library import efficient_su2
 from qiskit.circuit.library import IGate, XGate, YGate, ZGate
 
-import benchkit as bk
+from evaluation.utils import log_result
 
 from qtpu.core import ISwitch, QuantumTensor, CTensor, HEinsum
 from qtpu.compiler.codegen import quantum_tensor_to_cudaq
@@ -452,16 +452,11 @@ NUM_TWIRL = 100
 NUM_ZNE = 200
 
 
-@bk.foreach(mitigation=MITIGATIONS)
-@bk.log("logs/error_mitigation/qtpu_breakdown.jsonl")
 def bench_qtpu(mitigation: str) -> dict:
     """Benchmark QTPU error mitigation generation."""
     return run_qtpu_mitigation(CIRCUIT_SIZE, mitigation, NUM_PEC, NUM_TWIRL, NUM_ZNE)
 
 
-@bk.foreach(mitigation=MITIGATIONS)
-@bk.foreach(num_samples=NUM_SAMPLES_LIST)
-@bk.log("logs/error_mitigation/mitiq_breakdown.jsonl")
 def bench_mitiq(mitigation: str, num_samples: int) -> dict:
     """Benchmark Mitiq-style error mitigation generation."""
     return run_mitiq_mitigation(CIRCUIT_SIZE, mitigation, NUM_PEC, NUM_TWIRL, NUM_ZNE, num_samples)
@@ -470,13 +465,29 @@ def bench_mitiq(mitigation: str, num_samples: int) -> dict:
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         if sys.argv[1] == "qtpu":
-            bench_qtpu()
+            for mitigation in MITIGATIONS:
+                config = {"mitigation": mitigation}
+                print(f"Running QTPU: {config}")
+                result = bench_qtpu(mitigation)
+                log_result("logs/error_mitigation/qtpu_breakdown.jsonl", config, result)
         elif sys.argv[1] == "mitiq":
-            bench_mitiq()
+            for mitigation in MITIGATIONS:
+                for num_samples in NUM_SAMPLES_LIST:
+                    config = {"mitigation": mitigation, "num_samples": num_samples}
+                    print(f"Running Mitiq: {config}")
+                    result = bench_mitiq(mitigation, num_samples)
+                    log_result("logs/error_mitigation/mitiq_breakdown.jsonl", config, result)
         elif sys.argv[1] == "all":
             print("Running all benchmarks...")
-            bench_qtpu()
-            bench_mitiq()
+            for mitigation in MITIGATIONS:
+                config = {"mitigation": mitigation}
+                result = bench_qtpu(mitigation)
+                log_result("logs/error_mitigation/qtpu_breakdown.jsonl", config, result)
+            for mitigation in MITIGATIONS:
+                for num_samples in NUM_SAMPLES_LIST:
+                    config = {"mitigation": mitigation, "num_samples": num_samples}
+                    result = bench_mitiq(mitigation, num_samples)
+                    log_result("logs/error_mitigation/mitiq_breakdown.jsonl", config, result)
         elif sys.argv[1] == "quick":
             # Quick test with 100-qubit circuit
             from mqt.bench import get_benchmark_indep

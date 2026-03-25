@@ -43,7 +43,7 @@ from qiskit.circuit.library import IGate, XGate, YGate, ZGate
 from qiskit.primitives import StatevectorEstimator
 from qiskit.quantum_info import SparsePauliOp
 
-import benchkit as bk
+from evaluation.utils import log_result
 
 from qtpu.core import ISwitch, QuantumTensor
 
@@ -416,10 +416,6 @@ def create_test_circuit(num_qubits: int, reps: int = 2) -> QuantumCircuit:
     return qc
 
 
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
-@bk.foreach(mitigation=MITIGATIONS)
-@bk.foreach(num_samples=NUM_SAMPLES_LIST)
-@bk.log("logs/error_mitigation/naive_overhead.jsonl")
 def bench_naive_overhead(
     circuit_size: int, mitigation: str, num_samples: int
 ) -> dict:
@@ -429,10 +425,6 @@ def bench_naive_overhead(
     return run_naive_loop(circuit, mitigation, num_twirl, num_pec, num_samples)
 
 
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
-@bk.foreach(mitigation=MITIGATIONS)
-@bk.foreach(num_samples=NUM_SAMPLES_LIST)
-@bk.log("logs/error_mitigation/batch_overhead.jsonl")
 def bench_batch_overhead(
     circuit_size: int, mitigation: str, num_samples: int
 ) -> dict:
@@ -442,10 +434,6 @@ def bench_batch_overhead(
     return run_batch(circuit, mitigation, num_twirl, num_pec, num_samples)
 
 
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
-@bk.foreach(mitigation=MITIGATIONS)
-@bk.foreach(num_samples=NUM_SAMPLES_LIST)
-@bk.log("logs/error_mitigation/qtpu_overhead.jsonl")
 def bench_qtpu_overhead(
     circuit_size: int, mitigation: str, num_samples: int
 ) -> dict:
@@ -453,6 +441,16 @@ def bench_qtpu_overhead(
     circuit = create_test_circuit(circuit_size, reps=2)
     num_twirl, num_pec = get_mitigation_params(circuit_size)
     return run_qtpu(circuit, mitigation, num_twirl, num_pec, num_samples)
+
+
+def _run_sweep(bench_fn, log_path):
+    for circuit_size in CIRCUIT_SIZES:
+        for mitigation in MITIGATIONS:
+            for num_samples in NUM_SAMPLES_LIST:
+                config = {"circuit_size": circuit_size, "mitigation": mitigation, "num_samples": num_samples}
+                print(f"  Config: {config}")
+                result = bench_fn(circuit_size, mitigation, num_samples)
+                log_result(log_path, config, result)
 
 
 if __name__ == "__main__":
@@ -463,12 +461,12 @@ if __name__ == "__main__":
         sys.exit(1)
 
     if sys.argv[1] == "naive":
-        bench_naive_overhead()
+        _run_sweep(bench_naive_overhead, "logs/error_mitigation/naive_overhead.jsonl")
     elif sys.argv[1] == "batch":
-        bench_batch_overhead()
+        _run_sweep(bench_batch_overhead, "logs/error_mitigation/batch_overhead.jsonl")
     elif sys.argv[1] == "qtpu":
-        bench_qtpu_overhead()
+        _run_sweep(bench_qtpu_overhead, "logs/error_mitigation/qtpu_overhead.jsonl")
     elif sys.argv[1] == "all":
-        bench_naive_overhead()
-        bench_batch_overhead()
-        bench_qtpu_overhead()
+        _run_sweep(bench_naive_overhead, "logs/error_mitigation/naive_overhead.jsonl")
+        _run_sweep(bench_batch_overhead, "logs/error_mitigation/batch_overhead.jsonl")
+        _run_sweep(bench_qtpu_overhead, "logs/error_mitigation/qtpu_overhead.jsonl")

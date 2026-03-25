@@ -20,9 +20,9 @@ from qiskit_addon_cutting.automated_cut_finding import (
     find_cuts,
 )
 
-import benchkit as bk
-
 from mqt.bench import get_benchmark_indep
+
+from evaluation.utils import log_result, run_with_timeout
 
 import qtpu
 from evaluation.analysis import estimate_runtime
@@ -67,8 +67,6 @@ def _create_fake_results(circuits: list[QuantumCircuit], shots: int):
     return PrimitiveResult(fake_results)
 
 
-# @bk.catch_failures({"failed": True})
-@bk.timeout(3600, {"timeout": True})
 def run_qac(
     circuit: QuantumCircuit,
     max_qubits: int,
@@ -157,15 +155,11 @@ def run_qtpu(circuit: QuantumCircuit, max_size: int) -> dict[str, float]:
     }
 
 
-CIRCUIT_SIZES = list(range(10, 90, 10))
+CIRCUIT_SIZES = list(range(20, 90, 10))
 BENCHMARKS = ["qnn"]
 SUBCIRC_SIZES = [10]
 
 
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
-@bk.foreach(subcirc_size=SUBCIRC_SIZES)
-@bk.foreach(bench=BENCHMARKS)
-@bk.log("logs/scale/qtpu.jsonl")
 def scale_qtpu_bench(
     circuit_size: int, subcirc_size: int, bench: str
 ) -> dict[str, float]:
@@ -174,10 +168,6 @@ def scale_qtpu_bench(
     return qtpu_metrics
 
 
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
-@bk.foreach(subcirc_size=SUBCIRC_SIZES)
-@bk.foreach(bench=BENCHMARKS)
-@bk.log("logs/scale/qac.jsonl")
 def scale_qac_bench(
     circuit_size: int, subcirc_size: int, bench: str
 ) -> dict[str, float]:
@@ -193,7 +183,27 @@ def scale_qac_bench(
 if __name__ == "__main__":
     import sys
 
+    if len(sys.argv) < 2:
+        print("Usage: python run.py [qtpu|qac]")
+        sys.exit(1)
+
     if sys.argv[1] == "qtpu":
-        scale_qtpu_bench()
+        for bench in BENCHMARKS:
+            for subcirc_size in SUBCIRC_SIZES:
+                for circuit_size in CIRCUIT_SIZES:
+                    config = {"circuit_size": circuit_size, "subcirc_size": subcirc_size, "bench": bench}
+                    print(f"Running QTPU: {config}")
+                    result = scale_qtpu_bench(circuit_size, subcirc_size, bench)
+                    log_result("logs/scale/qtpu.jsonl", config, result)
     elif sys.argv[1] == "qac":
-        scale_qac_bench()
+        for bench in BENCHMARKS:
+            for subcirc_size in SUBCIRC_SIZES:
+                for circuit_size in CIRCUIT_SIZES:
+                    config = {"circuit_size": circuit_size, "subcirc_size": subcirc_size, "bench": bench}
+                    print(f"Running QAC: {config}")
+                    result = run_with_timeout(
+                        lambda cs=circuit_size, ss=subcirc_size, b=bench: scale_qac_bench(cs, ss, b),
+                        timeout_secs=3600,
+                        default={"timeout": True},
+                    )
+                    log_result("logs/scale/qac.jsonl", config, result)

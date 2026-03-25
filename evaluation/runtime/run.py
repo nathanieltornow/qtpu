@@ -14,12 +14,12 @@ from time import perf_counter
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 
-import benchkit as bk
 import qtpu
 from qtpu.core import HEinsum
 from qtpu.compiler.opt.optimize import optimize, OptimizationParameters
 
 from evaluation.benchmarks import get_benchmark
+from evaluation.utils import log_result
 
 
 # =============================================================================
@@ -33,8 +33,8 @@ STANDARD_SIZES = [40, 60, 80, 100]
 # Distributed VQE benchmark (all-to-all within clusters, sparse inter-cluster)
 DIST_VQE_SIZES = [100]
 
-# Cluster sizes to evaluate (qubits per QPU)
-CLUSTER_SIZES = [14]
+# Cluster sizes to evaluate (qubits per QPU) — paper Fig 11(c)
+CLUSTER_SIZES = list(range(10, 20))
 
 
 # =============================================================================
@@ -43,7 +43,7 @@ CLUSTER_SIZES = [14]
 
 
 def compute_expval_cutensornet(circuit: QuantumCircuit) -> tuple[float | None, float]:
-    """Compute <Z⊗Z⊗...⊗Z> using cuTensorNet contraction.
+    """Compute <Z^n> using cuTensorNet contraction.
 
     Uses NVIDIA cuQuantum's Network API for circuit-to-tensor-network
     conversion and GPU-accelerated contraction with autotuning.
@@ -63,7 +63,7 @@ def compute_expval_cutensornet(circuit: QuantumCircuit) -> tuple[float | None, f
 
     n = circuit.num_qubits
 
-    # Build Pauli string for <Z⊗Z⊗...⊗Z>
+    # Build Pauli string for <Z^n>
     pauli_string = "Z" * n
 
     start = perf_counter()
@@ -78,13 +78,13 @@ def compute_expval_cutensornet(circuit: QuantumCircuit) -> tuple[float | None, f
         # memory_limit tells cuTensorNet how much GPU memory is available
         # The slicer will automatically slice indices to fit within this limit
         network_opts = NetworkOptions()  # A40 has 48GB
-        
+
         with Network(expression, *operands, options=network_opts) as tn:
             # Find contraction path - cuTensorNet will automatically slice
             # based on the memory_limit in NetworkOptions
             path, info = tn.contract_path()
             tn.autotune(iterations=5)
-            
+
             # Contract
             result = tn.contract()
 
@@ -118,7 +118,7 @@ def compile_and_run_qtpu(
         Dict with timing breakdown and circuit statistics.
     """
     from qtpu.runtime.baseline import run_heinsum
-    
+
     # Compile
     compile_start = perf_counter()
     try:
@@ -162,10 +162,6 @@ def compile_and_run_qtpu(
 # =============================================================================
 
 
-@bk.foreach(bench=STANDARD_BENCHMARKS)
-@bk.foreach(circuit_size=STANDARD_SIZES)
-@bk.foreach(cluster_size=[15])
-@bk.log("logs/runtime/standard_qtpu.jsonl")
 def run_standard_qtpu(bench: str, circuit_size: int, cluster_size: int) -> dict | None:
     """Run QTPU on standard MQT benchmarks."""
     # Skip if cluster_size > circuit_size
@@ -191,9 +187,6 @@ def run_standard_qtpu(bench: str, circuit_size: int, cluster_size: int) -> dict 
     }
 
 
-@bk.foreach(bench=STANDARD_BENCHMARKS)
-@bk.foreach(circuit_size=STANDARD_SIZES)
-@bk.log("logs/runtime/standard_classical.jsonl")
 def run_standard_classical(bench: str, circuit_size: int) -> dict | None:
     """Run classical TN simulation on standard MQT benchmarks using cuTensorNet."""
     print(f"Classical [{bench}]: size={circuit_size}")
@@ -218,9 +211,6 @@ def run_standard_classical(bench: str, circuit_size: int) -> dict | None:
 # =============================================================================
 
 
-@bk.foreach(circuit_size=DIST_VQE_SIZES)
-@bk.foreach(cluster_size=CLUSTER_SIZES)
-@bk.log("logs/runtime/dist_vqe_qtpu.jsonl")
 def run_dist_vqe_qtpu(circuit_size: int, cluster_size: int) -> dict | None:
     """Run QTPU on distributed VQE circuit."""
     # Skip invalid combinations (cluster must evenly divide circuit)
@@ -245,9 +235,6 @@ def run_dist_vqe_qtpu(circuit_size: int, cluster_size: int) -> dict | None:
     }
 
 
-@bk.foreach(circuit_size=DIST_VQE_SIZES)
-@bk.foreach(cluster_size=CLUSTER_SIZES)
-@bk.log("logs/runtime/dist_vqe_classical.jsonl")
 def run_dist_vqe_classical(circuit_size: int, cluster_size: int) -> dict | None:
     """Run classical TN simulation on distributed VQE circuit using cuTensorNet."""
     # Skip invalid combinations (cluster must evenly divide circuit)
@@ -289,18 +276,18 @@ Commands:
     standard-qtpu       Run QTPU on standard MQT benchmarks
     standard-classical  Run classical TN on standard MQT benchmarks
     standard            Run both QTPU and classical on standard benchmarks
-    
+
     dist-qtpu           Run QTPU on distributed VQE benchmark
     dist-classical      Run classical TN on distributed VQE benchmark
     dist                Run both QTPU and classical on distributed VQE
-    
+
     all                 Run all evaluations
 
 Benchmarks:
     Standard (MQT Bench): qnn, wstate, vqe_su2
         - Linear/nearest-neighbor connectivity
         - Easy for classical simulation (low treewidth)
-        
+
     Distributed VQE (Khait et al., 2023):
         - Dense all-to-all entanglement within clusters
         - Sparse inter-cluster connections (2 CX per boundary)
@@ -313,27 +300,37 @@ Benchmarks:
 
     cmd = sys.argv[1]
 
-    if cmd == "standard-qtpu":
-        run_standard_qtpu()
-    elif cmd == "standard-classical":
-        run_standard_classical()
-    elif cmd == "standard":
-        run_standard_classical()
-        run_standard_qtpu()
-    elif cmd == "dist-qtpu":
-        run_dist_vqe_qtpu()
-    elif cmd == "dist-classical":
-        run_dist_vqe_classical()
-    elif cmd == "dist":
-        run_dist_vqe_classical()
-        run_dist_vqe_qtpu()
-    elif cmd == "all":
-        print("Running all evaluations...")
-        run_standard_classical()
-        run_standard_qtpu()
-        run_dist_vqe_classical()
-        run_dist_vqe_qtpu()
-    else:
+    if cmd in ("standard-qtpu", "standard", "all"):
+        for bench in STANDARD_BENCHMARKS:
+            for circuit_size in STANDARD_SIZES:
+                for cluster_size in [15]:
+                    config = {"bench": bench, "circuit_size": circuit_size, "cluster_size": cluster_size}
+                    result = run_standard_qtpu(bench, circuit_size, cluster_size)
+                    log_result("logs/runtime/standard_qtpu.jsonl", config, result)
+
+    if cmd in ("standard-classical", "standard", "all"):
+        for bench in STANDARD_BENCHMARKS:
+            for circuit_size in STANDARD_SIZES:
+                config = {"bench": bench, "circuit_size": circuit_size}
+                result = run_standard_classical(bench, circuit_size)
+                log_result("logs/runtime/standard_classical.jsonl", config, result)
+
+    if cmd in ("dist-qtpu", "dist", "all"):
+        for circuit_size in DIST_VQE_SIZES:
+            for cluster_size in CLUSTER_SIZES:
+                config = {"circuit_size": circuit_size, "cluster_size": cluster_size}
+                result = run_dist_vqe_qtpu(circuit_size, cluster_size)
+                log_result("logs/runtime/dist_vqe_qtpu.jsonl", config, result)
+
+    if cmd in ("dist-classical", "dist", "all"):
+        for circuit_size in DIST_VQE_SIZES:
+            for cluster_size in CLUSTER_SIZES:
+                config = {"circuit_size": circuit_size, "cluster_size": cluster_size}
+                result = run_dist_vqe_classical(circuit_size, cluster_size)
+                log_result("logs/runtime/dist_vqe_classical.jsonl", config, result)
+
+    if cmd not in ("standard-qtpu", "standard-classical", "standard",
+                    "dist-qtpu", "dist-classical", "dist", "all"):
         print(f"Unknown command: {cmd}")
         print(usage)
         sys.exit(1)

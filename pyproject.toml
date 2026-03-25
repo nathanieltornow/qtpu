@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "qtpu"
 version = "0.1.0"
-description = "Add your description here"
+description = "qTPU: Hybrid Tensor Networks for Quantum-Classical Acceleration"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -25,8 +25,9 @@ dependencies = [
     "qiskit-ibm-runtime>=0.43.1",
     "mqt-bench>=2.1.0",
     "jax>=0.6.2",
-    "benchkit",
     "torch>=2.9.1",
+    "matplotlib>=3.8.0",
+    "pandas>=2.2.3",
 ]
 
 [project.optional-dependencies]
@@ -132,8 +133,12 @@ isort.required-imports = ["from __future__ import annotations"]
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[tool.uv.sources]
-benchkit = { git = "https://github.com/nathanieltornow/benchkit.git" }
+[project.scripts]
+qtpu-eval-compiler = "evaluation.compiler.run:main"
+qtpu-eval-runtime = "evaluation.runtime.run:main"
+qtpu-eval-scale = "evaluation.use_cases.scale.run:main"
+qtpu-eval-hybrid-ml = "evaluation.use_cases.hybrid_ml.run:main"
+qtpu-eval-error-mitigation = "evaluation.use_cases.error_mitigation.run:main"
 
 [dependency-groups]
 bench = [
@@ -146,4 +151,5 @@ dev = [
     "pandas>=2.2.3",
     "pytest>=8.3.4",
     "ruff>=0.7.4",
+    "matplotlib>=3.8.0",
 ]

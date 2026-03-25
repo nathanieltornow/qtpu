@@ -36,11 +36,12 @@ from qiskit_addon_cutting.automated_cut_finding import (
     find_cuts,
 )
 
-import benchkit as bk
 from mqt.bench import get_benchmark_indep
 
+from evaluation.utils import log_result, run_with_timeout
+
 import qtpu
-from qtpu.runtime import HEinsumRuntime
+from qtpu.runtime import HEinsumRuntime, CudaQBackend
 from evaluation.analysis import estimate_runtime
 
 if TYPE_CHECKING:
@@ -68,7 +69,6 @@ def _create_fake_results(circuits: list["QuantumCircuit"], shots: int):
     return PrimitiveResult(fake_results)
 
 
-@bk.timeout(3600, {"timeout": True})
 def run_qac_overhead(
     circuit: "QuantumCircuit",
     max_qubits: int,
@@ -152,7 +152,6 @@ def run_qac_overhead(
     }
 
 
-@bk.timeout(3600, {"timeout": True})
 def run_qtpu_overhead(
     circuit: "QuantumCircuit",
     max_size: int,
@@ -175,7 +174,12 @@ def run_qtpu_overhead(
     tracemalloc.stop()
 
     # Step 3: Prepare runtime (optimization + backend compilation)
-    backend = FakeQPUCudaQBackend(shots=1000)
+    backend = CudaQBackend(
+        target="qpp-cpu",
+        simulate=False,
+        estimate_qpu_time=True,
+        shots=1000,
+    )
     runtime = HEinsumRuntime(heinsum, backend=backend, device="cpu")
 
     prepare_start = perf_counter()
@@ -222,15 +226,11 @@ def run_qtpu_overhead(
 # BENCHMARK CONFIGURATION
 # =============================================================================
 
-CIRCUIT_SIZES = list(range(10, 90, 10))
+CIRCUIT_SIZES = list(range(20, 90, 10))
 BENCHMARKS = ["qnn"]
 SUBCIRC_SIZES = [10]
 
 
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
-@bk.foreach(subcirc_size=SUBCIRC_SIZES)
-@bk.foreach(bench=BENCHMARKS)
-@bk.log("logs/scale/qtpu_overhead.jsonl")
 def bench_qtpu_overhead(
     circuit_size: int, subcirc_size: int, bench: str
 ) -> dict[str, float]:
@@ -239,10 +239,6 @@ def bench_qtpu_overhead(
     return run_qtpu_overhead(circuit, max_size=subcirc_size)
 
 
-@bk.foreach(circuit_size=CIRCUIT_SIZES)
-@bk.foreach(subcirc_size=SUBCIRC_SIZES)
-@bk.foreach(bench=BENCHMARKS)
-@bk.log("logs/scale/qac_overhead.jsonl")
 def bench_qac_overhead(
     circuit_size: int, subcirc_size: int, bench: str
 ) -> dict[str, float]:
@@ -258,10 +254,28 @@ if __name__ == "__main__":
         print("Usage: python run_overhead.py [qtpu|qac|both]")
         sys.exit(1)
 
-    if sys.argv[1] == "qtpu":
-        bench_qtpu_overhead()
-    elif sys.argv[1] == "qac":
-        bench_qac_overhead()
-    elif sys.argv[1] == "both":
-        bench_qtpu_overhead()
-        bench_qac_overhead()
+    if sys.argv[1] in ("qtpu", "both"):
+        for bench in BENCHMARKS:
+            for subcirc_size in SUBCIRC_SIZES:
+                for circuit_size in CIRCUIT_SIZES:
+                    config = {"circuit_size": circuit_size, "subcirc_size": subcirc_size, "bench": bench}
+                    print(f"Running QTPU overhead: {config}")
+                    result = run_with_timeout(
+                        lambda cs=circuit_size, ss=subcirc_size, b=bench: bench_qtpu_overhead(cs, ss, b),
+                        timeout_secs=3600,
+                        default={"timeout": True},
+                    )
+                    log_result("logs/scale/qtpu_overhead.jsonl", config, result)
+
+    if sys.argv[1] in ("qac", "both"):
+        for bench in BENCHMARKS:
+            for subcirc_size in SUBCIRC_SIZES:
+                for circuit_size in CIRCUIT_SIZES:
+                    config = {"circuit_size": circuit_size, "subcirc_size": subcirc_size, "bench": bench}
+                    print(f"Running QAC overhead: {config}")
+                    result = run_with_timeout(
+                        lambda cs=circuit_size, ss=subcirc_size, b=bench: bench_qac_overhead(cs, ss, b),
+                        timeout_secs=3600,
+                        default={"timeout": True},
+                    )
+                    log_result("logs/scale/qac_overhead.jsonl", config, result)
