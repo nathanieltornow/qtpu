@@ -76,21 +76,21 @@ def run_with_timeout(fn: Callable[[], Any], timeout_secs: int, default: Any = No
 
 
 # ---------------------------------------------------------------------------
-# Plotting helpers (replace benchkit.plot.config)
+# Plotting helpers
 # ---------------------------------------------------------------------------
 
-# Matplotlib tab10 palette – matches the default used in most frameworks.
+# Paper color palette — matched to the OSDI figures.
 COLORS = [
-    "#1f77b4",  # blue
-    "#ff7f0e",  # orange
-    "#2ca02c",  # green
-    "#d62728",  # red
-    "#9467bd",  # purple
-    "#8c564b",  # brown
-    "#e377c2",  # pink
-    "#7f7f7f",  # gray
-    "#bcbd22",  # olive
-    "#17becf",  # cyan
+    "#4472C4",  # blue  (qTPU)
+    "#ED7D31",  # orange
+    "#A5A5A5",  # gray
+    "#C44E52",  # red/pink (Mitiq / baselines)
+    "#9467BD",  # purple
+    "#D4A373",  # tan (Batch)
+    "#E377C2",  # pink
+    "#7F7F7F",  # dark gray
+    "#BCBD22",  # olive
+    "#17BECF",  # cyan
 ]
 
 
@@ -112,7 +112,7 @@ def double_column_width() -> float:
 class PlotStyle:
     """Lightweight style descriptor for bar/line plots."""
 
-    def __init__(self, color: str = "#1f77b4", hatch: str = "") -> None:
+    def __init__(self, color: str = "#4472C4", hatch: str = "") -> None:
         self.color = color
         self.hatch = hatch
 
@@ -128,3 +128,44 @@ def register_style(name: str, style: PlotStyle) -> None:
 def get_style(name: str) -> PlotStyle:
     """Retrieve a registered style (returns a default if not found)."""
     return _STYLES.get(name, PlotStyle())
+
+
+def setup_paper_style() -> None:
+    """Configure matplotlib rcParams to match the OSDI paper figures."""
+    import matplotlib as mpl
+
+    mpl.rcParams.update({
+        # Font
+        "font.family": "serif",
+        "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
+        "font.size": 8,
+        "axes.titlesize": 8,
+        "axes.labelsize": 7,
+        "xtick.labelsize": 7,
+        "ytick.labelsize": 7,
+        "legend.fontsize": 6.5,
+        # Lines & patches
+        "axes.linewidth": 0.6,
+        "xtick.major.width": 0.5,
+        "ytick.major.width": 0.5,
+        "xtick.major.size": 3,
+        "ytick.major.size": 3,
+        "patch.linewidth": 0.5,
+        # Grid
+        "axes.grid": True,
+        "grid.alpha": 0.25,
+        "grid.linewidth": 0.4,
+        "axes.axisbelow": True,
+        # Layout
+        "figure.dpi": 150,
+        "savefig.dpi": 300,
+        "savefig.bbox": "tight",
+        "savefig.pad_inches": 0.02,
+        # Legend
+        "legend.framealpha": 0.9,
+        "legend.edgecolor": "0.8",
+        "legend.borderpad": 0.3,
+        "legend.handlelength": 1.2,
+        "legend.handletextpad": 0.4,
+        "legend.labelspacing": 0.3,
+    })
