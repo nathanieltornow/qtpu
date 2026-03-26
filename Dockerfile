@@ -1,12 +1,7 @@
-FROM nvidia/cuda:12.4.0-runtime-ubuntu22.04
-
-# Install Python and basics
-RUN apt-get update && apt-get install -y \
-    python3 python3-pip python3-venv git curl \
-    && rm -rf /var/lib/apt/lists/*
+FROM nvcr.io/nvidia/cuda-quantum:0.9.1
 
 # Install uv
-RUN pip3 install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Set working directory
 WORKDIR /app
@@ -15,12 +10,11 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY src ./src/
 COPY evaluation ./evaluation/
+COPY tests ./tests/
+COPY examples ./examples/
 COPY README.md ./
 
-# Install the package with all dependencies + GPU libraries
-# cupy-cuda12x: GPU array library
-# cuquantum-python-cu12: NVIDIA cuQuantum for GPU-accelerated tensor network contractions
-RUN uv sync && uv pip install cupy-cuda12x cuquantum-python-cu12
+# Install dependencies using system Python (from cuda-quantum image)
+RUN uv sync --python $(which python3)
 
-# Use the venv python
 ENV PATH="/app/.venv/bin:$PATH"

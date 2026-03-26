@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
-import cudaq
 
 if TYPE_CHECKING:
     from qtpu.core import QuantumTensor
@@ -151,6 +150,8 @@ class CudaQBackend(QuantumBackend):
     def _ensure_target(self):
         """Set the CUDA-Q target if not already set."""
         if not self._target_set:
+            import cudaq
+
             current_target = cudaq.get_target().name
             if current_target != self._target:
                 try:
