@@ -345,7 +345,7 @@ def plot_hybrid_ml_benchmark(
 
 
 if __name__ == "__main__":
-    # Disable TeX for local testing
+    matplotlib.use("Agg")
     matplotlib.rcParams["text.usetex"] = False
     matplotlib.rcParams["font.family"] = "sans-serif"
 
@@ -442,11 +442,10 @@ if __name__ == "__main__":
             batch_df, heinsum_df,
             batch_size=50, feature_dim=2
         )
+        Path("plots/hybrid_ml").mkdir(parents=True, exist_ok=True)
         plt.savefig("plots/hybrid_ml/benchmark.pdf", dpi=300, bbox_inches="tight")
         plt.savefig("plots/hybrid_ml/benchmark.png", dpi=300, bbox_inches="tight")
         print("\nSaved plots/hybrid_ml/benchmark.pdf")
-
-        plt.show()
     else:
         print("\nNo data found. Run the benchmarks first:")
         print("  python evaluation/use_cases/hybrid_ml/run.py all")

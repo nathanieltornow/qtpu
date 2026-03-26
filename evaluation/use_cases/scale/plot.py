@@ -268,7 +268,7 @@ def plot_scale_comparison(qtpu_df: pd.DataFrame, qac_df: pd.DataFrame, bench: st
 
 
 if __name__ == "__main__":
-    # Disable TeX for local testing
+    matplotlib.use("Agg")
     matplotlib.rcParams["text.usetex"] = False
     matplotlib.rcParams["font.family"] = "sans-serif"
 
@@ -290,7 +290,9 @@ if __name__ == "__main__":
     # Plot for each benchmark
     for bench in ["qnn"]:
         if bench in qtpu_df["config.bench"].values:
+            from pathlib import Path
+            Path("plots").mkdir(parents=True, exist_ok=True)
             fig = plot_scale_comparison(qtpu_df, qac_df, bench=bench)
             plt.tight_layout()
             plt.savefig(f"plots/scale_{bench}.pdf", bbox_inches="tight")
-            plt.show()
+            print(f"Saved plots/scale_{bench}.pdf")

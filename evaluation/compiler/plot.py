@@ -443,7 +443,9 @@ def plot_compile_times(qtpu_df: pd.DataFrame, qac_df: pd.DataFrame):
 if __name__ == "__main__":
     import matplotlib
     import os
+    from pathlib import Path
 
+    matplotlib.use("Agg")
     # Must disable TeX FIRST before any plot functions called
     matplotlib.rcParams["text.usetex"] = False
     matplotlib.rcParams["font.family"] = "sans-serif"
@@ -569,13 +571,19 @@ if __name__ == "__main__":
 
     print("="*80 + "\n")
 
+    Path("plots").mkdir(parents=True, exist_ok=True)
+
     # Figure 1: Pareto frontiers for all 4 benchmarks
     fig1 = plot_pareto_frontiers(qtpu_df, qac_df)
+    plt.savefig("plots/pareto_frontiers.pdf", bbox_inches="tight")
+    print("Saved plots/pareto_frontiers.pdf")
 
     # Figure 2: Solutions by circuit size for all 4 benchmarks (20, 60, 100, 140)
     fig2 = plot_solutions_by_size(qtpu_df, qac_df)
+    plt.savefig("plots/scalability.pdf", bbox_inches="tight")
+    print("Saved plots/scalability.pdf")
 
     # Figure 3: Compile times for VQE-SU2 (single column)
     fig3 = plot_compile_times(qtpu_df, qac_df)
-
-    plt.show()
+    plt.savefig("plots/compile_times.pdf", bbox_inches="tight")
+    print("Saved plots/compile_times.pdf")

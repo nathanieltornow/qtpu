@@ -152,7 +152,7 @@ def plot_error_mitigation_comparison(qtpu_df: pd.DataFrame, mitiq_df: pd.DataFra
 
 
 if __name__ == "__main__":
-    # Disable TeX for local testing
+    matplotlib.use("Agg")
     matplotlib.rcParams["text.usetex"] = False
     matplotlib.rcParams["font.family"] = "sans-serif"
 
@@ -203,7 +203,10 @@ if __name__ == "__main__":
     
     print("="*80 + "\n")
 
+    from pathlib import Path
+    Path("plots").mkdir(parents=True, exist_ok=True)
+
     fig = plot_error_mitigation_comparison(qtpu_df, mitiq_df)
     plt.tight_layout()
     plt.savefig("plots/error_mitigation.pdf", bbox_inches="tight")
-    plt.show()
+    print("Saved plots/error_mitigation.pdf")

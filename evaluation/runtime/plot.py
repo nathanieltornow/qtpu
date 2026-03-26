@@ -670,8 +670,9 @@ def plot_runtime_analysis(qtpu_df: pd.DataFrame, dist_qtpu_df: pd.DataFrame, dis
 if __name__ == "__main__":
     import matplotlib
     import os
+    from pathlib import Path
 
-    # Must disable TeX FIRST before any plot functions called
+    matplotlib.use("Agg")
     matplotlib.rcParams["text.usetex"] = False
     matplotlib.rcParams["font.family"] = "sans-serif"
 
@@ -706,8 +707,10 @@ if __name__ == "__main__":
 
     # Generate main figure
     if qtpu_df is not None and dist_qtpu_df is not None:
+        Path("plots").mkdir(parents=True, exist_ok=True)
         fig = plot_runtime_analysis(qtpu_df, dist_qtpu_df, dist_classical_df)
-        plt.show()
+        plt.savefig("plots/runtime_analysis.pdf", bbox_inches="tight")
+        print("Saved plots/runtime_analysis.pdf")
     else:
         print("Missing data. Run:")
         print("  python evaluation/runtime/run.py standard")
