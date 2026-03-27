@@ -23,6 +23,7 @@ This artifact reproduces all evaluation results from the paper:
   via Qiskit transpilation to IBM FakeMarrakesh with ASAP scheduling.
 - **No GPU required** for the primary results. GPU (NVIDIA + cuTensorNet) is only
   needed for the classical-simulation baseline in Fig 11(c).
+- **Runs on macOS and Linux.** No Linux requirement — tested on both platforms.
 - Python 3.10+, ~8 GB RAM, ~10 GB disk (for dependencies).
 
 ## Setup
