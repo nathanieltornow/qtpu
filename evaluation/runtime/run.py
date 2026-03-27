@@ -126,7 +126,7 @@ def compile_and_run_qtpu(
         heinsum = HEinsum.from_circuit(circuit)
         opt_result = optimize(
             heinsum,
-            params=OptimizationParameters(num_workers=8, n_trials=150),
+            params=OptimizationParameters(num_workers=8, n_trials=150, seed=42),
         )
 
         # Select best HEinsum (balances cost and error)

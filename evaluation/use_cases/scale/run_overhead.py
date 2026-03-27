@@ -162,7 +162,7 @@ def run_qtpu_overhead(
 
     # Step 1: Cutting - find optimal cuts
     cutting_start = perf_counter()
-    cut_circuit = qtpu.cut(circuit, max_size=max_size, cost_weight=1000)
+    cut_circuit = qtpu.cut(circuit, max_size=max_size, cost_weight=1000, seed=42)
     cutting_time = perf_counter() - cutting_start
 
     # Step 2: Convert to HEinsum

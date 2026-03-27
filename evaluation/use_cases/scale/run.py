@@ -119,7 +119,7 @@ def run_qac(
 
 def run_qtpu(circuit: QuantumCircuit, max_size: int) -> dict[str, float]:
     start = perf_counter()
-    circuit = qtpu.cut(circuit, max_size=max_size, cost_weight=1000)
+    circuit = qtpu.cut(circuit, max_size=max_size, cost_weight=1000, seed=42)
     compile_time = perf_counter() - start
 
     tracemalloc.start()

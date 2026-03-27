@@ -68,6 +68,7 @@ def compile_qtpu_frontier(
         circuit,
         num_workers=num_workers,
         n_trials=n_trials,
+        seed=42,
     )
     compile_time = perf_counter() - start
 
