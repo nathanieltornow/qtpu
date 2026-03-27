@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 BENCHMARKS = ["qnn", "wstate", "vqe_su2", "dist-vqe"]
 FRACTIONS = [0.25, 0.5, 0.75]
 CIRCUIT_SIZES = list(range(20, 141, 20))
+SEEDS = [42, 43, 44]
 
 
 def compile_qac(circuit: QuantumCircuit, max_qubits: int) -> dict | None:
@@ -61,6 +62,7 @@ def compile_qtpu_frontier(
     num_workers: int = 8,
     n_trials: int = 100,
     max_size: int | None = None,
+    seed: int = 42,
 ) -> dict:
     """Run QTPU and return the full Pareto frontier."""
     start = perf_counter()
@@ -68,7 +70,7 @@ def compile_qtpu_frontier(
         circuit,
         num_workers=num_workers,
         n_trials=n_trials,
-        seed=42,
+        seed=seed,
     )
     compile_time = perf_counter() - start
 
@@ -129,9 +131,9 @@ def run_qac(bench: str, circuit_size: int, fraction: float) -> dict | None:
     return results
 
 
-def run_qtpu(bench: str, circuit_size: int, fraction: float) -> dict:
+def run_qtpu(bench: str, circuit_size: int, fraction: float, seed: int = 42) -> dict:
     """Run QTPU on the specified benchmark and parameters."""
-    print(f"Running QTPU: bench={bench}, size={circuit_size}")
+    print(f"Running QTPU: bench={bench}, size={circuit_size}, seed={seed}")
 
     # Load benchmark circuit
     circuit = get_benchmark(
@@ -140,7 +142,7 @@ def run_qtpu(bench: str, circuit_size: int, fraction: float) -> dict:
 
     max_size = max(2, math.ceil(circuit.num_qubits * fraction))
     # Compile with QTPU - returns full Pareto frontier
-    results = compile_qtpu_frontier(circuit, max_size=max_size)
+    results = compile_qtpu_frontier(circuit, max_size=max_size, seed=seed)
 
     return results
 
@@ -188,9 +190,10 @@ def main():
         for bench in benchmarks:
             for circuit_size in CIRCUIT_SIZES:
                 for fraction in FRACTIONS:
-                    config = {"bench": bench, "circuit_size": circuit_size, "fraction": fraction}
-                    result = run_qtpu(bench, circuit_size, fraction)
-                    log_result("logs/compiler/qtpu.jsonl", config=config, result=result)
+                    for seed in SEEDS:
+                        config = {"bench": bench, "circuit_size": circuit_size, "fraction": fraction, "seed": seed}
+                        result = run_qtpu(bench, circuit_size, fraction, seed=seed)
+                        log_result("logs/compiler/qtpu.jsonl", config=config, result=result)
     else:
         print("Usage: python run.py [qac|qtpu] [benchmark]")
         print("       python run.py [qac|qtpu] --parallel")

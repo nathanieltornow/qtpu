@@ -444,6 +444,7 @@ def run_mitiq_mitigation(circuit_size: int, mitigation: str, num_pec: int, num_t
 CIRCUIT_SIZE = 100
 MITIGATIONS = ["pec", "twirl", "zne", "combined"]
 NUM_SAMPLES_LIST = [100, 1000, 10000]
+SEEDS = [42, 43, 44]
 
 # Gate counts for 100-qubit circuit - use ALL single-qubit gates
 # 100-qubit QNN has ~200 single-qubit gates
@@ -466,28 +467,32 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         if sys.argv[1] == "qtpu":
             for mitigation in MITIGATIONS:
-                config = {"mitigation": mitigation}
-                print(f"Running QTPU: {config}")
-                result = bench_qtpu(mitigation)
-                log_result("logs/error_mitigation/qtpu_breakdown.jsonl", config, result)
+                for seed in SEEDS:
+                    config = {"mitigation": mitigation, "seed": seed}
+                    print(f"Running QTPU: {config}")
+                    result = bench_qtpu(mitigation)
+                    log_result("logs/error_mitigation/qtpu_breakdown.jsonl", config, result)
         elif sys.argv[1] == "mitiq":
             for mitigation in MITIGATIONS:
                 for num_samples in NUM_SAMPLES_LIST:
-                    config = {"mitigation": mitigation, "num_samples": num_samples}
-                    print(f"Running Mitiq: {config}")
-                    result = bench_mitiq(mitigation, num_samples)
-                    log_result("logs/error_mitigation/mitiq_breakdown.jsonl", config, result)
+                    for seed in SEEDS:
+                        config = {"mitigation": mitigation, "num_samples": num_samples, "seed": seed}
+                        print(f"Running Mitiq: {config}")
+                        result = bench_mitiq(mitigation, num_samples)
+                        log_result("logs/error_mitigation/mitiq_breakdown.jsonl", config, result)
         elif sys.argv[1] == "all":
             print("Running all benchmarks...")
             for mitigation in MITIGATIONS:
-                config = {"mitigation": mitigation}
-                result = bench_qtpu(mitigation)
-                log_result("logs/error_mitigation/qtpu_breakdown.jsonl", config, result)
+                for seed in SEEDS:
+                    config = {"mitigation": mitigation, "seed": seed}
+                    result = bench_qtpu(mitigation)
+                    log_result("logs/error_mitigation/qtpu_breakdown.jsonl", config, result)
             for mitigation in MITIGATIONS:
                 for num_samples in NUM_SAMPLES_LIST:
-                    config = {"mitigation": mitigation, "num_samples": num_samples}
-                    result = bench_mitiq(mitigation, num_samples)
-                    log_result("logs/error_mitigation/mitiq_breakdown.jsonl", config, result)
+                    for seed in SEEDS:
+                        config = {"mitigation": mitigation, "num_samples": num_samples, "seed": seed}
+                        result = bench_mitiq(mitigation, num_samples)
+                        log_result("logs/error_mitigation/mitiq_breakdown.jsonl", config, result)
         elif sys.argv[1] == "quick":
             # Quick test with 100-qubit circuit
             from mqt.bench import get_benchmark_indep

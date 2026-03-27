@@ -36,6 +36,8 @@ DIST_VQE_SIZES = [100]
 # Cluster sizes to evaluate (qubits per QPU) — paper Fig 11(c)
 CLUSTER_SIZES = list(range(10, 20))
 
+SEEDS = [42, 43, 44]
+
 
 # =============================================================================
 # cuTensorNet TN Simulation Utilities
@@ -107,6 +109,7 @@ def compute_expval_cutensornet(circuit: QuantumCircuit) -> tuple[float | None, f
 def compile_and_run_qtpu(
     circuit: QuantumCircuit,
     max_subcircuit_size: int,
+    seed: int = 42,
 ) -> dict | None:
     """Compile circuit with QTPU and measure execution time.
 
@@ -126,7 +129,7 @@ def compile_and_run_qtpu(
         heinsum = HEinsum.from_circuit(circuit)
         opt_result = optimize(
             heinsum,
-            params=OptimizationParameters(num_workers=8, n_trials=150, seed=42),
+            params=OptimizationParameters(num_workers=8, n_trials=150, seed=seed),
         )
 
         # Select best HEinsum (balances cost and error)
@@ -162,13 +165,13 @@ def compile_and_run_qtpu(
 # =============================================================================
 
 
-def run_standard_qtpu(bench: str, circuit_size: int, cluster_size: int) -> dict | None:
+def run_standard_qtpu(bench: str, circuit_size: int, cluster_size: int, seed: int = 42) -> dict | None:
     """Run QTPU on standard MQT benchmarks."""
     # Skip if cluster_size > circuit_size
     if cluster_size > circuit_size:
         return None
 
-    print(f"QTPU [{bench}]: size={circuit_size}, cluster={cluster_size}")
+    print(f"QTPU [{bench}]: size={circuit_size}, cluster={cluster_size}, seed={seed}")
 
     circuit = get_benchmark(bench, circuit_size).remove_final_measurements(
         inplace=False
@@ -177,6 +180,7 @@ def run_standard_qtpu(bench: str, circuit_size: int, cluster_size: int) -> dict 
     result = compile_and_run_qtpu(
         circuit,
         max_subcircuit_size=cluster_size,
+        seed=seed,
     )
 
     if result is None:
@@ -211,19 +215,20 @@ def run_standard_classical(bench: str, circuit_size: int) -> dict | None:
 # =============================================================================
 
 
-def run_dist_vqe_qtpu(circuit_size: int, cluster_size: int) -> dict | None:
+def run_dist_vqe_qtpu(circuit_size: int, cluster_size: int, seed: int = 42) -> dict | None:
     """Run QTPU on distributed VQE circuit."""
     # Skip invalid combinations (cluster must evenly divide circuit)
     if 2 * cluster_size > circuit_size:
         return None
 
-    print(f"QTPU [dist-vqe]: size={circuit_size}, cluster={cluster_size}")
+    print(f"QTPU [dist-vqe]: size={circuit_size}, cluster={cluster_size}, seed={seed}")
 
     circuit = get_benchmark("dist-vqe", circuit_size, cluster_size=cluster_size)
 
     result = compile_and_run_qtpu(
         circuit,
         max_subcircuit_size=cluster_size,
+        seed=seed,
     )
 
     if result is None:
@@ -303,9 +308,9 @@ Benchmarks:
     if cmd in ("standard-qtpu", "standard", "all"):
         for bench in STANDARD_BENCHMARKS:
             for circuit_size in STANDARD_SIZES:
-                for cluster_size in [15]:
-                    config = {"bench": bench, "circuit_size": circuit_size, "cluster_size": cluster_size}
-                    result = run_standard_qtpu(bench, circuit_size, cluster_size)
+                for seed in SEEDS:
+                    config = {"bench": bench, "circuit_size": circuit_size, "cluster_size": 15, "seed": seed}
+                    result = run_standard_qtpu(bench, circuit_size, 15, seed=seed)
                     log_result("logs/runtime/standard_qtpu.jsonl", config, result)
 
     if cmd in ("standard-classical", "standard", "all"):
@@ -318,9 +323,10 @@ Benchmarks:
     if cmd in ("dist-qtpu", "dist", "all"):
         for circuit_size in DIST_VQE_SIZES:
             for cluster_size in CLUSTER_SIZES:
-                config = {"circuit_size": circuit_size, "cluster_size": cluster_size}
-                result = run_dist_vqe_qtpu(circuit_size, cluster_size)
-                log_result("logs/runtime/dist_vqe_qtpu.jsonl", config, result)
+                for seed in SEEDS:
+                    config = {"circuit_size": circuit_size, "cluster_size": cluster_size, "seed": seed}
+                    result = run_dist_vqe_qtpu(circuit_size, cluster_size, seed=seed)
+                    log_result("logs/runtime/dist_vqe_qtpu.jsonl", config, result)
 
     if cmd in ("dist-classical", "dist", "all"):
         for circuit_size in DIST_VQE_SIZES:

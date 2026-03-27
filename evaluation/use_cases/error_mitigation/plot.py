@@ -20,26 +20,35 @@ QTPU_COLOR = colors()[0]
 MITIQ_COLOR = colors()[3]
 
 
+def _grouped_stats(df: pd.DataFrame, group_col: str, value_col: str):
+    """Return (means, stderrs) grouped by group_col."""
+    g = df.groupby(group_col)[value_col]
+    return g.mean(), g.sem().fillna(0)
+
+
 def plot_compile_time(ax, qtpu_df: pd.DataFrame, mitiq_df: pd.DataFrame):
     available_samples = sorted(mitiq_df["config.num_samples"].unique())
     sample_sizes = [s for s in [100, 1000, 10000] if s in available_samples]
     labels = {100: "100", 1000: "1k", 10000: "10k"}
 
-    qtpu_avg = qtpu_df["result.compilation_time"].mean()
-    mitiq_times = [
-        mitiq_df[mitiq_df["config.num_samples"] == s]["result.compilation_time"].mean()
-        for s in sample_sizes
-    ]
+    qtpu_mean = qtpu_df["result.compilation_time"].mean()
+    qtpu_se = qtpu_df["result.compilation_time"].sem()
+
+    mitiq_means, mitiq_ses = _grouped_stats(
+        mitiq_df, "config.num_samples", "result.compilation_time"
+    )
 
     x = np.arange(len(sample_sizes))
     w = 0.32
 
-    ax.bar(x - w / 2, [qtpu_avg] * len(sample_sizes), w,
+    ax.bar(x - w / 2, [qtpu_mean] * len(sample_sizes), w,
+           yerr=[qtpu_se] * len(sample_sizes), capsize=2,
            label=QTPU_LABEL, color=QTPU_COLOR, edgecolor="black",
-           linewidth=0.4, hatch="//")
-    ax.bar(x + w / 2, mitiq_times, w,
+           linewidth=0.4, hatch="//", error_kw={"linewidth": 0.6})
+    ax.bar(x + w / 2, [mitiq_means[s] for s in sample_sizes], w,
+           yerr=[mitiq_ses[s] for s in sample_sizes], capsize=2,
            label=MITIQ_LABEL, color=MITIQ_COLOR, edgecolor="black",
-           linewidth=0.4, hatch="\\\\")
+           linewidth=0.4, hatch="\\\\", error_kw={"linewidth": 0.6})
 
     ax.set_xlabel("Number of Samples")
     ax.set_ylabel("Compile Time [s]\n(lower is better)")
@@ -55,21 +64,24 @@ def plot_code_lines(ax, qtpu_df: pd.DataFrame, mitiq_df: pd.DataFrame):
     sample_sizes = [s for s in [100, 1000, 10000] if s in available_samples]
     labels = {100: "100", 1000: "1k", 10000: "10k"}
 
-    qtpu_avg = qtpu_df["result.total_code_lines"].mean()
-    mitiq_lines = [
-        mitiq_df[mitiq_df["config.num_samples"] == s]["result.total_code_lines"].mean()
-        for s in sample_sizes
-    ]
+    qtpu_mean = qtpu_df["result.total_code_lines"].mean()
+    qtpu_se = qtpu_df["result.total_code_lines"].sem()
+
+    mitiq_means, mitiq_ses = _grouped_stats(
+        mitiq_df, "config.num_samples", "result.total_code_lines"
+    )
 
     x = np.arange(len(sample_sizes))
     w = 0.32
 
-    ax.bar(x - w / 2, [qtpu_avg] * len(sample_sizes), w,
+    ax.bar(x - w / 2, [qtpu_mean] * len(sample_sizes), w,
+           yerr=[qtpu_se] * len(sample_sizes), capsize=2,
            label=QTPU_LABEL, color=QTPU_COLOR, edgecolor="black",
-           linewidth=0.4, hatch="//")
-    ax.bar(x + w / 2, mitiq_lines, w,
+           linewidth=0.4, hatch="//", error_kw={"linewidth": 0.6})
+    ax.bar(x + w / 2, [mitiq_means[s] for s in sample_sizes], w,
+           yerr=[mitiq_ses[s] for s in sample_sizes], capsize=2,
            label=MITIQ_LABEL, color=MITIQ_COLOR, edgecolor="black",
-           linewidth=0.4, hatch="\\\\")
+           linewidth=0.4, hatch="\\\\", error_kw={"linewidth": 0.6})
 
     ax.set_xlabel("Number of Samples")
     ax.set_ylabel("Code Size [LoC]\n(fewer is better)")

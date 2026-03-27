@@ -117,9 +117,9 @@ def run_qac(
     }
 
 
-def run_qtpu(circuit: QuantumCircuit, max_size: int) -> dict[str, float]:
+def run_qtpu(circuit: QuantumCircuit, max_size: int, seed: int = 42) -> dict[str, float]:
     start = perf_counter()
-    circuit = qtpu.cut(circuit, max_size=max_size, cost_weight=1000, seed=42)
+    circuit = qtpu.cut(circuit, max_size=max_size, cost_weight=1000, seed=seed)
     compile_time = perf_counter() - start
 
     tracemalloc.start()
@@ -158,13 +158,14 @@ def run_qtpu(circuit: QuantumCircuit, max_size: int) -> dict[str, float]:
 CIRCUIT_SIZES = list(range(20, 90, 10))
 BENCHMARKS = ["qnn"]
 SUBCIRC_SIZES = [10]
+SEEDS = [42, 43, 44]
 
 
 def scale_qtpu_bench(
-    circuit_size: int, subcirc_size: int, bench: str
+    circuit_size: int, subcirc_size: int, bench: str, seed: int = 42
 ) -> dict[str, float]:
     circuit = get_benchmark_indep(bench, circuit_size=circuit_size, opt_level=3)
-    qtpu_metrics = run_qtpu(circuit, max_size=subcirc_size)
+    qtpu_metrics = run_qtpu(circuit, max_size=subcirc_size, seed=seed)
     return qtpu_metrics
 
 
@@ -191,10 +192,11 @@ if __name__ == "__main__":
         for bench in BENCHMARKS:
             for subcirc_size in SUBCIRC_SIZES:
                 for circuit_size in CIRCUIT_SIZES:
-                    config = {"circuit_size": circuit_size, "subcirc_size": subcirc_size, "bench": bench}
-                    print(f"Running QTPU: {config}")
-                    result = scale_qtpu_bench(circuit_size, subcirc_size, bench)
-                    log_result("logs/scale/qtpu.jsonl", config, result)
+                    for seed in SEEDS:
+                        config = {"circuit_size": circuit_size, "subcirc_size": subcirc_size, "bench": bench, "seed": seed}
+                        print(f"Running QTPU: {config}")
+                        result = scale_qtpu_bench(circuit_size, subcirc_size, bench, seed=seed)
+                        log_result("logs/scale/qtpu.jsonl", config, result)
     elif sys.argv[1] == "qac":
         for bench in BENCHMARKS:
             for subcirc_size in SUBCIRC_SIZES:

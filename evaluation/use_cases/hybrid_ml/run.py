@@ -50,6 +50,7 @@ from qtpu.runtime.baseline import run_naive, run_batch, run_heinsum
 CIRCUIT_SIZES = [20, 50, 100]
 FEATURE_DIMS = [2, 4, 8]
 BATCH_SIZES = [10, 50, 100, 200]
+SEEDS = [42, 43, 44]
 
 # Fixed support vector count (typical for kernel methods)
 NUM_SUPPORT = 20
@@ -157,11 +158,11 @@ def build_heinsum(
 # =============================================================================
 
 
-def bench_naive(circuit_size: int, feature_dim: int, batch_size: int) -> dict | None:
+def bench_naive(circuit_size: int, feature_dim: int, batch_size: int, seed: int = 42) -> dict | None:
     """Benchmark naive (sequential) approach."""
-    print(f"Naive: qubits={circuit_size}, features={feature_dim}, batch={batch_size}")
+    print(f"Naive: qubits={circuit_size}, features={feature_dim}, batch={batch_size}, seed={seed}")
 
-    np.random.seed(42)
+    np.random.seed(seed)
     X_batch = np.random.randn(batch_size, feature_dim) * np.pi
     X_support = np.random.randn(NUM_SUPPORT, feature_dim) * np.pi
     W = np.random.randn(NUM_SUPPORT) * 0.1
@@ -187,11 +188,11 @@ def bench_naive(circuit_size: int, feature_dim: int, batch_size: int) -> dict | 
         return None
 
 
-def bench_batch(circuit_size: int, feature_dim: int, batch_size: int) -> dict | None:
+def bench_batch(circuit_size: int, feature_dim: int, batch_size: int, seed: int = 42) -> dict | None:
     """Benchmark batch approach."""
-    print(f"Batch: qubits={circuit_size}, features={feature_dim}, batch={batch_size}")
+    print(f"Batch: qubits={circuit_size}, features={feature_dim}, batch={batch_size}, seed={seed}")
 
-    np.random.seed(42)
+    np.random.seed(seed)
     X_batch = np.random.randn(batch_size, feature_dim) * np.pi
     X_support = np.random.randn(NUM_SUPPORT, feature_dim) * np.pi
     W = np.random.randn(NUM_SUPPORT) * 0.1
@@ -217,11 +218,11 @@ def bench_batch(circuit_size: int, feature_dim: int, batch_size: int) -> dict | 
         return None
 
 
-def bench_heinsum(circuit_size: int, feature_dim: int, batch_size: int) -> dict | None:
+def bench_heinsum(circuit_size: int, feature_dim: int, batch_size: int, seed: int = 42) -> dict | None:
     """Benchmark HEinsum (QTPU) approach."""
-    print(f"HEinsum: qubits={circuit_size}, features={feature_dim}, batch={batch_size}")
+    print(f"HEinsum: qubits={circuit_size}, features={feature_dim}, batch={batch_size}, seed={seed}")
 
-    np.random.seed(42)
+    np.random.seed(seed)
     X_batch = np.random.randn(batch_size, feature_dim) * np.pi
     X_support = np.random.randn(NUM_SUPPORT, feature_dim) * np.pi
     W = np.random.randn(NUM_SUPPORT) * 0.1
@@ -296,10 +297,11 @@ Configuration:
         for circuit_size in CIRCUIT_SIZES:
             for feature_dim in FEATURE_DIMS:
                 for batch_size in BATCH_SIZES:
-                    config = {"circuit_size": circuit_size, "feature_dim": feature_dim, "batch_size": batch_size}
-                    print(f"  Config: {config}")
-                    result = bench_fn(circuit_size, feature_dim, batch_size)
-                    log_result(log_path, config, result)
+                    for seed in SEEDS:
+                        config = {"circuit_size": circuit_size, "feature_dim": feature_dim, "batch_size": batch_size, "seed": seed}
+                        print(f"  Config: {config}")
+                        result = bench_fn(circuit_size, feature_dim, batch_size, seed=seed)
+                        log_result(log_path, config, result)
 
     if cmd == "naive":
         _run_sweep(bench_naive, "logs/hybrid_ml/naive_breakdown.jsonl")
