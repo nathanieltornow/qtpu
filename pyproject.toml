@@ -133,7 +133,7 @@ isort.required-imports = ["from __future__ import annotations"]
 convention = "google"
 
 [tool.uv.sources]
-benchkit = { git = "https://github.com/nathanieltornow/benchkit.git" }
+benchkit = { git = "https://github.com/nathanieltornow/benchkit.git", rev = "b50218f4749edcd647cb7f82cf0e5a5515391aa5" }
 
 [dependency-groups]
 bench = [
