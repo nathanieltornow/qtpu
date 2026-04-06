@@ -8,7 +8,13 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
-import cudaq
+
+try:
+    import cudaq
+    CUDAQ_AVAILABLE = True
+except ImportError:
+    cudaq = None
+    CUDAQ_AVAILABLE = False
 
 if TYPE_CHECKING:
     from qtpu.core import QuantumTensor
@@ -86,6 +92,11 @@ class CudaQBackend(QuantumBackend):
         shots: int = 1000,
         optimization_level: int = 3,
     ):
+        if simulate and not CUDAQ_AVAILABLE:
+            raise ImportError(
+                "CudaQBackend requires CUDA-Q for simulation. Install with: pip install cuda-quantum. "
+                "Or use simulate=False for benchmarking mode."
+            )
         self._target = target
         self._simulate = simulate
         self._estimate_qpu_time = estimate_qpu_time
@@ -150,7 +161,7 @@ class CudaQBackend(QuantumBackend):
 
     def _ensure_target(self):
         """Set the CUDA-Q target if not already set."""
-        if not self._target_set:
+        if not self._target_set and cudaq is not None:
             current_target = cudaq.get_target().name
             if current_target != self._target:
                 try:

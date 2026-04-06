@@ -40,8 +40,13 @@ import benchkit as bk
 from mqt.bench import get_benchmark_indep
 
 import qtpu
-from qtpu.runtime import HEinsumRuntime
+from qtpu.runtime import HEinsumRuntime, CudaQBackend
 from evaluation.analysis import estimate_runtime
+
+
+def FakeQPUCudaQBackend(shots: int = 1000):
+    """Create a CudaQBackend that doesn't simulate but estimates QPU time."""
+    return CudaQBackend(simulate=False, estimate_qpu_time=True, shots=shots)
 
 if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
