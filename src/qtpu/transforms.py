@@ -286,14 +286,17 @@ def decompose_qpd_measures(
     for idx, i in enumerate(qpd_measure_ids):
         gate = circuit.data[i]
 
+        # gate.qubits is a tuple, get the first qubit
+        qubit = gate.qubits[0]
+
         inst = CircuitInstruction(
-            operation=Measure(), qubits=[gate.qubits], clbits=[reg[idx]]
+            operation=Measure(), qubits=[qubit], clbits=[reg[idx]]
         )
 
         if defer:
             inst = CircuitInstruction(
                 operation=_defer_circuit().to_instruction(),
-                qubits=[gate.qubits, qreg[idx]],
+                qubits=[qubit, qreg[idx]],
                 clbits=[reg[idx]],
             )
 
