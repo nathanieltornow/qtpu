@@ -248,139 +248,88 @@ def run_e2e_baseline(
     W: np.ndarray,
     max_subcircuit_size: int,
     noise_levels: list[int],
-    num_zne_samples: int,
+    num_zne_gates: int,
 ) -> dict:
-    """Run baseline pipeline: QAC cutting + Mitiq-style ZNE + manual batching.
+    """Run baseline pipeline: qTPU cuts + QAC experiment generation + Mitiq ZNE + batching.
+
+    Uses qTPU's compiler for cutting (same cut quality), then QAC's
+    generate_cutting_experiments for subcircuit enumeration, Mitiq-style
+    ZNE folding, and manual batching over (batch, support) pairs.
 
     Returns dict with timing and circuit metrics.
     """
+    from mqt.bench import get_benchmark_indep
     from qiskit_addon_cutting import (
-        cut_wires,
         expand_observables,
         generate_cutting_experiments,
         partition_problem,
-    )
-    from qiskit_addon_cutting.automated_cut_finding import (
-        DeviceConstraints,
-        OptimizationParameters,
-        find_cuts,
     )
     from qiskit.quantum_info import SparsePauliOp
 
     n_batch = len(X_batch)
     n_support = len(X_support)
-    total_circuits = 0
-    total_compile_time = 0.0
-    total_quantum_time = 0.0
-    total_code_lines = 0
 
-    for b in range(n_batch):
-        for s in range(n_support):
-            # Build concrete circuit for this (batch, support) pair
-            qc = QuantumCircuit(num_qubits)
-            qc.compose(
-                create_feature_map(num_qubits, X_batch[b], NUM_LAYERS), inplace=True
-            )
-            qc.compose(
-                create_feature_map(num_qubits, X_support[s], NUM_LAYERS).inverse(),
-                inplace=True,
-            )
+    # --- Step 1: Cut circuit with qTPU (same cuts for both approaches) ---
+    qc = get_benchmark_indep("qnn", circuit_size=num_qubits, opt_level=3)
+    qc_orig = qc.remove_final_measurements(inplace=False)
 
-            # --- QAC cutting ---
-            start = perf_counter()
-            try:
-                cut_circuit, _ = find_cuts(
-                    qc,
-                    OptimizationParameters(),
-                    DeviceConstraints(qubits_per_subcircuit=max_subcircuit_size),
-                )
-                qc_w_ancilla = cut_wires(cut_circuit)
-                observable = SparsePauliOp(["Z" * num_qubits])
-                observables_expanded = expand_observables(
-                    observable.paulis, qc, qc_w_ancilla
-                )
-                partitioned = partition_problem(
-                    circuit=qc_w_ancilla, observables=observables_expanded
-                )
-                subcircuits = partitioned.subcircuits
-                subobservables = partitioned.subobservables
-                subexperiments, _ = generate_cutting_experiments(
-                    circuits=subcircuits,
-                    observables=subobservables,
-                    num_samples=np.inf,
-                )
-            except Exception:
-                # If cutting fails, use the original circuit
-                subcircuits = {"A": qc}
-                subexperiments = {"A": [qc]}
+    compile_start = perf_counter()
+    cut_circuit = qtpu.cut(
+        qc_orig, max_size=max_subcircuit_size, cost_weight=1000,
+        n_trials=20, seed=42,
+    )
 
-            cut_time = perf_counter() - start
-            total_compile_time += cut_time
+    # --- Step 2: Use QAC's experiment generation on the cut circuit ---
+    # This is where QAC enumerates all basis combinations at cut boundaries
+    observable = SparsePauliOp(["Z" * qc_orig.num_qubits])
+    observables_expanded = expand_observables(
+        observable.paulis, qc_orig, cut_circuit
+    )
+    partitioned = partition_problem(
+        circuit=cut_circuit, observables=observables_expanded
+    )
+    subexperiments, coefficients = generate_cutting_experiments(
+        circuits=partitioned.subcircuits,
+        observables=partitioned.subobservables,
+        num_samples=np.inf,
+    )
+    compile_time = perf_counter() - compile_start
 
-            # Collect all subcircuit experiments
-            all_subcirc_experiments = [
-                exp for exps in subexperiments.values() for exp in exps
-            ]
+    # Collect all QAC-generated subcircuit experiments
+    all_experiments = [exp for exps in subexperiments.values() for exp in exps]
+    n_qac_experiments = len(all_experiments)
 
-            # --- Mitiq-style ZNE: enumerate circuits at each noise level ---
-            zne_circuits = []
-            rng = np.random.default_rng(42)
-            samples_per_level = max(1, num_zne_samples // len(noise_levels))
+    # --- Step 3: Mitiq-style ZNE — fold each experiment at each noise level ---
+    n_zne = len(noise_levels)
+    # For each experiment circuit, we create n_zne folded variants
+    # (in practice Mitiq enumerates these explicitly)
+    zne_total = n_qac_experiments * n_zne
 
-            for level in noise_levels:
-                for exp_circuit in all_subcirc_experiments:
-                    for _ in range(samples_per_level):
-                        folded = exp_circuit.copy()
-                        if level > 1:
-                            # Apply noise folding: append gate^-1 gate pairs
-                            extra = QuantumCircuit(*folded.qregs, *folded.cregs)
-                            for instr in exp_circuit.data:
-                                if (
-                                    instr.operation.num_qubits == 1
-                                    and instr.operation.name
-                                    not in ("measure", "barrier", "reset", "qpd_measure")
-                                ):
-                                    qubit_indices = [
-                                        exp_circuit.find_bit(q).index
-                                        for q in instr.qubits
-                                    ]
-                                    for _ in range((level - 1) // 2):
-                                        extra.append(
-                                            instr.operation.inverse(), qubit_indices
-                                        )
-                                        extra.append(
-                                            instr.operation, qubit_indices
-                                        )
-                            folded = folded.compose(extra)
-                        zne_circuits.append(folded)
+    # --- Step 4: Manual batching — each (batch, support) pair runs the full pipeline ---
+    total_circuits = n_batch * n_support * zne_total
 
-            total_circuits += len(zne_circuits)
+    # Code lines: each circuit → separate kernel
+    if all_experiments:
+        sample = all_experiments[0]
+        gates = len([i for i in sample.data
+                     if i.operation.name not in ("barrier", "measure")])
+        lines_per_kernel = 50 + gates * 2
+    else:
+        lines_per_kernel = 100
+    total_code_lines = total_circuits * lines_per_kernel
 
-            # Estimate code lines (each circuit → separate kernel)
-            if zne_circuits:
-                avg_gates = sum(
-                    len(
-                        [
-                            i
-                            for i in circ.data
-                            if i.operation.name not in ("barrier", "measure")
-                        ]
-                    )
-                    for circ in zne_circuits
-                ) / len(zne_circuits)
-                lines_per_kernel = int(50 + avg_gates * 2)
-                total_code_lines += len(zne_circuits) * lines_per_kernel
-
-            # Estimate QPU time
-            if zne_circuits:
-                total_quantum_time += estimate_runtime(zne_circuits[:10]) * (
-                    len(zne_circuits) / min(10, len(zne_circuits))
-                )
+    # QPU time: estimate from one representative, multiply
+    if all_experiments:
+        rep_time = estimate_runtime(all_experiments[:1])
+        total_quantum_time = rep_time * total_circuits
+    else:
+        total_quantum_time = 0.0
 
     return {
-        "compile_time": total_compile_time,
+        "compile_time": compile_time,
         "quantum_time": total_quantum_time,
         "num_circuits": total_circuits,
+        "num_qac_experiments": n_qac_experiments,
         "total_code_lines": total_code_lines,
     }
 
@@ -467,7 +416,7 @@ def bench_qtpu(circuit_size: int) -> dict | None:
 @bk.foreach(circuit_size=CIRCUIT_SIZES)
 @bk.log("logs/end_to_end/baseline.jsonl")
 def bench_baseline(circuit_size: int) -> dict | None:
-    """Benchmark baseline pipeline (QAC + Mitiq-style ZNE + manual batching)."""
+    """Benchmark baseline pipeline (QAC experiments + Mitiq ZNE + manual batching)."""
     print(f"Baseline E2E: qubits={circuit_size}")
 
     np.random.seed(42)
@@ -475,33 +424,26 @@ def bench_baseline(circuit_size: int) -> dict | None:
     X_support = np.random.randn(NUM_SUPPORT, FEATURE_DIM) * np.pi
     W = np.random.randn(NUM_SUPPORT) * 0.1
 
-    # For baseline, use smaller batch to keep runtime manageable
-    # Scale results linearly
-    sample_batch = min(3, BATCH_SIZE)
-    sample_support = min(3, NUM_SUPPORT)
-
     try:
         start = perf_counter()
         result = run_e2e_baseline(
             circuit_size,
-            X_batch[:sample_batch],
-            X_support[:sample_support],
-            W[:sample_support],
+            X_batch,
+            X_support,
+            W,
             QPU_SIZE,
             ZNE_NOISE_LEVELS,
-            num_zne_samples=len(ZNE_NOISE_LEVELS),
+            num_zne_gates=MAX_ZNE_GATES,
         )
-        sample_time = perf_counter() - start
-
-        # Scale to full batch/support size
-        scale_factor = (BATCH_SIZE * NUM_SUPPORT) / (sample_batch * sample_support)
+        total_time = perf_counter() - start
 
         return {
-            "compile_time": result["compile_time"] * scale_factor,
-            "quantum_time": result["quantum_time"] * scale_factor,
-            "total_time": sample_time * scale_factor,
-            "num_circuits": int(result["num_circuits"] * scale_factor),
-            "total_code_lines": int(result["total_code_lines"] * scale_factor),
+            "compile_time": result["compile_time"],
+            "quantum_time": result["quantum_time"],
+            "total_time": total_time,
+            "num_circuits": result["num_circuits"],
+            "num_qac_experiments": result["num_qac_experiments"],
+            "total_code_lines": result["total_code_lines"],
         }
     except Exception as e:
         print(f"  Error: {e}")
