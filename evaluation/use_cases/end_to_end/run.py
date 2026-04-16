@@ -53,6 +53,7 @@ FEATURE_DIM = 4
 NUM_SUPPORT = 20
 NUM_LAYERS = 2
 ZNE_NOISE_LEVELS = [1, 3, 5]
+MAX_ZNE_GATES = 5  # ZNE ISwitches per subcircuit (limits tensor shape explosion)
 
 
 # =============================================================================
@@ -173,11 +174,15 @@ def build_e2e_qtpu(
             op = instr.operation
             if isinstance(op, ISwitch):
                 new_circuit.append(op, instr.qubits, instr.clbits)
-            elif op.num_qubits == 1 and op.name not in (
-                "measure",
-                "barrier",
-                "reset",
-                "qpd_measure",
+            elif (
+                zne_count < MAX_ZNE_GATES
+                and op.num_qubits == 1
+                and op.name not in (
+                    "measure",
+                    "barrier",
+                    "reset",
+                    "qpd_measure",
+                )
             ):
                 base_gate = QuantumCircuit(1)
                 base_gate.append(op, [0])
