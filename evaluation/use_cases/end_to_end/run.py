@@ -147,6 +147,7 @@ def build_e2e_qtpu(
 
     # --- Step 1: Build a plain QNN circuit (no ISwitches) ---
     qc = get_benchmark_indep("qnn", circuit_size=num_qubits, opt_level=3)
+    qc = qc.remove_final_measurements(inplace=False)
 
     # --- Step 2: Cut to fit QPU ---
     compile_start = perf_counter()
