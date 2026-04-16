@@ -150,7 +150,10 @@ def build_e2e_qtpu(
 
     # --- Step 2: Cut to fit QPU ---
     compile_start = perf_counter()
-    cut_circuit = qtpu.cut(qc, max_size=max_subcircuit_size, cost_weight=1000)
+    cut_circuit = qtpu.cut(
+        qc, max_size=max_subcircuit_size, cost_weight=1000,
+        n_trials=20, seed=42,
+    )
 
     # --- Step 3: Convert to HEinsum ---
     htn = qtpu.circuit_to_heinsum(cut_circuit)
