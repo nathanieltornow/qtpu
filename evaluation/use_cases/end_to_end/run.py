@@ -397,17 +397,41 @@ def bench_qtpu(circuit_size: int) -> dict | None:
     W = np.random.randn(NUM_SUPPORT) * 0.1
 
     try:
+        import math
+
         start = perf_counter()
         heinsum, compile_time = build_e2e_qtpu(
             circuit_size, X_batch, X_support, W, QPU_SIZE, ZNE_NOISE_LEVELS
         )
 
-        # Run with HEinsum runtime
-        _, timing = run_heinsum(heinsum, skip_execution=True)
+        # Compute metrics directly (don't use run_heinsum — the ZNE ISwitches
+        # create exponentially many flat circuits that can't be enumerated)
 
-        total_time = perf_counter() - start
+        # QPU time: estimate from one representative subcircuit per qtensor,
+        # then multiply by total flat count
+        total_flat_circuits = 0
+        est_qpu_time = 0.0
+        for qt in heinsum.quantum_tensors:
+            n_flat = math.prod(qt.shape) if qt.shape else 1
+            total_flat_circuits += n_flat
+            # Estimate from first flat circuit only
+            rep_circuits = qt.flat()[:1]
+            if rep_circuits:
+                rep_time = estimate_runtime(
+                    [c.decompose() for c in rep_circuits]
+                )
+                est_qpu_time += rep_time * n_flat
 
-        # Count total code lines
+        # Classical contraction cost
+        tree, arrays = heinsum.to_dummy_tn()
+        if tree is not None:
+            contract_start = perf_counter()
+            tree.contract(arrays)
+            classical_time = perf_counter() - contract_start
+        else:
+            classical_time = 0.0
+
+        # Code lines: one kernel per qtensor (qTPU compiles once per qtensor)
         total_code_lines = 0
         for qt in heinsum.quantum_tensors:
             _, num_lines = quantum_tensor_to_cudaq(
@@ -415,12 +439,14 @@ def bench_qtpu(circuit_size: int) -> dict | None:
             )
             total_code_lines += num_lines
 
+        total_time = perf_counter() - start
+
         return {
             "compile_time": compile_time,
-            "quantum_time": timing.quantum_estimated_qpu_time,
-            "classical_time": timing.classical_contraction_time,
+            "quantum_time": est_qpu_time,
+            "classical_time": classical_time,
             "total_time": total_time,
-            "num_circuits": timing.num_circuits,
+            "num_circuits": total_flat_circuits,
             "num_subcircuits": len(heinsum.quantum_tensors),
             "num_ctensors": len(heinsum.classical_tensors),
             "total_code_lines": total_code_lines,
