@@ -477,8 +477,8 @@ def bench_baseline(circuit_size: int) -> dict | None:
 
     # For baseline, use smaller batch to keep runtime manageable
     # Scale results linearly
-    sample_batch = min(5, BATCH_SIZE)
-    sample_support = min(5, NUM_SUPPORT)
+    sample_batch = min(3, BATCH_SIZE)
+    sample_support = min(3, NUM_SUPPORT)
 
     try:
         start = perf_counter()
