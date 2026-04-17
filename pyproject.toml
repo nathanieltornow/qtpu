@@ -10,7 +10,7 @@ name = "qtpu"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "cotengra>=0.6.2",
     "kahypar>=1.3.5",
@@ -27,6 +27,7 @@ dependencies = [
     "jax>=0.6.2",
     "benchkit",
     "torch>=2.9.1",
+    "mitiq @ git+https://github.com/unitaryfoundation/mitiq.git@main",
 ]
 
 [project.optional-dependencies]
