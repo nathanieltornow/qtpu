@@ -1,114 +1,129 @@
-"""Plotting for Real Hardware Benchmark."""
-
-from __future__ import annotations
-
-import pandas as pd
-import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
-matplotlib.rcParams.update({"font.size": 12, "figure.dpi": 150})
+from benchkit.plot.config import (
+    PlotStyle,
+    colors,
+    double_column_width,
+    register_style,
+)
 
+import benchkit as bk
 
-def load_hardware_data(log_path: str) -> pd.DataFrame:
-    df = pd.read_json(log_path, lines=True)
-    df["circuit_size"] = df["config"].apply(lambda x: x["circuit_size"])
-    for col in [
-        "estimated_qpu_time",
-        "actual_qpu_time",
-        "estimation_error",
-        "mean_fidelity",
-        "min_fidelity",
-        "num_subcircuits",
-        "compile_time",
-    ]:
-        df[col] = df["result"].apply(lambda x: x.get(col) if x else None)
-    return df.dropna(subset=["mean_fidelity"])
+ESTIMATED_LABEL = r"\textsc{Estimated}"
+ACTUAL_LABEL = r"\textsc{Actual}"
 
 
-def plot_time_validation():
-    """Plot estimated vs actual QPU time."""
-    df = load_hardware_data("logs/hardware/qnn_hardware.jsonl")
-
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-
-    # (a) Scatter: estimated vs actual
-    ax = axes[0]
-    ax.scatter(
-        df["estimated_qpu_time"],
-        df["actual_qpu_time"],
-        c=df["circuit_size"],
-        cmap="viridis",
-        s=80,
-        edgecolors="black",
-        linewidth=0.5,
-    )
-    lims = [
-        0,
-        max(df["estimated_qpu_time"].max(), df["actual_qpu_time"].max()) * 1.1,
-    ]
-    ax.plot(lims, lims, "k--", alpha=0.5, label="y = x")
-    ax.set_xlabel("Estimated QPU time (s)")
-    ax.set_ylabel("Actual QPU time (s)")
-    ax.set_title("(a) QPU Time Validation")
-    ax.legend()
-    cbar = plt.colorbar(ax.collections[0], ax=ax)
-    cbar.set_label("Circuit size (qubits)")
-
-    # (b) Estimation error by circuit size
-    ax = axes[1]
-    sizes = sorted(df["circuit_size"].unique())
-    errors = [
-        df[df["circuit_size"] == s]["estimation_error"].values[0] * 100
-        for s in sizes
-    ]
-    ax.bar(range(len(sizes)), errors, color="#1f77b4")
-    ax.set_xticks(range(len(sizes)))
-    ax.set_xticklabels(sizes)
-    ax.set_xlabel("Circuit size (qubits)")
-    ax.set_ylabel("Estimation error (%)")
-    ax.set_title("(b) Time Estimation Accuracy")
-
-    plt.tight_layout()
-    plt.savefig("plots/hardware/time_validation.pdf", bbox_inches="tight")
-    plt.savefig("plots/hardware/time_validation.png", bbox_inches="tight")
-    print("Saved plots/hardware/time_validation.{pdf,png}")
+def _sizes(df: pd.DataFrame) -> list[int]:
+    return sorted(int(s) for s in df["config.circuit_size"].unique())
 
 
-def plot_fidelity():
-    """Plot fidelity vs circuit size."""
-    df = load_hardware_data("logs/hardware/qnn_hardware.jsonl")
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-
-    sizes = sorted(df["circuit_size"].unique())
-    mean_fids = [
-        df[df["circuit_size"] == s]["mean_fidelity"].values[0] for s in sizes
-    ]
-    min_fids = [
-        df[df["circuit_size"] == s]["min_fidelity"].values[0] for s in sizes
-    ]
+def plot_qpu_time_validation(ax, df: pd.DataFrame):
+    """(a) Estimated vs. actual QPU time on IBM Marrakesh."""
+    sizes = _sizes(df)
+    est_vals, act_vals = [], []
+    for s in sizes:
+        row = df[df["config.circuit_size"] == s]
+        if row.empty:
+            continue
+        est_vals.append(row.iloc[0]["result.estimated_qpu_time"])
+        act_vals.append(row.iloc[0]["result.actual_qpu_time"])
 
     x = np.arange(len(sizes))
-    ax.bar(x, mean_fids, color="#1f77b4", label="Mean fidelity")
-    ax.scatter(x, min_fids, color="#d62728", zorder=5, label="Min fidelity", marker="v")
-    ax.set_xticks(x)
-    ax.set_xticklabels(sizes)
-    ax.set_xlabel("Circuit size (qubits)")
-    ax.set_ylabel("Hellinger fidelity")
-    ax.set_title("Subcircuit Fidelity on IBM Marrakesh")
-    ax.set_ylim(0, 1.05)
-    ax.legend()
+    width = 0.35
 
-    plt.tight_layout()
-    plt.savefig("plots/hardware/fidelity.pdf", bbox_inches="tight")
-    plt.savefig("plots/hardware/fidelity.png", bbox_inches="tight")
-    print("Saved plots/hardware/fidelity.{pdf,png}")
+    ax.bar(
+        x - width / 2,
+        est_vals,
+        width,
+        label=ESTIMATED_LABEL,
+        color=colors()[0],
+        edgecolor="black",
+        linewidth=1,
+        hatch="//",
+    )
+    ax.bar(
+        x + width / 2,
+        act_vals,
+        width,
+        label=ACTUAL_LABEL,
+        color=colors()[1],
+        edgecolor="black",
+        linewidth=1,
+        hatch="\\\\",
+    )
+
+    ax.set_xlabel("Circuit Size ")
+    ax.set_ylabel("QPU Time [s]")
+    ax.set_title(r"\textbf{(a) QPU Time Validation}")
+    ax.set_yscale("log")
+    ax.legend(loc="upper left")
+    ax.grid(True, alpha=0.3, axis="y")
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{s}q" for s in sizes])
+
+
+def plot_fidelity(ax, df: pd.DataFrame):
+    """(b) Hardware fidelity vs. circuit size (higher is better)."""
+    sizes = _sizes(df)
+    fids = []
+    for s in sizes:
+        row = df[df["config.circuit_size"] == s]
+        if row.empty:
+            continue
+        fids.append(row.iloc[0]["result.mean_fidelity"])
+
+    x = np.arange(len(sizes))
+
+    ax.bar(
+        x,
+        fids,
+        0.5,
+        color=colors()[0],
+        edgecolor="black",
+        linewidth=1,
+        hatch="//",
+    )
+
+    ax.set_xlabel("Circuit Size ")
+    ax.set_ylabel("Fidelity\n(higher is better)")
+    ax.set_title(r"\textbf{(b) Hardware Fidelity}")
+    ax.set_ylim(0, 1.05)
+    ax.grid(True, alpha=0.3, axis="y")
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{s}q" for s in sizes])
+
+
+@bk.pplot
+def plot_hardware(df: pd.DataFrame):
+    """Real IBM Marrakesh hardware benchmark: time validation + fidelity."""
+    fig, axes = plt.subplots(1, 2, figsize=(double_column_width() * 2 / 3, 1.3))
+
+    plot_qpu_time_validation(axes[0], df)
+    plot_fidelity(axes[1], df)
+
+    return fig
 
 
 if __name__ == "__main__":
-    import os
+    matplotlib.rcParams["text.usetex"] = False
+    matplotlib.rcParams["font.family"] = "sans-serif"
 
-    os.makedirs("plots/hardware", exist_ok=True)
-    plot_time_validation()
-    plot_fidelity()
+    register_style("estimated", PlotStyle(color=colors()[0], hatch="//"))
+    register_style("actual", PlotStyle(color=colors()[1], hatch="\\\\"))
+
+    data = bk.load_log("logs/hardware/qnn.jsonl")
+    df = data if isinstance(data, pd.DataFrame) else pd.json_normalize(data)
+
+    if df.empty:
+        print("No hardware data found")
+        exit(1)
+
+    print(f"Hardware: {len(df)} rows, sizes={_sizes(df)}")
+
+    fig = plot_hardware(df)
+    plt.tight_layout()
+    plt.savefig("plots/hardware.pdf", bbox_inches="tight")
+    plt.show()

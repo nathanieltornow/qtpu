@@ -1,3 +1,6 @@
+CLAUDE.md
+reviews.txt
+paper/
 bench_results/
 .vscode/
 .pdm-python
