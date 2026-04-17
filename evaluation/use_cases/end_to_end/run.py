@@ -250,13 +250,17 @@ def run_e2e_baseline(
     noise_levels: list[int],
     num_zne_gates: int,
 ) -> dict:
-    """Run baseline pipeline: qTPU cuts + QAC experiment generation + Mitiq ZNE + batching.
+    """Run baseline pipeline: QAC cutting + real Mitiq ZNE + manual batch loop.
 
-    Uses qTPU's compiler for cutting (same cut quality), then QAC's
-    generate_cutting_experiments for subcircuit enumeration, Mitiq-style
-    ZNE folding, and manual batching over (batch, support) pairs.
+    This is the "three separate tools" baseline reviewers asked for:
+      (1) qiskit-addon-cutting (QAC) for cutting + basis enumeration
+      (2) mitiq.zne.execute_with_zne for noise folding
+      (3) a manual Python loop over (batch, support) pairs
 
-    Returns dict with timing and circuit metrics.
+    Mitiq is invoked on every QAC experiment with a counting executor; the
+    quantum cost is then estimated from one representative × the measured
+    Mitiq call count. `validate_mitiq.py` independently confirms that the
+    Mitiq-call formula (n_qac × n_zne) is exact (ratio 1.000).
     """
     from mqt.bench import get_benchmark_indep
     from qiskit_addon_cutting import (
@@ -265,11 +269,15 @@ def run_e2e_baseline(
         partition_problem,
     )
     from qiskit.quantum_info import SparsePauliOp
+    from mitiq.zne import execute_with_zne
+    from mitiq.zne.inference import RichardsonFactory
+    from evaluation.use_cases.end_to_end.validate_mitiq import defer_measurements
 
     n_batch = len(X_batch)
     n_support = len(X_support)
+    n_zne = len(noise_levels)
 
-    # --- Step 1: Cut circuit with qTPU (same cuts for both approaches) ---
+    # --- Step 1: cut (shared compiler — same cut quality for both paths) ---
     qc = get_benchmark_indep("qnn", circuit_size=num_qubits, opt_level=3)
     qc_orig = qc.remove_final_measurements(inplace=False)
 
@@ -279,8 +287,7 @@ def run_e2e_baseline(
         n_trials=20, seed=42,
     )
 
-    # --- Step 2: Use QAC's experiment generation on the cut circuit ---
-    # This is where QAC enumerates all basis combinations at cut boundaries
+    # --- Step 2: QAC experiment generation ---
     observable = SparsePauliOp(["Z" * qc_orig.num_qubits])
     observables_expanded = expand_observables(
         observable.paulis, qc_orig, cut_circuit
@@ -295,41 +302,85 @@ def run_e2e_baseline(
     )
     compile_time = perf_counter() - compile_start
 
-    # Collect all QAC-generated subcircuit experiments
     all_experiments = [exp for exps in subexperiments.values() for exp in exps]
     n_qac_experiments = len(all_experiments)
 
-    # --- Step 3: Mitiq-style ZNE — fold each experiment at each noise level ---
-    n_zne = len(noise_levels)
-    # For each experiment circuit, we create n_zne folded variants
-    # (in practice Mitiq enumerates these explicitly)
-    zne_total = n_qac_experiments * n_zne
+    # --- Step 3: defer mid-circuit measurements so Mitiq can fold ---
+    # QAC emits circuits with mid-circuit `measure` ops on observable_measurements
+    # and qpd_measurements classical registers. Mitiq's folding only tolerates
+    # terminal measurements; deferring preserves outcome semantics (unlike
+    # stripping) and gives Mitiq a pure unitary block to fold over.
+    deferred_experiments = [defer_measurements(e) for e in all_experiments]
 
-    # --- Step 4: Manual batching — each (batch, support) pair runs the full pipeline ---
-    total_circuits = n_batch * n_support * zne_total
+    # --- Step 4: run Mitiq on every QAC experiment ---
+    # NOTE: executor has no return annotation. Mitiq's Executor compares the
+    # `return` annotation by identity against a list of types; under PEP 563
+    # (from __future__ import annotations) a `-> float` annotation becomes
+    # the string 'float' and fails the check. No annotation => Mitiq assumes
+    # float-returning, which is what we want.
+    mitiq_calls = {"n": 0}
 
-    # Code lines: each circuit → separate kernel
-    if all_experiments:
-        sample = all_experiments[0]
-        gates = len([i for i in sample.data
-                     if i.operation.name not in ("barrier", "measure")])
-        lines_per_kernel = 50 + gates * 2
-    else:
-        lines_per_kernel = 100
-    total_code_lines = total_circuits * lines_per_kernel
+    def mitiq_executor(circuit):
+        mitiq_calls["n"] += 1
+        return 0.0  # placeholder — we're counting, not evaluating
 
-    # QPU time: estimate from one representative, multiply
+    factory = RichardsonFactory(scale_factors=[float(n) for n in noise_levels])
+
+    mitiq_start = perf_counter()
+    for exp in deferred_experiments:
+        _ = execute_with_zne(exp, mitiq_executor, factory=factory)
+    calls_per_experiment = mitiq_calls["n"] / max(n_qac_experiments, 1)
+    mitiq_time = perf_counter() - mitiq_start
+
+    # --- Step 5: manual batch loop — enumerate (b, s) pairs ---
+    # In a real deployment the user writes a nested loop and submits all
+    # circuits per (b, s) pair. We enumerate the index space to measure
+    # the classical glue cost; the quantum time is estimated separately.
+    classical_start = perf_counter()
+    bs_results = []
+    for b in range(n_batch):
+        for s in range(n_support):
+            # User would prepend batch_map(X_batch[b]) and append
+            # inv_support_map(X_support[s]) to each experiment here,
+            # resubmit via Mitiq, and weight by coefficients + W[s].
+            # We record the index tuple; weighting happens in post.
+            bs_results.append((b, s))
+    # Weighted sum placeholder — the real post-processing is a dot product
+    # over coefficients × W, O(n_qac * n_support * n_batch).
+    _ = float(np.sum(W) * len(bs_results))
+    classical_time = perf_counter() - classical_start
+
+    # --- Step 6: totals ---
+    total_circuits = n_batch * n_support * n_qac_experiments * int(calls_per_experiment)
+
+    # QPU time estimate: one representative × total count.
     if all_experiments:
         rep_time = estimate_runtime(all_experiments[:1])
         total_quantum_time = rep_time * total_circuits
     else:
         total_quantum_time = 0.0
 
+    # Generated code size: each unique circuit becomes one generated kernel;
+    # in the baseline pipeline every (b, s, experiment, zne_level) tuple is
+    # a distinct circuit the user has to emit. Measure one representative via
+    # the same codegen path qTPU uses (quantum_tensor_to_cudaq) and multiply.
+    if all_experiments:
+        rep_qt = QuantumTensor(deferred_experiments[0])
+        _, rep_lines = quantum_tensor_to_cudaq(
+            rep_qt.circuit, rep_qt.shape, kernel_name="baseline_kernel"
+        )
+        total_code_lines = rep_lines * total_circuits
+    else:
+        total_code_lines = 0
+
     return {
         "compile_time": compile_time,
         "quantum_time": total_quantum_time,
+        "classical_time": classical_time,
+        "mitiq_time": mitiq_time,
         "num_circuits": total_circuits,
         "num_qac_experiments": n_qac_experiments,
+        "mitiq_calls_per_experiment": int(calls_per_experiment),
         "total_code_lines": total_code_lines,
     }
 
@@ -440,9 +491,12 @@ def bench_baseline(circuit_size: int) -> dict | None:
         return {
             "compile_time": result["compile_time"],
             "quantum_time": result["quantum_time"],
+            "classical_time": result["classical_time"],
+            "mitiq_time": result["mitiq_time"],
             "total_time": total_time,
             "num_circuits": result["num_circuits"],
             "num_qac_experiments": result["num_qac_experiments"],
+            "mitiq_calls_per_experiment": result["mitiq_calls_per_experiment"],
             "total_code_lines": result["total_code_lines"],
         }
     except Exception as e:
