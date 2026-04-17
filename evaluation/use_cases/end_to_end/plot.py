@@ -1,165 +1,168 @@
-"""Plotting for End-to-End Composability Benchmark."""
-
-from __future__ import annotations
-
-import pandas as pd
-import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
-matplotlib.rcParams.update({"font.size": 12, "figure.dpi": 150})
+from benchkit.plot.config import (
+    PlotStyle,
+    colors,
+    double_column_width,
+    register_style,
+)
 
-QTPU_LOG = "logs/end_to_end/qtpu.jsonl"
-BASELINE_LOG = "logs/end_to_end/baseline.jsonl"
+import benchkit as bk
+
+QTPU_LABEL = r"\textsc{qTPU}"
+BASELINE_LABEL = r"\textsc{Baseline}"
 
 
-def load_data():
-    qtpu_df = pd.read_json(QTPU_LOG, lines=True)
-    baseline_df = pd.read_json(BASELINE_LOG, lines=True)
-    return qtpu_df, baseline_df
+def _sizes(df: pd.DataFrame) -> list[int]:
+    return sorted(int(s) for s in df["config.circuit_size"].unique())
 
 
-def plot_e2e_comparison():
-    """Plot end-to-end comparison: wall time, circuits, code lines."""
-    qtpu_df, baseline_df = load_data()
+def _lookup(df: pd.DataFrame, size: int, key: str, default: float = 0.0) -> float:
+    row = df[df["config.circuit_size"] == size]
+    if row.empty or key not in row.columns:
+        return default
+    val = row.iloc[0][key]
+    if pd.isna(val):
+        return default
+    return float(val)
 
-    # Extract config and result fields
-    qtpu_df["circuit_size"] = qtpu_df["config"].apply(lambda x: x["circuit_size"])
-    baseline_df["circuit_size"] = baseline_df["config"].apply(
-        lambda x: x["circuit_size"]
+
+def _wall_time(row_df: pd.DataFrame, size: int) -> float:
+    """End-to-end wall time = compile + estimated quantum + classical."""
+    return (
+        _lookup(row_df, size, "result.compile_time")
+        + _lookup(row_df, size, "result.quantum_time")
+        + _lookup(row_df, size, "result.classical_time")
     )
 
-    for col in [
-        "compile_time",
-        "quantum_time",
-        "total_time",
-        "num_circuits",
-        "total_code_lines",
-    ]:
-        qtpu_df[col] = qtpu_df["result"].apply(lambda x: x.get(col) if x else None)
-        baseline_df[col] = baseline_df["result"].apply(
-            lambda x: x.get(col) if x else None
-        )
 
-    # Drop rows where result is None
-    qtpu_df = qtpu_df.dropna(subset=["total_time"])
-    baseline_df = baseline_df.dropna(subset=["total_time"])
+def plot_end_to_end_time(ax, qtpu_df: pd.DataFrame, baseline_df: pd.DataFrame):
+    """(a) End-to-end wall time (lower is better, log scale).
 
-    sizes = sorted(qtpu_df["circuit_size"].unique())
-
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
-
-    # (a) End-to-end wall time
-    ax = axes[0]
-    qtpu_times = [
-        qtpu_df[qtpu_df["circuit_size"] == s]["total_time"].values[0] for s in sizes
-    ]
-    base_times = [
-        baseline_df[baseline_df["circuit_size"] == s]["total_time"].values[0]
-        for s in sizes
-    ]
-    x = np.arange(len(sizes))
-    w = 0.35
-    ax.bar(x - w / 2, base_times, w, label="Baseline", color="#d62728")
-    ax.bar(x + w / 2, qtpu_times, w, label="qTPU", color="#1f77b4")
-    ax.set_xticks(x)
-    ax.set_xticklabels(sizes)
-    ax.set_xlabel("Circuit size (qubits)")
-    ax.set_ylabel("Wall time (s)")
-    ax.set_title("(a) End-to-end wall time")
-    ax.set_yscale("log")
-    ax.legend()
-
-    # (b) Number of circuits generated
-    ax = axes[1]
-    qtpu_circs = [
-        qtpu_df[qtpu_df["circuit_size"] == s]["num_circuits"].values[0] for s in sizes
-    ]
-    base_circs = [
-        baseline_df[baseline_df["circuit_size"] == s]["num_circuits"].values[0]
-        for s in sizes
-    ]
-    ax.bar(x - w / 2, base_circs, w, label="Baseline", color="#d62728")
-    ax.bar(x + w / 2, qtpu_circs, w, label="qTPU", color="#1f77b4")
-    ax.set_xticks(x)
-    ax.set_xticklabels(sizes)
-    ax.set_xlabel("Circuit size (qubits)")
-    ax.set_ylabel("Circuits generated")
-    ax.set_title("(b) Circuit count")
-    ax.set_yscale("log")
-    ax.legend()
-
-    # (c) Lines of generated code
-    ax = axes[2]
-    qtpu_loc = [
-        qtpu_df[qtpu_df["circuit_size"] == s]["total_code_lines"].values[0]
-        for s in sizes
-    ]
-    base_loc = [
-        baseline_df[baseline_df["circuit_size"] == s]["total_code_lines"].values[0]
-        for s in sizes
-    ]
-    ax.bar(x - w / 2, base_loc, w, label="Baseline", color="#d62728")
-    ax.bar(x + w / 2, qtpu_loc, w, label="qTPU", color="#1f77b4")
-    ax.set_xticks(x)
-    ax.set_xticklabels(sizes)
-    ax.set_xlabel("Circuit size (qubits)")
-    ax.set_ylabel("Lines of code")
-    ax.set_title("(c) Generated code size")
-    ax.set_yscale("log")
-    ax.legend()
-
-    plt.tight_layout()
-    plt.savefig("plots/end_to_end/e2e_comparison.pdf", bbox_inches="tight")
-    plt.savefig("plots/end_to_end/e2e_comparison.png", bbox_inches="tight")
-    print("Saved plots/end_to_end/e2e_comparison.{pdf,png}")
-
-
-def plot_e2e_breakdown():
-    """Plot qTPU timing breakdown: compile vs quantum vs classical."""
-    qtpu_df, _ = load_data()
-
-    qtpu_df["circuit_size"] = qtpu_df["config"].apply(lambda x: x["circuit_size"])
-    for col in ["compile_time", "quantum_time", "classical_time"]:
-        qtpu_df[col] = qtpu_df["result"].apply(lambda x: x.get(col) if x else None)
-    qtpu_df = qtpu_df.dropna(subset=["compile_time"])
-
-    sizes = sorted(qtpu_df["circuit_size"].unique())
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-
-    compile_times = [
-        qtpu_df[qtpu_df["circuit_size"] == s]["compile_time"].values[0] for s in sizes
-    ]
-    quantum_times = [
-        qtpu_df[qtpu_df["circuit_size"] == s]["quantum_time"].values[0] for s in sizes
-    ]
-    classical_times = [
-        qtpu_df[qtpu_df["circuit_size"] == s]["classical_time"].values[0] for s in sizes
-    ]
+    The first metric from the revision commitment: compile + estimated quantum
+    (FakeMarrakesh + ASAP scheduling) + classical post-processing, summed.
+    """
+    sizes = _sizes(qtpu_df)
+    qtpu_vals = [_wall_time(qtpu_df, s) for s in sizes]
+    base_vals = [_wall_time(baseline_df, s) for s in sizes]
 
     x = np.arange(len(sizes))
-    ax.bar(x, compile_times, label="Compilation", color="#ff7f0e")
-    ax.bar(x, quantum_times, bottom=compile_times, label="Quantum (est.)", color="#1f77b4")
-    bottoms = [c + q for c, q in zip(compile_times, quantum_times)]
-    ax.bar(x, classical_times, bottom=bottoms, label="Classical", color="#2ca02c")
+    width = 0.35
 
+    ax.bar(x - width / 2, qtpu_vals, width,
+           label=QTPU_LABEL, color=colors()[0],
+           edgecolor="black", linewidth=1, hatch="//")
+    ax.bar(x + width / 2, base_vals, width,
+           label=BASELINE_LABEL, color=colors()[1],
+           edgecolor="black", linewidth=1, hatch="\\\\")
+
+    ax.set_xlabel("Circuit Size ")
+    ax.set_ylabel("End-to-End Time [s]\n(lower is better)")
+    ax.set_title(r"\textbf{(a) End-to-End Wall Time}")
+    ax.set_yscale("log")
+    ax.legend(loc="upper left")
+    ax.grid(True, alpha=0.3, axis="y")
     ax.set_xticks(x)
-    ax.set_xticklabels(sizes)
-    ax.set_xlabel("Circuit size (qubits)")
-    ax.set_ylabel("Time (s)")
-    ax.set_title("qTPU End-to-End Timing Breakdown")
-    ax.legend()
+    ax.set_xticklabels([f"{s}q" for s in sizes])
 
-    plt.tight_layout()
-    plt.savefig("plots/end_to_end/e2e_breakdown.pdf", bbox_inches="tight")
-    plt.savefig("plots/end_to_end/e2e_breakdown.png", bbox_inches="tight")
-    print("Saved plots/end_to_end/e2e_breakdown.{pdf,png}")
+
+def plot_generated_circuits(ax, qtpu_df: pd.DataFrame, baseline_df: pd.DataFrame):
+    """(b) Number of generated circuits (lower is better, log scale)."""
+    sizes = _sizes(qtpu_df)
+    qtpu_vals = [_lookup(qtpu_df, s, "result.num_circuits") for s in sizes]
+    base_vals = [_lookup(baseline_df, s, "result.num_circuits") for s in sizes]
+
+    x = np.arange(len(sizes))
+    width = 0.35
+
+    ax.bar(x - width / 2, qtpu_vals, width,
+           label=QTPU_LABEL, color=colors()[0],
+           edgecolor="black", linewidth=1, hatch="//")
+    ax.bar(x + width / 2, base_vals, width,
+           label=BASELINE_LABEL, color=colors()[1],
+           edgecolor="black", linewidth=1, hatch="\\\\")
+
+    ax.set_xlabel("Circuit Size ")
+    ax.set_ylabel("Circuits Generated\n(lower is better)")
+    ax.set_title(r"\textbf{(b) Generated Circuits}")
+    ax.set_yscale("log")
+    ax.legend(loc="upper left")
+    ax.grid(True, alpha=0.3, axis="y")
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{s}q" for s in sizes])
+
+
+def plot_code_size(ax, qtpu_df: pd.DataFrame, baseline_df: pd.DataFrame):
+    """(c) Lines of generated code (lower is better, log scale)."""
+    sizes = _sizes(qtpu_df)
+    qtpu_vals = [_lookup(qtpu_df, s, "result.total_code_lines") for s in sizes]
+    base_vals = [_lookup(baseline_df, s, "result.total_code_lines") for s in sizes]
+
+    x = np.arange(len(sizes))
+    width = 0.35
+
+    ax.bar(x - width / 2, qtpu_vals, width,
+           label=QTPU_LABEL, color=colors()[0],
+           edgecolor="black", linewidth=1, hatch="//")
+    ax.bar(x + width / 2, base_vals, width,
+           label=BASELINE_LABEL, color=colors()[1],
+           edgecolor="black", linewidth=1, hatch="\\\\")
+
+    ax.set_xlabel("Circuit Size ")
+    ax.set_ylabel("Lines of Code\n(lower is better)")
+    ax.set_title(r"\textbf{(c) Generated Code Size}")
+    ax.set_yscale("log")
+    ax.legend(loc="upper left")
+    ax.grid(True, alpha=0.3, axis="y")
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{s}q" for s in sizes])
+
+
+@bk.pplot
+def plot_end_to_end(qtpu_df: pd.DataFrame, baseline_df: pd.DataFrame):
+    """End-to-end composability benchmark: qTPU vs. baseline pipeline.
+
+    The three metrics committed in revision_plan.md §Condition 1:
+      (a) End-to-end wall time.
+      (b) Number of generated circuits.
+      (c) Lines of generated code.
+    """
+    fig, axes = plt.subplots(1, 3, figsize=(double_column_width(), 1.3))
+
+    plot_end_to_end_time(axes[0], qtpu_df, baseline_df)
+    plot_generated_circuits(axes[1], qtpu_df, baseline_df)
+    plot_code_size(axes[2], qtpu_df, baseline_df)
+
+    return fig
 
 
 if __name__ == "__main__":
-    import os
+    matplotlib.rcParams["text.usetex"] = False
+    matplotlib.rcParams["font.family"] = "sans-serif"
 
-    os.makedirs("plots/end_to_end", exist_ok=True)
-    plot_e2e_comparison()
-    plot_e2e_breakdown()
+    register_style("qtpu", PlotStyle(color=colors()[0], hatch="//"))
+    register_style("baseline", PlotStyle(color=colors()[1], hatch="\\\\"))
+
+    qtpu_data = bk.load_log("logs/end_to_end/qtpu.jsonl")
+    baseline_data = bk.load_log("logs/end_to_end/baseline.jsonl")
+
+    qtpu_df = qtpu_data if isinstance(qtpu_data, pd.DataFrame) else pd.json_normalize(qtpu_data)
+    baseline_df = (
+        baseline_data if isinstance(baseline_data, pd.DataFrame)
+        else (pd.json_normalize(baseline_data) if baseline_data else pd.DataFrame())
+    )
+
+    if qtpu_df.empty or baseline_df.empty:
+        print("Missing qTPU or baseline data")
+        exit(1)
+
+    print(f"qTPU: {len(qtpu_df)} rows, Baseline: {len(baseline_df)} rows")
+    print(f"Sizes: {_sizes(qtpu_df)}")
+
+    fig = plot_end_to_end(qtpu_df, baseline_df)
+    plt.tight_layout()
+    plt.savefig("plots/end_to_end.pdf", bbox_inches="tight")
+    plt.show()
