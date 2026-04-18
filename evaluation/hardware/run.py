@@ -1,40 +1,87 @@
-"""Run qTPU end-to-end on IBM Marrakesh.
+"""Real-Hardware Benchmark on IBM Marrakesh (OSDI Condition 2)
+================================================================
 
-Cuts a QNN circuit, runs the subcircuits on real hardware via IBMBackend,
-and performs the full hTN contraction to get the reconstructed result.
-Compares against the FakeMarrakesh QPU time estimate.
+Runs cut QNN subcircuits on IBM Marrakesh via qiskit-ibm-runtime, measures
+actual QPU time from the job metadata, and compares against the
+FakeMarrakesh ASAP-schedule estimate from ``estimate_runtime``. Also
+compares the reconstructed expectation value against a noiseless Aer/CUDA-Q
+simulation to report fidelity for each circuit size.
+
+Requires IBM_TOKEN and IBM_CRN in the environment (or a .env file).
+
+Usage
+-----
+    uv run python -m evaluation.hardware.run
+    uv run python -m evaluation.hardware.run 20,40    # restrict sizes
 """
 
+from __future__ import annotations
+
 import os
+import sys
 from time import perf_counter
 
-import numpy as np
 import torch
-from dotenv import load_dotenv
+from qiskit.circuit import QuantumCircuit
 
-load_dotenv()
+import benchkit as bk
 
-# --- Config ---
-CIRCUIT_SIZE = 20
+import qtpu
+from qtpu.runtime import HEinsumRuntime
+from qtpu.runtime.backends import CudaQBackend
+from qtpu.runtime.ibm_backend import IBMBackend
+from evaluation.analysis import estimate_runtime
+
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ModuleNotFoundError:
+    pass
+
+
+# =============================================================================
+# Configuration
+# =============================================================================
+
+# Primary sweep (kept small enough for real IBM queue budgets).
+DEFAULT_SIZES = [20, 40, 60]
 QPU_SIZE = 10
-BACKEND_NAME = "ibm_marrakesh"
 SHOTS = 1000
+BACKEND_NAME = "ibm_marrakesh"
+LOG_PATH = "logs/hardware/ibm.jsonl"
 
 
-def main():
-    from mqt.bench import get_benchmark_indep
+def _connect(backend_name: str):
     from qiskit_ibm_runtime import QiskitRuntimeService
+    service = QiskitRuntimeService(
+        channel="ibm_cloud",
+        token=os.environ["IBM_TOKEN"],
+        instance=os.environ["IBM_CRN"],
+    )
+    return service.backend(backend_name)
 
-    import qtpu
-    from qtpu.runtime import HEinsumRuntime
-    from qtpu.runtime.ibm_backend import IBMBackend
-    from evaluation.analysis import estimate_runtime
 
-    # --- Build and cut circuit ---
-    print(f"Building {CIRCUIT_SIZE}-qubit QNN, cutting to {QPU_SIZE}-qubit subcircuits...")
-    qc = get_benchmark_indep("qnn", circuit_size=CIRCUIT_SIZE, opt_level=3)
+def noiseless_expval(htn) -> float:
+    """Run the cut hTN under noiseless CUDA-Q to get the ideal scalar."""
+    sim_backend = CudaQBackend(target="qpp-cpu", simulate=True, estimate_qpu_time=False)
+    runtime = HEinsumRuntime(
+        htn, backend=sim_backend, dtype=torch.float64, device=torch.device("cpu")
+    )
+    runtime.prepare(optimize=False)
+    result, _ = runtime.execute()
+    return float(result.item() if result.ndim == 0 else result.sum().item())
+
+
+def run_hw(circuit_size: int, device):
+    """Build, cut, estimate, run on real IBM hardware, and compare."""
+    from mqt.bench import get_benchmark_indep
+
+    print(f"\n[HW ibm] size={circuit_size}q → QPU={QPU_SIZE}q", flush=True)
+
+    # Build + cut
+    qc = get_benchmark_indep("qnn", circuit_size=circuit_size, opt_level=3)
     qc = qc.remove_final_measurements(inplace=False)
-
     compile_start = perf_counter()
     cut_circuit = qtpu.cut(
         qc, max_size=QPU_SIZE, cost_weight=1000, n_trials=20, seed=42, num_workers=1
@@ -42,76 +89,80 @@ def main():
     htn = qtpu.circuit_to_heinsum(cut_circuit)
     compile_time = perf_counter() - compile_start
 
-    print(f"Compile time: {compile_time:.1f}s")
-    print(f"Subcircuits: {len(htn.quantum_tensors)}")
-    for i, qt in enumerate(htn.quantum_tensors):
-        print(f"  QT[{i}]: shape={qt.shape}, qubits={qt.circuit.num_qubits}")
-
-    # --- Estimate QPU time (FakeMarrakesh) ---
-    print("\nEstimating QPU time (FakeMarrakesh)...")
-    flat_circuits = []
-    for qt in htn.quantum_tensors:
-        flat_circuits.extend([c.decompose() for c in qt.flat()])
+    # Flat circuits for FakeMarrakesh estimation
+    flat_circuits = [c.decompose() for qt in htn.quantum_tensors for c in qt.flat()]
+    est_start = perf_counter()
     estimated_qpu_time = estimate_runtime(flat_circuits)
-    print(f"Estimated QPU time: {estimated_qpu_time:.4f}s")
-    print(f"Total flat circuits: {len(flat_circuits)}")
+    estimate_time = perf_counter() - est_start
 
-    # --- Connect to IBM and run ---
-    print(f"\nConnecting to {BACKEND_NAME}...")
-    service = QiskitRuntimeService(
-        channel="ibm_cloud",
-        token=os.environ["IBM_TOKEN"],
-        instance=os.environ["IBM_CRN"],
-    )
-    ibm_backend_device = service.backend(BACKEND_NAME)
-    print(f"Connected: {ibm_backend_device.name} ({ibm_backend_device.num_qubits} qubits)")
-
-    # Create IBMBackend and HEinsumRuntime
-    backend = IBMBackend(backend=ibm_backend_device, shots=SHOTS)
+    # Run on IBM hardware
+    backend = IBMBackend(backend=device, shots=SHOTS)
     runtime = HEinsumRuntime(
         htn, backend=backend, dtype=torch.float64, device=torch.device("cpu")
     )
-
-    print("\nPreparing runtime...")
     runtime.prepare(optimize=False)
 
-    print(f"Running full hTN pipeline on {BACKEND_NAME}...")
-    run_start = perf_counter()
-    result, timing = runtime.execute()
-    run_time = perf_counter() - run_start
+    hw_start = perf_counter()
+    hw_result, _timing = runtime.execute()
+    hw_wall_time = perf_counter() - hw_start
+    hw_val = float(hw_result.item() if hw_result.ndim == 0 else hw_result.sum().item())
 
-    # --- Results ---
-    print(f"\n{'='*60}")
-    print(f"RESULTS: {CIRCUIT_SIZE}q QNN on {BACKEND_NAME}")
-    print(f"{'='*60}")
-    print(f"Compile time:        {compile_time:.1f}s")
-    print(f"Execution time:      {run_time:.1f}s")
-    print(f"Estimated QPU time:  {estimated_qpu_time:.4f}s")
-    print(f"Actual QPU time:     {backend.total_actual_qpu_time}s")
-    print(f"Total jobs:          {backend.total_jobs}")
+    # Noiseless reference
+    ref_val = noiseless_expval(htn)
 
-    if backend.total_actual_qpu_time > 0:
-        ratio = backend.total_actual_qpu_time / estimated_qpu_time
-        print(f"Actual/Estimated:    {ratio:.2f}x")
+    # Fidelity for a scalar expectation value in [-1, 1]: 1 - |err|/2
+    fidelity = 1.0 - abs(hw_val - ref_val) / 2.0
 
-    print(f"\nReconstructed result shape: {result.shape}")
-    print(f"Result value: {result.item() if result.ndim == 0 else result}")
+    result = {
+        "backend_name": backend.name,
+        "num_partitions": len(htn.quantum_tensors),
+        "num_flat_circuits": len(flat_circuits),
+        "compile_time": compile_time,
+        "estimate_time": estimate_time,
+        "estimated_qpu_time": estimated_qpu_time,
+        "actual_qpu_time": backend.total_actual_qpu_time,
+        "num_jobs": backend.total_jobs,
+        "hw_wall_time": hw_wall_time,
+        "hw_expval": hw_val,
+        "noiseless_expval": ref_val,
+        "abs_error": abs(hw_val - ref_val),
+        "fidelity": fidelity,
+        "qpu_time_ratio": (
+            backend.total_actual_qpu_time / estimated_qpu_time
+            if estimated_qpu_time > 0 else None
+        ),
+    }
+    print(
+        f"  partitions={result['num_partitions']} "
+        f"flat={result['num_flat_circuits']} "
+        f"est_qpu={estimated_qpu_time:.3f}s "
+        f"actual_qpu={result['actual_qpu_time']:.3f}s "
+        f"ratio={result['qpu_time_ratio']} "
+        f"err={result['abs_error']:.4f} fidelity={fidelity:.4f}",
+        flush=True,
+    )
+    return result
 
-    # --- Compare with noiseless simulation ---
-    print("\nRunning noiseless simulation for comparison...")
-    from qtpu.runtime.backends import CudaQBackend
 
-    sim_backend = CudaQBackend(target="qpp-cpu", simulate=True, estimate_qpu_time=False)
-    sim_runtime = HEinsumRuntime(htn, backend=sim_backend, dtype=torch.float64)
-    sim_runtime.prepare(optimize=False)
-    sim_result, sim_timing = sim_runtime.execute()
+def main():
+    if len(sys.argv) > 1:
+        sizes = [int(s) for s in sys.argv[1].split(",")]
+    else:
+        sizes = DEFAULT_SIZES
+    print(f"Sizes: {sizes}", flush=True)
 
-    print(f"Noiseless result: {sim_result.item() if sim_result.ndim == 0 else sim_result}")
-    print(f"Hardware result:  {result.item() if result.ndim == 0 else result}")
+    # Connect once, reuse across sizes
+    device = _connect(BACKEND_NAME)
+    status = device.status()
+    print(f"Backend: {device.name} operational={status.operational} "
+          f"pending={status.pending_jobs}", flush=True)
 
-    if result.ndim == 0 and sim_result.ndim == 0:
-        error = abs(result.item() - sim_result.item())
-        print(f"Absolute error:   {error:.6f}")
+    @bk.foreach(circuit_size=sizes)
+    @bk.log(LOG_PATH)
+    def bench(circuit_size: int):
+        return run_hw(circuit_size=circuit_size, device=device)
+
+    bench()
 
 
 if __name__ == "__main__":

@@ -73,7 +73,7 @@ def plot_fidelity(ax, df: pd.DataFrame):
         row = df[df["config.circuit_size"] == s]
         if row.empty:
             continue
-        fids.append(row.iloc[0]["result.mean_fidelity"])
+        fids.append(row.iloc[0]["result.fidelity"])
 
     x = np.arange(len(sizes))
 
@@ -114,11 +114,11 @@ if __name__ == "__main__":
     register_style("estimated", PlotStyle(color=colors()[0], hatch="//"))
     register_style("actual", PlotStyle(color=colors()[1], hatch="\\\\"))
 
-    data = bk.load_log("logs/hardware/qnn.jsonl")
+    data = bk.load_log("logs/hardware/ibm.jsonl")
     df = data if isinstance(data, pd.DataFrame) else pd.json_normalize(data)
 
     if df.empty:
-        print("No hardware data found")
+        print("No hardware data found at logs/hardware/ibm.jsonl")
         exit(1)
 
     print(f"Hardware: {len(df)} rows, sizes={_sizes(df)}")
