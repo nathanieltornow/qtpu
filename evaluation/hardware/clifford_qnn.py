@@ -1,0 +1,121 @@
+"""Clifford-gate analogue of the mqt.bench QNN circuit.
+
+Walks the structure of the qnn benchmark and replaces every single-qubit
+gate with a fixed random Clifford 1q gate, leaving entangling gates
+(cx/cz) untouched. The result is structurally the same as qnn (same
+depth, same entanglement pattern, same qubit count) but now efficiently
+classically simulable via the stabilizer formalism.
+
+For hardware fidelity experiments we wrap it with its own inverse under
+one barrier:
+
+    full = C · barrier · C†
+
+Applied to |0...0⟩ the ideal output is |0...0⟩ → ⟨Z^⊗n⟩_ideal = 1.
+This provides a strong non-trivial signal that noise drives toward 0 —
+unlike a random QNN where ⟨Z^n⟩ ≈ 0 both noiseless and noisy, so noise
+effects are invisible.
+
+The single barrier at the mirror boundary is sufficient: it prevents
+the transpiler from collapsing C·C† = I across the wall, while still
+allowing normal gate-level optimization within each side (matching how
+a real user would compile the circuit).
+"""
+
+from __future__ import annotations
+
+import random
+
+from qiskit.circuit import QuantumCircuit
+
+# Single-qubit Clifford gate set. Cardinality ≈ 24 for the full Clifford
+# group on 1 qubit; we use a generating subset that's easy to apply.
+CLIFFORD_1Q = ["id", "h", "s", "sdg", "x", "y", "z", "hs", "sh", "shs"]
+
+
+def _apply_1q_clifford(qc: QuantumCircuit, name: str, q) -> None:
+    """Apply a named 1q Clifford gate to qubit q in-place."""
+    if name == "id":
+        return
+    if name == "hs":
+        qc.h(q)
+        qc.s(q)
+        return
+    if name == "sh":
+        qc.s(q)
+        qc.h(q)
+        return
+    if name == "shs":
+        qc.s(q)
+        qc.h(q)
+        qc.s(q)
+        return
+    getattr(qc, name)(q)
+
+
+def cliffordize(qc: QuantumCircuit, seed: int = 42) -> QuantumCircuit:
+    """Replace every 1-qubit gate in qc with a fixed random Clifford gate,
+    and insert a full-width barrier after every gate.
+
+    The barriers are essential: at opt_level=3 the transpiler will
+    consolidate chains of single-qubit Cliffords into a single U3 gate
+    (and occasionally notice local cancellations like H·H = I), which
+    would collapse the intended circuit depth on hardware. Barriers
+    after every gate preserve the logical depth end-to-end; the
+    transpiler still handles layout + routing normally.
+
+    Non-1q gates (cx, cz, swap, ...) and structural ops (measure, reset)
+    are kept as-is. The same seed produces the same replacement pattern.
+    """
+    rng = random.Random(seed)
+    n_qubits = sum(qr.size for qr in qc.qregs)
+    new = QuantumCircuit(*qc.qregs, *qc.cregs)
+    for instr in qc.data:
+        op = instr.operation
+        name = op.name
+        if name in {"barrier", "measure", "reset"}:
+            new.append(op, instr.qubits, instr.clbits)
+            continue
+        if op.num_qubits == 1:
+            _apply_1q_clifford(new, rng.choice(CLIFFORD_1Q), instr.qubits[0])
+        else:
+            new.append(op, instr.qubits, instr.clbits)
+        new.barrier(range(n_qubits))
+    return new
+
+
+def build_clifford_qnn_mirror(n: int, seed: int = 42) -> QuantumCircuit:
+    """Clifford-QNN mirror circuit: C · barrier · C†, applied to |0...0⟩.
+
+    Ideal output: |0...0⟩ ⇒ ⟨Z^⊗n⟩_ideal = +1.
+    """
+    from mqt.bench import get_benchmark_indep
+
+    base = get_benchmark_indep("qnn", circuit_size=n, opt_level=3)
+    base = base.remove_final_measurements(inplace=False)
+
+    c = cliffordize(base, seed=seed)
+
+    full = QuantumCircuit(*c.qregs)
+    full.compose(c, inplace=True)
+    full.barrier(range(n))
+    full.compose(c.inverse(), inplace=True)
+    return full
+
+
+if __name__ == "__main__":
+    # Quick sanity check: ideal ⟨Z^⊗n⟩ should be +1 on a small instance.
+    import numpy as np
+    from qiskit.quantum_info import Statevector
+
+    for n in [4, 6, 8]:
+        qc = build_clifford_qnn_mirror(n, seed=42)
+        sv = Statevector.from_instruction(qc)
+        # ⟨Z^⊗n⟩ = sum_x (-1)^parity(x) |amp_x|²
+        probs = sv.probabilities()
+        z_n = sum(
+            ((-1) ** bin(x).count("1")) * p
+            for x, p in enumerate(probs)
+        )
+        p00 = probs[0]
+        print(f"n={n}  ⟨Z^⊗n⟩={z_n:+.6f}  P(|0^n⟩)={p00:.6f}  depth={qc.depth()}")
