@@ -94,7 +94,11 @@ def _submit_monolithic(qc, device):
     from qiskit_ibm_runtime import SamplerV2
 
     qc_m = qc.copy()
-    qc_m.measure_all()
+    # Measure only non-reset-terminal qubits (I-observable positions are
+    # terminated with reset by build_clifford_qnn_conjugated). measure_all
+    # would include them and let noisy flips corrupt the Z^n parity.
+    from qtpu.runtime.ibm_backend import _measure_non_reset_qubits
+    _measure_non_reset_qubits(qc_m)
     compile_start = perf_counter()
     transpiled = transpile(qc_m, backend=device, optimization_level=3)
     compile_time = perf_counter() - compile_start

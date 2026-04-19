@@ -15,6 +15,8 @@ import numpy as np
 import torch
 from qiskit.compiler import transpile
 
+from qiskit.circuit import ClassicalRegister
+
 from qtpu.runtime.backends import QuantumBackend
 from qtpu.transforms import remove_operations_by_name
 
@@ -22,6 +24,28 @@ if TYPE_CHECKING:
     from qiskit.circuit import QuantumCircuit
     from qiskit_ibm_runtime import IBMBackend as IBMBackendType
     from qtpu.core import QuantumTensor
+
+
+def _measure_non_reset_qubits(circ) -> None:
+    """Append measurements on every qubit whose last non-barrier op is NOT
+    a reset. Reset-terminal qubits represent traced-out / I-observable
+    positions from the cut or from caller-baked observables — measuring
+    them adds no information noiselessly (they're |0⟩) and lets noise
+    corrupt the Z^n parity under real hardware."""
+    last_op: dict[int, str] = {}
+    for instr in circ.data:
+        if instr.operation.name == "barrier":
+            continue
+        for q in instr.qubits:
+            qi = circ.qubits.index(q)
+            last_op[qi] = instr.operation.name
+    to_measure = [qi for qi in range(circ.num_qubits) if last_op.get(qi) != "reset"]
+    if not to_measure:
+        return
+    creg = ClassicalRegister(len(to_measure), "meas")
+    circ.add_register(creg)
+    for j, qi in enumerate(to_measure):
+        circ.measure(circ.qubits[qi], creg[j])
 
 
 class IBMBackend(QuantumBackend):
@@ -125,12 +149,16 @@ class IBMBackend(QuantumBackend):
                     circ = circ.assign_parameters(to_bind)
             bound.append(circ)
 
-        # Clean custom ops and add measurements
+        # Clean custom ops and add measurements — measure only qubits whose
+        # last non-barrier op is NOT a reset (reset-terminal qubits are
+        # traced-out / I-observable; measuring them under noise lets their
+        # noisy flips corrupt the Z^n parity). Noiselessly equivalent to
+        # measure_all since reset yields |0⟩ → +1 Z-eigenvalue.
         clean = []
         for circ in bound:
             c = remove_operations_by_name(circ, {"qpd_measure", "iswitch"}, inplace=False)
             if not any(i.operation.name == "measure" for i in c.data):
-                c.measure_all()
+                _measure_non_reset_qubits(c)
             clean.append(c)
 
         # Transpile for hardware
