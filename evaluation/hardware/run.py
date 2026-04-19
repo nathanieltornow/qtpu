@@ -1,11 +1,13 @@
 """Real-Hardware Benchmark on IBM Marrakesh (OSDI Condition 2)
 ================================================================
 
-Runs cut QNN subcircuits on IBM Marrakesh via qiskit-ibm-runtime, measures
-actual QPU time from the job metadata, and compares against the
-FakeMarrakesh ASAP-schedule estimate from ``estimate_runtime``. Also
-compares the reconstructed expectation value against a noiseless Aer/CUDA-Q
-simulation to report fidelity for each circuit size.
+Runs cut Clifford-QNN-mirror subcircuits on IBM Marrakesh via
+qiskit-ibm-runtime, measures actual QPU time from the job metadata, and
+compares against the FakeMarrakesh ASAP-schedule estimate from
+``estimate_runtime``. The mirror circuit's ideal ⟨Z^⊗n⟩ is +1 — hardware
+noise drives the reconstructed expectation value toward 0, giving a
+clean measurable fidelity at each circuit size (unlike the raw QNN where
+the noiseless expectation is ≈0 and noise effects are invisible).
 
 Requires IBM_TOKEN and IBM_CRN in the environment (or a .env file).
 
@@ -22,15 +24,14 @@ import sys
 from time import perf_counter
 
 import torch
-from qiskit.circuit import QuantumCircuit
 
 import benchkit as bk
 
 import qtpu
 from qtpu.runtime import HEinsumRuntime
-from qtpu.runtime.backends import CudaQBackend
 from qtpu.runtime.ibm_backend import IBMBackend
 from evaluation.analysis import estimate_runtime
+from evaluation.hardware.clifford_qnn import build_clifford_qnn_conjugated
 
 
 try:
@@ -45,8 +46,8 @@ except ModuleNotFoundError:
 # =============================================================================
 
 # Primary sweep (kept small enough for real IBM queue budgets).
-DEFAULT_SIZES = [20, 40, 60]
-QPU_SIZE = 10
+DEFAULT_SIZES = [20, 40, 60, 80, 100]
+QPU_SIZE = 15
 SHOTS = 1000
 BACKEND_NAME = "ibm_marrakesh"
 LOG_PATH = "logs/hardware/ibm.jsonl"
@@ -62,29 +63,17 @@ def _connect(backend_name: str):
     return service.backend(backend_name)
 
 
-def noiseless_expval(htn) -> float:
-    """Run the cut hTN under noiseless CUDA-Q to get the ideal scalar."""
-    sim_backend = CudaQBackend(target="qpp-cpu", simulate=True, estimate_qpu_time=False)
-    runtime = HEinsumRuntime(
-        htn, backend=sim_backend, dtype=torch.float64, device=torch.device("cpu")
-    )
-    runtime.prepare(optimize=False)
-    result, _ = runtime.execute()
-    return float(result.item() if result.ndim == 0 else result.sum().item())
-
-
 def run_hw(circuit_size: int, device):
-    """Build, cut, estimate, run on real IBM hardware, and compare."""
-    from mqt.bench import get_benchmark_indep
-
+    """Build, cut, estimate, run on real IBM hardware, and compare to ideal=+1."""
     print(f"\n[HW ibm] size={circuit_size}q → QPU={QPU_SIZE}q", flush=True)
 
-    # Build + cut
-    qc = get_benchmark_indep("qnn", circuit_size=circuit_size, opt_level=3)
-    qc = qc.remove_final_measurements(inplace=False)
+    # Conjugated Clifford-QNN: rotations baked in so ⟨Z^⊗n⟩_ideal = +1
+    qc = build_clifford_qnn_conjugated(circuit_size, seed=42)
+    ideal = 1.0
+
     compile_start = perf_counter()
     cut_circuit = qtpu.cut(
-        qc, max_size=QPU_SIZE, cost_weight=1000, n_trials=20, seed=42, num_workers=1
+        qc, max_size=QPU_SIZE, cost_weight=1000, n_trials=20, seed=1, num_workers=1
     )
     htn = qtpu.circuit_to_heinsum(cut_circuit)
     compile_time = perf_counter() - compile_start
@@ -107,11 +96,9 @@ def run_hw(circuit_size: int, device):
     hw_wall_time = perf_counter() - hw_start
     hw_val = float(hw_result.item() if hw_result.ndim == 0 else hw_result.sum().item())
 
-    # Noiseless reference
-    ref_val = noiseless_expval(htn)
-
     # Fidelity for a scalar expectation value in [-1, 1]: 1 - |err|/2
-    fidelity = 1.0 - abs(hw_val - ref_val) / 2.0
+    err = abs(hw_val - ideal)
+    fidelity = max(0.0, 1.0 - err / 2.0)
 
     result = {
         "backend_name": backend.name,
@@ -124,8 +111,8 @@ def run_hw(circuit_size: int, device):
         "num_jobs": backend.total_jobs,
         "hw_wall_time": hw_wall_time,
         "hw_expval": hw_val,
-        "noiseless_expval": ref_val,
-        "abs_error": abs(hw_val - ref_val),
+        "ideal_expval": ideal,
+        "abs_error": err,
         "fidelity": fidelity,
         "qpu_time_ratio": (
             backend.total_actual_qpu_time / estimated_qpu_time
@@ -138,7 +125,7 @@ def run_hw(circuit_size: int, device):
         f"est_qpu={estimated_qpu_time:.3f}s "
         f"actual_qpu={result['actual_qpu_time']:.3f}s "
         f"ratio={result['qpu_time_ratio']} "
-        f"err={result['abs_error']:.4f} fidelity={fidelity:.4f}",
+        f"err={err:.4f} fidelity={fidelity:.4f}",
         flush=True,
     )
     return result

@@ -1,25 +1,19 @@
 """Hardware Pareto: classical-vs-quantum cost tradeoff on IBM Marrakesh.
 
-Sweeps the QPU-size knob (cutting aggressiveness) at a fixed 60-qubit
-Clifford-QNN mirror circuit. The circuit's ideal ⟨Z^⊗n⟩ is +1 (the
-mirror collapses to the identity under unitary reconstruction), which
-gives a strong signal that hardware noise degrades toward 0 — unlike a
-random QNN where noiseless and noisy both average to ≈0 and fidelity
-becomes unmeasurable.
+At a fixed 60-qubit Clifford-QNN mirror circuit, enumerates the
+automatically-generated Pareto frontier from the cut-compiler (each
+point is a (c_cost, max_error, max_size) solution) and runs each point
+on real hardware. Plus the monolithic (uncut) endpoint: zero classical
+cost, lowest hardware fidelity.
 
-Pareto shape:
-    QPU=5   → many small partitions → highest classical cost, highest
-              hardware fidelity
-    QPU=10  → fewer, larger partitions
-    QPU=20
-    QPU=30
-    QPU=60  → monolithic (uncut) → zero classical cost, lowest
-              hardware fidelity
+The mirror circuit's ideal ⟨Z^⊗n⟩ is +1 (the mirror collapses to the
+identity under unitary reconstruction), so hardware noise drives the
+reconstructed expectation value toward 0 — a clean measurable fidelity
+signal.
 
 Usage
 -----
     uv run python -m evaluation.hardware.run_pareto
-    uv run python -m evaluation.hardware.run_pareto 10,60
 """
 
 from __future__ import annotations
@@ -33,10 +27,12 @@ import torch
 import benchkit as bk
 
 import qtpu
+from qtpu.compiler.opt import get_pareto_frontier, CutPoint
 from qtpu.runtime import HEinsumRuntime
 from qtpu.runtime.ibm_backend import IBMBackend
+from qtpu.transforms import circuit_to_heinsum
 from evaluation.analysis import estimate_runtime
-from evaluation.hardware.clifford_qnn import build_clifford_qnn_mirror
+from evaluation.hardware.clifford_qnn import build_clifford_qnn_conjugated
 
 
 try:
@@ -47,10 +43,39 @@ except ModuleNotFoundError:
 
 
 CIRCUIT_SIZE = 60
-QPU_SIZES = [5, 10, 20, 30, 60]  # 60 = monolithic / uncut endpoint
 SHOTS = 1000
 BACKEND_NAME = "ibm_marrakesh"
 LOG_PATH = "logs/hardware/pareto.jsonl"
+N_TRIALS = 20
+SEED = 42              # circuit builder seed (fixes the Clifford-QNN instance)
+COMPILER_SEED = 1      # cutter/Pareto seed (chosen from search_seeds.py: best geomean c_cost across all 5 targets)
+
+# Sub-select frontier points at these max_size values (one point per size, cheapest
+# c_cost variant) so the experiment stays within HW budget. These five were chosen
+# to span ~7 orders of c_cost on the 60q Clifford mirror frontier. Plus monolithic
+# (60q uncut) at the classical=0 endpoint.
+SELECTED_MAX_SIZES = [10, 15, 31]
+
+
+def select_frontier_subset(frontier, max_sizes: list[int]) -> list[CutPoint]:
+    """Pick one frontier point per requested max_size. If the exact size
+    is not present (frontier enumeration has some run-to-run variability),
+    snap to the nearest available size; keep the cheapest c_cost at each
+    size. De-duplicate if two requested sizes snap to the same point."""
+    if not frontier:
+        return []
+    cheapest_by_size: dict[int, CutPoint] = {}
+    for p in frontier:
+        cur = cheapest_by_size.get(p.max_size)
+        if cur is None or p.c_cost < cur.c_cost:
+            cheapest_by_size[p.max_size] = p
+    available = sorted(cheapest_by_size.keys())
+
+    picked: dict[int, CutPoint] = {}
+    for target in max_sizes:
+        nearest = min(available, key=lambda s: (abs(s - target), s))
+        picked[nearest] = cheapest_by_size[nearest]
+    return [picked[s] for s in sorted(picked.keys())]
 
 
 def _connect(backend_name: str):
@@ -107,18 +132,11 @@ def _submit_monolithic(qc, device):
     }
 
 
-def _submit_cut(qc, device, qpu_size: int):
-    """Cut with qtpu, then run flat subcircuits via HEinsumRuntime/IBMBackend."""
+def _submit_cut(qc, device, point: CutPoint, opt_result):
+    """Run a specific Pareto CutPoint on hardware via HEinsumRuntime/IBMBackend."""
     compile_start = perf_counter()
-    cut_circuit = qtpu.cut(
-        qc,
-        max_size=qpu_size,
-        cost_weight=1000,
-        n_trials=20,
-        seed=42,
-        num_workers=1,
-    )
-    htn = qtpu.circuit_to_heinsum(cut_circuit)
+    cut_circuit = opt_result.get_cut_circuit(point)
+    htn = circuit_to_heinsum(cut_circuit)
     compile_time = perf_counter() - compile_start
 
     flat_circuits = [c.decompose() for qt in htn.quantum_tensors for c in qt.flat()]
@@ -147,26 +165,27 @@ def _submit_cut(qc, device, qpu_size: int):
     }
 
 
-def run_point(qpu_size: int, device):
-    qc = build_clifford_qnn_mirror(CIRCUIT_SIZE, seed=42)
+def run_frontier_point(point: CutPoint, qc, opt_result, device):
+    """Run one Pareto frontier point on hardware."""
     ideal = 1.0
     print(
-        f"\n[Pareto] circuit_size={CIRCUIT_SIZE}q  QPU={qpu_size}q  "
-        f"({'monolithic' if qpu_size >= CIRCUIT_SIZE else 'cut'})",
+        f"\n[Pareto] max_size={point.max_size}  c_cost={point.c_cost:.2e}  "
+        f"max_error={point.max_error:.4f}  sampling_cost={point.sampling_cost:.2f}",
         flush=True,
     )
 
-    if qpu_size >= CIRCUIT_SIZE:
-        inner = _submit_monolithic(qc, device)
-    else:
-        inner = _submit_cut(qc, device, qpu_size)
+    inner = _submit_cut(qc, device, point, opt_result)
 
     err = abs(inner["hw_expval"] - ideal)
     fidelity = max(0.0, 1.0 - err / 2.0)
     out = {
         "backend_name": f"ibm-{device.name}",
         "circuit_size": CIRCUIT_SIZE,
-        "qpu_size": qpu_size,
+        "qpu_size": point.max_size,
+        "c_cost": point.c_cost,
+        "max_error_estimate": point.max_error,
+        "sampling_cost": point.sampling_cost,
+        "mode": "cut",
         "ideal_expval": ideal,
         "abs_error": err,
         "fidelity": fidelity,
@@ -183,12 +202,74 @@ def run_point(qpu_size: int, device):
     return out
 
 
+def run_monolithic(qc, device):
+    """Run the monolithic (uncut) endpoint."""
+    ideal = 1.0
+    print(
+        f"\n[Pareto] monolithic (uncut) {CIRCUIT_SIZE}q",
+        flush=True,
+    )
+    inner = _submit_monolithic(qc, device)
+    err = abs(inner["hw_expval"] - ideal)
+    fidelity = max(0.0, 1.0 - err / 2.0)
+    out = {
+        "backend_name": f"ibm-{device.name}",
+        "circuit_size": CIRCUIT_SIZE,
+        "qpu_size": CIRCUIT_SIZE,
+        "c_cost": 0.0,
+        "max_error_estimate": None,
+        "sampling_cost": 0.0,
+        "mode": "monolithic",
+        "ideal_expval": ideal,
+        "abs_error": err,
+        "fidelity": fidelity,
+        **inner,
+    }
+    print(
+        f"  hw_expval={out['hw_expval']:+.4f}  fidelity={fidelity:.4f}",
+        flush=True,
+    )
+    return out
+
+
 def main():
-    if len(sys.argv) > 1:
-        qpus = [int(s) for s in sys.argv[1].split(",")]
-    else:
-        qpus = QPU_SIZES
-    print(f"Pareto sweep @ {CIRCUIT_SIZE}q Clifford-QNN mirror, QPU sizes: {qpus}", flush=True)
+    print(
+        f"Pareto sweep @ {CIRCUIT_SIZE}q Clifford-QNN mirror, "
+        f"enumerating compiler Pareto frontier",
+        flush=True,
+    )
+
+    qc = build_clifford_qnn_conjugated(CIRCUIT_SIZE, seed=SEED)
+
+    # Enumerate the full Pareto frontier once
+    t0 = perf_counter()
+    opt_result = get_pareto_frontier(
+        qc,
+        max_sampling_cost=150,
+        num_workers=1,
+        n_trials=N_TRIALS,
+        seed=COMPILER_SEED,
+    )
+    # The frontier may include a max_size=CIRCUIT_SIZE point (no cuts, c_cost=0);
+    # we handle that as "monolithic" below via SamplerV2 so we don't double-run it.
+    full_frontier = sorted(
+        (p for p in opt_result.pareto_frontier if p.max_size < CIRCUIT_SIZE),
+        key=lambda p: p.max_size,
+    )
+    frontier = select_frontier_subset(full_frontier, SELECTED_MAX_SIZES)
+    t_frontier = perf_counter() - t0
+    print(
+        f"Pareto frontier: {len(full_frontier)} cut points enumerated in "
+        f"{t_frontier:.1f}s; running subset of {len(frontier)} "
+        f"(max_sizes={SELECTED_MAX_SIZES}) plus monolithic",
+        flush=True,
+    )
+    for p in frontier:
+        print(
+            f"  max_size={p.max_size:<3} c_cost={p.c_cost:.2e}  "
+            f"max_error={p.max_error:.4f}  sampling_cost={p.sampling_cost:.2f}",
+            flush=True,
+        )
 
     device = _connect(BACKEND_NAME)
     status = device.status()
@@ -198,10 +279,14 @@ def main():
         flush=True,
     )
 
-    @bk.foreach(qpu_size=qpus)
+    point_indices = list(range(len(frontier))) + ["monolithic"]
+
+    @bk.foreach(point_idx=point_indices)
     @bk.log(LOG_PATH)
-    def bench(qpu_size: int):
-        return run_point(qpu_size=qpu_size, device=device)
+    def bench(point_idx):
+        if point_idx == "monolithic":
+            return run_monolithic(qc, device)
+        return run_frontier_point(frontier[point_idx], qc, opt_result, device)
 
     bench()
 

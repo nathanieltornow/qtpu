@@ -309,8 +309,11 @@ def _run_trial_in_process(args: tuple) -> dict[str, Any]:
 
     tree = ir.contraction_tree()
 
-    # Setup randomization
-    rng = ctg.core.get_rng(None)
+    # Setup randomization — seed with trial_id so repeated runs of
+    # get_pareto_frontier with the same outer `seed` (which fixes the
+    # hyperparameter sequence via _sample_params) produce identical
+    # frontiers trial-for-trial.
+    rng = ctg.core.get_rng(trial_id)
     rand_size_dict = ctg.core.jitter_dict(
         tree.size_dict.copy(), params["random_strength"], rng
     )

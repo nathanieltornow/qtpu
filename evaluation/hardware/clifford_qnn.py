@@ -103,19 +103,103 @@ def build_clifford_qnn_mirror(n: int, seed: int = 42) -> QuantumCircuit:
     return full
 
 
+def build_clifford_qnn_conjugated(n: int, seed: int = 42) -> QuantumCircuit:
+    """Clifford-QNN with *no* inverse layer, observable absorbed as 1q rotations.
+
+    Instead of running C · C† and measuring Z^⊗n (the mirror trick, which
+    doubles the 2q-gate count), we run just C and measure the
+    Clifford-conjugated Pauli observable P = C · Z^⊗n · C†, which is
+    still a Pauli string since C is Clifford. Measuring P reduces to
+    per-qubit basis rotations (H for X, S†·H for Y, nothing for Z) before
+    the standard computational-basis parity. Ideal ⟨P⟩ on state C|0⟩ is
+
+        ⟨0|C† · (C Z^⊗n C†) · C|0⟩ = ⟨0|Z^⊗n|0⟩ = +1.
+
+    For qubits where P_k = I (no observable contribution) we append a
+    `reset` — the codegen / IBM backend treat a terminal reset as "trace
+    this qubit out of the observable" (effective +1 contribution).
+
+    Returns a single QuantumCircuit with the per-qubit basis rotations,
+    terminal resets for I-qubits, and (if P has a −1 global phase) an X
+    flip on one measured qubit — all appended after a barrier following
+    the main C block.
+    """
+    from mqt.bench import get_benchmark_indep
+    from qiskit.quantum_info import Clifford, Pauli
+
+    base = get_benchmark_indep("qnn", circuit_size=n, opt_level=3)
+    base = base.remove_final_measurements(inplace=False)
+
+    c = cliffordize(base, seed=seed)
+    P_out = Pauli("Z" * n).evolve(Clifford(c), frame="s")
+
+    phase = int(P_out.phase) % 4
+    if phase % 2 != 0:
+        raise RuntimeError(f"Non-Hermitian conjugated Pauli (phase={phase}); bug?")
+    sign = +1 if phase == 0 else -1
+
+    full = QuantumCircuit(*c.qregs)
+    full.compose(c, inplace=True)
+    full.barrier(range(n))
+
+    first_measured = None
+    for k in range(n):
+        z = bool(P_out.z[k])
+        x = bool(P_out.x[k])
+        if not z and not x:  # I: trace this qubit out via terminal reset
+            full.reset(k)
+            continue
+        if first_measured is None:
+            first_measured = k
+        if z and not x:  # Z: no rotation
+            pass
+        elif not z and x:  # X: H maps X eigenbasis to Z
+            full.h(k)
+        else:  # Y: S† then H maps Y eigenbasis to Z
+            full.sdg(k)
+            full.h(k)
+
+    if sign == -1:
+        # Flip exactly one measured qubit's bit to flip overall parity.
+        if first_measured is None:
+            raise RuntimeError("All qubits are I — degenerate observable.")
+        full.x(first_measured)
+
+    return full
+
+
 if __name__ == "__main__":
-    # Quick sanity check: ideal ⟨Z^⊗n⟩ should be +1 on a small instance.
-    import numpy as np
+    # Sanity check: ideal ⟨observable⟩ should be +1 for both constructions.
     from qiskit.quantum_info import Statevector
 
+    print("--- mirror (C · C†, measure Z^⊗n) ---")
     for n in [4, 6, 8]:
         qc = build_clifford_qnn_mirror(n, seed=42)
-        sv = Statevector.from_instruction(qc)
-        # ⟨Z^⊗n⟩ = sum_x (-1)^parity(x) |amp_x|²
-        probs = sv.probabilities()
-        z_n = sum(
-            ((-1) ** bin(x).count("1")) * p
-            for x, p in enumerate(probs)
+        probs = Statevector.from_instruction(qc).probabilities()
+        z_n = sum(((-1) ** bin(x).count("1")) * p for x, p in enumerate(probs))
+        print(f"  n={n}  ⟨Z^⊗n⟩={z_n:+.6f}  depth={qc.depth()}")
+
+    print("\n--- conjugated (C, measure P = C Z^⊗n C†) ---")
+    for n in [4, 6, 8, 20]:
+        qc = build_clifford_qnn_conjugated(n, seed=42)
+        # For statevector sanity check, strip the reset ops (terminal resets mean
+        # "I observable" for those qubits — which in the parity sum means the
+        # qubit's bit should contribute +1 regardless of its measurement outcome;
+        # we emulate that by masking the I-qubit bits out of the parity computation).
+        from qiskit.quantum_info import Clifford, Pauli
+        c_only = qc.copy()
+        # Find I-qubits via reset presence in the circuit data
+        i_qubits = {
+            qc.qubits.index(instr.qubits[0])
+            for instr in qc.data if instr.operation.name.lower() == "reset"
+        }
+        # Drop resets so Statevector.from_instruction works (it rejects mid-circuit resets)
+        c_only.data = [i for i in c_only.data if i.operation.name.lower() != "reset"]
+        probs = Statevector.from_instruction(c_only).probabilities()
+        n_tot = qc.num_qubits
+        mask = sum(1 << k for k in range(n_tot) if k not in i_qubits)
+        z_n = sum(((-1) ** bin(x & mask).count("1")) * p for x, p in enumerate(probs))
+        print(
+            f"  n={n}  ⟨P⟩={z_n:+.6f}  depth={qc.depth()}  "
+            f"I-qubits={len(i_qubits)}"
         )
-        p00 = probs[0]
-        print(f"n={n}  ⟨Z^⊗n⟩={z_n:+.6f}  P(|0^n⟩)={p00:.6f}  depth={qc.depth()}")

@@ -46,7 +46,7 @@ class QPDMeasureInfo:
 
 def extract_gate_info(
     circuit, include_qpd_measures: bool = False
-) -> tuple[list[CudaQGate], list[QPDMeasureInfo]]:
+) -> list:
     """Extract gate information from a Qiskit circuit.
 
     Args:
@@ -56,12 +56,15 @@ def extract_gate_info(
             If False, QPD measures are skipped entirely.
 
     Returns:
-        Tuple of (gates, qpd_measures) where qpd_measures contains info about
-        QPD measures that need ancilla qubits for deferred measurement.
-        The qpd_measures list is ordered by appearance in the circuit.
+        A single ordered list of items — each item is either a :class:`CudaQGate`
+        (for a unitary gate) or a :class:`QPDMeasureInfo` (for a QPD measurement,
+        when ``include_qpd_measures=True``). Order matches appearance in the
+        circuit; this is load-bearing because QPD basis elements may interleave
+        unitary gates around the QPD measure (e.g. the CX element ``[h, sdg,
+        qpd_measure, h]`` on the target side), and the deferred-measurement
+        CNOT must be emitted at the correct position.
     """
-    gates = []
-    qpd_measures = []
+    items: list = []
 
     for instr in circuit:
         op = instr.operation
@@ -74,7 +77,7 @@ def extract_gate_info(
         # using an ancilla qubit: CNOT(target, ancilla) + measure(ancilla)
         if name == "qpd_measure":
             if include_qpd_measures:
-                qpd_measures.append(QPDMeasureInfo(qubit=qubits[0]))
+                items.append(QPDMeasureInfo(qubit=qubits[0]))
             # Skip adding as a gate - will be handled separately
             continue
 
@@ -109,7 +112,7 @@ def extract_gate_info(
             # Handle sx and sxdg: they become rx(pi/2) and rx(-pi/2)
             if name == "sx":
                 import math
-                gates.append(
+                items.append(
                     CudaQGate(
                         name="rx",
                         qubits=qubits,
@@ -118,7 +121,7 @@ def extract_gate_info(
                 )
             elif name == "sxdg":
                 import math
-                gates.append(
+                items.append(
                     CudaQGate(
                         name="rx",
                         qubits=qubits,
@@ -127,7 +130,7 @@ def extract_gate_info(
                 )
             elif name in ("cx", "cz"):
                 # Control gate
-                gates.append(
+                items.append(
                     CudaQGate(
                         name=cudaq_name,
                         qubits=[qubits[1]],  # target
@@ -136,7 +139,7 @@ def extract_gate_info(
                     )
                 )
             else:
-                gates.append(
+                items.append(
                     CudaQGate(
                         name=cudaq_name,
                         qubits=qubits,
@@ -144,7 +147,7 @@ def extract_gate_info(
                     )
                 )
 
-    return gates, qpd_measures
+    return items
 
 
 def gates_to_cudaq_code(
@@ -371,6 +374,22 @@ def quantum_tensor_to_cudaq(
         if all_end_with_reset:
             traced_out_qubits.update(qubits)
 
+    # Also trace out any top-level qubit whose last non-barrier op is a
+    # `reset`. This lets callers bake "I observable on this qubit" into
+    # the pre-cut circuit by appending a reset — matches the wire-cut
+    # reset semantic above but at the top level.
+    last_op_per_qubit: dict[int, str] = {}
+    for instr in circuit:
+        nm = instr.operation.name.lower()
+        if nm == "barrier":
+            continue
+        for q in instr.qubits:
+            qi = circuit.qubits.index(q)
+            last_op_per_qubit[qi] = nm
+    for qi, nm in last_op_per_qubit.items():
+        if nm == "reset":
+            traced_out_qubits.add(qi)
+
     # Find ALL parameters including those in ISwitch sub-circuits
     all_param_names = {p.name for p in circuit.parameters}
 
@@ -468,12 +487,11 @@ def quantum_tensor_to_cudaq(
 
             for i in range(iswitch.size):
                 sub_circuit = iswitch._selector(i)
-                # Extract gates AND QPD measures from sub-circuit
-                gates, qpd_measures = extract_gate_info(
+                # Extract an ordered list of gates and QPD measures. Order matters:
+                # e.g. CX QPD element 4 on the target is [h, sdg, qpd_measure, h] —
+                # the trailing h must be emitted AFTER the deferred-CNOT, not before.
+                items = extract_gate_info(
                     sub_circuit, include_qpd_measures=True
-                )
-                gate_lines = gates_to_cudaq_code(
-                    gates, "q", param_formatter=format_param
                 )
 
                 # Build qubit remap for this ISwitch: sub-circuit idx -> main circuit idx
@@ -481,28 +499,31 @@ def quantum_tensor_to_cudaq(
                     sub_q: qubits[sub_q] for sub_q in range(iswitch.num_qubits)
                 }
 
-                # Remap qubit indices from sub-circuit to main circuit
-                remapped_lines = []
-                for line in gate_lines:
-                    for sub_q in range(iswitch.num_qubits):
-                        line = line.replace(f"q[{sub_q}]", f"q[{qubits[sub_q]}]")
-                    remapped_lines.append(line)
-
-                # Generate deferred measurement code for QPD measures
-                qpd_lines = qpd_measures_to_cudaq_code(
-                    qpd_measures,
-                    qubit_var="q",
-                    ancilla_start_idx=iswitch_ancilla_start,
-                    qubit_remap=qubit_remap,
-                )
+                variant_lines: list[str] = []
+                ancilla_counter = 0
+                for item in items:
+                    if isinstance(item, QPDMeasureInfo):
+                        target = qubit_remap.get(item.qubit, item.qubit)
+                        ancilla = iswitch_ancilla_start + ancilla_counter
+                        variant_lines.append(
+                            f"x.ctrl(q[{target}], q[{ancilla}])  # Deferred QPD measure"
+                        )
+                        ancilla_counter += 1
+                    else:  # CudaQGate
+                        gate_line = gates_to_cudaq_code(
+                            [item], "q", param_formatter=format_param
+                        )[0]
+                        for sub_q in range(iswitch.num_qubits):
+                            gate_line = gate_line.replace(
+                                f"q[{sub_q}]", f"q[{qubits[sub_q]}]"
+                            )
+                        variant_lines.append(gate_line)
 
                 lines.append(f"    if {_sanitize_param_name(param_name)} == {i}:")
 
-                if remapped_lines or qpd_lines:
-                    for gate_line in remapped_lines:
-                        lines.append(f"        {gate_line}")
-                    for qpd_line in qpd_lines:
-                        lines.append(f"        {qpd_line}")
+                if variant_lines:
+                    for vl in variant_lines:
+                        lines.append(f"        {vl}")
                 else:
                     lines.append("        pass  # Identity")
 
@@ -513,6 +534,16 @@ def quantum_tensor_to_cudaq(
             lines.append(f"    z.ctrl(q[{qubits[0]}], q[{qubits[1]}])")
         elif op.name.lower() in ("h", "x", "y", "z", "s", "t"):
             lines.append(f"    {op.name.lower()}(q[{qubits[0]}])")
+        elif op.name.lower() == "sdg":
+            lines.append(f"    s.adj(q[{qubits[0]}])")
+        elif op.name.lower() == "tdg":
+            lines.append(f"    t.adj(q[{qubits[0]}])")
+        elif op.name.lower() == "sx":
+            import math
+            lines.append(f"    rx({math.pi / 2}, q[{qubits[0]}])")
+        elif op.name.lower() == "sxdg":
+            import math
+            lines.append(f"    rx({-math.pi / 2}, q[{qubits[0]}])")
         elif op.params:
             params_str = ", ".join(format_param(p) for p in op.params)
             lines.append(f"    {op.name.lower()}({params_str}, q[{qubits[0]}])")
