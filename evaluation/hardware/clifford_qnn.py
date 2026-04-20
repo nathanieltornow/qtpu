@@ -103,17 +103,26 @@ def build_clifford_qnn_mirror(n: int, seed: int = 42) -> QuantumCircuit:
     return full
 
 
-def build_clifford_qnn_conjugated(n: int, seed: int = 42) -> QuantumCircuit:
+def build_clifford_qnn_conjugated(
+    n: int, seed: int = 42, observed: int | None = None
+) -> QuantumCircuit:
     """Clifford-QNN with *no* inverse layer, observable absorbed as 1q rotations.
 
     Instead of running C · C† and measuring Z^⊗n (the mirror trick, which
     doubles the 2q-gate count), we run just C and measure the
-    Clifford-conjugated Pauli observable P = C · Z^⊗n · C†, which is
+    Clifford-conjugated Pauli observable P = C · P_base · C†, which is
     still a Pauli string since C is Clifford. Measuring P reduces to
     per-qubit basis rotations (H for X, S†·H for Y, nothing for Z) before
     the standard computational-basis parity. Ideal ⟨P⟩ on state C|0⟩ is
 
-        ⟨0|C† · (C Z^⊗n C†) · C|0⟩ = ⟨0|Z^⊗n|0⟩ = +1.
+        ⟨0|C† · (C P_base C†) · C|0⟩ = ⟨0|P_base|0⟩ = +1.
+
+    `observed` selects P_base:
+      - None (default): weight-n observable P_base = Z^⊗n. Signal decays
+        as p^n under depolarizing-like noise — the parity-observable curse.
+      - int k in [0, n): weight-1 observable P_base = Z on qubit k, I on
+        the rest. Signal only depends on qubit k's reduced state, so decays
+        much more slowly and makes cutting's locality advantage visible.
 
     For qubits where P_k = I (no observable contribution) we append a
     `reset` — the codegen / IBM backend treat a terminal reset as "trace
@@ -131,7 +140,18 @@ def build_clifford_qnn_conjugated(n: int, seed: int = 42) -> QuantumCircuit:
     base = base.remove_final_measurements(inplace=False)
 
     c = cliffordize(base, seed=seed)
-    P_out = Pauli("Z" * n).evolve(Clifford(c), frame="s")
+
+    if observed is None:
+        P_base = Pauli("Z" * n)
+    else:
+        if not (0 <= observed < n):
+            raise ValueError(f"observed={observed} out of range [0, {n})")
+        # Pauli(str) is MSB-first: leftmost char = highest-index qubit.
+        chars = ["I"] * n
+        chars[n - 1 - observed] = "Z"
+        P_base = Pauli("".join(chars))
+
+    P_out = P_base.evolve(Clifford(c), frame="s")
 
     phase = int(P_out.phase) % 4
     if phase % 2 != 0:
@@ -161,6 +181,95 @@ def build_clifford_qnn_conjugated(n: int, seed: int = 42) -> QuantumCircuit:
 
     if sign == -1:
         # Flip exactly one measured qubit's bit to flip overall parity.
+        if first_measured is None:
+            raise RuntimeError("All qubits are I — degenerate observable.")
+        full.x(first_measured)
+
+    return full
+
+
+def build_spreading_conjugated(
+    n: int, seed: int = 42, observed: int = 0
+) -> QuantumCircuit:
+    """Spreading benchmark for idle-gate noise experiments.
+
+    Base circuit C:
+      layer 0:           H on every qubit
+      layer k=1..n-1:    CX(k-1, k); explicit `id` on every idle qubit
+
+    We then measure the Clifford-conjugated observable P_out = C · Z_{observed} · C†
+    on state C|0...0⟩. Ideal ⟨P_out⟩ = +1 by the same trick as
+    `build_clifford_qnn_conjugated`.
+
+    Why this circuit for the fidelity study:
+      1. The explicit `id` gates make **idle decoherence** a first-class noise
+         channel. A monolithic run has depth ~n and keeps each qubit idle for
+         ~n-2 layers → O(n²) idle noise events. A cut fragment of width W has
+         O(W²) idle events each → O(n·W) total across K=n/W fragments. With
+         a depolarizing `id` error the cut retention beats the mono retention
+         at large n.
+      2. The circuit is **all Clifford** (H, CX, id) so it runs on AerSimulator's
+         `stabilizer` method at n=60 in seconds.
+      3. The forward CX chain spreads Z_0 under Heisenberg conjugation across
+         every qubit (P_out is a weight-n X string), giving a non-degenerate
+         observable. Using weight-1 on the *base* keeps the locality advantage
+         of cutting visible.
+
+    `seed` is accepted for signature compatibility with `build_clifford_qnn_*`
+    but the circuit is deterministic.
+    """
+    from qiskit.quantum_info import Clifford, Pauli
+
+    del seed  # deterministic
+
+    if not (0 <= observed < n):
+        raise ValueError(f"observed={observed} out of range [0, {n})")
+
+    c = QuantumCircuit(n)
+    # H on every qubit, then the forward CX chain. NO explicit id gates here:
+    # idle-gate insertion must happen *after* cutting for the cut path (so each
+    # fragment only carries its own local idle time) and *before* execution for
+    # the mono path (so mono carries the full depth-n idle time). Baking idles
+    # into the base circuit would leak mono's O(n²) idle budget into every cut
+    # fragment, which collapses the expected retention advantage.
+    for q in range(n):
+        c.h(q)
+    for k in range(n - 1):
+        c.cx(k, k + 1)
+
+    chars = ["I"] * n
+    chars[n - 1 - observed] = "Z"  # Pauli(str) is MSB-first
+    P_base = Pauli("".join(chars))
+
+    P_out = P_base.evolve(Clifford(c), frame="s")
+
+    phase = int(P_out.phase) % 4
+    if phase % 2 != 0:
+        raise RuntimeError(f"Non-Hermitian conjugated Pauli (phase={phase}); bug?")
+    sign = +1 if phase == 0 else -1
+
+    full = QuantumCircuit(*c.qregs)
+    full.compose(c, inplace=True)
+    full.barrier(range(n))
+
+    first_measured = None
+    for k in range(n):
+        z = bool(P_out.z[k])
+        x = bool(P_out.x[k])
+        if not z and not x:
+            full.reset(k)
+            continue
+        if first_measured is None:
+            first_measured = k
+        if z and not x:
+            pass
+        elif not z and x:
+            full.h(k)
+        else:
+            full.sdg(k)
+            full.h(k)
+
+    if sign == -1:
         if first_measured is None:
             raise RuntimeError("All qubits are I — degenerate observable.")
         full.x(first_measured)
@@ -202,4 +311,46 @@ if __name__ == "__main__":
         print(
             f"  n={n}  ⟨P⟩={z_n:+.6f}  depth={qc.depth()}  "
             f"I-qubits={len(i_qubits)}"
+        )
+
+    print("\n--- conjugated weight-1, observed=0 (C, measure P = C Z_0 C†) ---")
+    for n in [4, 6, 8, 20]:
+        qc = build_clifford_qnn_conjugated(n, seed=42, observed=0)
+        c_only = qc.copy()
+        i_qubits = {
+            qc.qubits.index(instr.qubits[0])
+            for instr in qc.data if instr.operation.name.lower() == "reset"
+        }
+        c_only.data = [i for i in c_only.data if i.operation.name.lower() != "reset"]
+        probs = Statevector.from_instruction(c_only).probabilities()
+        n_tot = qc.num_qubits
+        mask = sum(1 << k for k in range(n_tot) if k not in i_qubits)
+        z_n = sum(((-1) ** bin(x & mask).count("1")) * p for x, p in enumerate(probs))
+        print(
+            f"  n={n}  ⟨Z_0⟩={z_n:+.6f}  depth={qc.depth()}  "
+            f"support={n - len(i_qubits)}/{n}"
+        )
+
+    print("\n--- spreading (H^n + forward CX chain + idle gates, observed=0) ---")
+    for n in [4, 8, 12, 16]:
+        qc = build_spreading_conjugated(n, observed=0)
+        # Strip idles and resets for Statevector sanity check (id is identity).
+        c_only = qc.copy()
+        i_qubits = {
+            qc.qubits.index(instr.qubits[0])
+            for instr in qc.data if instr.operation.name.lower() == "reset"
+        }
+        c_only.data = [
+            i for i in c_only.data
+            if i.operation.name.lower() not in ("reset",)
+        ]
+        probs = Statevector.from_instruction(c_only).probabilities()
+        n_tot = qc.num_qubits
+        mask = sum(1 << k for k in range(n_tot) if k not in i_qubits)
+        z_n = sum(((-1) ** bin(x & mask).count("1")) * p for x, p in enumerate(probs))
+        n_id = sum(1 for i in qc.data if i.operation.name.lower() == "id")
+        n_cx = sum(1 for i in qc.data if i.operation.name.lower() == "cx")
+        print(
+            f"  n={n}  ⟨P⟩={z_n:+.6f}  depth={qc.depth()}  "
+            f"id={n_id}  cx={n_cx}  support={n - len(i_qubits)}/{n}"
         )

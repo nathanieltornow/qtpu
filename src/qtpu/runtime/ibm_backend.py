@@ -15,7 +15,7 @@ import numpy as np
 import torch
 from qiskit.compiler import transpile
 
-from qiskit.circuit import ClassicalRegister
+from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister
 
 from qtpu.runtime.backends import QuantumBackend
 from qtpu.transforms import remove_operations_by_name
@@ -26,20 +26,84 @@ if TYPE_CHECKING:
     from qtpu.core import QuantumTensor
 
 
-def _measure_non_reset_qubits(circ) -> None:
-    """Append measurements on every qubit whose last non-barrier op is NOT
-    a reset. Reset-terminal qubits represent traced-out / I-observable
-    positions from the cut or from caller-baked observables — measuring
-    them adds no information noiselessly (they're |0⟩) and lets noise
-    corrupt the Z^n parity under real hardware."""
-    last_op: dict[int, str] = {}
+def _defer_qpd_measures(circ):
+    """Return a new circuit with each `qpd_measure` op replaced by a
+    CNOT(target, fresh_ancilla). Mirrors CudaQ codegen's principle-of-deferred-
+    measurement: measuring a qubit in the Z basis mid-circuit is equivalent to
+    CNOT-ing it onto a fresh |0⟩ ancilla and measuring the ancilla at the end.
+    This preserves the classical outcome of each QPD measurement without
+    performing a physical mid-circuit measurement. Non-qpd ops are copied
+    verbatim; `iswitch` ops are dropped (they should already be decomposed but
+    we strip defensively)."""
+    n_qpd = sum(1 for instr in circ.data if instr.operation.name == "qpd_measure")
+    if n_qpd == 0:
+        # No QPD measurements → just copy the circuit (strip residual iswitches).
+        new = QuantumCircuit(*circ.qregs, *circ.cregs, name=circ.name)
+        for instr in circ.data:
+            if instr.operation.name == "iswitch":
+                continue
+            new.append(instr.operation, instr.qubits, instr.clbits)
+        return new
+
+    anc = QuantumRegister(n_qpd, "qpd_anc")
+    new = QuantumCircuit(*circ.qregs, anc, *circ.cregs, name=circ.name)
+    anc_idx = 0
     for instr in circ.data:
+        if instr.operation.name == "iswitch":
+            continue
+        if instr.operation.name == "qpd_measure":
+            new.cx(instr.qubits[0], anc[anc_idx])
+            anc_idx += 1
+            continue
+        new.append(instr.operation, instr.qubits, instr.clbits)
+    return new
+
+
+def _strip_resets_and_measure(circ) -> None:
+    """Mirror the CudaQ codegen trace-out: remove terminal resets entirely and
+    measure only non-traced-out qubits. Matches codegen's policy of using the
+    I-observable (never emitting the physical reset) for qubits the wire cut
+    or caller marked as traced-out.
+
+    A reset is terminal if no further non-barrier op touches the same qubit.
+    Terminal resets are deleted in-place and their qubits are omitted from
+    the measurement register (I in the Z^n product). Mid-circuit resets —
+    resets followed by more ops on the same qubit — would represent a
+    deferred mid-circuit measurement and need ancilla expansion to be HW-safe;
+    we raise rather than submit a noisy mid-circuit measurement."""
+    last_op_idx: dict[int, int] = {}
+    last_op_name: dict[int, str] = {}
+    for idx, instr in enumerate(circ.data):
         if instr.operation.name == "barrier":
             continue
         for q in instr.qubits:
             qi = circ.qubits.index(q)
-            last_op[qi] = instr.operation.name
-    to_measure = [qi for qi in range(circ.num_qubits) if last_op.get(qi) != "reset"]
+            last_op_idx[qi] = idx
+            last_op_name[qi] = instr.operation.name
+
+    # Detect mid-circuit resets: any reset whose qubit has a later non-barrier op.
+    for idx, instr in enumerate(circ.data):
+        if instr.operation.name != "reset":
+            continue
+        for q in instr.qubits:
+            qi = circ.qubits.index(q)
+            if last_op_idx[qi] > idx:
+                raise NotImplementedError(
+                    f"Mid-circuit reset on qubit {qi} at position {idx} "
+                    "(followed by more ops on the same qubit). Not supported — "
+                    "requires deferred-measurement ancilla expansion to be HW-safe."
+                )
+
+    # Delete terminal resets in reverse index order to keep indices valid.
+    terminal_reset_indices = sorted(
+        {last_op_idx[qi] for qi, nm in last_op_name.items() if nm == "reset"},
+        reverse=True,
+    )
+    for idx in terminal_reset_indices:
+        del circ.data[idx]
+
+    # Measure everything that wasn't terminal-reset (= I-observable).
+    to_measure = [qi for qi in range(circ.num_qubits) if last_op_name.get(qi) != "reset"]
     if not to_measure:
         return
     creg = ClassicalRegister(len(to_measure), "meas")
@@ -149,40 +213,57 @@ class IBMBackend(QuantumBackend):
                     circ = circ.assign_parameters(to_bind)
             bound.append(circ)
 
-        # Clean custom ops and add measurements — measure only qubits whose
-        # last non-barrier op is NOT a reset (reset-terminal qubits are
-        # traced-out / I-observable; measuring them under noise lets their
-        # noisy flips corrupt the Z^n parity). Noiselessly equivalent to
-        # measure_all since reset yields |0⟩ → +1 Z-eigenvalue.
+        # Clean custom ops, defer QPD measurements to ancillas, strip terminal
+        # resets, and measure non-traced-out qubits + ancillas. Mirrors the
+        # CudaQ codegen policy: (a) no physical reset (I-observable for traced-
+        # out qubits), (b) each qpd_measure becomes CNOT(target, fresh ancilla)
+        # and the ancilla is measured at the end to preserve the QPD outcome.
+        # Split into "needs submission" (has at least one measurement after
+        # cleaning) and "trivial" (identity observable — empty measurement
+        # register). Trivial variants arise when the fragment contains no
+        # observable-support qubits AND no QPD ancillas (prep-side fragments
+        # of cuts that don't include the observed qubit). Their expval is
+        # tr[ρ_k] = 1 for every prep variant k, so we skip the hardware submit.
         clean = []
+        trivial_flags = []
         for circ in bound:
-            c = remove_operations_by_name(circ, {"qpd_measure", "iswitch"}, inplace=False)
+            c = _defer_qpd_measures(circ)
             if not any(i.operation.name == "measure" for i in c.data):
-                _measure_non_reset_qubits(c)
-            clean.append(c)
+                _strip_resets_and_measure(c)
+            has_meas = any(i.operation.name == "measure" for i in c.data)
+            trivial_flags.append(not has_meas)
+            if has_meas:
+                clean.append(c)
 
         # Transpile for hardware
-        transpiled = transpile(
-            clean,
-            backend=self._backend,
-            optimization_level=self._optimization_level,
-        )
+        if clean:
+            transpiled = transpile(
+                clean,
+                backend=self._backend,
+                optimization_level=self._optimization_level,
+            )
+            # Submit to IBM
+            sampler = SamplerV2(mode=self._backend)
+            job = sampler.run(transpiled, shots=self._shots)
+            result = job.result()
+            metrics = job.metrics()
+            actual_qpu_time = metrics.get("usage", {}).get("quantum_seconds", 0.0)
+            self._total_actual_qpu_time += actual_qpu_time
+            self._total_jobs += 1
+        else:
+            result = []
+            actual_qpu_time = 0.0
 
-        # Submit to IBM
-        sampler = SamplerV2(mode=self._backend)
-        job = sampler.run(transpiled, shots=self._shots)
-        result = job.result()
-
-        # Extract actual QPU time
-        metrics = job.metrics()
-        actual_qpu_time = metrics.get("usage", {}).get("quantum_seconds", 0.0)
-        self._total_actual_qpu_time += actual_qpu_time
-        self._total_jobs += 1
-
-        # Convert measurement results to tensor values
-        # For each circuit, compute the expectation value of the Z⊗Z⊗...⊗Z observable
+        # Convert measurement results to tensor values.
+        # For each circuit, compute the expval of the Z⊗...⊗Z parity over the
+        # measured qubits. Trivial (no-measurement) variants contribute 1.0.
         values = []
-        for pub_result in result:
+        result_iter = iter(result)
+        for is_trivial in trivial_flags:
+            if is_trivial:
+                values.append(1.0)
+                continue
+            pub_result = next(result_iter)
             counts = pub_result.data.meas.get_counts()
             total_shots = sum(counts.values())
             expval = 0.0

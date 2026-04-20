@@ -94,11 +94,11 @@ def _submit_monolithic(qc, device):
     from qiskit_ibm_runtime import SamplerV2
 
     qc_m = qc.copy()
-    # Measure only non-reset-terminal qubits (I-observable positions are
-    # terminated with reset by build_clifford_qnn_conjugated). measure_all
-    # would include them and let noisy flips corrupt the Z^n parity.
-    from qtpu.runtime.ibm_backend import _measure_non_reset_qubits
-    _measure_non_reset_qubits(qc_m)
+    # Strip terminal resets (I-observable positions are terminated with reset
+    # by build_clifford_qnn_conjugated) and measure only the remaining qubits.
+    # Matches the CudaQ codegen trace-out policy (no physical reset, I in Z^n).
+    from qtpu.runtime.ibm_backend import _strip_resets_and_measure
+    _strip_resets_and_measure(qc_m)
     compile_start = perf_counter()
     transpiled = transpile(qc_m, backend=device, optimization_level=3)
     compile_time = perf_counter() - compile_start

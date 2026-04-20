@@ -23,7 +23,7 @@ import torch
 import qtpu
 from qtpu.runtime import HEinsumRuntime
 from qtpu.runtime.backends import QuantumBackend
-from qtpu.runtime.ibm_backend import _measure_non_reset_qubits
+from qtpu.runtime.ibm_backend import _defer_qpd_measures, _strip_resets_and_measure
 from qtpu.transforms import remove_operations_by_name
 from evaluation.hardware.clifford_qnn import build_clifford_qnn_conjugated
 
@@ -72,9 +72,9 @@ class AerNoisyBackend(QuantumBackend):
                 to_bind = {k: v for k, v in params.items() if k in pn}
                 if to_bind:
                     c = c.assign_parameters(to_bind)
-            c = remove_operations_by_name(c, {"qpd_measure", "iswitch"}, inplace=False)
+            c = _defer_qpd_measures(c)
             if not any(i.operation.name == "measure" for i in c.data):
-                _measure_non_reset_qubits(c)
+                _strip_resets_and_measure(c)
             clean.append(c)
 
         # Transpile only to the noise-model's basis (no layout), so we stay
