@@ -42,19 +42,19 @@ except ModuleNotFoundError:
     pass
 
 
-CIRCUIT_SIZE = 60
-SHOTS = 1000
+CIRCUIT_SIZE = 40
+SHOTS = 10000
 BACKEND_NAME = "ibm_marrakesh"
-LOG_PATH = "logs/hardware/pareto.jsonl"
+LOG_PATH = "logs/hardware/pareto_40q.jsonl"
 N_TRIALS = 20
 SEED = 42              # circuit builder seed (fixes the Clifford-QNN instance)
 COMPILER_SEED = 1      # cutter/Pareto seed (chosen from search_seeds.py: best geomean c_cost across all 5 targets)
 
 # Sub-select frontier points at these max_size values (one point per size, cheapest
-# c_cost variant) so the experiment stays within HW budget. These five were chosen
-# to span ~7 orders of c_cost on the 60q Clifford mirror frontier. Plus monolithic
-# (60q uncut) at the classical=0 endpoint.
-SELECTED_MAX_SIZES = [10, 15, 31]
+# c_cost variant) so the experiment stays within HW budget. Spread across the 40q
+# frontier: max_size=10 is the expensive/low-error endpoint, max_size=30 the
+# cheapest cut variant. Plus monolithic (40q uncut) at the classical=0 endpoint.
+SELECTED_MAX_SIZES = [3, 5, 10, 15, 20]
 
 
 def select_frontier_subset(frontier, max_sizes: list[int]) -> list[CutPoint]:
@@ -171,7 +171,6 @@ def _submit_cut(qc, device, point: CutPoint, opt_result):
 
 def run_frontier_point(point: CutPoint, qc, opt_result, device):
     """Run one Pareto frontier point on hardware."""
-    ideal = 1.0
     print(
         f"\n[Pareto] max_size={point.max_size}  c_cost={point.c_cost:.2e}  "
         f"max_error={point.max_error:.4f}  sampling_cost={point.sampling_cost:.2f}",
@@ -180,8 +179,9 @@ def run_frontier_point(point: CutPoint, qc, opt_result, device):
 
     inner = _submit_cut(qc, device, point, opt_result)
 
-    err = abs(inner["hw_expval"] - ideal)
-    fidelity = max(0.0, 1.0 - err / 2.0)
+    # Use hw_expval as fidelity metric (matching main QNN sweep): retention of
+    # the weight-n Clifford observable drops from +1 (noiseless) toward 0 under noise.
+    fidelity = inner["hw_expval"]
     out = {
         "backend_name": f"ibm-{device.name}",
         "circuit_size": CIRCUIT_SIZE,
@@ -190,8 +190,6 @@ def run_frontier_point(point: CutPoint, qc, opt_result, device):
         "max_error_estimate": point.max_error,
         "sampling_cost": point.sampling_cost,
         "mode": "cut",
-        "ideal_expval": ideal,
-        "abs_error": err,
         "fidelity": fidelity,
         **inner,
     }
@@ -200,7 +198,7 @@ def run_frontier_point(point: CutPoint, qc, opt_result, device):
         f"jobs={out['num_jobs']:<2} "
         f"actual_qpu={out['actual_qpu_time']}s  "
         f"hw_expval={out['hw_expval']:+.4f}  "
-        f"fidelity={fidelity:.4f}",
+        f"fidelity={fidelity:+.4f}",
         flush=True,
     )
     return out
@@ -208,14 +206,12 @@ def run_frontier_point(point: CutPoint, qc, opt_result, device):
 
 def run_monolithic(qc, device):
     """Run the monolithic (uncut) endpoint."""
-    ideal = 1.0
     print(
         f"\n[Pareto] monolithic (uncut) {CIRCUIT_SIZE}q",
         flush=True,
     )
     inner = _submit_monolithic(qc, device)
-    err = abs(inner["hw_expval"] - ideal)
-    fidelity = max(0.0, 1.0 - err / 2.0)
+    fidelity = inner["hw_expval"]
     out = {
         "backend_name": f"ibm-{device.name}",
         "circuit_size": CIRCUIT_SIZE,
@@ -224,13 +220,11 @@ def run_monolithic(qc, device):
         "max_error_estimate": None,
         "sampling_cost": 0.0,
         "mode": "monolithic",
-        "ideal_expval": ideal,
-        "abs_error": err,
         "fidelity": fidelity,
         **inner,
     }
     print(
-        f"  hw_expval={out['hw_expval']:+.4f}  fidelity={fidelity:.4f}",
+        f"  hw_expval={out['hw_expval']:+.4f}  fidelity={fidelity:+.4f}",
         flush=True,
     )
     return out

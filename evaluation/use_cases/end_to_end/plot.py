@@ -1,4 +1,3 @@
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -39,110 +38,92 @@ def _wall_time(row_df: pd.DataFrame, size: int) -> float:
     )
 
 
-def plot_end_to_end_time(ax, qtpu_df: pd.DataFrame, baseline_df: pd.DataFrame):
-    """(a) End-to-end wall time (lower is better, log scale).
+def _plot_panel(ax, sizes, qtpu_vals, base_vals, title, ylabel, *, show_legend: bool):
+    x = np.arange(len(sizes))
+    width = 0.4
 
-    The first metric from the revision commitment: compile + estimated quantum
-    (FakeMarrakesh + ASAP scheduling) + classical post-processing, summed.
-    """
+    ax.bar(
+        x - width / 2,
+        qtpu_vals,
+        width,
+        label=QTPU_LABEL,
+        color=colors()[0],
+        edgecolor="black",
+        linewidth=1,
+        hatch="//",
+    )
+    ax.bar(
+        x + width / 2,
+        base_vals,
+        width,
+        label=BASELINE_LABEL,
+        color=colors()[1],
+        edgecolor="black",
+        linewidth=1,
+        hatch="\\\\",
+    )
+
+    ax.set_xlabel("Circuit Size", labelpad=2)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.set_yscale("log")
+    if show_legend:
+        ax.legend(loc="upper left", handlelength=1.2, handletextpad=0.4, borderaxespad=0.3)
+    ax.grid(True, alpha=0.3, axis="y")
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{s}q" for s in sizes])
+
+
+def plot_end_to_end_time(ax, qtpu_df, baseline_df, *, show_legend: bool):
     sizes = _sizes(qtpu_df)
     qtpu_vals = [_wall_time(qtpu_df, s) for s in sizes]
     base_vals = [_wall_time(baseline_df, s) for s in sizes]
-
-    x = np.arange(len(sizes))
-    width = 0.35
-
-    ax.bar(x - width / 2, qtpu_vals, width,
-           label=QTPU_LABEL, color=colors()[0],
-           edgecolor="black", linewidth=1, hatch="//")
-    ax.bar(x + width / 2, base_vals, width,
-           label=BASELINE_LABEL, color=colors()[1],
-           edgecolor="black", linewidth=1, hatch="\\\\")
-
-    ax.set_xlabel("Circuit Size ")
-    ax.set_ylabel("End-to-End Time [s]\n(lower is better)")
-    ax.set_title(r"\textbf{(a) End-to-End Wall Time}")
-    ax.set_yscale("log")
-    ax.legend(loc="upper left")
-    ax.grid(True, alpha=0.3, axis="y")
-    ax.set_xticks(x)
-    ax.set_xticklabels([f"{s}q" for s in sizes])
+    _plot_panel(
+        ax, sizes, qtpu_vals, base_vals,
+        r"\textbf{(a) End-to-End Wall Time}",
+        "End-to-End Time [s]\n(lower is better)",
+        show_legend=show_legend,
+    )
 
 
-def plot_generated_circuits(ax, qtpu_df: pd.DataFrame, baseline_df: pd.DataFrame):
-    """(b) Number of generated circuits (lower is better, log scale)."""
+def plot_generated_circuits(ax, qtpu_df, baseline_df, *, show_legend: bool):
     sizes = _sizes(qtpu_df)
     qtpu_vals = [_lookup(qtpu_df, s, "result.num_circuits") for s in sizes]
     base_vals = [_lookup(baseline_df, s, "result.num_circuits") for s in sizes]
-
-    x = np.arange(len(sizes))
-    width = 0.35
-
-    ax.bar(x - width / 2, qtpu_vals, width,
-           label=QTPU_LABEL, color=colors()[0],
-           edgecolor="black", linewidth=1, hatch="//")
-    ax.bar(x + width / 2, base_vals, width,
-           label=BASELINE_LABEL, color=colors()[1],
-           edgecolor="black", linewidth=1, hatch="\\\\")
-
-    ax.set_xlabel("Circuit Size ")
-    ax.set_ylabel("Circuits Generated\n(lower is better)")
-    ax.set_title(r"\textbf{(b) Generated Circuits}")
-    ax.set_yscale("log")
-    ax.legend(loc="upper left")
-    ax.grid(True, alpha=0.3, axis="y")
-    ax.set_xticks(x)
-    ax.set_xticklabels([f"{s}q" for s in sizes])
+    _plot_panel(
+        ax, sizes, qtpu_vals, base_vals,
+        r"\textbf{(b) Generated Circuits}",
+        "Circuits Generated\n(lower is better)",
+        show_legend=show_legend,
+    )
 
 
-def plot_code_size(ax, qtpu_df: pd.DataFrame, baseline_df: pd.DataFrame):
-    """(c) Lines of generated code (lower is better, log scale)."""
+def plot_code_size(ax, qtpu_df, baseline_df, *, show_legend: bool):
     sizes = _sizes(qtpu_df)
     qtpu_vals = [_lookup(qtpu_df, s, "result.total_code_lines") for s in sizes]
     base_vals = [_lookup(baseline_df, s, "result.total_code_lines") for s in sizes]
-
-    x = np.arange(len(sizes))
-    width = 0.35
-
-    ax.bar(x - width / 2, qtpu_vals, width,
-           label=QTPU_LABEL, color=colors()[0],
-           edgecolor="black", linewidth=1, hatch="//")
-    ax.bar(x + width / 2, base_vals, width,
-           label=BASELINE_LABEL, color=colors()[1],
-           edgecolor="black", linewidth=1, hatch="\\\\")
-
-    ax.set_xlabel("Circuit Size ")
-    ax.set_ylabel("Lines of Code\n(lower is better)")
-    ax.set_title(r"\textbf{(c) Generated Code Size}")
-    ax.set_yscale("log")
-    ax.legend(loc="upper left")
-    ax.grid(True, alpha=0.3, axis="y")
-    ax.set_xticks(x)
-    ax.set_xticklabels([f"{s}q" for s in sizes])
+    _plot_panel(
+        ax, sizes, qtpu_vals, base_vals,
+        r"\textbf{(c) Generated Code Size}",
+        "Lines of Code\n(lower is better)",
+        show_legend=show_legend,
+    )
 
 
 @bk.pplot
 def plot_end_to_end(qtpu_df: pd.DataFrame, baseline_df: pd.DataFrame):
-    """End-to-end composability benchmark: qTPU vs. baseline pipeline.
-
-    The three metrics committed in revision_plan.md §Condition 1:
-      (a) End-to-end wall time.
-      (b) Number of generated circuits.
-      (c) Lines of generated code.
-    """
+    """End-to-end composability benchmark: qTPU vs. baseline pipeline."""
     fig, axes = plt.subplots(1, 3, figsize=(double_column_width(), 1.3))
 
-    plot_end_to_end_time(axes[0], qtpu_df, baseline_df)
-    plot_generated_circuits(axes[1], qtpu_df, baseline_df)
-    plot_code_size(axes[2], qtpu_df, baseline_df)
+    plot_end_to_end_time(axes[0], qtpu_df, baseline_df, show_legend=True)
+    plot_generated_circuits(axes[1], qtpu_df, baseline_df, show_legend=False)
+    plot_code_size(axes[2], qtpu_df, baseline_df, show_legend=False)
 
+    fig.subplots_adjust(wspace=0.35)
     return fig
 
 
 if __name__ == "__main__":
-    matplotlib.rcParams["text.usetex"] = False
-    matplotlib.rcParams["font.family"] = "sans-serif"
-
     register_style("qtpu", PlotStyle(color=colors()[0], hatch="//"))
     register_style("baseline", PlotStyle(color=colors()[1], hatch="\\\\"))
 
@@ -162,7 +143,4 @@ if __name__ == "__main__":
     print(f"qTPU: {len(qtpu_df)} rows, Baseline: {len(baseline_df)} rows")
     print(f"Sizes: {_sizes(qtpu_df)}")
 
-    fig = plot_end_to_end(qtpu_df, baseline_df)
-    plt.tight_layout()
-    plt.savefig("plots/end_to_end.pdf", bbox_inches="tight")
-    plt.show()
+    plot_end_to_end(qtpu_df, baseline_df)

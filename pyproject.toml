@@ -134,7 +134,7 @@ isort.required-imports = ["from __future__ import annotations"]
 convention = "google"
 
 [tool.uv.sources]
-benchkit = { git = "https://github.com/nathanieltornow/benchkit.git" }
+benchkit = { git = "https://github.com/nathanieltornow/benchkit.git", rev = "3ae814f" }
 
 [dependency-groups]
 bench = [

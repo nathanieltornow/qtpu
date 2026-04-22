@@ -55,20 +55,21 @@ def _apply_1q_clifford(qc: QuantumCircuit, name: str, q) -> None:
 
 def cliffordize(qc: QuantumCircuit, seed: int = 42) -> QuantumCircuit:
     """Replace every 1-qubit gate in qc with a fixed random Clifford gate,
-    and insert a full-width barrier after every gate.
+    and insert a per-qubit barrier (on the gate's own qubits) after every gate.
 
     The barriers are essential: at opt_level=3 the transpiler will
     consolidate chains of single-qubit Cliffords into a single U3 gate
     (and occasionally notice local cancellations like H·H = I), which
-    would collapse the intended circuit depth on hardware. Barriers
-    after every gate preserve the logical depth end-to-end; the
-    transpiler still handles layout + routing normally.
+    would collapse the intended circuit depth on hardware. A per-qubit
+    barrier after each gate prevents this local consolidation *on that
+    qubit* without blocking cross-qubit parallelism, so the transpiler
+    can still schedule independent gates in the same layer and the
+    circuit depth stays close to the original structure.
 
     Non-1q gates (cx, cz, swap, ...) and structural ops (measure, reset)
     are kept as-is. The same seed produces the same replacement pattern.
     """
     rng = random.Random(seed)
-    n_qubits = sum(qr.size for qr in qc.qregs)
     new = QuantumCircuit(*qc.qregs, *qc.cregs)
     for instr in qc.data:
         op = instr.operation
@@ -80,7 +81,7 @@ def cliffordize(qc: QuantumCircuit, seed: int = 42) -> QuantumCircuit:
             _apply_1q_clifford(new, rng.choice(CLIFFORD_1Q), instr.qubits[0])
         else:
             new.append(op, instr.qubits, instr.clbits)
-        new.barrier(range(n_qubits))
+        new.barrier(instr.qubits)
     return new
 
 

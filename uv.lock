@@ -223,8 +223,8 @@ wheels = [
 
 [[package]]
 name = "benchkit"
-version = "0.1.dev35+gb50218f47"
-source = { git = "https://github.com/nathanieltornow/benchkit.git#b50218f4749edcd647cb7f82cf0e5a5515391aa5" }
+version = "0.1.dev37+g3ae814f66"
+source = { git = "https://github.com/nathanieltornow/benchkit.git?rev=3ae814f#3ae814f6602a2e2caf03cd215fe8e3f760773c8e" }
 dependencies = [
     { name = "cloudpickle" },
     { name = "fastparquet" },
@@ -3111,7 +3111,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "benchkit", git = "https://github.com/nathanieltornow/benchkit.git" },
+    { name = "benchkit", git = "https://github.com/nathanieltornow/benchkit.git?rev=3ae814f" },
     { name = "cotengra", specifier = ">=0.6.2" },
     { name = "furo", marker = "extra == 'docs'", specifier = ">=2023.9.10" },
     { name = "ipykernel", marker = "extra == 'docs'" },

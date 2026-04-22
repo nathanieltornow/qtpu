@@ -332,23 +332,63 @@ def run_e2e_baseline(
     calls_per_experiment = mitiq_calls["n"] / max(n_qac_experiments, 1)
     mitiq_time = perf_counter() - mitiq_start
 
-    # --- Step 5: manual batch loop — enumerate (b, s) pairs ---
-    # In a real deployment the user writes a nested loop and submits all
-    # circuits per (b, s) pair. We enumerate the index space to measure
-    # the classical glue cost; the quantum time is estimated separately.
-    classical_start = perf_counter()
-    bs_results = []
-    for b in range(n_batch):
-        for s in range(n_support):
-            # User would prepend batch_map(X_batch[b]) and append
-            # inv_support_map(X_support[s]) to each experiment here,
-            # resubmit via Mitiq, and weight by coefficients + W[s].
-            # We record the index tuple; weighting happens in post.
-            bs_results.append((b, s))
-    # Weighted sum placeholder — the real post-processing is a dot product
-    # over coefficients × W, O(n_qac * n_support * n_batch).
-    _ = float(np.sum(W) * len(bs_results))
-    classical_time = perf_counter() - classical_start
+    # --- Step 5: classical reconstruction — real Mitiq + QAC + W math ---
+    # Per (batch, support) pair a user would run:
+    #   (a) Richardson-extrapolate n_zne expvals per QAC experiment → scalar
+    #   (b) linearly combine n_qac extrapolated expvals via QAC coefficients
+    #   (c) weight the per-(b,s) scalars by W[s] and reduce over support
+    # We execute this arithmetic on dummy scalars (np.random). Classical cost
+    # is structural (shape-bound), not data-dependent — symmetric with what
+    # the qTPU path does via `tree.contract(arrays)` on dummy arrays.
+    #
+    # Richardson coefficients at scale=0 are the first row of the inverse
+    # Vandermonde over the ZNE scale factors; this is exactly the linear
+    # combination Mitiq's RichardsonFactory.reduce() applies internally.
+    # validate_mitiq.py established ratio=1.000 between Mitiq's actual
+    # circuit count and the n_qac × n_zne analytical formula that assumes
+    # this same reduction, so using the analytical coefficients here is
+    # correctness-equivalent to per-experiment RichardsonFactory calls but
+    # permits numpy vectorisation over the 14M+ reductions at 50q.
+    richardson_coeffs = zne_coefficients(noise_levels).astype(np.float64)
+    qac_coeffs = np.ones(n_qac_experiments, dtype=np.float64)
+    W_arr = np.asarray(W, dtype=np.float64)
+
+    # Per-batch peak allocation: (n_support × n_qac × n_zne) float64.
+    # Cap at ~1 GB to bound memory; fall back to subset-projection above it.
+    elems_per_batch = n_support * n_qac_experiments * n_zne
+    PER_BATCH_ELEM_CAP = 128 * 1024 * 1024  # ~1 GB of float64
+
+    if n_qac_experiments == 0:
+        classical_time = 0.0
+        classical_time_source = "measured"
+    elif elems_per_batch > PER_BATCH_ELEM_CAP:
+        # Full allocation is prohibitive: measure one (b, s) slice's
+        # Richardson+QAC reduction and project linearly to n_batch × n_support.
+        # The per-batch W-reduction is O(n_support), negligible vs. the inner.
+        classical_time_source = "projected_from_subset"
+        rng = np.random.default_rng(0)
+        classical_start = perf_counter()
+        expvals_one = rng.standard_normal((n_qac_experiments, n_zne))
+        zne_reduced_one = expvals_one @ richardson_coeffs   # (n_qac,)
+        _ = float(zne_reduced_one @ qac_coeffs)             # (scalar)
+        subset_time = perf_counter() - classical_start
+        classical_time = subset_time * n_batch * n_support
+    else:
+        classical_time_source = "measured"
+        rng = np.random.default_rng(0)
+        classical_start = perf_counter()
+        per_batch = np.empty(n_batch, dtype=np.float64)
+        for b in range(n_batch):
+            # shape (n_support, n_qac, n_zne) — one dummy expval per circuit
+            expvals = rng.standard_normal((n_support, n_qac_experiments, n_zne))
+            # (a) Richardson reduction over ZNE axis
+            zne_reduced = expvals @ richardson_coeffs           # (n_support, n_qac)
+            # (b) QAC coefficient combination over experiments
+            qac_reduced = zne_reduced @ qac_coeffs              # (n_support,)
+            # (c) W-weighted reduction over support → per-batch scalar
+            per_batch[b] = qac_reduced @ W_arr
+        _ = float(per_batch.sum())
+        classical_time = perf_counter() - classical_start
 
     # --- Step 6: totals ---
     total_circuits = n_batch * n_support * n_qac_experiments * int(calls_per_experiment)
@@ -377,6 +417,7 @@ def run_e2e_baseline(
         "compile_time": compile_time,
         "quantum_time": total_quantum_time,
         "classical_time": classical_time,
+        "classical_time_source": classical_time_source,
         "mitiq_time": mitiq_time,
         "num_circuits": total_circuits,
         "num_qac_experiments": n_qac_experiments,
@@ -492,6 +533,7 @@ def bench_baseline(circuit_size: int) -> dict | None:
             "compile_time": result["compile_time"],
             "quantum_time": result["quantum_time"],
             "classical_time": result["classical_time"],
+            "classical_time_source": result["classical_time_source"],
             "mitiq_time": result["mitiq_time"],
             "total_time": total_time,
             "num_circuits": result["num_circuits"],
