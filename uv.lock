@@ -223,8 +223,8 @@ wheels = [
 
 [[package]]
 name = "benchkit"
-version = "0.1.dev37+g3ae814f66"
-source = { git = "https://github.com/nathanieltornow/benchkit.git?rev=3ae814f#3ae814f6602a2e2caf03cd215fe8e3f760773c8e" }
+version = "0.1.0"
+source = { editable = "vendor/benchkit" }
 dependencies = [
     { name = "cloudpickle" },
     { name = "fastparquet" },
@@ -235,6 +235,19 @@ dependencies = [
     { name = "pydantic" },
     { name = "rich" },
     { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cloudpickle", specifier = ">=3.1.2" },
+    { name = "fastparquet", specifier = ">=2024.11.0" },
+    { name = "gitpython", specifier = ">=3.1.45" },
+    { name = "matplotlib", specifier = ">=3.9.4" },
+    { name = "pandas", specifier = ">=2.3.1" },
+    { name = "pyarrow", specifier = ">=21.0.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "rich", specifier = ">=14.1.0" },
+    { name = "typer", specifier = ">=0.16.0" },
 ]
 
 [[package]]
@@ -3111,7 +3124,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "benchkit", git = "https://github.com/nathanieltornow/benchkit.git?rev=3ae814f" },
+    { name = "benchkit", editable = "vendor/benchkit" },
     { name = "cotengra", specifier = ">=0.6.2" },
     { name = "furo", marker = "extra == 'docs'", specifier = ">=2023.9.10" },
     { name = "ipykernel", marker = "extra == 'docs'" },

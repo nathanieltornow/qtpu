@@ -8,7 +8,11 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
-import cudaq
+
+try:
+    import cudaq
+except ImportError:
+    cudaq = None  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from qtpu.core import QuantumTensor
