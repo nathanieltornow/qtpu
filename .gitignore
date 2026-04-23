@@ -121,8 +121,8 @@ venv.bak/
 # Editor/agent state
 .claude/
 
-# benchkit @pplot generates timestamped subdirs under plots/<name>/YYYY-MM-DD-HH-MM/
-plots/plot_*/
+# Generated plots (reproduced from logs/)
+plots/
 
 # Spyder project settings
 .spyderproject

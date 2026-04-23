@@ -14,7 +14,10 @@ WORKDIR /app
 # Copy project files
 COPY pyproject.toml uv.lock ./
 COPY src ./src/
+COPY vendor ./vendor/
 COPY evaluation ./evaluation/
+COPY logs ./logs/
+COPY examples ./examples/
 COPY README.md ./
 
 # Install the package with all dependencies + GPU libraries

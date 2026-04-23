@@ -7,8 +7,6 @@ It introduces the **hybrid tensor network (hTN)** abstraction, a programming mod
 
 ## Getting Started
 
-These instructions will get you from zero to running a qTPU example in under 30 minutes.
-
 ### Prerequisites
 
 - Python 3.11 -- 3.13
@@ -21,11 +19,8 @@ These instructions will get you from zero to running a qTPU example in under 30 
 git clone https://github.com/nathanieltornow/qtpu.git
 cd qtpu
 
-# Install with uv (recommended)
+# Install with uv
 uv sync
-
-# Or with pip
-pip install -e .
 ```
 
 ### Hello World: Circuit Cutting
@@ -134,17 +129,6 @@ uv run python -m evaluation.hardware.sim_pareto_80q
 ### Log Format
 
 All benchmark results are stored as JSONL files in `logs/`. Each line is a self-contained JSON object with the benchmark parameters and results, enabling independent analysis.
-
-## Paper
-
-```bibtex
-@inproceedings{tornow2026qtpu,
-  title     = {{qTPU}: Hybrid Tensor Networks for Quantum-Classical Acceleration},
-  author    = {Tornow, Nathaniel and Mendl, Christian B. and Bhatotia, Pramod},
-  booktitle = {OSDI},
-  year      = {2026}
-}
-```
 
 ## License
 
