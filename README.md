@@ -27,25 +27,41 @@ qTPU is an end-to-end system for unified hybrid quantum-classical computing. It 
 ## Main Results
 
 <div align="center">
-  <img src="figures/plot_pareto_frontiers.png" width="85%"/>
+  <img src="figures/pareto_frontiers.png" width="85%"/>
   <br/>
-  <em>Compiler tradeoff: qTPU exposes a flexible Pareto frontier; QAC produces a single fixed solution.</em>
+  <em>Compiler tradeoff (Fig. 9): qTPU exposes a flexible Pareto frontier; QAC produces a single fixed solution.</em>
 </div>
 
 <br/>
 
 <div align="center">
-  <img src="figures/plot_qnn.png" width="85%"/>
+  <img src="figures/hw_fidelity.png" width="85%"/>
   <br/>
-  <em>Hardware validation: (a) IBM Marrakesh, (b) noise-model simulation to 150q, (c) Pareto frontier traversal at 80q.</em>
+  <em>Hardware validation (Fig. 11): (a) IBM Marrakesh, (b) noise-model sim to 150q, (c) Pareto frontier at 80q.</em>
 </div>
 
 <br/>
 
 <div align="center">
-  <img src="figures/plot_end_to_end.png" width="85%"/>
+  <img src="figures/hybrid_ml.png" width="85%"/>
   <br/>
-  <em>End-to-end composability: ~10<sup>5</sup>x reduction in wall time, circuits, and code.</em>
+  <em>Hybrid ML (Fig. 14): compilation time and code size — batch execution vs. qTPU.</em>
+</div>
+
+<br/>
+
+<div align="center">
+  <img src="figures/error_mitigation.png" width="60%"/>
+  <br/>
+  <em>Error mitigation (Fig. 15): qTPU is 3,500x faster and generates 3,700x less code than Mitiq.</em>
+</div>
+
+<br/>
+
+<div align="center">
+  <img src="figures/end_to_end.png" width="85%"/>
+  <br/>
+  <em>End-to-end composability (Fig. 16): ~10<sup>5</sup>x reduction in wall time, circuits, and code.</em>
 </div>
 
 ## Installation
