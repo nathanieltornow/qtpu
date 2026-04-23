@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "benchkit"
+version = "0.1.0"
+description = "Utility kit for benchmarking."
+requires-python = ">=3.10"
+dependencies = [
+    "cloudpickle>=3.1.2",
+    "fastparquet>=2024.11.0",
+    "gitpython>=3.1.45",
+    "matplotlib>=3.9.4",
+    "pandas>=2.3.1",
+    "pyarrow>=21.0.0",
+    "pydantic>=2.11.7",
+    "rich>=14.1.0",
+    "typer>=0.16.0",
+]
