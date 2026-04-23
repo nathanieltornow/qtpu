@@ -24,7 +24,29 @@
 
 qTPU is an end-to-end system for unified hybrid quantum-classical computing. It introduces the **hybrid tensor network (hTN)** abstraction — a programming model, compiler, and runtime that bridge quantum and classical accelerators under a single representation.
 
-**Key results:** Up to 53x faster compilation, 7.2x lower quantum error, 3,700x smaller generated code, and 10^5x lower end-to-end overhead compared to state-of-the-art baselines.
+## Main Results
+
+<div align="center">
+  <img src="figures/plot_pareto_frontiers.png" width="85%"/>
+  <br/>
+  <em>Compiler tradeoff: qTPU exposes a flexible Pareto frontier; QAC produces a single fixed solution.</em>
+</div>
+
+<br/>
+
+<div align="center">
+  <img src="figures/plot_qnn.png" width="85%"/>
+  <br/>
+  <em>Hardware validation: (a) IBM Marrakesh, (b) noise-model simulation to 150q, (c) Pareto frontier traversal at 80q.</em>
+</div>
+
+<br/>
+
+<div align="center">
+  <img src="figures/plot_end_to_end.png" width="85%"/>
+  <br/>
+  <em>End-to-end composability: ~10<sup>5</sup>x reduction in wall time, circuits, and code.</em>
+</div>
 
 ## Installation
 
