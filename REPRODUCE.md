@@ -124,12 +124,15 @@ uv run python -m evaluation.use_cases.end_to_end.run
 
 ### Hardware Benchmarks (§8.4, Fig. 11)
 
-**Real hardware (Fig. 11a)** requires access to IBM Quantum (IBM Marrakesh):
+**Real hardware (Fig. 11a)** requires an IBM Quantum account with access to IBM Marrakesh. Set both environment variables:
 
 ```bash
-export IBM_TOKEN=<your-ibm-quantum-token>
+export IBM_TOKEN=<your-ibm-quantum-api-token>
+export IBM_CRN=<your-ibm-quantum-service-instance-crn>
 uv run python -m evaluation.hardware.sweep_marrakesh_qnn
 ```
+
+You can find your CRN (Cloud Resource Name) in the IBM Quantum dashboard under your service instance.
 
 **Noise-model simulations (Fig. 11b, 11c)** can be run locally:
 
