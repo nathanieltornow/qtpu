@@ -58,11 +58,11 @@ qTPU is an end-to-end system for unified hybrid quantum-classical computing. It 
 
 <br/>
 
-<div align="center">
+<!-- <div align="center">
   <img src="figures/end_to_end.png" width="85%"/>
   <br/>
   <em>End-to-end composability (Fig. 16): ~10<sup>5</sup>x reduction in wall time, circuits, and code.</em>
-</div>
+</div> -->
 
 ## Installation
 
