@@ -11,9 +11,8 @@
   <p>
     <a href="#overview">Overview</a> &ensp;|&ensp;
     <a href="#main-results">Results</a> &ensp;|&ensp;
-    <a href="#installation">Installation</a> &ensp;|&ensp;
-    <a href="#quick-example">Quick Example</a> &ensp;|&ensp;
-    <a href="#reproducing-paper-results">Reproducing Results</a> 
+    <a href="#getting-started-instructions">Getting Started</a> &ensp;|&ensp;
+    <a href="#detailed-instructions-reproducing-paper-results">Reproducing Results</a>
     <!-- &ensp;|&ensp; -->
     <!-- <a href="#citation">Citation</a> -->
   </p>
@@ -57,17 +56,18 @@ qTPU is an end-to-end system for unified hybrid quantum-classical computing. It 
   <em>Error mitigation (Fig. 15): qTPU is 3,500x faster and generates 3,700x less code than Mitiq.</em>
 </div>
 
-<br/>
+---
 
-<!-- <div align="center">
-  <img src="figures/end_to_end.png" width="85%"/>
-  <br/>
-  <em>End-to-end composability (Fig. 16): ~10<sup>5</sup>x reduction in wall time, circuits, and code.</em>
-</div> -->
+## Getting Started Instructions
 
-## Installation
+These instructions will get you from zero to running a qTPU example in under 30 minutes.
 
-Requires Python 3.11-3.13. We recommend [uv](https://docs.astral.sh/uv/).
+### Prerequisites
+
+- Python 3.11–3.13
+- [uv](https://docs.astral.sh/uv/) (recommended) or pip
+
+### Installation
 
 ```bash
 git clone https://github.com/nathanieltornow/qtpu.git && cd qtpu
@@ -93,7 +93,7 @@ docker run --gpus all -it qtpu
 
 </details>
 
-## Quick Example
+### Hello World
 
 ```python
 import qtpu
@@ -111,12 +111,18 @@ print(f"Classical tensors: {len(htn.classical_tensors)}")
 
 See [`examples/`](./examples/) for circuit cutting, Pareto frontier exploration, and hybrid ML.
 
-## Reproducing Paper Results
+### Verify Plots Generate
 
-All figures from the paper can be reproduced from the pre-collected logs in `logs/`.
+```bash
+uv run python -m evaluation.compiler.plot
+# Expected: saves PDF to plots/plot_pareto_frontiers/...
+```
 
-> [!TIP]
-> See **[REPRODUCE.md](./REPRODUCE.md)** for full step-by-step instructions covering every figure and table.
+---
+
+## Detailed Instructions: Reproducing Paper Results
+
+All figures from the paper can be reproduced from the pre-collected logs in `logs/`. See **[REPRODUCE.md](./REPRODUCE.md)** for the full step-by-step walkthrough covering every figure, table, and benchmark.
 
 **Quick start** — generate any figure in seconds:
 
@@ -129,6 +135,13 @@ uv run python -m evaluation.use_cases.hybrid_ml.plot          # Fig. 14
 uv run python -m evaluation.use_cases.error_mitigation.plot   # Fig. 15
 uv run python -m evaluation.use_cases.end_to_end.plot         # Fig. 16
 ```
+
+### Artifact Claims
+
+- **All figures and tables** (Fig. 9–16, Table 1) can be reproduced from the included logs in `logs/` without any special hardware. Each plot command runs in seconds.
+- **All benchmarks except IBM hardware** can be re-run from scratch using the `run.py` scripts in `evaluation/` (see [REPRODUCE.md](./REPRODUCE.md)). Expect minutes to hours depending on the benchmark.
+- **Fig. 11a (IBM Marrakesh)** requires access to IBM Quantum hardware and cannot be reproduced without IBM credentials (`IBM_TOKEN` + `IBM_CRN`). The pre-collected hardware logs are included.
+- **Fig. 11b–c (noise-model simulations)** can be re-run locally without hardware access.
 
 ### Repository Structure
 
