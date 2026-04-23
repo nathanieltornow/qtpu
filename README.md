@@ -2,7 +2,8 @@
 
 # qTPU: Hybrid Tensor Networks for Quantum-Classical Acceleration
 
-[![Paper](https://img.shields.io/badge/Paper-OSDI%20'26-A42C25?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2410.15080) [![GitHub](https://img.shields.io/badge/Code-000000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/nathanieltornow/qtpu)
+<!-- [![Paper](https://img.shields.io/badge/Paper-OSDI%20'26-A42C25?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2410.15080)  -->
+[![GitHub](https://img.shields.io/badge/Code-000000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/nathanieltornow/qtpu)
 
 </div>
 
@@ -11,8 +12,9 @@
     <a href="#-overview">Overview</a> &ensp;|&ensp;
     <a href="#-installation">Installation</a> &ensp;|&ensp;
     <a href="#-quick-example">Quick Example</a> &ensp;|&ensp;
-    <a href="#-reproducing-paper-results">Reproducing Results</a> &ensp;|&ensp;
-    <a href="#citation">Citation</a>
+    <a href="#-reproducing-paper-results">Reproducing Results</a> 
+    <!-- &ensp;|&ensp; -->
+    <!-- <a href="#citation">Citation</a> -->
   </p>
 </div>
 
@@ -106,7 +108,7 @@ logs/                  Pre-collected benchmark results (JSONL)
 examples/              Standalone usage examples
 ```
 
-## Citation
+<!-- ## Citation
 
 ```bibtex
 @inproceedings{tornow2026qtpu,
@@ -115,4 +117,4 @@ examples/              Standalone usage examples
   booktitle = {OSDI},
   year      = {2026}
 }
-```
+``` -->
