@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 project = "qTPU"
 author = "Nathaniel Tornow, Leibniz Supercomputing Centre"
 language = "en"
-project_copyright = "TODO"
+project_copyright = "2024-2026, Nathaniel Tornow"
 # -- General configuration ---------------------------------------------------
 
 master_doc = "index"
