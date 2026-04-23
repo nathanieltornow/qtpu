@@ -1,52 +1,29 @@
-"""Hybrid ML: quantum layer + classical linear layer via HEinsum.
+"""Hybrid ML: compile a QNN circuit and inspect the resulting hTN.
 
-Demonstrates the qTPU programming model from Listing 2 of the paper:
-a quantum kernel with iswitch indices composed with a classical tensor.
+Shows how qTPU's compiler transforms a quantum neural network circuit
+into a hybrid tensor network with quantum and classical components.
 """
 
-import torch
-from qiskit.circuit import QuantumCircuit
-
-from qtpu.core import QuantumTensor, ISwitch, HEinsum, CTensor
-
-# --- Build a quantum layer as a qTensor ---
-
-NQUBITS = 4
-BATCH_SIZE = 8
-N_OBS = 2
+import qtpu
+from mqt.bench import get_benchmark_indep
 
 
-def build_quantum_layer() -> QuantumTensor:
-    """A qTensor with batch index (i) and observable index (k)."""
-    qc = QuantumCircuit(NQUBITS)
+def main():
+    # Get a 20-qubit QNN benchmark circuit
+    qc = get_benchmark_indep("qnn", 20)
+    print(f"Original QNN circuit: {qc.num_qubits} qubits, {qc.size()} gates")
 
-    # Input encoding: iswitch over batch dimension
-    for q in range(NQUBITS):
-        qc.append(
-            ISwitch("i", [f"rx({x})" for x in torch.randn(BATCH_SIZE)], NQUBITS),
-            [q],
-        )
+    # Compile: partition into 10-qubit subcircuits
+    htn = qtpu.compile_to_heinsum(qc, max_size=10, n_trials=10)
 
-    # Trainable layer (shared across batch)
-    for q in range(NQUBITS - 1):
-        qc.cx(q, q + 1)
+    print(f"\nHybrid tensor network:")
+    print(f"  Quantum tensors:  {len(htn.quantum_tensors)}")
+    print(f"  Classical tensors: {len(htn.classical_tensors)}")
+    print(f"  Output indices:    {htn.output_inds}")
 
-    # Measurement observable: iswitch over observable dimension
-    qc.append(
-        ISwitch("k", ["z"] * N_OBS, NQUBITS),
-        list(range(NQUBITS)),
-    )
-
-    return QuantumTensor.from_circuit(qc)
+    for i, qt in enumerate(htn.quantum_tensors):
+        print(f"  qTensor {i}: indices={qt.inds}, shape={qt.shape}")
 
 
-# --- Compose into a hybrid computation ---
-qt = build_quantum_layer()
-V = CTensor(torch.randn(N_OBS, 3))  # classical weights: observables -> features
-
-# HEinsum: contract quantum output (ik) with classical weights (kj) -> (ij)
-heinsum = HEinsum("ik,kj->ij", qt, V)
-
-print(f"Quantum tensor shape: {qt.shape}")
-print(f"Classical tensor shape: {V.shape}")
-print(f"Output shape: batch={BATCH_SIZE} x features=3")
+if __name__ == "__main__":
+    main()
