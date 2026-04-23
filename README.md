@@ -9,10 +9,11 @@
 
 <div align="center">
   <p>
-    <a href="#-overview">Overview</a> &ensp;|&ensp;
-    <a href="#-installation">Installation</a> &ensp;|&ensp;
-    <a href="#-quick-example">Quick Example</a> &ensp;|&ensp;
-    <a href="#-reproducing-paper-results">Reproducing Results</a> 
+    <a href="#overview">Overview</a> &ensp;|&ensp;
+    <a href="#main-results">Results</a> &ensp;|&ensp;
+    <a href="#installation">Installation</a> &ensp;|&ensp;
+    <a href="#quick-example">Quick Example</a> &ensp;|&ensp;
+    <a href="#reproducing-paper-results">Reproducing Results</a> 
     <!-- &ensp;|&ensp; -->
     <!-- <a href="#citation">Citation</a> -->
   </p>
