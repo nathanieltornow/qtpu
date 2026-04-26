@@ -61,7 +61,7 @@ def plot_hw(ax, hw_df, *, show_ylabel, show_legend):
         qtpu_vals.append(float(row["cut"]["expval"]))
         base_vals.append(float(row["mono"]["expval"]))
     _plot_bars(ax, sizes, qtpu_vals, base_vals,
-               r"\textbf{(a) IBM Marrakesh}",
+               r"\textbf{(a) Real Hardware (IBM Marrakesh)}",
                show_ylabel=show_ylabel, show_legend=show_legend)
 
 
@@ -73,7 +73,7 @@ def plot_sim(ax, sim_df, *, show_ylabel, show_legend):
         qtpu_vals.append(float(row["cut"]))
         base_vals.append(float(row["mono_mean"]))
     _plot_bars(ax, sizes, qtpu_vals, base_vals,
-               r"\textbf{(b) Noise-Model Sim}",
+               r"\textbf{(b) Noise-Model Simulation}",
                show_ylabel=show_ylabel, show_legend=show_legend)
 
 
@@ -100,7 +100,7 @@ def plot_pareto(ax, hw_df, sim_df, *, show_ylabel, show_legend):
     ax.set_xlabel("Classical Cost [FLOPs]", labelpad=2)
     if show_ylabel:
         ax.set_ylabel("Error\n(lower is better)")
-    ax.set_title(r"\textbf{(c) Pareto Frontier}")
+    ax.set_title(r"\textbf{(c) Pareto Frontier (Noise-Model Sim)}")
     ax.set_ylim(0.4, 1.0)
     ax.grid(True, alpha=0.3)
 
@@ -118,6 +118,7 @@ def plot_qnn(hw_df, sim_df, pareto_hw_df, pareto_sim_df):
                 show_ylabel=True, show_legend=True)
     axes[0].set_ylim(0, 1.0)
     axes[1].set_ylim(0, 1.0)
+    axes[2].set_ylim(0, 1.0)
     axes[1].tick_params(labelleft=False)
     fig.subplots_adjust(wspace=0.08)
     fig.tight_layout()
